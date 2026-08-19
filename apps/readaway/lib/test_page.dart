@@ -6,7 +6,8 @@ import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:get_it/get_it.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
-import 'package:readaway/src/services/mupdf_service.dart';
+
+import 'src/core/services/services.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -203,7 +204,8 @@ class _HomePageState extends State<HomePage> {
       _loadPage(currentIndex);
     }
     // Precache next page
-    if (currentIndex + 1 < _pageCount && _htmlPages![currentIndex + 1] == null) {
+    if (currentIndex + 1 < _pageCount &&
+        _htmlPages![currentIndex + 1] == null) {
       _loadPage(currentIndex + 1);
     }
     // Precache previous page

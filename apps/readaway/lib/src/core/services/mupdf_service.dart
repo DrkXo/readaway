@@ -1,26 +1,26 @@
-import 'dart:async';
-import 'dart:developer' as dev;
-import 'dart:isolate';
-import 'package:mupdf/mupdf.dart';
+part of 'services.dart';
 
-abstract class DocumentParserService {
-  Future<void> openDocument(String path);
-  Future<int> getPageCount();
-  Future<bool> isReflowable();
-  Future<String?> extractPageHtml(int pageIndex);
-  Future<void> closeDocument();
-}
-
-class IsolateDocumentParserService implements DocumentParserService {
+@singleton
+class DocumentParserService {
   Isolate? _isolate;
   SendPort? _sendPort;
   ReceivePort? _receivePort;
   final _responseController = StreamController<dynamic>.broadcast();
 
+  final LoggingService _loggingService;
+
+  Logger get _log => _loggingService.logger;
+
+  DocumentParserService({
+    required this._loggingService,
+  });
+
   Future<void> _ensureIsolate() async {
     if (_isolate != null) return;
 
-    dev.log('Spawning MuPDF background isolate...', name: 'mupdf_service');
+    _log.info(
+      'Spawning MuPDF background isolate...',
+    );
     _receivePort = ReceivePort();
     _isolate = await Isolate.spawn(_isolateEntryPoint, _receivePort!.sendPort);
 
@@ -34,13 +34,15 @@ class IsolateDocumentParserService implements DocumentParserService {
     });
 
     _sendPort = await completer.future;
-    dev.log('MuPDF background isolate ready.', name: 'mupdf_service');
+    _log.info(
+      'MuPDF background isolate ready.',
+    );
   }
 
   Future<T> _sendCommand<T>(dynamic command) async {
     await _ensureIsolate();
     final completer = Completer<T>();
-    
+
     StreamSubscription? subscription;
     subscription = _responseController.stream.listen((response) {
       if (response is Map && response['id'] == command['id']) {
@@ -57,7 +59,6 @@ class IsolateDocumentParserService implements DocumentParserService {
     return completer.future;
   }
 
-  @override
   Future<void> openDocument(String path) {
     return _sendCommand({
       'id': DateTime.now().microsecondsSinceEpoch,
@@ -66,7 +67,6 @@ class IsolateDocumentParserService implements DocumentParserService {
     });
   }
 
-  @override
   Future<int> getPageCount() {
     return _sendCommand<int>({
       'id': DateTime.now().microsecondsSinceEpoch,
@@ -74,7 +74,6 @@ class IsolateDocumentParserService implements DocumentParserService {
     });
   }
 
-  @override
   Future<bool> isReflowable() {
     return _sendCommand<bool>({
       'id': DateTime.now().microsecondsSinceEpoch,
@@ -82,7 +81,6 @@ class IsolateDocumentParserService implements DocumentParserService {
     });
   }
 
-  @override
   Future<String?> extractPageHtml(int pageIndex) {
     return _sendCommand<String?>({
       'id': DateTime.now().microsecondsSinceEpoch,
@@ -91,7 +89,6 @@ class IsolateDocumentParserService implements DocumentParserService {
     });
   }
 
-  @override
   Future<void> closeDocument() {
     return _sendCommand({
       'id': DateTime.now().microsecondsSinceEpoch,
