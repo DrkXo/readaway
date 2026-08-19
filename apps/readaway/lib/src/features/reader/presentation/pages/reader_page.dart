@@ -6,17 +6,16 @@ import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:get_it/get_it.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
+import 'package:readaway/src/core/services/services.dart';
 
-import 'src/core/services/services.dart';
-
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class ReaderPage extends StatefulWidget {
+  const ReaderPage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<ReaderPage> createState() => _ReaderPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _ReaderPageState extends State<ReaderPage> {
   // --- Document state ---
   List<String?>? _htmlPages;
   int _pageCount = 0;

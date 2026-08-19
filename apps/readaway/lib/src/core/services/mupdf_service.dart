@@ -19,7 +19,7 @@ class DocumentParserService {
     if (_isolate != null) return;
 
     _log.info(
-      'Spawning MuPDF background isolate...',
+      'Spawning ReadAway background isolate...',
     );
     _receivePort = ReceivePort();
     _isolate = await Isolate.spawn(_isolateEntryPoint, _receivePort!.sendPort);
@@ -35,7 +35,7 @@ class DocumentParserService {
 
     _sendPort = await completer.future;
     _log.info(
-      'MuPDF background isolate ready.',
+      'ReadAway background isolate ready.',
     );
   }
 

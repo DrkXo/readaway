@@ -16,12 +16,14 @@ dependencies:
   html: ^0.15.6
   flutter_widget_from_html: ^0.17.2
   flutter_bloc: ^9.0.0
+  bloc_concurrency: ^0.3.0
   freezed_annotation: ^3.0.0
   json_annotation: ^4.9.0
   go_router: ^17.5.0
   injectable: ^3.0.0
   get_it: ^9.2.1
   logging: ^1.3.0
+  equatable: ^2.1.0
 
 dev_dependencies:
   flutter_test:
