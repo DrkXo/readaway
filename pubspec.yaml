@@ -1,0 +1,41 @@
+name: readaway_workspace
+
+environment:
+  sdk: ^3.12.2
+
+workspace:
+  - apps/readaway
+  - packages/mupdf
+
+dev_dependencies:
+  melos: ^8.0.0
+  logging: ^1.2.0
+  code_assets: ^1.0.0
+  hooks: ^2.0.2
+
+melos:
+  sdkPath: .fvm/flutter_sdk
+
+  packages:
+    - apps/*
+    - packages/*
+
+  scripts:
+    analyze:
+      run: melos exec -- dart analyze --fatal-infos
+      description: Run dart analyze in all packages
+    format:
+      run: melos exec -- dart format --set-exit-if-changed .
+      description: Check formatting in all packages
+    submodules:update:
+      run: git submodule update --init --recursive
+      description: Update git submodules (MuPDF source)
+    ffi:build:
+      run: cd packages/mupdf/native/mupdf && make -j$(nproc) extra-cflags=-fPIC
+      description: Build MuPDF native library from source
+    ffi:clean:
+      run: rm -rf packages/mupdf/native/mupdf/build/
+      description: Clean MuPDF build artifacts
+    ffi:generate:
+      run: cd packages/mupdf && dart run ffigen
+      description: Regenerate FFI bindings from mupdf_wrapper.h
