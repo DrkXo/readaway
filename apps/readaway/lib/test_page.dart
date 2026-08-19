@@ -3,9 +3,10 @@ import 'dart:developer' as dev;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import 'package:get_it/get_it.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
-import 'package:mupdf/mupdf.dart';
+import 'package:readaway/src/services/mupdf_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,17 +17,15 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // --- Document state ---
-  MuPdfDocument? _doc;
   List<String?>? _htmlPages;
   int _pageCount = 0;
   int _currentPage = 0;
+  final Set<int> _loadingPages = {};
 
   // --- UI state ---
   String? _fileName;
   String? _error;
   bool _loading = false;
-
-  int _renderGeneration = 0;
 
   // Drives PageView programmatically so the nav buttons and the
   // swipe gesture stay in sync.
@@ -94,7 +93,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ---------------------------------------------------------------------
-  // File handling
+  // File handling & Lazy loading
   // ---------------------------------------------------------------------
 
   Future<void> _pickAndOpen() async {
@@ -122,41 +121,37 @@ class _HomePageState extends State<HomePage> {
       _error = null;
       _fileName = file.name;
       _loading = true;
-      _doc = null;
       _htmlPages = null;
+      _loadingPages.clear();
     });
 
     try {
-      final doc = MuPdfDocument.openFile(path);
-      final count = doc.pageCount;
+      final service = GetIt.instance<DocumentParserService>();
+      await service.openDocument(path);
+
+      final count = await service.getPageCount();
+      final reflowable = await service.isReflowable();
       dev.log(
-        'Loaded: $count pages, reflowable=${doc.isReflowable}',
+        'Loaded: $count pages, reflowable=$reflowable',
         name: 'mupdf',
       );
-
-      final firstPage = doc.loadPage(0);
-      final firstHtml = _sanitizeHtml(firstPage.extractHtml());
-      firstPage.dispose();
 
       if (!mounted) return;
 
       setState(() {
-        _doc = doc;
         _pageCount = count;
         _htmlPages = List<String?>.filled(count, null);
-        _htmlPages![0] = firstHtml;
         _currentPage = 0;
         _loading = false;
       });
 
-      // Snap the controller back to page 0 for the newly opened doc,
-      // in case it's mid-scroll from a previously opened one.
+      // Snap the controller back to page 0 for the newly opened doc
       if (_pageController.hasClients) {
         _pageController.jumpToPage(0);
       }
 
-      final gen = ++_renderGeneration;
-      _renderRemaining(doc, count, gen);
+      // Start pre-caching pages 0 and 1
+      _precachePages(0);
     } catch (e, st) {
       dev.log(
         'Failed to open document',
@@ -172,34 +167,57 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _renderRemaining(
-    MuPdfDocument doc,
-    int count,
-    int generation,
-  ) async {
-    for (var i = 1; i < count; i++) {
-      if (!mounted || _renderGeneration != generation) return;
+  Future<void> _loadPage(int index) async {
+    if (_htmlPages == null || index < 0 || index >= _pageCount) return;
+    if (_htmlPages![index] != null || _loadingPages.contains(index)) return;
 
-      try {
-        final page = doc.loadPage(i);
-        final html = _sanitizeHtml(page.extractHtml());
-        page.dispose();
+    _loadingPages.add(index);
 
-        if (mounted && _renderGeneration == generation) {
-          setState(() => _htmlPages![i] = html);
-        }
-      } catch (e) {
-        dev.log('Failed to render page $i', name: 'mupdf', error: e);
+    try {
+      final service = GetIt.instance<DocumentParserService>();
+      final rawHtml = await service.extractPageHtml(index);
+      final html = _sanitizeHtml(rawHtml) ?? '';
+
+      if (mounted) {
+        setState(() {
+          _htmlPages![index] = html;
+          _loadingPages.remove(index);
+        });
+      }
+    } catch (e) {
+      dev.log('Failed to load page $index', name: 'mupdf', error: e);
+      if (mounted) {
+        setState(() {
+          _htmlPages![index] = '<p>Error loading page: $e</p>';
+          _loadingPages.remove(index);
+        });
       }
     }
   }
 
+  void _precachePages(int currentIndex) {
+    if (_htmlPages == null) return;
+
+    // Precache current page
+    if (_htmlPages![currentIndex] == null) {
+      _loadPage(currentIndex);
+    }
+    // Precache next page
+    if (currentIndex + 1 < _pageCount && _htmlPages![currentIndex + 1] == null) {
+      _loadPage(currentIndex + 1);
+    }
+    // Precache previous page
+    if (currentIndex - 1 >= 0 && _htmlPages![currentIndex - 1] == null) {
+      _loadPage(currentIndex - 1);
+    }
+  }
+
   void _disposeDoc() {
-    _doc?.dispose();
-    _doc = null;
+    GetIt.instance<DocumentParserService>().closeDocument();
     _htmlPages = null;
     _pageCount = 0;
     _currentPage = 0;
+    _loadingPages.clear();
   }
 
   @override
@@ -221,7 +239,7 @@ class _HomePageState extends State<HomePage> {
         actions: [_buildPageCounter()],
       ),
       body: _buildBody(),
-      bottomNavigationBar: _doc != null ? _buildNavBar() : null,
+      bottomNavigationBar: _htmlPages != null ? _buildNavBar() : null,
       floatingActionButton: FloatingActionButton(
         onPressed: _loading ? null : _pickAndOpen,
         child: const Icon(Icons.file_open),
@@ -230,7 +248,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildPageCounter() {
-    if (_doc == null) return const SizedBox.shrink();
+    if (_htmlPages == null) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(right: 16),
@@ -286,7 +304,10 @@ class _HomePageState extends State<HomePage> {
     return PageView.builder(
       controller: _pageController,
       itemCount: _pageCount,
-      onPageChanged: (i) => setState(() => _currentPage = i),
+      onPageChanged: (i) {
+        setState(() => _currentPage = i);
+        _precachePages(i);
+      },
       itemBuilder: _buildPage,
     );
   }
@@ -294,7 +315,8 @@ class _HomePageState extends State<HomePage> {
   Widget _buildPage(BuildContext context, int index) {
     final html = _htmlPages![index];
 
-    if (html == null || html.isEmpty) {
+    if (html == null) {
+      _loadPage(index);
       return const Center(child: CircularProgressIndicator());
     }
 

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:readaway/src/services/mupdf_service.dart';
 import 'package:readaway/test_page.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  GetIt.instance.registerSingleton<DocumentParserService>(
+    IsolateDocumentParserService(),
+  );
   runApp(
     const ReadAway(),
   );
