@@ -16,7 +16,7 @@ void main(List<String> args) async {
       stderr.writeln('Building MuPDF from source...');
       final result = await Process.run('make', [
         '-j${Platform.numberOfProcessors}',
-        'extra-cflags=-fPIC',
+        'XCFLAGS=-fPIC',
       ], workingDirectory: mupdfDir);
       if (result.exitCode != 0) {
         stderr.writeln('make stdout:\n${result.stdout}');

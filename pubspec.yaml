@@ -31,7 +31,7 @@ melos:
       run: git submodule update --init --recursive
       description: Update git submodules (MuPDF source)
     ffi:build:
-      run: cd packages/mupdf/native/mupdf && make -j$(nproc) extra-cflags=-fPIC
+      run: cd packages/mupdf/native/mupdf && make -j$(nproc) XCFLAGS=-fPIC
       description: Build MuPDF native library from source
     ffi:clean:
       run: rm -rf packages/mupdf/native/mupdf/build/
