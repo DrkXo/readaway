@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader_bottom_bar.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader_drawer.dart';
@@ -9,9 +10,8 @@ import 'package:readaway/src/features/reader/presentation/widgets/reader_gesture
 import 'package:readaway/src/features/reader/presentation/widgets/reader_overlay_controller.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader_page_content.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader_top_bar.dart';
+import 'package:readaway/src/features/settings/domain/models/reader_preferences.dart';
 import 'package:readaway/src/features/settings/presentation/bloc/settings_bloc.dart';
-
-import '../../../settings/domain/models/reader_preferences.dart';
 
 class ReaderPage extends StatefulWidget {
   const ReaderPage({
@@ -120,19 +120,22 @@ class _ReaderPageState extends State<ReaderPage> {
     return ListenableBuilder(
       listenable: _overlayController,
       builder: (context, _) {
-        return Stack(
-          children: [
-            _buildBrightnessOverlay(prefs),
-            _buildContrastOverlay(prefs),
-            ReaderGestureDetector(
-              controller: _overlayController,
-              child: ReaderPageContent(pageController: _pageController),
-            ),
-            _buildTopBar(),
-            _buildBottomBar(),
-            if (prefs.showStatusBar && _overlayController.barsVisible)
-              _buildStatusBar(),
-          ],
+        return TactileReaderBackground(
+          appColors: context.appColors,
+          child: Stack(
+            children: [
+              _buildBrightnessOverlay(prefs),
+              _buildContrastOverlay(prefs),
+              ReaderGestureDetector(
+                controller: _overlayController,
+                child: ReaderPageContent(pageController: _pageController),
+              ),
+              _buildTopBar(),
+              _buildBottomBar(),
+              if (prefs.showStatusBar && _overlayController.barsVisible)
+                _buildStatusBar(),
+            ],
+          ),
         );
       },
     );

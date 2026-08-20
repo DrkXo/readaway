@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader_overlay_controller.dart';
 
@@ -86,7 +87,10 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
           top: false,
           child: Container(
             padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-            color: scheme.surface.withValues(alpha: 0.85),
+            decoration: BoxDecoration(
+              color: scheme.surface.withValues(alpha: 0.85),
+              boxShadow: context.appColors.shadowMd,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

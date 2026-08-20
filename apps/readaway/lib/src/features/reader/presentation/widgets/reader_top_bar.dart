@@ -2,6 +2,7 @@ import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader_overlay_controller.dart';
 
@@ -36,11 +37,15 @@ class ReaderTopBar extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final shadows = context.appColors.shadowMd;
     return SafeArea(
       bottom: false,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        color: scheme.surface.withValues(alpha: 0.85),
+        decoration: BoxDecoration(
+          color: scheme.surface.withValues(alpha: 0.85),
+          boxShadow: shadows,
+        ),
         child: Row(
           children: [
             IconButton(

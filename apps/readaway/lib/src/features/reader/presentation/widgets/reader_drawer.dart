@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mupdf/mupdf.dart';
+import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader_overlay_controller.dart';
 
@@ -45,107 +46,114 @@ class ReaderDrawer extends StatelessWidget {
       ],
       child: Drawer(
         backgroundColor: background,
-        child: SafeArea(
-          child: BlocBuilder<ReaderBloc, ReaderState>(
-            builder: (context, state) {
-              final outline = state.outline;
-              final bookTitle = state.bookTitle;
-              final author = state.author;
+        elevation: 0,
+        child: Container(
+          decoration: BoxDecoration(
+            boxShadow: context.appColors.shadowLg,
+          ),
+          child: SafeArea(
+            child: BlocBuilder<ReaderBloc, ReaderState>(
+              builder: (context, state) {
+                final outline = state.outline;
+                final bookTitle = state.bookTitle;
+                final author = state.author;
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'CONTENTS',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  letterSpacing: 1.4,
-                                  fontWeight: FontWeight.w700,
-                                  color: _threadColors[0],
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              if (bookTitle != null && bookTitle.isNotEmpty)
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  bookTitle,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
+                                  'CONTENTS',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    letterSpacing: 1.4,
+                                    fontWeight: FontWeight.w700,
+                                    color: _threadColors[0],
                                   ),
                                 ),
-                              if (author != null && author.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Text(
-                                    author,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.hintColor,
+                                const SizedBox(height: 6),
+                                if (bookTitle != null && bookTitle.isNotEmpty)
+                                  Text(
+                                    bookTitle,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
+                                if (author != null && author.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Text(
+                                      author,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.hintColor,
+                                          ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  outline == null || outline.isEmpty
+                                      ? 'Table of contents'
+                                      : '${outline.where((o) => o.level == 0).length} chapters',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.hintColor,
+                                  ),
                                 ),
-                              const SizedBox(height: 4),
-                              Text(
-                                outline == null || outline.isEmpty
-                                    ? 'Table of contents'
-                                    : '${outline.where((o) => o.level == 0).length} chapters',
-                                style: theme.textTheme.bodySmall?.copyWith(
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            splashRadius: 20,
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(height: 1, thickness: 1, color: dividerColor),
+                    Expanded(
+                      child: outline == null || outline.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No table of contents',
+                                style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.hintColor,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          splashRadius: 20,
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Divider(height: 1, thickness: 1, color: dividerColor),
-                  Expanded(
-                    child: outline == null || outline.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No table of contents',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.hintColor,
-                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              itemCount: outline.length,
+                              itemBuilder: (context, index) {
+                                final item = outline[index];
+                                final title = item.title;
+                                if (title == null || title.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+                                return _OutlineItemTile(
+                                  item: item,
+                                  theme: theme,
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    onJumpToPage(item.page);
+                                  },
+                                );
+                              },
                             ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            itemCount: outline.length,
-                            itemBuilder: (context, index) {
-                              final item = outline[index];
-                              final title = item.title;
-                              if (title == null || title.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-                              return _OutlineItemTile(
-                                item: item,
-                                theme: theme,
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  onJumpToPage(item.page);
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              );
-            },
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -193,8 +201,9 @@ class _OutlineItemTile extends StatelessWidget {
                 Container(
                   width: 2,
                   margin: const EdgeInsets.only(right: 10),
-                  color: _threadColors[l % _threadColors.length]
-                      .withValues(alpha: 0.35),
+                  color: _threadColors[l % _threadColors.length].withValues(
+                    alpha: 0.35,
+                  ),
                 ),
               if (isTopLevel)
                 Container(
@@ -213,16 +222,18 @@ class _OutlineItemTile extends StatelessWidget {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: (isTopLevel
-                            ? theme.textTheme.bodyMedium
-                            : theme.textTheme.bodySmall)
-                        ?.copyWith(
-                          fontWeight:
-                              isTopLevel ? FontWeight.w600 : FontWeight.w400,
-                          color: isTopLevel
-                              ? theme.textTheme.bodyMedium?.color
-                              : theme.hintColor,
-                        ),
+                    style:
+                        (isTopLevel
+                                ? theme.textTheme.bodyMedium
+                                : theme.textTheme.bodySmall)
+                            ?.copyWith(
+                              fontWeight: isTopLevel
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: isTopLevel
+                                  ? theme.textTheme.bodyMedium?.color
+                                  : theme.hintColor,
+                            ),
                   ),
                 ),
               ),
