@@ -32,7 +32,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       await service.openDocument(event.path);
 
       final count = await service.getPageCount();
-      logger.info('Loaded: $count pages');
+       logger.d('Loaded: $count pages');
 
       final fileName = event.fileName ?? event.path.split('/').last;
 
@@ -49,7 +49,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       _precachePages(0);
       // ignore: unused_catch_stack
     } catch (e, st) {
-      logger.info(
+       logger.d(
         'Failed to open document',
       );
       emit(state.copyWith(error: '$e', loading: false));
@@ -86,7 +86,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         ),
       );
     } catch (e) {
-      logger.info('Failed to load page $index');
+       logger.d('Failed to load page $index');
       final pages = List<String?>.from(state.htmlPages!);
       pages[index] = '<p>Error loading page: $e</p>';
       emit(

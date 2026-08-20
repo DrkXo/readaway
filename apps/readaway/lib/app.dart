@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:readaway/src/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:readaway/src/router/router.dart';
 
 import 'src/core/services/services.dart';
@@ -30,6 +31,9 @@ class _ReadAwayState extends State<ReadAway> {
       providers: [
         BlocProvider(
           create: (context) => GetIt.I.get<ReaderBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => GetIt.I.get<SettingsBloc>(),
         ),
       ],
       child: MaterialApp.router(
