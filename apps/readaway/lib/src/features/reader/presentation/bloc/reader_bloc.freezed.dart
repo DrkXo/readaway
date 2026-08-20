@@ -424,7 +424,7 @@ String toString() {
 /// @nodoc
 mixin _$ReaderState {
 
- bool get loading; String? get error; String? get fileName; int get pageCount; int get currentPage; List<String?>? get htmlPages; Set<int> get loadingPages;
+ bool get loading; String? get error; String? get fileName; int get pageCount; int get currentPage; List<String?>? get htmlPages; Set<int> get loadingPages; List<OutlineItem>? get outline; String? get bookTitle; String? get author;
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -435,16 +435,16 @@ $ReaderStateCopyWith<ReaderState> get copyWith => _$ReaderStateCopyWithImpl<Read
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.htmlPages, htmlPages)&&const DeepCollectionEquality().equals(other.loadingPages, loadingPages));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.htmlPages, htmlPages)&&const DeepCollectionEquality().equals(other.loadingPages, loadingPages)&&const DeepCollectionEquality().equals(other.outline, outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,loading,error,fileName,pageCount,currentPage,const DeepCollectionEquality().hash(htmlPages),const DeepCollectionEquality().hash(loadingPages));
+int get hashCode => Object.hash(runtimeType,loading,error,fileName,pageCount,currentPage,const DeepCollectionEquality().hash(htmlPages),const DeepCollectionEquality().hash(loadingPages),const DeepCollectionEquality().hash(outline),bookTitle,author);
 
 @override
 String toString() {
-  return 'ReaderState(loading: $loading, error: $error, fileName: $fileName, pageCount: $pageCount, currentPage: $currentPage, htmlPages: $htmlPages, loadingPages: $loadingPages)';
+  return 'ReaderState(loading: $loading, error: $error, fileName: $fileName, pageCount: $pageCount, currentPage: $currentPage, htmlPages: $htmlPages, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author)';
 }
 
 
@@ -455,7 +455,7 @@ abstract mixin class $ReaderStateCopyWith<$Res>  {
   factory $ReaderStateCopyWith(ReaderState value, $Res Function(ReaderState) _then) = _$ReaderStateCopyWithImpl;
 @useResult
 $Res call({
- bool loading, String? error, String? fileName, int pageCount, int currentPage, List<String?>? htmlPages, Set<int> loadingPages
+ bool loading, String? error, String? fileName, int pageCount, int currentPage, List<String?>? htmlPages, Set<int> loadingPages, List<OutlineItem>? outline, String? bookTitle, String? author
 });
 
 
@@ -472,7 +472,7 @@ class _$ReaderStateCopyWithImpl<$Res>
 
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? loading = null,Object? error = freezed,Object? fileName = freezed,Object? pageCount = null,Object? currentPage = null,Object? htmlPages = freezed,Object? loadingPages = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? loading = null,Object? error = freezed,Object? fileName = freezed,Object? pageCount = null,Object? currentPage = null,Object? htmlPages = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,}) {
   return _then(_self.copyWith(
 loading: null == loading ? _self.loading : loading // ignore: cast_nullable_to_non_nullable
 as bool,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
@@ -481,7 +481,10 @@ as String?,pageCount: null == pageCount ? _self.pageCount : pageCount // ignore:
 as int,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
 as int,htmlPages: freezed == htmlPages ? _self.htmlPages : htmlPages // ignore: cast_nullable_to_non_nullable
 as List<String?>?,loadingPages: null == loadingPages ? _self.loadingPages : loadingPages // ignore: cast_nullable_to_non_nullable
-as Set<int>,
+as Set<int>,outline: freezed == outline ? _self.outline : outline // ignore: cast_nullable_to_non_nullable
+as List<OutlineItem>?,bookTitle: freezed == bookTitle ? _self.bookTitle : bookTitle // ignore: cast_nullable_to_non_nullable
+as String?,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -566,10 +569,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool loading,  String? error,  String? fileName,  int pageCount,  int currentPage,  List<String?>? htmlPages,  Set<int> loadingPages)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool loading,  String? error,  String? fileName,  int pageCount,  int currentPage,  List<String?>? htmlPages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReaderState() when $default != null:
-return $default(_that.loading,_that.error,_that.fileName,_that.pageCount,_that.currentPage,_that.htmlPages,_that.loadingPages);case _:
+return $default(_that.loading,_that.error,_that.fileName,_that.pageCount,_that.currentPage,_that.htmlPages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author);case _:
   return orElse();
 
 }
@@ -587,10 +590,10 @@ return $default(_that.loading,_that.error,_that.fileName,_that.pageCount,_that.c
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool loading,  String? error,  String? fileName,  int pageCount,  int currentPage,  List<String?>? htmlPages,  Set<int> loadingPages)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool loading,  String? error,  String? fileName,  int pageCount,  int currentPage,  List<String?>? htmlPages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author)  $default,) {final _that = this;
 switch (_that) {
 case _ReaderState():
-return $default(_that.loading,_that.error,_that.fileName,_that.pageCount,_that.currentPage,_that.htmlPages,_that.loadingPages);case _:
+return $default(_that.loading,_that.error,_that.fileName,_that.pageCount,_that.currentPage,_that.htmlPages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -607,10 +610,10 @@ return $default(_that.loading,_that.error,_that.fileName,_that.pageCount,_that.c
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool loading,  String? error,  String? fileName,  int pageCount,  int currentPage,  List<String?>? htmlPages,  Set<int> loadingPages)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool loading,  String? error,  String? fileName,  int pageCount,  int currentPage,  List<String?>? htmlPages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author)?  $default,) {final _that = this;
 switch (_that) {
 case _ReaderState() when $default != null:
-return $default(_that.loading,_that.error,_that.fileName,_that.pageCount,_that.currentPage,_that.htmlPages,_that.loadingPages);case _:
+return $default(_that.loading,_that.error,_that.fileName,_that.pageCount,_that.currentPage,_that.htmlPages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author);case _:
   return null;
 
 }
@@ -622,7 +625,7 @@ return $default(_that.loading,_that.error,_that.fileName,_that.pageCount,_that.c
 
 
 class _ReaderState implements ReaderState {
-  const _ReaderState({this.loading = false, this.error, this.fileName, this.pageCount = 0, this.currentPage = 0, final  List<String?>? htmlPages, final  Set<int> loadingPages = const <int>{}}): _htmlPages = htmlPages,_loadingPages = loadingPages;
+  const _ReaderState({this.loading = false, this.error, this.fileName, this.pageCount = 0, this.currentPage = 0, final  List<String?>? htmlPages, final  Set<int> loadingPages = const <int>{}, final  List<OutlineItem>? outline, this.bookTitle, this.author}): _htmlPages = htmlPages,_loadingPages = loadingPages,_outline = outline;
   
 
 @override@JsonKey() final  bool loading;
@@ -646,6 +649,17 @@ class _ReaderState implements ReaderState {
   return EqualUnmodifiableSetView(_loadingPages);
 }
 
+ final  List<OutlineItem>? _outline;
+@override List<OutlineItem>? get outline {
+  final value = _outline;
+  if (value == null) return null;
+  if (_outline is EqualUnmodifiableListView) return _outline;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+@override final  String? bookTitle;
+@override final  String? author;
 
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
@@ -657,16 +671,16 @@ _$ReaderStateCopyWith<_ReaderState> get copyWith => __$ReaderStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other._htmlPages, _htmlPages)&&const DeepCollectionEquality().equals(other._loadingPages, _loadingPages));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other._htmlPages, _htmlPages)&&const DeepCollectionEquality().equals(other._loadingPages, _loadingPages)&&const DeepCollectionEquality().equals(other._outline, _outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,loading,error,fileName,pageCount,currentPage,const DeepCollectionEquality().hash(_htmlPages),const DeepCollectionEquality().hash(_loadingPages));
+int get hashCode => Object.hash(runtimeType,loading,error,fileName,pageCount,currentPage,const DeepCollectionEquality().hash(_htmlPages),const DeepCollectionEquality().hash(_loadingPages),const DeepCollectionEquality().hash(_outline),bookTitle,author);
 
 @override
 String toString() {
-  return 'ReaderState(loading: $loading, error: $error, fileName: $fileName, pageCount: $pageCount, currentPage: $currentPage, htmlPages: $htmlPages, loadingPages: $loadingPages)';
+  return 'ReaderState(loading: $loading, error: $error, fileName: $fileName, pageCount: $pageCount, currentPage: $currentPage, htmlPages: $htmlPages, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author)';
 }
 
 
@@ -677,7 +691,7 @@ abstract mixin class _$ReaderStateCopyWith<$Res> implements $ReaderStateCopyWith
   factory _$ReaderStateCopyWith(_ReaderState value, $Res Function(_ReaderState) _then) = __$ReaderStateCopyWithImpl;
 @override @useResult
 $Res call({
- bool loading, String? error, String? fileName, int pageCount, int currentPage, List<String?>? htmlPages, Set<int> loadingPages
+ bool loading, String? error, String? fileName, int pageCount, int currentPage, List<String?>? htmlPages, Set<int> loadingPages, List<OutlineItem>? outline, String? bookTitle, String? author
 });
 
 
@@ -694,7 +708,7 @@ class __$ReaderStateCopyWithImpl<$Res>
 
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? loading = null,Object? error = freezed,Object? fileName = freezed,Object? pageCount = null,Object? currentPage = null,Object? htmlPages = freezed,Object? loadingPages = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? loading = null,Object? error = freezed,Object? fileName = freezed,Object? pageCount = null,Object? currentPage = null,Object? htmlPages = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,}) {
   return _then(_ReaderState(
 loading: null == loading ? _self.loading : loading // ignore: cast_nullable_to_non_nullable
 as bool,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
@@ -703,7 +717,10 @@ as String?,pageCount: null == pageCount ? _self.pageCount : pageCount // ignore:
 as int,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
 as int,htmlPages: freezed == htmlPages ? _self._htmlPages : htmlPages // ignore: cast_nullable_to_non_nullable
 as List<String?>?,loadingPages: null == loadingPages ? _self._loadingPages : loadingPages // ignore: cast_nullable_to_non_nullable
-as Set<int>,
+as Set<int>,outline: freezed == outline ? _self._outline : outline // ignore: cast_nullable_to_non_nullable
+as List<OutlineItem>?,bookTitle: freezed == bookTitle ? _self.bookTitle : bookTitle // ignore: cast_nullable_to_non_nullable
+as String?,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

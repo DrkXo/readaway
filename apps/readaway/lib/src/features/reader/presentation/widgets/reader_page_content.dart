@@ -21,7 +21,7 @@ class ReaderPageContent extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (state.error != null) {
-          return ReaderErrorView(message: state.error!);
+          return const ReaderErrorView();
         }
         if (state.htmlPages == null) {
           return const Center(child: Text('No document open'));

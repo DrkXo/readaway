@@ -46,10 +46,8 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i585.SettingsBloc>(
       () => _i585.SettingsBloc(storage: gh<_i264.AppStorageService>()),
     );
-    gh.singleton<_i264.DocumentParserService>(
-      () => _i264.DocumentParserService(
-        loggingService: gh<_i264.LoggingService>(),
-      ),
+    gh.singleton<_i264.MuPdfService>(
+      () => _i264.MuPdfService(loggingService: gh<_i264.LoggingService>()),
     );
     gh.lazySingleton<_i295.AppRoutesGuards>(
       () => _i295.AppRoutesGuards(appRoutes: gh<_i494.AppRoutes>()),

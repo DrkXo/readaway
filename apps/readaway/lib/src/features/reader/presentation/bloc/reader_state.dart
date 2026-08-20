@@ -10,5 +10,8 @@ abstract class ReaderState with _$ReaderState {
     @Default(0) int currentPage,
     List<String?>? htmlPages,
     @Default(<int>{}) Set<int> loadingPages,
+    List<OutlineItem>? outline,
+    String? bookTitle,
+    String? author,
   }) = _ReaderState;
 }

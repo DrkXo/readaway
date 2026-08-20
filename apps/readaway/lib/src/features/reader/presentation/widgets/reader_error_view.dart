@@ -1,27 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
 
 class ReaderErrorView extends StatelessWidget {
   const ReaderErrorView({
     super.key,
-    required this.message,
   });
-
-  final String message;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center),
-          ],
-        ),
-      ),
+    final scheme = Theme.of(context).colorScheme;
+    return BlocBuilder<ReaderBloc, ReaderState>(
+      builder: (context, state) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 56,
+                  color: scheme.error,
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Something went wrong',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: scheme.onSurface,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  state.error ?? '',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,10 +1,12 @@
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader_overlay_controller.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader_page_counter.dart';
+
+import '../../../../core/routes/routes.dart';
+import '../../../../router/router.dart';
 
 class ReaderTopBar extends StatelessWidget {
   const ReaderTopBar({
@@ -18,11 +20,11 @@ class ReaderTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Animate(
       effects: [
-        FadeEffect(duration: 250.ms, curve: Curves.easeOut),
+        FadeEffect(duration: 200.ms, curve: Curves.easeOut),
         SlideEffect(
-          begin: const Offset(0, -1),
+          begin: const Offset(0, -0.5),
           end: Offset.zero,
-          duration: 250.ms,
+          duration: 200.ms,
           curve: Curves.easeOut,
         ),
       ],
@@ -33,45 +35,77 @@ class ReaderTopBar extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SafeArea(
+      bottom: false,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
-          boxShadow: const [
-            BoxShadow(
-              blurRadius: 4,
-              color: Colors.black26,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        color: scheme.surface.withValues(alpha: 0.85),
         child: Row(
           children: [
             IconButton(
-              onPressed: () {
-                context.read<ReaderBloc>().add(const ReaderEvent.closeDocument());
-                GoRouter.of(context).pop();
-              },
-              icon: const Icon(Icons.close),
-              tooltip: 'Close',
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              icon: const Icon(
+                Icons.more_vert_outlined,
+              ),
+              tooltip: 'Outline',
             ),
-            Expanded(
-              child: BlocBuilder<ReaderBloc, ReaderState>(
-                buildWhen: (prev, curr) => prev.fileName != curr.fileName,
-                builder: (context, state) {
-                  return Text(
-                    state.fileName ?? 'ReadAway',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    overflow: TextOverflow.ellipsis,
-                  );
-                },
+            const SizedBox(width: 4),
+            Expanded(child: _buildTitle(context)),
+            Spacer(),
+            IconButton(
+              onPressed: () {
+                context.read<ReaderBloc>().add(
+                  const ReaderEvent.closeDocument(),
+                );
+                appRouter.goNamed(appRoutes.library.name);
+              },
+              icon: Icon(
+                Icons.close,
               ),
             ),
-            const ReaderPageCounter(),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildTitle(BuildContext context) {
+    return BlocBuilder<ReaderBloc, ReaderState>(
+      buildWhen: (prev, curr) =>
+          prev.fileName != curr.fileName ||
+          prev.currentPage != curr.currentPage ||
+          prev.outline != curr.outline,
+      builder: (context, state) {
+        final pageTitle = _pageTitleForCurrentPage(state);
+        return AnimatedTextKit(
+          animatedTexts: [
+            TypewriterAnimatedText(
+              pageTitle ?? '',
+              textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                overflow: TextOverflow.fade,
+              ),
+            ),
+          ],
+          totalRepeatCount: 1,
+          displayFullTextOnTap: true,
+          stopPauseOnTap: true,
+        );
+      },
+    );
+  }
+
+  String? _pageTitleForCurrentPage(ReaderState state) {
+    if (state.outline == null || state.outline!.isEmpty) return null;
+    final current = state.currentPage;
+    for (final item in state.outline!) {
+      if (item.page == current &&
+          item.title != null &&
+          item.title!.isNotEmpty) {
+        return item.title;
+      }
+    }
+    return null;
   }
 }

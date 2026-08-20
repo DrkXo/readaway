@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:injectable/injectable.dart';
+import 'package:mupdf/mupdf.dart';
 import 'package:readaway/src/core/services/services.dart';
 
 part 'reader_bloc.freezed.dart';
@@ -27,12 +28,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     emit(state.copyWith(loading: true, error: null, htmlPages: null));
 
     try {
-      final service = GetIt.I<DocumentParserService>();
+      final service = GetIt.I<MuPdfService>();
       await service.closeDocument();
       await service.openDocument(event.path);
 
       final count = await service.getPageCount();
-       logger.d('Loaded: $count pages');
+      logger.d('Loaded: $count pages');
+
+      final outline = await service.getOutLine();
 
       final fileName = event.fileName ?? event.path.split('/').last;
 
@@ -42,14 +45,29 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           pageCount: count,
           htmlPages: List<String?>.filled(count, null),
           currentPage: 0,
+          outline: outline,
           loading: false,
         ),
       );
 
       _precachePages(0);
+
+      final metaTitle = await service.getMetaData('title');
+      final metaAuthor = await service.getMetaData('author');
+      final bookTitle =
+          (metaTitle == null || metaTitle.isEmpty) ? fileName : metaTitle;
+
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            bookTitle: bookTitle,
+            author: metaAuthor,
+          ),
+        );
+      }
       // ignore: unused_catch_stack
     } catch (e, st) {
-       logger.d(
+      logger.d(
         'Failed to open document',
       );
       emit(state.copyWith(error: '$e', loading: false));
@@ -73,7 +91,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
 
     try {
-      final service = GetIt.I<DocumentParserService>();
+      final service = GetIt.I<MuPdfService>();
       final rawHtml = await service.extractPageHtml(index);
       final html = _sanitizeHtml(rawHtml) ?? '';
 
@@ -86,7 +104,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         ),
       );
     } catch (e) {
-       logger.d('Failed to load page $index');
+      logger.d('Failed to load page $index');
       final pages = List<String?>.from(state.htmlPages!);
       pages[index] = '<p>Error loading page: $e</p>';
       emit(
@@ -99,7 +117,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   void _onCloseDocument(_CloseDocument event, Emitter<ReaderState> emit) {
-    GetIt.I<DocumentParserService>().closeDocument();
+    GetIt.I<MuPdfService>().closeDocument();
     emit(const ReaderState());
   }
 

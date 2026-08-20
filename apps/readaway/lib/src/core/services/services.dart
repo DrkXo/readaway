@@ -15,6 +15,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
 
+import '../../../flavors.dart';
 import '../../features/settings/domain/models/reader_preferences.dart';
 
 part 'logging_service.dart';

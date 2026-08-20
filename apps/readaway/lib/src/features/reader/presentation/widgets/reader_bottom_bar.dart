@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader_overlay_controller.dart';
 
-class ReaderBottomBar extends StatelessWidget {
+class ReaderBottomBar extends StatefulWidget {
   const ReaderBottomBar({
     super.key,
     required this.pageController,
@@ -17,18 +17,52 @@ class ReaderBottomBar extends StatelessWidget {
   final VoidCallback? onSettingsTap;
 
   @override
+  State<ReaderBottomBar> createState() => _ReaderBottomBarState();
+}
+
+class _ReaderBottomBarState extends State<ReaderBottomBar> {
+  double? _dragValue;
+  bool _isDragging = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.pageController.addListener(_onPageScroll);
+  }
+
+  @override
+  void didUpdateWidget(ReaderBottomBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pageController != widget.pageController) {
+      oldWidget.pageController.removeListener(_onPageScroll);
+      widget.pageController.addListener(_onPageScroll);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.pageController.removeListener(_onPageScroll);
+    super.dispose();
+  }
+
+  void _onPageScroll() {
+    if (_isDragging) return;
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Animate(
       effects: [
-        FadeEffect(duration: 250.ms, curve: Curves.easeOut),
+        FadeEffect(duration: 200.ms, curve: Curves.easeOut),
         SlideEffect(
-          begin: const Offset(0, 1),
+          begin: const Offset(0, 0.5),
           end: Offset.zero,
-          duration: 250.ms,
+          duration: 200.ms,
           curve: Curves.easeOut,
         ),
       ],
-      child: controller.barsVisible
+      child: widget.controller.barsVisible
           ? _buildContent(context)
           : const SizedBox.shrink(),
     );
@@ -36,62 +70,151 @@ class ReaderBottomBar extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     return BlocBuilder<ReaderBloc, ReaderState>(
-      buildWhen: (prev, curr) => prev.htmlPages != curr.htmlPages,
+      buildWhen: (prev, curr) =>
+          prev.currentPage != curr.currentPage ||
+          prev.pageCount != curr.pageCount ||
+          prev.htmlPages != curr.htmlPages,
       builder: (context, state) {
         if (state.htmlPages == null) return const SizedBox.shrink();
+        final scheme = Theme.of(context).colorScheme;
+        final page = _isDragging ? _dragValue! : state.currentPage.toDouble();
+        final percent = state.pageCount > 0
+            ? ((page / (state.pageCount - 1)) * 100).round()
+            : 0;
+
         return SafeArea(
+          top: false,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
-              boxShadow: const [
-                BoxShadow(
-                  blurRadius: 4,
-                  color: Colors.black26,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+            color: scheme.surface.withValues(alpha: 0.85),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton.filledTonal(
-                  onPressed: state.currentPage > 0
-                      ? () => pageController.previousPage(
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeOut,
-                          )
-                      : null,
-                  icon: const Icon(Icons.chevron_left),
-                  tooltip: 'Previous page',
-                ),
-                Expanded(
-                  child: Text(
-                    'Page ${state.currentPage + 1} of ${state.pageCount}',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-                IconButton.filledTonal(
-                  onPressed: state.currentPage < state.pageCount - 1
-                      ? () => pageController.nextPage(
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeOut,
-                          )
-                      : null,
-                  icon: const Icon(Icons.chevron_right),
-                  tooltip: 'Next page',
-                ),
-                if (onSettingsTap != null)
-                  IconButton.filledTonal(
-                    onPressed: onSettingsTap,
-                    icon: const Icon(Icons.settings),
-                    tooltip: 'Reader settings',
-                  ),
+                _buildSliderRow(context, state, scheme),
+                _buildInfoRow(context, state, scheme, percent),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSliderRow(
+    BuildContext context,
+    ReaderState state,
+    ColorScheme scheme,
+  ) {
+    final page = _isDragging ? _dragValue! : state.currentPage.toDouble();
+    return Row(
+      children: [
+        _buildNavButton(
+          enabled: state.currentPage > 0,
+          icon: Icons.chevron_left_rounded,
+          tooltip: 'Previous page',
+          onTap: () => widget.pageController.previousPage(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+          ),
+        ),
+        Expanded(
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 2,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+              activeTrackColor: scheme.primary,
+              inactiveTrackColor: scheme.onSurface.withValues(alpha: 0.12),
+              thumbColor: scheme.primary,
+              overlayColor: scheme.primary.withValues(alpha: 0.08),
+            ),
+            child: Slider(
+              value: page
+                  .clamp(0, (state.pageCount - 1).clamp(0, double.infinity))
+                  .toDouble(),
+              min: 0,
+              max: (state.pageCount - 1).clamp(1, double.infinity).toDouble(),
+              onChangeStart: (v) {
+                setState(() {
+                  _isDragging = true;
+                  _dragValue = v;
+                });
+              },
+              onChanged: (v) {
+                setState(() => _dragValue = v);
+              },
+              onChangeEnd: (v) {
+                final target = v.round();
+                setState(() {
+                  _isDragging = false;
+                  _dragValue = null;
+                });
+                widget.pageController.animateToPage(
+                  target,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                );
+              },
+            ),
+          ),
+        ),
+        _buildNavButton(
+          enabled: state.currentPage < state.pageCount - 1,
+          icon: Icons.chevron_right_rounded,
+          tooltip: 'Next page',
+          onTap: () => widget.pageController.nextPage(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavButton({
+    required bool enabled,
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return IconButton(
+      onPressed: enabled ? onTap : null,
+      icon: Icon(icon, size: 22),
+      tooltip: tooltip,
+    );
+  }
+
+  Widget _buildInfoRow(
+    BuildContext context,
+    ReaderState state,
+    ColorScheme scheme,
+    int percent,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          '${state.currentPage + 1} / ${state.pageCount}',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        if (widget.onSettingsTap != null)
+          IconButton(
+            onPressed: widget.onSettingsTap,
+            icon: const Icon(Icons.tune_rounded, size: 18),
+            style: IconButton.styleFrom(
+              foregroundColor: scheme.onSurfaceVariant,
+            ),
+            tooltip: 'Reader settings',
+          ),
+        Text(
+          '$percent%',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

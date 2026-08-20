@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:readaway/app.dart';
+import 'package:readaway/src/app.dart';
 
 import 'src/core/config/injection.dart';
 

@@ -4,8 +4,9 @@ import 'package:get_it/get_it.dart';
 import 'package:readaway/src/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:readaway/src/router/router.dart';
 
-import 'src/core/services/services.dart';
-import 'src/features/reader/presentation/bloc/reader_bloc.dart';
+import '../flavors.dart';
+import 'core/services/services.dart';
+import 'features/reader/presentation/bloc/reader_bloc.dart';
 
 class ReadAway extends StatefulWidget {
   const ReadAway({super.key});
@@ -37,7 +38,8 @@ class _ReadAwayState extends State<ReadAway> {
         ),
       ],
       child: MaterialApp.router(
-        title: 'ReadAway',
+        title: F.title,
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         ),

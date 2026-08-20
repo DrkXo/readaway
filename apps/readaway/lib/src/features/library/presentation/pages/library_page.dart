@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:readaway/src/core/routes/routes.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
 
 class LibraryPage extends StatelessWidget {
@@ -20,10 +21,10 @@ class LibraryPage extends StatelessWidget {
 
     if (context.mounted) {
       context.read<ReaderBloc>().add(
-            ReaderEvent.openDocument(path: path, fileName: fileName),
-          );
+        ReaderEvent.openDocument(path: path, fileName: fileName),
+      );
       GoRouter.of(context).push(
-        '/reader?path=${Uri.encodeComponent(path)}&fileName=${Uri.encodeComponent(fileName)}',
+        '${appRoutes.reader.path}?path=${Uri.encodeComponent(path)}&fileName=${Uri.encodeComponent(fileName)}',
       );
     }
   }
@@ -31,15 +32,10 @@ class LibraryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Library'),
-      ),
-      body: Center(
-        child: ElevatedButton.icon(
-          onPressed: () => _pickAndOpen(context),
-          icon: const Icon(Icons.file_open),
-          label: const Text('Open Document'),
-        ),
+      appBar: AppBar(),
+      floatingActionButton: FloatingActionButton.small(
+        child: Icon(Icons.file_open_outlined),
+        onPressed: () => _pickAndOpen(context),
       ),
     );
   }

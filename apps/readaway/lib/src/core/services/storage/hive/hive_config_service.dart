@@ -12,7 +12,7 @@ class HiveConfigService {
   Future<String> getHiveDirectory() async {
     final dir = await getApplicationDocumentsDirectory();
 
-    return p.join(dir.path, 'readaway');
+    return p.join(dir.path, F.name);
   }
 
   Future<String> getBoxPath() async {

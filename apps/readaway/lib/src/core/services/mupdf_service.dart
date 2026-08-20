@@ -1,7 +1,7 @@
 part of 'services.dart';
 
 @singleton
-class DocumentParserService {
+class MuPdfService {
   Isolate? _isolate;
   SendPort? _sendPort;
   ReceivePort? _receivePort;
@@ -11,7 +11,7 @@ class DocumentParserService {
 
   Logger get _log => _loggingService.logger;
 
-  DocumentParserService({
+  MuPdfService({
     required this._loggingService,
   });
 
@@ -19,10 +19,14 @@ class DocumentParserService {
     if (_isolate != null) return;
 
     _log.info(
-      'Spawning ReadAway background isolate...',
+      'Spawning MuPdfService background isolate...',
     );
     _receivePort = ReceivePort();
-    _isolate = await Isolate.spawn(_isolateEntryPoint, _receivePort!.sendPort);
+    _isolate = await Isolate.spawn(
+      _isolateEntryPoint,
+      _receivePort!.sendPort,
+      debugName: 'MuPdfService Document Parser Isolate',
+    );
 
     final completer = Completer<SendPort>();
     _receivePort!.listen((message) {
@@ -35,7 +39,7 @@ class DocumentParserService {
 
     _sendPort = await completer.future;
     _log.info(
-      'ReadAway background isolate ready.',
+      '[MuPdfService] background isolate ready.',
     );
   }
 
@@ -67,6 +71,14 @@ class DocumentParserService {
     });
   }
 
+  Future<String?> getMetaData(String key) {
+    return _sendCommand<String?>({
+      'id': DateTime.now().microsecondsSinceEpoch,
+      'type': 'getMetaData',
+      'key': key,
+    });
+  }
+
   Future<int> getPageCount() {
     return _sendCommand<int>({
       'id': DateTime.now().microsecondsSinceEpoch,
@@ -74,10 +86,55 @@ class DocumentParserService {
     });
   }
 
+  Future<int> getChapterCount() {
+    return _sendCommand<int>({
+      'id': DateTime.now().microsecondsSinceEpoch,
+      'type': 'getChapterCount',
+    });
+  }
+
+  Future<int> getChapterPageCount(int chapter) {
+    return _sendCommand<int>({
+      'id': DateTime.now().microsecondsSinceEpoch,
+      'type': 'getChapterPageCount',
+      'chapter': chapter,
+    });
+  }
+
+  Future<List<OutlineItem>> getOutLine() async {
+    return _sendCommand<List<OutlineItem>>({
+      'id': DateTime.now().microsecondsSinceEpoch,
+      'type': 'getOutLine',
+    });
+  }
+
   Future<bool> isReflowable() {
     return _sendCommand<bool>({
       'id': DateTime.now().microsecondsSinceEpoch,
       'type': 'isReflowable',
+    });
+  }
+
+  Future<bool> hasPermission(int permission) {
+    return _sendCommand<bool>({
+      'id': DateTime.now().microsecondsSinceEpoch,
+      'type': 'hasPermission',
+      'permission': permission,
+    });
+  }
+
+  Future<bool> needsPassword() {
+    return _sendCommand<bool>({
+      'id': DateTime.now().microsecondsSinceEpoch,
+      'type': 'needsPassword',
+    });
+  }
+
+  Future<bool> authenticatePassword(String pass) {
+    return _sendCommand<bool>({
+      'id': DateTime.now().microsecondsSinceEpoch,
+      'type': 'authenticatePassword',
+      'pass': pass,
     });
   }
 
@@ -113,10 +170,44 @@ class DocumentParserService {
             doc = null;
             doc = MuPdfDocument.openFile(message['path'] as String);
             mainSendPort.send({'id': id, 'result': null});
+          } else if (type == 'getMetaData') {
+            if (doc == null) throw Exception('No document open');
+            final key = message['key'] as String;
+            mainSendPort.send({'id': id, 'result': doc!.metadata(key)});
           } else if (type == 'getPageCount') {
             mainSendPort.send({'id': id, 'result': doc?.pageCount ?? 0});
+          } else if (type == 'getChapterCount') {
+            if (doc == null) throw Exception('No document open');
+            mainSendPort.send({'id': id, 'result': doc!.chapterCount});
+          } else if (type == 'getChapterPageCount') {
+            if (doc == null) throw Exception('No document open');
+            final chapter = message['chapter'] as int;
+            mainSendPort.send({
+              'id': id,
+              'result': doc!.chapterPageCount(chapter),
+            });
+          } else if (type == 'getOutLine') {
+            if (doc == null) throw Exception('No document open');
+            mainSendPort.send({'id': id, 'result': doc!.outline});
           } else if (type == 'isReflowable') {
             mainSendPort.send({'id': id, 'result': doc?.isReflowable ?? false});
+          } else if (type == 'hasPermission') {
+            if (doc == null) throw Exception('No document open');
+            final permission = message['permission'] as int;
+            mainSendPort.send({
+              'id': id,
+              'result': doc!.hasPermission(permission),
+            });
+          } else if (type == 'needsPassword') {
+            if (doc == null) throw Exception('No document open');
+            mainSendPort.send({'id': id, 'result': doc!.needsPassword});
+          } else if (type == 'authenticatePassword') {
+            if (doc == null) throw Exception('No document open');
+            final pass = message['pass'] as String;
+            mainSendPort.send({
+              'id': id,
+              'result': doc!.authenticatePassword(pass),
+            });
           } else if (type == 'extractHtml') {
             final index = message['index'] as int;
             if (doc == null) {
@@ -130,6 +221,11 @@ class DocumentParserService {
             doc?.dispose();
             doc = null;
             mainSendPort.send({'id': id, 'result': null});
+          } else {
+            mainSendPort.send({
+              'id': id,
+              'error': 'Unknown command type: $type',
+            });
           }
         } catch (e) {
           mainSendPort.send({'id': id, 'error': e.toString()});

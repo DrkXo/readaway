@@ -5,7 +5,7 @@ Logger get logger => GetIt.I<LoggingService>().logger;
 
 @singleton
 class LoggingService {
-  final Logger _log = Logger('ReadAway');
+  final Logger _log = Logger(F.title);
 
   Logger get logger => _log;
 
@@ -22,7 +22,7 @@ class LoggingService {
 
     // 4. Optionally listen for log level changes across the app
     Logger.root.onLevelChanged.listen((level) {
-      debugPrint('[LoggingService]: Root log level changed to $level');
+      debugPrint('[${F.title}]: Root log level changed to $level');
     });
 
     _log.info('LoggingService successfully initialized.');
