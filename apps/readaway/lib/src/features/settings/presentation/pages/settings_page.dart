@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
-import '../../domain/models/reader_preferences.dart';
 import '../bloc/settings_bloc.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -13,12 +14,10 @@ class SettingsPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, state) {
-          final prefs = state.globalReaderPrefs;
-
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            children: [
-              _ThemeModeSection(prefs: prefs),
+            children: const [
+              _ThemeModeSection(),
             ],
           );
         },
@@ -28,12 +27,11 @@ class SettingsPage extends StatelessWidget {
 }
 
 class _ThemeModeSection extends StatelessWidget {
-  const _ThemeModeSection({required this.prefs});
-
-  final ReaderPreferences prefs;
+  const _ThemeModeSection();
 
   @override
   Widget build(BuildContext context) {
+    final themeService = GetIt.I.get<ThemeService>();
     final scheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -46,45 +44,58 @@ class _ThemeModeSection extends StatelessWidget {
           boxShadow: context.appColors.shadowSm,
         ),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Appearance',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: scheme.primary,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Appearance',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: scheme.primary,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          SegmentedButton<ReaderThemeMode>(
-            segments: const [
-              ButtonSegment(
-                value: ReaderThemeMode.light,
-                icon: Icon(Icons.light_mode_outlined),
-                label: Text('Light'),
-              ),
-              ButtonSegment(
-                value: ReaderThemeMode.system,
-                icon: Icon(Icons.brightness_auto_outlined),
-                label: Text('System'),
-              ),
-              ButtonSegment(
-                value: ReaderThemeMode.dark,
-                icon: Icon(Icons.dark_mode_outlined),
-                label: Text('Dark'),
-              ),
-            ],
-            selected: {prefs.themeMode},
-            onSelectionChanged: (selected) {
-              final mode = selected.first;
-              context.read<SettingsBloc>().add(
-                SettingsEvent.setGlobalReaderPref(
-                  prefs.copyWith(themeMode: mode),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+            const SizedBox(height: 12),
+            StreamBuilder<ThemeMode>(
+              stream: themeService.themeChanges,
+              initialData: themeService.currentThemeMode,
+              builder: (context, snapshot) {
+                final currentMode = snapshot.data ?? ThemeMode.system;
+                return SegmentedButton<ThemeMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ThemeMode.light,
+                      icon: Icon(Icons.light_mode_outlined),
+                      label: Text('Light'),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.system,
+                      icon: Icon(Icons.brightness_auto_outlined),
+                      label: Text('System'),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.dark,
+                      icon: Icon(Icons.dark_mode_outlined),
+                      label: Text('Dark'),
+                    ),
+                  ],
+                  selected: {currentMode},
+                  onSelectionChanged: (selected) {
+                    final mode = selected.first;
+                    switch (mode) {
+                      case ThemeMode.light:
+                        themeService.setLightMode();
+                        break;
+                      case ThemeMode.dark:
+                        themeService.setDarkMode();
+                        break;
+                      case ThemeMode.system:
+                        themeService.setSystemMode();
+                        break;
+                    }
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

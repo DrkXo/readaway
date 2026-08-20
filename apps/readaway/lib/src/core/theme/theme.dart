@@ -4,16 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
-import 'package:injectable/injectable.dart';
 import 'package:readaway/src/core/app_assets.dart';
-
-part 'app_theme.dart';
-
-@module
-abstract class ThemeModule {
-  @lazySingleton
-  AppColors get appColors => AppColors.light;
-}
 
 extension ThemeExtensions on BuildContext {
   AppColors get appColors => Theme.of(this).extension<AppColors>()!;

@@ -6,6 +6,7 @@ import 'dart:isolate';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:injectable/injectable.dart';
@@ -17,11 +18,11 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../../flavors.dart';
 import '../../features/settings/domain/models/reader_preferences.dart';
+import '../theme/theme.dart';
 
+part 'app_lyfecycle_manager.dart';
 part 'logging_service.dart';
 part 'mupdf_service.dart';
-part 'app_lyfecycle_manager.dart';
-part 'storage/hive/hive_config_service.dart';
 part 'storage/hive/app_storage_service.dart';
-
-
+part 'storage/hive/hive_config_service.dart';
+part 'theme_service.dart';

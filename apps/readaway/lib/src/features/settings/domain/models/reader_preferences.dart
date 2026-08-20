@@ -15,12 +15,6 @@ enum ReaderScrollDirection {
   vertical,
 }
 
-enum ReaderThemeMode {
-  light,
-  dark,
-  system,
-}
-
 @freezed
 abstract class ReaderPreferences with _$ReaderPreferences {
   const factory ReaderPreferences({
@@ -38,7 +32,6 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     @Default(null) double? autoScrollSpeed,
     @Default(true) bool keepScreenOn,
     @Default(true) bool showStatusBar,
-    @Default(ReaderThemeMode.system) ReaderThemeMode themeMode,
   }) = _ReaderPreferences;
 
   factory ReaderPreferences.fromJson(Map<String, dynamic> json) =>

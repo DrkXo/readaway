@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'core/theme/theme.dart';
-import 'features/settings/domain/models/reader_preferences.dart';
 import 'features/settings/presentation/bloc/settings_bloc.dart';
 import 'router/router.dart';
 
@@ -27,7 +25,7 @@ class _ReadAwayState extends State<ReadAway> {
   @override
   Widget build(BuildContext context) {
     final router = GetIt.I.get<AppRouter>().router;
-    final appTheme = GetIt.I.get<AppTheme>();
+    final themeService = GetIt.I.get<ThemeService>();
 
     return MultiBlocProvider(
       providers: [
@@ -40,27 +38,24 @@ class _ReadAwayState extends State<ReadAway> {
       ],
       child: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, settingsState) {
-          final themeMode = settingsState.globalReaderPrefs.themeMode
-              .toThemeMode();
+          return StreamBuilder<ThemeMode>(
+            stream: themeService.themeChanges,
+            initialData: themeService.currentThemeMode,
+            builder: (context, snapshot) {
+              final themeMode = snapshot.data ?? ThemeMode.system;
 
-          return MaterialApp.router(
-            title: F.title,
-            debugShowCheckedModeBanner: false,
-            themeMode: themeMode,
-            theme: appTheme.lightTheme,
-            darkTheme: appTheme.darkTheme,
-            routerConfig: router,
+              return MaterialApp.router(
+                title: F.title,
+                debugShowCheckedModeBanner: false,
+                themeMode: themeMode,
+                theme: themeService.getLightTheme(),
+                darkTheme: themeService.getDarkTheme(),
+                routerConfig: router,
+              );
+            },
           );
         },
       ),
     );
   }
-}
-
-extension _ReaderThemeModeX on ReaderThemeMode {
-  ThemeMode toThemeMode() => switch (this) {
-    ReaderThemeMode.light => ThemeMode.light,
-    ReaderThemeMode.dark => ThemeMode.dark,
-    ReaderThemeMode.system => ThemeMode.system,
-  };
 }
