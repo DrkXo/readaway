@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:injectable/injectable.dart';
-import 'package:readaway/src/features/library/presentation/pages/library_page.dart';
-import 'package:readaway/src/features/reader/presentation/pages/reader_page.dart';
-import 'package:readaway/src/features/settings/presentation/pages/settings_page.dart';
+import '../features/library/presentation/pages/library_page.dart';
+import '../features/reader/presentation/pages/reader_page.dart';
+import '../features/settings/presentation/pages/settings_page.dart';
 
 import '../core/routes/routes.dart';
 import '../core/services/services.dart';

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/features/settings/domain/models/reader_preferences.dart';
-import 'package:readaway/src/features/settings/presentation/bloc/settings_bloc.dart';
+import '../../../../core/theme/theme.dart';
+import '../../domain/models/reader_preferences.dart';
+import '../bloc/settings_bloc.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/features/settings/domain/models/reader_preferences.dart';
-import 'package:readaway/src/features/settings/presentation/bloc/settings_bloc.dart';
-import 'package:readaway/src/router/router.dart';
+import 'core/theme/theme.dart';
+import 'features/settings/domain/models/reader_preferences.dart';
+import 'features/settings/presentation/bloc/settings_bloc.dart';
+import 'router/router.dart';
 
 import '../flavors.dart';
 import 'core/services/services.dart';

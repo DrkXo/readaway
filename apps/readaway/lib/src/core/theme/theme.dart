@@ -8,8 +8,17 @@ import 'package:injectable/injectable.dart';
 import 'package:readaway/src/core/app_assets.dart';
 
 part 'app_theme.dart';
-part 'theme_module.dart';
-part 'theme_utils.dart';
+
+@module
+abstract class ThemeModule {
+  @lazySingleton
+  AppColors get appColors => AppColors.light;
+}
+
+extension ThemeExtensions on BuildContext {
+  AppColors get appColors => Theme.of(this).extension<AppColors>()!;
+  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+}
 
 // ---------------------------------------------------------------------------
 // AppColors — single source of truth for all colors + shadows
@@ -206,8 +215,16 @@ class AppColors extends ThemeExtension<AppColors> {
     if (other is! AppColors) return this;
     return AppColors(
       scheme: ColorScheme.lerp(scheme, other.scheme, t),
-      readerBackground: Color.lerp(readerBackground, other.readerBackground, t)!,
-      readerForeground: Color.lerp(readerForeground, other.readerForeground, t)!,
+      readerBackground: Color.lerp(
+        readerBackground,
+        other.readerBackground,
+        t,
+      )!,
+      readerForeground: Color.lerp(
+        readerForeground,
+        other.readerForeground,
+        t,
+      )!,
       shadowSm: BoxShadow.lerpList(shadowSm, other.shadowSm, t)!,
       shadowMd: BoxShadow.lerpList(shadowMd, other.shadowMd, t)!,
       shadowLg: BoxShadow.lerpList(shadowLg, other.shadowLg, t)!,

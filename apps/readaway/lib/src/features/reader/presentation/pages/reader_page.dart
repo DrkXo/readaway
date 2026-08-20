@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader_bottom_bar.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader_drawer.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader_gesture_detector.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader_overlay_controller.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader_page_content.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader_top_bar.dart';
-import 'package:readaway/src/features/settings/domain/models/reader_preferences.dart';
-import 'package:readaway/src/features/settings/presentation/bloc/settings_bloc.dart';
+import '../../../../core/theme/theme.dart';
+import '../bloc/reader_bloc.dart';
+import '../widgets/reader_bottom_bar.dart';
+import '../widgets/reader_drawer.dart';
+import '../widgets/reader_gesture_detector.dart';
+import '../widgets/reader_overlay_controller.dart';
+import '../widgets/reader_page_content.dart';
+import '../widgets/reader_top_bar.dart';
+import '../../../settings/domain/models/reader_preferences.dart';
+import '../../../settings/presentation/bloc/settings_bloc.dart';
 
 class ReaderPage extends StatefulWidget {
   const ReaderPage({

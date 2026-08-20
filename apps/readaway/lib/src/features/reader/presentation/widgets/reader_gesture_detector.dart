@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader_overlay_controller.dart';
+import 'reader_overlay_controller.dart';
 
 class ReaderGestureDetector extends StatelessWidget {
   const ReaderGestureDetector({

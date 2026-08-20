@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader_overlay_controller.dart';
+import '../../../../core/theme/theme.dart';
+import '../bloc/reader_bloc.dart';
+import 'reader_overlay_controller.dart';
 
 class ReaderBottomBar extends StatefulWidget {
   const ReaderBottomBar({

@@ -6,7 +6,7 @@ import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:injectable/injectable.dart';
 import 'package:mupdf/mupdf.dart';
-import 'package:readaway/src/core/services/services.dart';
+import '../../../../core/services/services.dart';
 
 part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';

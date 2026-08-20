@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
+import '../bloc/reader_bloc.dart';
 
 class ReaderErrorView extends StatelessWidget {
   const ReaderErrorView({

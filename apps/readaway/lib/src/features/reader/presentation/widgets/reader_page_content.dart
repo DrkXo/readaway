@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
-import 'package:readaway/src/core/services/services.dart';
-import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader_error_view.dart';
+import '../../../../core/services/services.dart';
+import '../../../../core/theme/theme.dart';
+import '../bloc/reader_bloc.dart';
+import 'reader_error_view.dart';
 
 class ReaderPageContent extends StatelessWidget {
   const ReaderPageContent({
