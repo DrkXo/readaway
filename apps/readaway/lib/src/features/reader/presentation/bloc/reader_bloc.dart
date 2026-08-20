@@ -6,6 +6,7 @@ import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:injectable/injectable.dart';
 import 'package:mupdf/mupdf.dart';
+
 import '../../../../core/services/services.dart';
 
 part 'reader_bloc.freezed.dart';
@@ -14,7 +15,11 @@ part 'reader_state.dart';
 
 @singleton
 class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
-  ReaderBloc() : super(const ReaderState()) {
+  final WindowService _windowService;
+
+  ReaderBloc({
+    required this._windowService,
+  }) : super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
     on<_PageChanged>(_onPageChanged);
     on<_LoadPage>(_onLoadPage, transformer: droppable());
@@ -54,8 +59,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
       final metaTitle = await service.getMetaData('title');
       final metaAuthor = await service.getMetaData('author');
-      final bookTitle =
-          (metaTitle == null || metaTitle.isEmpty) ? fileName : metaTitle;
+      final bookTitle = (metaTitle == null || metaTitle.isEmpty)
+          ? fileName
+          : metaTitle;
 
       if (!isClosed) {
         emit(
@@ -64,6 +70,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
             author: metaAuthor,
           ),
         );
+
+        await _windowService.setTitle(bookTitle);
       }
       // ignore: unused_catch_stack
     } catch (e, st) {
@@ -116,8 +124,12 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     }
   }
 
-  void _onCloseDocument(_CloseDocument event, Emitter<ReaderState> emit) {
+  void _onCloseDocument(
+    _CloseDocument event,
+    Emitter<ReaderState> emit,
+  ) {
     GetIt.I<MuPdfService>().closeDocument();
+    _windowService.setDefaultTitle();
     emit(const ReaderState());
   }
 

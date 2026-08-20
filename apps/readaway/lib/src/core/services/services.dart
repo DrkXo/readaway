@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
@@ -15,6 +14,7 @@ import 'package:mupdf/mupdf.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../../../flavors.dart';
 import '../../features/settings/domain/models/reader_preferences.dart';
@@ -26,3 +26,4 @@ part 'mupdf_service.dart';
 part 'storage/hive/app_storage_service.dart';
 part 'storage/hive/hive_config_service.dart';
 part 'theme_service.dart';
+part 'window_service.dart';

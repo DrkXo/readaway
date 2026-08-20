@@ -32,7 +32,14 @@ extension GetItInjectableX on _i174.GetIt {
       final i = _i264.LoggingService();
       return i.init().then((_) => i);
     }, preResolve: true);
-    gh.singleton<_i523.ReaderBloc>(() => _i523.ReaderBloc());
+    await gh.singletonAsync<_i264.WindowService>(
+      () {
+        final i = _i264.WindowService();
+        return i.initialize().then((_) => i);
+      },
+      preResolve: true,
+      dispose: (i) => i.dispose(),
+    );
     await gh.singletonAsync<_i264.AppStorageService>(
       () {
         final i = _i264.AppStorageService(
@@ -42,6 +49,9 @@ extension GetItInjectableX on _i174.GetIt {
       },
       preResolve: true,
       dispose: (i) => i.dispose(),
+    );
+    gh.singleton<_i523.ReaderBloc>(
+      () => _i523.ReaderBloc(windowService: gh<_i264.WindowService>()),
     );
     await gh.singletonAsync<_i264.ThemeService>(
       () {

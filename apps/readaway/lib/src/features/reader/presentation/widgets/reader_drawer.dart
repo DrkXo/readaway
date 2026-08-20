@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mupdf/mupdf.dart';
+
 import '../../../../core/theme/theme.dart';
 import '../bloc/reader_bloc.dart';
 import 'reader_overlay_controller.dart';
@@ -16,23 +17,17 @@ class ReaderDrawer extends StatelessWidget {
   final ReaderOverlayController controller;
   final void Function(int page) onJumpToPage;
 
-  static const List<Color> _threadColors = [
-    Color(0xFFFF4500),
-    Color(0xFF0079D3),
-    Color(0xFF46D160),
-    Color(0xFFFFB000),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final background = isDark
-        ? const Color(0xFF0B1416)
-        : const Color(0xFFFAFAFA);
-    final dividerColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.06);
+    final appColors = context.appColors;
+    final scheme = appColors.scheme;
+    final threadColors = <Color>[
+      scheme.primary,
+      scheme.secondary,
+      scheme.tertiary,
+      scheme.error,
+    ];
 
     return Animate(
       effects: [
@@ -45,11 +40,11 @@ class ReaderDrawer extends StatelessWidget {
         ),
       ],
       child: Drawer(
-        backgroundColor: background,
+        backgroundColor: appColors.readerBackground,
         elevation: 0,
         child: Container(
           decoration: BoxDecoration(
-            boxShadow: context.appColors.shadowLg,
+            boxShadow: appColors.shadowLg,
           ),
           child: SafeArea(
             child: BlocBuilder<ReaderBloc, ReaderState>(
@@ -76,56 +71,66 @@ class ReaderDrawer extends StatelessWidget {
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     letterSpacing: 1.4,
                                     fontWeight: FontWeight.w700,
-                                    color: _threadColors[0],
+                                    color: scheme.primary,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 8),
                                 if (bookTitle != null && bookTitle.isNotEmpty)
                                   Text(
                                     bookTitle,
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       fontWeight: FontWeight.w600,
+                                      color: scheme.onSurface,
                                     ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                if (author != null && author.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 2),
-                                    child: Text(
-                                      author,
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: theme.hintColor,
-                                          ),
+                                if (author != null && author.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    author,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: scheme.onSurfaceVariant,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
+                                ],
                                 const SizedBox(height: 4),
                                 Text(
                                   outline == null || outline.isEmpty
                                       ? 'Table of contents'
                                       : '${outline.where((o) => o.level == 0).length} chapters',
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.hintColor,
+                                    color: scheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close_rounded),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: scheme.onSurfaceVariant,
+                            ),
                             splashRadius: 20,
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                         ],
                       ),
                     ),
-                    Divider(height: 1, thickness: 1, color: dividerColor),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: scheme.outlineVariant,
+                    ),
                     Expanded(
                       child: outline == null || outline.isEmpty
                           ? Center(
                               child: Text(
                                 'No table of contents',
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.hintColor,
+                                  color: scheme.onSurfaceVariant,
                                 ),
                               ),
                             )
@@ -141,6 +146,7 @@ class ReaderDrawer extends StatelessWidget {
                                 return _OutlineItemTile(
                                   item: item,
                                   theme: theme,
+                                  threadColors: threadColors,
                                   onTap: () {
                                     Navigator.of(context).pop();
                                     onJumpToPage(item.page);
@@ -165,26 +171,21 @@ class _OutlineItemTile extends StatelessWidget {
   const _OutlineItemTile({
     required this.item,
     required this.theme,
+    required this.threadColors,
     required this.onTap,
   });
 
   final OutlineItem item;
   final ThemeData theme;
+  final List<Color> threadColors;
   final VoidCallback onTap;
-
-  static const List<Color> _threadColors = [
-    Color(0xFFFF4500),
-    Color(0xFF0079D3),
-    Color(0xFF46D160),
-    Color(0xFFFFB000),
-  ];
 
   @override
   Widget build(BuildContext context) {
     final title = item.title;
     if (title == null || title.isEmpty) return const SizedBox.shrink();
 
-    final color = _threadColors[item.level % _threadColors.length];
+    final color = threadColors[item.level % threadColors.length];
     final isTopLevel = item.level == 0;
 
     return Material(
@@ -201,7 +202,7 @@ class _OutlineItemTile extends StatelessWidget {
                 Container(
                   width: 2,
                   margin: const EdgeInsets.only(right: 10),
-                  color: _threadColors[l % _threadColors.length].withValues(
+                  color: threadColors[l % threadColors.length].withValues(
                     alpha: 0.35,
                   ),
                 ),
@@ -232,7 +233,7 @@ class _OutlineItemTile extends StatelessWidget {
                                   : FontWeight.w400,
                               color: isTopLevel
                                   ? theme.textTheme.bodyMedium?.color
-                                  : theme.hintColor,
+                                  : theme.colorScheme.onSurfaceVariant,
                             ),
                   ),
                 ),
