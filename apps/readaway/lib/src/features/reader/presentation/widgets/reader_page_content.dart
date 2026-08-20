@@ -14,6 +14,19 @@ class ReaderPageContent extends StatelessWidget {
 
   final PageController pageController;
 
+  static HtmlWidget htmlWidget(String html, BuildContext context) {
+    return HtmlWidget(
+      html,
+      factoryBuilder: _ReaderHtmlFactory.new,
+      renderMode: RenderMode.column,
+      textStyle: readerTextStyle(appColors: context.appColors),
+      onTapUrl: (url) {
+        logger.d('Opening url: $url');
+        return true;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ReaderBloc, ReaderState>(
@@ -59,19 +72,19 @@ class ReaderPageContent extends StatelessWidget {
             ),
             child: SizedBox(
               width: double.infinity,
-              child: HtmlWidget(
-                html,
-                renderMode: RenderMode.column,
-                textStyle: readerTextStyle(appColors: context.appColors),
-                onTapUrl: (url) {
-                  logger.d('Opening url: $url');
-                  return true;
-                },
-              ),
+              child: ReaderPageContent.htmlWidget(html, context),
             ),
           ),
         );
       },
     );
+  }
+}
+
+class _ReaderHtmlFactory extends WidgetFactory {
+  @override
+  void parseStyle(BuildTree tree, dynamic style) {
+    if (style.property == 'color') return;
+    super.parseStyle(tree, style);
   }
 }
