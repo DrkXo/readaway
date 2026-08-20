@@ -1,5 +1,3 @@
-import 'dart:developer' as dev;
-
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -29,12 +27,12 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     emit(state.copyWith(loading: true, error: null, htmlPages: null));
 
     try {
-      final service = GetIt.instance<DocumentParserService>();
+      final service = GetIt.I<DocumentParserService>();
       await service.closeDocument();
       await service.openDocument(event.path);
 
       final count = await service.getPageCount();
-      dev.log('Loaded: $count pages', name: 'mupdf');
+      logger.info('Loaded: $count pages');
 
       emit(
         state.copyWith(
@@ -47,12 +45,10 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       );
 
       _precachePages(0);
+      // ignore: unused_catch_stack
     } catch (e, st) {
-      dev.log(
+      logger.info(
         'Failed to open document',
-        name: 'mupdf',
-        error: e,
-        stackTrace: st,
       );
       emit(state.copyWith(error: '$e', loading: false));
     }
@@ -75,7 +71,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
 
     try {
-      final service = GetIt.instance<DocumentParserService>();
+      final service = GetIt.I<DocumentParserService>();
       final rawHtml = await service.extractPageHtml(index);
       final html = _sanitizeHtml(rawHtml) ?? '';
 
@@ -88,7 +84,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         ),
       );
     } catch (e) {
-      dev.log('Failed to load page $index', name: 'mupdf', error: e);
+      logger.info('Failed to load page $index');
       final pages = List<String?>.from(state.htmlPages!);
       pages[index] = '<p>Error loading page: $e</p>';
       emit(
@@ -101,7 +97,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   void _onCloseDocument(_CloseDocument event, Emitter<ReaderState> emit) {
-    GetIt.instance<DocumentParserService>().closeDocument();
+    GetIt.I<DocumentParserService>().closeDocument();
     emit(const ReaderState());
   }
 
