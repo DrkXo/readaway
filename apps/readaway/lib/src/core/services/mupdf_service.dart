@@ -5,7 +5,7 @@ class DocumentParserService {
   Isolate? _isolate;
   SendPort? _sendPort;
   ReceivePort? _receivePort;
-  final _responseController = StreamController<dynamic>.broadcast();
+  final _responseController = BehaviorSubject<dynamic>();
 
   final LoggingService _loggingService;
 

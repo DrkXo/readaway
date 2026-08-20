@@ -29,6 +29,7 @@ extension GetItInjectableX on _i174.GetIt {
       final i = _i264.LoggingService();
       return i.init().then((_) => i);
     }, preResolve: true);
+    gh.singleton<_i264.AppLifecycleManager>(() => _i264.AppLifecycleManager());
     gh.singleton<_i523.ReaderBloc>(() => _i523.ReaderBloc());
     gh.singleton<_i264.DocumentParserService>(
       () => _i264.DocumentParserService(

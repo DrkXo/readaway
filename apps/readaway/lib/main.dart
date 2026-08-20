@@ -8,7 +8,5 @@ Future<void> main() async {
 
   await configureDependencies();
 
-  runApp(
-    const ReadAway(),
-  );
+  runApp(const ReadAway());
 }

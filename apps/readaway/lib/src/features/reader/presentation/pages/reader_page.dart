@@ -172,7 +172,10 @@ class _ReaderPageState extends State<ReaderPage> {
             ),
             child: SizedBox(
               width: double.infinity,
-              child: HtmlWidget(html, renderMode: RenderMode.column),
+              child: HtmlWidget(
+                html,
+                renderMode: RenderMode.column,
+              ),
             ),
           ),
         );
