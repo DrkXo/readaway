@@ -128,7 +128,7 @@ return closeDocument(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String path,  String fileName)?  openDocument,TResult Function( int index)?  pageChanged,TResult Function( int index)?  loadPage,TResult Function()?  closeDocument,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String path,  String? fileName)?  openDocument,TResult Function( int index)?  pageChanged,TResult Function( int index)?  loadPage,TResult Function()?  closeDocument,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OpenDocument() when openDocument != null:
 return openDocument(_that.path,_that.fileName);case _PageChanged() when pageChanged != null:
@@ -152,7 +152,7 @@ return closeDocument();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String path,  String fileName)  openDocument,required TResult Function( int index)  pageChanged,required TResult Function( int index)  loadPage,required TResult Function()  closeDocument,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String path,  String? fileName)  openDocument,required TResult Function( int index)  pageChanged,required TResult Function( int index)  loadPage,required TResult Function()  closeDocument,}) {final _that = this;
 switch (_that) {
 case _OpenDocument():
 return openDocument(_that.path,_that.fileName);case _PageChanged():
@@ -175,7 +175,7 @@ return closeDocument();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String path,  String fileName)?  openDocument,TResult? Function( int index)?  pageChanged,TResult? Function( int index)?  loadPage,TResult? Function()?  closeDocument,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String path,  String? fileName)?  openDocument,TResult? Function( int index)?  pageChanged,TResult? Function( int index)?  loadPage,TResult? Function()?  closeDocument,}) {final _that = this;
 switch (_that) {
 case _OpenDocument() when openDocument != null:
 return openDocument(_that.path,_that.fileName);case _PageChanged() when pageChanged != null:
@@ -193,11 +193,11 @@ return closeDocument();case _:
 
 
 class _OpenDocument implements ReaderEvent {
-  const _OpenDocument({required this.path, required this.fileName});
+  const _OpenDocument({required this.path, this.fileName});
   
 
  final  String path;
- final  String fileName;
+ final  String? fileName;
 
 /// Create a copy of ReaderEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -229,7 +229,7 @@ abstract mixin class _$OpenDocumentCopyWith<$Res> implements $ReaderEventCopyWit
   factory _$OpenDocumentCopyWith(_OpenDocument value, $Res Function(_OpenDocument) _then) = __$OpenDocumentCopyWithImpl;
 @useResult
 $Res call({
- String path, String fileName
+ String path, String? fileName
 });
 
 
@@ -246,11 +246,11 @@ class __$OpenDocumentCopyWithImpl<$Res>
 
 /// Create a copy of ReaderEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? path = null,Object? fileName = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? path = null,Object? fileName = freezed,}) {
   return _then(_OpenDocument(
 path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
-as String,fileName: null == fileName ? _self.fileName : fileName // ignore: cast_nullable_to_non_nullable
-as String,
+as String,fileName: freezed == fileName ? _self.fileName : fileName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

@@ -34,9 +34,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       final count = await service.getPageCount();
       logger.info('Loaded: $count pages');
 
+      final fileName = event.fileName ?? event.path.split('/').last;
+
       emit(
         state.copyWith(
-          fileName: event.fileName,
+          fileName: fileName,
           pageCount: count,
           htmlPages: List<String?>.filled(count, null),
           currentPage: 0,

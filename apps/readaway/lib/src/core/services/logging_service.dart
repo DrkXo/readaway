@@ -14,7 +14,7 @@ class LoggingService {
     hierarchicalLoggingEnabled = true;
 
     // 2. Set root logging level (ALL allows all messages to pass through unless filtered elsewhere)
-    Logger.root.level = Level.ALL;
+    Logger.root.level = kDebugMode ? Level.FINEST : Level.OFF;
 
     // 3. Listen for root log records and output them
     Logger.root.onRecord.listen((record) {

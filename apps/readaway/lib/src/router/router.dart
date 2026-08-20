@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:injectable/injectable.dart';
+import 'package:readaway/src/features/library/presentation/pages/library_page.dart';
 import 'package:readaway/src/features/reader/presentation/pages/reader_page.dart';
+import 'package:readaway/src/features/settings/presentation/pages/settings_page.dart';
 
 import '../core/routes/routes.dart';
 import '../core/services/services.dart';
+import '../core/widgets/core_widgets.dart';
 
 part 'guards.dart';
 
@@ -85,15 +88,43 @@ class AppRouter {
   }
 
   late final _router = GoRouter(
-    initialLocation: _appRoutes.reader.path,
+    initialLocation: _appRoutes.library.path,
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: kDebugMode,
 
     routes: [
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return ScaffoldWithBottomNav(
+            navigationShell: navigationShell,
+          );
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: _appRoutes.library.name,
+                path: _appRoutes.library.path,
+                builder: (context, state) => LibraryPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: _appRoutes.settings.name,
+                path: _appRoutes.settings.path,
+                builder: (context, state) => SettingsPage(),
+              ),
+            ],
+          ),
+        ],
+      ),
+
       GoRoute(
         name: _appRoutes.reader.name,
         path: _appRoutes.reader.path,
-        builder: (context, state) => ReaderPage(),
+        builder: (context, state) => ReaderPage.fromRoute(state),
       ),
     ],
   );

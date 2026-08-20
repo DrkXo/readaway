@@ -30,6 +30,8 @@ AppRoutes get appRoutes => GetIt.I<AppRoutes>();
 @singleton
 class AppRoutes {
   Routes get reader => Routes(path: '/reader', name: 'Reader');
+  Routes get library => Routes(path: '/library', name: 'Library');
+  Routes get settings => Routes(path: '/settings', name: 'Settings');
 }
 
 extension RoutesX on Routes {
