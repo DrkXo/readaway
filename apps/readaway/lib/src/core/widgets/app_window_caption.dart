@@ -3,9 +3,18 @@ part of 'core_widgets.dart';
 /// Custom titlebar for the frameless desktop window. All window operations
 /// go through [WindowService]; maximize state comes from its stream.
 class AppWindowCaption extends StatelessWidget {
-  const AppWindowCaption({super.key, required this.service, this.actions});
+  const AppWindowCaption({
+    super.key,
+    required this.service,
+    this.leading,
+    this.actions,
+  });
 
   final WindowService service;
+
+  /// Optional widget shown before the title (e.g. a drawer toggle while
+  /// reading).
+  final Widget? leading;
 
   /// Optional app-specific actions shown before the window controls
   /// (e.g. reader operations while a document is open).
@@ -39,6 +48,7 @@ class AppWindowCaption extends StatelessWidget {
                 child: Row(
                   children: [
                     const SizedBox(width: 16),
+                    ?leading,
                     Expanded(
                       child: StreamBuilder<String>(
                         stream: service.windowTitleChanges,
@@ -57,18 +67,22 @@ class AppWindowCaption extends StatelessWidget {
                     ),
                     ?actions,
                     SettingsButton(),
-                    MorphIconButton(
-                      icon: Icons.remove_rounded,
-                      hoverIcon: Icons.keyboard_arrow_down_rounded,
+                    IconButton(
+                      icon: const Icon(Icons.remove_rounded),
                       tooltip: 'Minimize',
-                      onTap: service.minimize,
+                      iconSize: 18,
+                      splashRadius: 16,
+                      visualDensity: VisualDensity.compact,
+                      onPressed: service.minimize,
                     ),
                     _MaximizeCaptionButton(service: service),
-                    MorphIconButton(
-                      icon: Icons.close_rounded,
-                      hoverIcon: Icons.cancel_rounded,
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
                       tooltip: 'Close',
-                      onTap: service.close,
+                      iconSize: 18,
+                      splashRadius: 16,
+                      visualDensity: VisualDensity.compact,
+                      onPressed: service.close,
                     ),
                   ],
                 ),
@@ -108,15 +122,15 @@ class _MaximizeCaptionButtonState extends State<_MaximizeCaptionButton> {
       initialData: false,
       builder: (context, snapshot) {
         final isMaximized = snapshot.data ?? false;
-        return MorphIconButton(
-          icon: isMaximized
-              ? Icons.filter_none_rounded
-              : Icons.crop_square_rounded,
-          hoverIcon: isMaximized
-              ? Icons.close_fullscreen_rounded
-              : Icons.open_in_full_rounded,
+        return IconButton(
+          icon: Icon(
+            isMaximized ? Icons.filter_none_rounded : Icons.crop_square_rounded,
+          ),
           tooltip: isMaximized ? 'Restore' : 'Maximize',
-          onTap: () => isMaximized
+          iconSize: 16,
+          splashRadius: 16,
+          visualDensity: VisualDensity.compact,
+          onPressed: () => isMaximized
               ? widget.service.unmaximize()
               : widget.service.maximize(),
         );

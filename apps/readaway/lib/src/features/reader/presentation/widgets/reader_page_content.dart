@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
+import '../../../settings/domain/models/reader_preferences.dart';
 import '../bloc/reader_bloc.dart';
 import 'reader_error_view.dart';
 import 'reader_html_widget.dart';
@@ -11,19 +12,11 @@ class ReaderPageContent extends StatelessWidget {
   const ReaderPageContent({
     super.key,
     required this.pageController,
+    required this.prefs,
   });
 
   final PageController pageController;
-
-  static Widget htmlWidget(String html, BuildContext context) {
-    return ReaderHtmlWidget(
-      html: html,
-      appColors: context.appColors,
-      onTapUrl: (url) {
-        logger.d('Opening url: $url');
-      },
-    );
-  }
+  final ReaderPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
@@ -70,12 +63,30 @@ class ReaderPageContent extends StatelessWidget {
             ),
             child: SizedBox(
               width: double.infinity,
-              child: ReaderPageContent.htmlWidget(html, context),
+              child: ReaderHtmlWidget(
+                html: html,
+                appColors: context.appColors,
+                baseFontSize: prefs.fontSize,
+                lineHeight: prefs.lineHeight,
+                onTapUrl: (url) => _onTapUrl(context, url),
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  /// Internal links arrive pre-resolved as `#page=N` (flat page index)
+  /// during HTML sanitization. External links are logged only for now.
+  void _onTapUrl(BuildContext context, String url) {
+    final match = RegExp(r'^#page=(\d+)$').firstMatch(url);
+    if (match != null) {
+      final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;
+      pageController.jumpToPage(int.parse(match.group(1)!).clamp(0, maxIndex));
+      return;
+    }
+    logger.d('External link ignored: $url');
   }
 
   Widget _buildImagePage(BuildContext context, int index) {
@@ -93,4 +104,3 @@ class ReaderPageContent extends StatelessWidget {
     );
   }
 }
-

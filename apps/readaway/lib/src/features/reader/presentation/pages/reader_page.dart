@@ -19,6 +19,11 @@ class ReaderPage extends StatefulWidget {
     this.initialFileName,
   });
 
+  /// Lets the window caption (which lives above the Navigator) open the
+  /// reader drawer.
+  static final GlobalKey<ScaffoldState> scaffoldKey =
+      GlobalKey<ScaffoldState>();
+
   factory ReaderPage.fromRoute(GoRouterState state) {
     final path = state.uri.queryParameters['path'];
     final fileName = state.uri.queryParameters['fileName'];
@@ -97,6 +102,7 @@ class _ReaderPageState extends State<ReaderPage> {
                   _closeReader();
                 },
                 child: Scaffold(
+                  key: ReaderPage.scaffoldKey,
                   drawer: ReaderDrawer(
                     onJumpToPage: (page) {
                       _pageController.jumpToPage(page);
@@ -124,7 +130,7 @@ class _ReaderPageState extends State<ReaderPage> {
           children: [
             _buildBrightnessOverlay(prefs),
             _buildContrastOverlay(prefs),
-            ReaderPageContent(pageController: _pageController),
+            ReaderPageContent(pageController: _pageController, prefs: prefs),
             if (isWide && !_tocPinned)
               ReaderTocPeek(
                 onPin: _toggleTocPanel,

@@ -12,6 +12,7 @@ import 'package:injectable/injectable.dart';
 import 'package:mupdf/mupdf.dart';
 
 import '../../../../core/services/services.dart';
+import '../widgets/reader_html_layout.dart';
 
 part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';
@@ -112,8 +113,10 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
     try {
       final service = GetIt.I<MuPdfService>();
-      final rawHtml = await service.extractPageHtml(index);
-      final html = _sanitizeHtml(rawHtml) ?? '';
+      final (rawHtml, links) =
+          await (service.extractPageHtml(index), service.getPageLinks(index))
+              .wait;
+      final html = _sanitizeHtml(rawHtml, links) ?? '';
 
       final pages = List<String?>.from(state.htmlPages!);
       pages[index] = html;
@@ -218,13 +221,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     }
   }
 
-  static String? _sanitizeHtml(String? raw) {
+  static String? _sanitizeHtml(String? raw, List<PageLink> links) {
     if (raw == null || raw.isEmpty) return raw;
 
     final document = html_parser.parse(raw);
     for (final element in document.querySelectorAll('*')) {
       _stripHeight(element);
     }
+    mergePageLinks(document, links);
     return document.outerHtml;
   }
 
