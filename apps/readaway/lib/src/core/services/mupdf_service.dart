@@ -146,6 +146,16 @@ class MuPdfService {
     });
   }
 
+  Future<Map<String, dynamic>?> renderPage(int pageIndex, {double scaleX = 2.0, double scaleY = 2.0}) {
+    return _sendCommand<Map<String, dynamic>?>({
+      'id': DateTime.now().microsecondsSinceEpoch,
+      'type': 'renderPage',
+      'pageIndex': pageIndex,
+      'scaleX': scaleX,
+      'scaleY': scaleY,
+    });
+  }
+
   Future<void> closeDocument() {
     return _sendCommand({
       'id': DateTime.now().microsecondsSinceEpoch,
@@ -217,6 +227,27 @@ class MuPdfService {
             final html = page.extractHtml();
             page.dispose();
             mainSendPort.send({'id': id, 'result': html});
+          } else if (type == 'renderPage') {
+            if (doc == null) throw Exception('No document open');
+            final pageIndex = message['pageIndex'] as int;
+            final scaleX = (message['scaleX'] as num?)?.toDouble() ?? 2.0;
+            final scaleY = (message['scaleY'] as num?)?.toDouble() ?? 2.0;
+            final page = doc!.loadPage(pageIndex);
+            try {
+              final rendered = page.render(scaleX: scaleX, scaleY: scaleY);
+              mainSendPort.send({
+                'id': id,
+                'result': {
+                  'width': rendered.width,
+                  'height': rendered.height,
+                  'stride': rendered.stride,
+                  'components': rendered.components,
+                  'pixels': rendered.pixels,
+                },
+              });
+            } finally {
+              page.dispose();
+            }
           } else if (type == 'close') {
             doc?.dispose();
             doc = null;

@@ -13,9 +13,11 @@ class ReaderNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ReaderBloc, ReaderState>(
-      buildWhen: (prev, curr) => prev.htmlPages != curr.htmlPages,
+      buildWhen: (prev, curr) =>
+          prev.htmlPages != curr.htmlPages ||
+          prev.pageImages != curr.pageImages,
       builder: (context, state) {
-        if (state.htmlPages == null) return const SizedBox.shrink();
+        if (!state.hasDocument) return const SizedBox.shrink();
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

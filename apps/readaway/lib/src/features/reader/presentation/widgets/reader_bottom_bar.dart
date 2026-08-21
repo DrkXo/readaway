@@ -74,9 +74,10 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
       buildWhen: (prev, curr) =>
           prev.currentPage != curr.currentPage ||
           prev.pageCount != curr.pageCount ||
-          prev.htmlPages != curr.htmlPages,
+          prev.htmlPages != curr.htmlPages ||
+          prev.pageImages != curr.pageImages,
       builder: (context, state) {
-        if (state.htmlPages == null) return const SizedBox.shrink();
+        if (!state.hasDocument) return const SizedBox.shrink();
         final scheme = Theme.of(context).colorScheme;
         final page = _isDragging ? _dragValue! : state.currentPage.toDouble();
         final percent = state.pageCount > 0

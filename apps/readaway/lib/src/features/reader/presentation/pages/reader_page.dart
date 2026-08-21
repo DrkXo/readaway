@@ -52,7 +52,7 @@ class _ReaderPageState extends State<ReaderPage> {
     _settingsBloc.loadPrefs();
 
     if (widget.initialPath != null) {
-      if (!_readerBloc.state.loading && _readerBloc.state.htmlPages == null) {
+      if (!_readerBloc.state.loading && !_readerBloc.state.hasDocument) {
         _readerBloc.add(
           ReaderEvent.openDocument(
             path: widget.initialPath!,
@@ -234,13 +234,14 @@ class _ReaderStatusBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<ReaderBloc, ReaderState>(
       bloc: readerBloc,
-      buildWhen: (prev, curr) =>
-          prev.currentPage != curr.currentPage ||
-          prev.pageCount != curr.pageCount ||
-          prev.fileName != curr.fileName ||
-          prev.htmlPages != curr.htmlPages,
-      builder: (context, state) {
-        if (state.htmlPages == null) return const SizedBox.shrink();
+        buildWhen: (prev, curr) =>
+            prev.currentPage != curr.currentPage ||
+            prev.pageCount != curr.pageCount ||
+            prev.fileName != curr.fileName ||
+            prev.htmlPages != curr.htmlPages ||
+            prev.pageImages != curr.pageImages,
+        builder: (context, state) {
+          if (!state.hasDocument) return const SizedBox.shrink();
         final scheme = Theme.of(context).colorScheme;
         final progress = state.pageCount > 1
             ? state.currentPage / (state.pageCount - 1)

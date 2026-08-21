@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -30,7 +34,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _OpenDocument event,
     Emitter<ReaderState> emit,
   ) async {
-    emit(state.copyWith(loading: true, error: null, htmlPages: null));
+    emit(state.copyWith(loading: true, error: null, htmlPages: null, pageImages: null));
 
     try {
       final service = GetIt.I<MuPdfService>();
@@ -40,6 +44,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       final count = await service.getPageCount();
       logger.d('Loaded: $count pages');
 
+      final reflowable = await service.isReflowable();
       final outline = await service.getOutLine();
 
       final fileName = event.fileName ?? event.path.split('/').last;
@@ -48,7 +53,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         state.copyWith(
           fileName: fileName,
           pageCount: count,
-          htmlPages: List<String?>.filled(count, null),
+          isReflowable: reflowable,
+          htmlPages: reflowable ? List<String?>.filled(count, null) : null,
+          pageImages: reflowable ? null : List<ui.Image?>.filled(count, null),
           currentPage: 0,
           outline: outline,
           loading: false,
@@ -88,6 +95,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   Future<void> _onLoadPage(_LoadPage event, Emitter<ReaderState> emit) async {
+    if (!state.isReflowable) {
+      await _onRenderPage(event, emit);
+      return;
+    }
+
     final index = event.index;
     if (state.htmlPages == null || index < 0 || index >= state.pageCount) {
       return;
@@ -124,6 +136,68 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     }
   }
 
+  Future<void> _onRenderPage(
+    _LoadPage event,
+    Emitter<ReaderState> emit,
+  ) async {
+    final index = event.index;
+    if (state.pageImages == null || index < 0 || index >= state.pageCount) {
+      return;
+    }
+    if (state.pageImages![index] != null || state.loadingPages.contains(index)) {
+      return;
+    }
+
+    emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
+
+    try {
+      final rendered = await GetIt.I<MuPdfService>().renderPage(index);
+      final images = List<ui.Image?>.from(state.pageImages!);
+      images[index] = rendered == null ? null : await _decodePage(rendered);
+      emit(
+        state.copyWith(
+          pageImages: images,
+          loadingPages: {...state.loadingPages}..remove(index),
+        ),
+      );
+    } catch (e) {
+      logger.d('Failed to render page $index');
+      emit(state.copyWith(loadingPages: {...state.loadingPages}..remove(index)));
+    }
+  }
+
+  static Future<ui.Image> _decodePage(Map<String, dynamic> rendered) {
+    final w = rendered['width'] as int;
+    final h = rendered['height'] as int;
+    final stride = rendered['stride'] as int;
+    final comps = rendered['components'] as int;
+    final src = rendered['pixels'] as Uint8List;
+
+    // mupdf renders RGB(A); Flutter needs RGBA.
+    final rgba = Uint8List(w * h * 4);
+    for (var y = 0; y < h; y++) {
+      var s = y * stride;
+      var d = y * w * 4;
+      for (var x = 0; x < w; x++) {
+        rgba[d++] = src[s];
+        rgba[d++] = src[s + 1];
+        rgba[d++] = src[s + 2];
+        rgba[d++] = comps == 4 ? src[s + 3] : 255;
+        s += comps;
+      }
+    }
+
+    final completer = Completer<ui.Image>();
+    ui.decodeImageFromPixels(
+      rgba,
+      w,
+      h,
+      ui.PixelFormat.rgba8888,
+      completer.complete,
+    );
+    return completer.future;
+  }
+
   void _onCloseDocument(
     _CloseDocument event,
     Emitter<ReaderState> emit,
@@ -134,11 +208,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   void _precachePages(int currentIndex) {
-    final htmlPages = state.htmlPages;
-    if (htmlPages == null) return;
+    final pages = state.isReflowable ? state.htmlPages : state.pageImages;
+    if (pages == null) return;
 
     for (final idx in [currentIndex, currentIndex + 1, currentIndex - 1]) {
-      if (idx >= 0 && idx < state.pageCount && htmlPages[idx] == null) {
+      if (idx >= 0 && idx < state.pageCount && pages[idx] == null) {
         add(ReaderEvent.loadPage(index: idx));
       }
     }
