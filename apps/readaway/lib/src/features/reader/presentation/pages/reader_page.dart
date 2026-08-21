@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../core/theme/theme.dart';
+import '../../../settings/domain/models/reader_preferences.dart';
+import '../../../settings/presentation/bloc/settings_bloc.dart';
 import '../bloc/reader_bloc.dart';
 import '../widgets/reader_bottom_bar.dart';
 import '../widgets/reader_drawer.dart';
 import '../widgets/reader_gesture_detector.dart';
 import '../widgets/reader_overlay_controller.dart';
 import '../widgets/reader_page_content.dart';
+import '../widgets/reader_toc_panel.dart';
 import '../widgets/reader_top_bar.dart';
-import '../../../settings/domain/models/reader_preferences.dart';
-import '../../../settings/presentation/bloc/settings_bloc.dart';
 
 class ReaderPage extends StatefulWidget {
   const ReaderPage({
@@ -41,6 +43,7 @@ class _ReaderPageState extends State<ReaderPage> {
   late final ReaderBloc _readerBloc;
   late final SettingsBloc _settingsBloc;
   late final ReaderOverlayController _overlayController;
+  bool _tocPinned = false;
 
   @override
   void initState() {
@@ -101,7 +104,6 @@ class _ReaderPageState extends State<ReaderPage> {
                 },
                 child: Scaffold(
                   drawer: ReaderDrawer(
-                    controller: _overlayController,
                     onJumpToPage: (page) {
                       _pageController.jumpToPage(page);
                     },
@@ -116,26 +118,58 @@ class _ReaderPageState extends State<ReaderPage> {
     );
   }
 
+  void _toggleTocPanel() {
+    setState(() => _tocPinned = !_tocPinned);
+  }
+
   Widget _buildReaderView(ReaderPreferences prefs) {
     return ListenableBuilder(
       listenable: _overlayController,
       builder: (context, _) {
-        return TactileReaderBackground(
-          appColors: context.appColors,
-          child: Stack(
-            children: [
-              _buildBrightnessOverlay(prefs),
-              _buildContrastOverlay(prefs),
-              ReaderGestureDetector(
-                controller: _overlayController,
-                child: ReaderPageContent(pageController: _pageController),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 900;
+            final content = Stack(
+              children: [
+                _buildBrightnessOverlay(prefs),
+                _buildContrastOverlay(prefs),
+                ReaderGestureDetector(
+                  controller: _overlayController,
+                  child: ReaderPageContent(pageController: _pageController),
+                ),
+                if (isWide && !_tocPinned)
+                  ReaderTocPeek(
+                    onPin: _toggleTocPanel,
+                    onJumpToPage: _pageController.jumpToPage,
+                  ),
+                _buildTopBar(menuTogglesPanel: isWide),
+                _buildBottomBar(),
+                if (prefs.showStatusBar && _overlayController.barsVisible)
+                  _buildStatusBar(),
+              ],
+            );
+
+            if (!isWide) {
+              return TactileReaderBackground(
+                appColors: context.appColors,
+                child: content,
+              );
+            }
+
+            return TactileReaderBackground(
+              appColors: context.appColors,
+              child: Row(
+                children: [
+                  if (_tocPinned)
+                    ReaderTocSidePanel(
+                      onUnpin: _toggleTocPanel,
+                      onJumpToPage: _pageController.jumpToPage,
+                    ),
+                  Expanded(child: content),
+                ],
               ),
-              _buildTopBar(),
-              _buildBottomBar(),
-              if (prefs.showStatusBar && _overlayController.barsVisible)
-                _buildStatusBar(),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -188,12 +222,15 @@ class _ReaderPageState extends State<ReaderPage> {
     );
   }
 
-  Widget _buildTopBar() {
+  Widget _buildTopBar({required bool menuTogglesPanel}) {
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
-      child: ReaderTopBar(controller: _overlayController),
+      child: ReaderTopBar(
+        controller: _overlayController,
+        onMenuTap: menuTogglesPanel ? _toggleTocPanel : null,
+      ),
     );
   }
 
@@ -234,14 +271,14 @@ class _ReaderStatusBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<ReaderBloc, ReaderState>(
       bloc: readerBloc,
-        buildWhen: (prev, curr) =>
-            prev.currentPage != curr.currentPage ||
-            prev.pageCount != curr.pageCount ||
-            prev.fileName != curr.fileName ||
-            prev.htmlPages != curr.htmlPages ||
-            prev.pageImages != curr.pageImages,
-        builder: (context, state) {
-          if (!state.hasDocument) return const SizedBox.shrink();
+      buildWhen: (prev, curr) =>
+          prev.currentPage != curr.currentPage ||
+          prev.pageCount != curr.pageCount ||
+          prev.fileName != curr.fileName ||
+          prev.htmlPages != curr.htmlPages ||
+          prev.pageImages != curr.pageImages,
+      builder: (context, state) {
+        if (!state.hasDocument) return const SizedBox.shrink();
         final scheme = Theme.of(context).colorScheme;
         final progress = state.pageCount > 1
             ? state.currentPage / (state.pageCount - 1)

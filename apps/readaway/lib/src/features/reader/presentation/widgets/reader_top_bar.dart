@@ -14,9 +14,14 @@ class ReaderTopBar extends StatelessWidget {
   const ReaderTopBar({
     super.key,
     required this.controller,
+    this.onMenuTap,
   });
 
   final ReaderOverlayController controller;
+
+  /// When set, the outline button toggles the desktop side panel instead
+  /// of opening the mobile drawer.
+  final VoidCallback? onMenuTap;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +55,8 @@ class ReaderTopBar extends StatelessWidget {
         child: Row(
           children: [
             IconButton(
-              onPressed: () => Scaffold.of(context).openDrawer(),
+              onPressed:
+                  onMenuTap ?? () => Scaffold.of(context).openDrawer(),
               icon: const Icon(
                 Icons.more_vert_outlined,
               ),

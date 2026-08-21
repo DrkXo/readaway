@@ -86,7 +86,7 @@ class WindowService with WindowListener {
     await _wm.setTitle(title);
   }
 
-  Future<void> setSize(Size size, {bool animate = false}) async {
+  Future<void> setSize(Size size, {bool animate = true}) async {
     if (!isDesktop) return;
     await _wm.setSize(size, animate: animate);
   }
@@ -113,7 +113,7 @@ class WindowService with WindowListener {
     await _wm.center(animate: animate);
   }
 
-  Future<void> setPosition(Offset position, {bool animate = false}) async {
+  Future<void> setPosition(Offset position, {bool animate = true}) async {
     if (!isDesktop) return;
     await _wm.setPosition(position, animate: animate);
   }
