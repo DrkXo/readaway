@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../bloc/reader_bloc.dart';
@@ -79,6 +80,7 @@ class ReaderPageContent extends StatelessWidget {
       },
     );
   }
+
   Widget _buildImagePage(BuildContext context, int index) {
     final state = context.read<ReaderBloc>().state;
     final image = state.pageImages![index];
