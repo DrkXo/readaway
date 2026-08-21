@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:injectable/injectable.dart';
+
+import '../core/routes/routes.dart';
+import '../core/services/services.dart';
 import '../features/library/presentation/pages/library_page.dart';
 import '../features/reader/presentation/pages/reader_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
 
-import '../core/routes/routes.dart';
-import '../core/services/services.dart';
-import '../core/widgets/core_widgets.dart';
-
+part 'custom_routes.dart';
 part 'guards.dart';
 
 // =================================
@@ -91,40 +91,37 @@ class AppRouter {
     initialLocation: _appRoutes.library.path,
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: kDebugMode,
-
     routes: [
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return ScaffoldWithBottomNav(
-            navigationShell: navigationShell,
-          );
-        },
-        branches: [
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                name: _appRoutes.library.name,
-                path: _appRoutes.library.path,
-                builder: (context, state) => LibraryPage(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                name: _appRoutes.settings.name,
-                path: _appRoutes.settings.path,
-                builder: (context, state) => SettingsPage(),
-              ),
-            ],
-          ),
-        ],
+      GoRoute(
+        name: _appRoutes.library.name,
+        path: _appRoutes.library.path,
+        builder: (context, state) => const LibraryPage(),
       ),
 
+      // Modal route
+      GoRoute(
+        name: _appRoutes.settings.name,
+        path: _appRoutes.settings.path,
+        pageBuilder: (context, state) {
+          return ModalPage(
+            key: state.pageKey,
+            isScrollControlled: true,
+            // If you want a semi-transparent dark overlay behind the modal:
+            modalBarrierColor: Colors.black54,
+            // Turn off native drag handle if you build a custom styled sheet container
+            showDragHandle: false,
+            builder: (context) => const SettingsPage(),
+          );
+        },
+      ),
+
+      // Full-screen route
       GoRoute(
         name: _appRoutes.reader.name,
         path: _appRoutes.reader.path,
-        builder: (context, state) => ReaderPage.fromRoute(state),
+        builder: (context, state) {
+          return ReaderPage.fromRoute(state);
+        },
       ),
     ],
   );

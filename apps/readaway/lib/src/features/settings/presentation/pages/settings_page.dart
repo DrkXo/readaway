@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
-import '../../../../core/services/services.dart';
-import '../../../../core/theme/theme.dart';
+import 'package:readaway/src/features/settings/presentation/widgets/theme_mode_changer_widget.dart';
+
 import '../bloc/settings_bloc.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -10,89 +9,65 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: BlocBuilder<SettingsBloc, SettingsState>(
-        builder: (context, state) {
-          return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            children: const [
-              _ThemeModeSection(),
-            ],
-          );
-        },
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        // Adjust alpha / opacity to your preference (e.g. 0.85 - 0.95)
+        color: scheme.surface.withValues(alpha: 0.92),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-    );
-  }
-}
-
-class _ThemeModeSection extends StatelessWidget {
-  const _ThemeModeSection();
-
-  @override
-  Widget build(BuildContext context) {
-    final themeService = GetIt.I.get<ThemeService>();
-    final scheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: scheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: context.appColors.shadowSm,
-        ),
+      child: SafeArea(
+        top: false,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Appearance',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: scheme.primary,
+            // Top Drag Handle
+            const SizedBox(height: 12),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 12),
-            StreamBuilder<ThemeMode>(
-              stream: themeService.themeChanges,
-              initialData: themeService.currentThemeMode,
-              builder: (context, snapshot) {
-                final currentMode = snapshot.data ?? ThemeMode.system;
-                return SegmentedButton<ThemeMode>(
-                  segments: const [
-                    ButtonSegment(
-                      value: ThemeMode.light,
-                      icon: Icon(Icons.light_mode_outlined),
-                      label: Text('Light'),
+
+            // Header: Title & Close Button
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 8, 4),
+              child: Row(
+                children: [
+                  Text(
+                    'Settings',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                    ButtonSegment(
-                      value: ThemeMode.system,
-                      icon: Icon(Icons.brightness_auto_outlined),
-                      label: Text('System'),
-                    ),
-                    ButtonSegment(
-                      value: ThemeMode.dark,
-                      icon: Icon(Icons.dark_mode_outlined),
-                      label: Text('Dark'),
-                    ),
-                  ],
-                  selected: {currentMode},
-                  onSelectionChanged: (selected) {
-                    final mode = selected.first;
-                    switch (mode) {
-                      case ThemeMode.light:
-                        themeService.setLightMode();
-                        break;
-                      case ThemeMode.dark:
-                        themeService.setDarkMode();
-                        break;
-                      case ThemeMode.system:
-                        themeService.setSystemMode();
-                        break;
-                    }
-                  },
-                );
-              },
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+
+            // Sheet Body
+            Flexible(
+              child: BlocBuilder<SettingsBloc, SettingsState>(
+                builder: (context, state) {
+                  return ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: const [
+                      ThemeModeChangerWidget(),
+                    ],
+                  );
+                },
+              ),
             ),
           ],
         ),
