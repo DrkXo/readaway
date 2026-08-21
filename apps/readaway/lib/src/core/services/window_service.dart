@@ -11,6 +11,9 @@ class WindowService with WindowListener {
   final PublishSubject<bool> _minimizeSubject = PublishSubject<bool>();
   final PublishSubject<bool> _focusSubject = PublishSubject<bool>();
   final PublishSubject<bool> _fullScreenSubject = PublishSubject<bool>();
+  final BehaviorSubject<String> _titleSubject = BehaviorSubject<String>.seeded(
+    F.title,
+  );
 
   final BehaviorSubject<Size> _sizeSubject = BehaviorSubject<Size>.seeded(
     Size.zero,
@@ -44,6 +47,9 @@ class WindowService with WindowListener {
   Stream<bool> get windowFocusChanges => _focusedSubject.stream;
   Stream<bool> get windowFullScreenChanges => _fullScreenSubjectState.stream;
 
+  Stream<String> get windowTitleChanges => _titleSubject.stream;
+  String get currentTitle => _titleSubject.value;
+
   Stream<WindowState> get windowStateChanges => Rx.combineLatest7(
     _sizeSubject,
     _positionSubject,
@@ -66,12 +72,24 @@ class WindowService with WindowListener {
   bool get isDesktop =>
       !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
-  bool get _isInitialized => _sizeSubject.hasValue;
+  bool _initialized = false;
 
   @PostConstruct(preResolve: true)
   Future<void> initialize() async {
-    if (!isDesktop || _isInitialized) return;
+    if (!isDesktop || _initialized) return;
+    _initialized = true;
     await _wm.ensureInitialized();
+
+    const options = WindowOptions(
+      backgroundColor: Colors.transparent,
+      titleBarStyle: TitleBarStyle.hidden,
+      windowButtonVisibility: false,
+    );
+    _wm.waitUntilReadyToShow(options, () async {
+      await _wm.show();
+      await _wm.focus();
+    });
+
     await setDefaultTitle();
     _wm.addListener(this);
   }
@@ -79,11 +97,13 @@ class WindowService with WindowListener {
   Future<void> setDefaultTitle() async {
     if (!isDesktop) return;
     await _wm.setTitle(F.title);
+    if (!_titleSubject.isClosed) _titleSubject.add(F.title);
   }
 
   Future<void> setTitle(String title) async {
     if (!isDesktop) return;
     await _wm.setTitle(title);
+    if (!_titleSubject.isClosed) _titleSubject.add(title);
   }
 
   Future<void> setSize(Size size, {bool animate = true}) async {
@@ -96,6 +116,11 @@ class WindowService with WindowListener {
     final size = await _wm.getSize();
     if (!_sizeSubject.isClosed) _sizeSubject.add(size);
     return size;
+  }
+
+  Future<void> startDragging() async {
+    if (!isDesktop) return;
+    await _wm.startDragging();
   }
 
   Future<void> setMinimumSize(Size size) async {
@@ -367,6 +392,7 @@ class WindowService with WindowListener {
     await _minimizedSubject.close();
     await _focusedSubject.close();
     await _fullScreenSubjectState.close();
+    await _titleSubject.close();
   }
 }
 

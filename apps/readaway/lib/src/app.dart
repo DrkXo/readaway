@@ -6,6 +6,7 @@ import 'router/router.dart';
 
 import '../flavors.dart';
 import 'core/services/services.dart';
+import 'core/widgets/core_widgets.dart';
 import 'features/reader/presentation/bloc/reader_bloc.dart';
 
 class ReadAway extends StatefulWidget {
@@ -51,6 +52,16 @@ class _ReadAwayState extends State<ReadAway> {
                 theme: themeService.getLightTheme(),
                 darkTheme: themeService.getDarkTheme(),
                 routerConfig: router,
+                builder: (context, child) {
+                  final content = child ?? const SizedBox.shrink();
+                  if (!GetIt.I<WindowService>().isDesktop) return content;
+                  return Column(
+                    children: [
+                      AppWindowCaption(service: GetIt.I<WindowService>()),
+                      Expanded(child: content),
+                    ],
+                  );
+                },
               );
             },
           );
