@@ -8,6 +8,7 @@ import '../flavors.dart';
 import 'core/services/services.dart';
 import 'core/widgets/core_widgets.dart';
 import 'features/reader/presentation/bloc/reader_bloc.dart';
+import 'features/reader/presentation/widgets/reader_caption_actions.dart';
 
 class ReadAway extends StatefulWidget {
   const ReadAway({super.key});
@@ -55,10 +56,28 @@ class _ReadAwayState extends State<ReadAway> {
                 builder: (context, child) {
                   final content = child ?? const SizedBox.shrink();
                   if (!GetIt.I<WindowService>().isDesktop) return content;
-                  return Column(
-                    children: [
-                      AppWindowCaption(service: GetIt.I<WindowService>()),
-                      Expanded(child: content),
+                  // Overlay above the Navigator so widgets in the caption
+                  // (tooltips, popovers) have an ancestor to render into.
+                  return Overlay(
+                    initialEntries: [
+                      OverlayEntry(
+                        builder: (_) => Column(
+                          children: [
+                            AppWindowCaption(
+                              service: GetIt.I<WindowService>(),
+                              actions: BlocBuilder<ReaderBloc, ReaderState>(
+                                buildWhen: (prev, curr) =>
+                                    prev.hasDocument != curr.hasDocument,
+                                builder: (context, state) =>
+                                    state.hasDocument
+                                    ? const ReaderCaptionActions()
+                                    : const SizedBox.shrink(),
+                              ),
+                            ),
+                            Expanded(child: content),
+                          ],
+                        ),
+                      ),
                     ],
                   );
                 },

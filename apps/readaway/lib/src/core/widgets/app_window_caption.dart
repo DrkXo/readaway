@@ -3,9 +3,13 @@ part of 'core_widgets.dart';
 /// Custom titlebar for the frameless desktop window. All window operations
 /// go through [WindowService]; maximize state comes from its stream.
 class AppWindowCaption extends StatelessWidget {
-  const AppWindowCaption({super.key, required this.service});
+  const AppWindowCaption({super.key, required this.service, this.actions});
 
   final WindowService service;
+
+  /// Optional app-specific actions shown before the window controls
+  /// (e.g. reader operations while a document is open).
+  final Widget? actions;
 
   static const double height = 40;
 
@@ -51,15 +55,19 @@ class AppWindowCaption extends StatelessWidget {
                         },
                       ),
                     ),
-                    _CaptionButton(
+                    ?actions,
+                    SettingsButton(),
+                    MorphIconButton(
                       icon: Icons.remove_rounded,
                       hoverIcon: Icons.keyboard_arrow_down_rounded,
+                      tooltip: 'Minimize',
                       onTap: service.minimize,
                     ),
                     _MaximizeCaptionButton(service: service),
-                    _CaptionButton(
+                    MorphIconButton(
                       icon: Icons.close_rounded,
                       hoverIcon: Icons.cancel_rounded,
+                      tooltip: 'Close',
                       onTap: service.close,
                     ),
                   ],
@@ -72,44 +80,6 @@ class AppWindowCaption extends StatelessWidget {
             duration: 400.ms,
             curve: Curves.easeOutCubic,
           ),
-    );
-  }
-}
-
-class _CaptionButton extends StatefulWidget {
-  const _CaptionButton({
-    required this.icon,
-    required this.onTap,
-    this.hoverIcon,
-  });
-
-  final IconData icon;
-  final IconData? hoverIcon;
-  final Future<void> Function() onTap;
-
-  @override
-  State<_CaptionButton> createState() => _CaptionButtonState();
-}
-
-class _CaptionButtonState extends State<_CaptionButton> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: IconButton(
-        onPressed: widget.onTap,
-        icon: AnimatedMorphIcon(
-          icon: _hovered && widget.hoverIcon != null
-              ? widget.hoverIcon!
-              : widget.icon,
-          size: 18,
-        ),
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-        visualDensity: VisualDensity.compact,
-      ),
     );
   }
 }
@@ -138,13 +108,14 @@ class _MaximizeCaptionButtonState extends State<_MaximizeCaptionButton> {
       initialData: false,
       builder: (context, snapshot) {
         final isMaximized = snapshot.data ?? false;
-        return _CaptionButton(
+        return MorphIconButton(
           icon: isMaximized
               ? Icons.filter_none_rounded
               : Icons.crop_square_rounded,
           hoverIcon: isMaximized
               ? Icons.close_fullscreen_rounded
               : Icons.open_in_full_rounded,
+          tooltip: isMaximized ? 'Restore' : 'Maximize',
           onTap: () => isMaximized
               ? widget.service.unmaximize()
               : widget.service.maximize(),
