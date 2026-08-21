@@ -8,6 +8,7 @@ import '../flavors.dart';
 import 'core/services/services.dart';
 import 'core/widgets/core_widgets.dart';
 import 'features/reader/presentation/bloc/reader_bloc.dart';
+import 'features/reader/presentation/pages/reader_page.dart';
 import 'features/reader/presentation/widgets/reader_caption_actions.dart';
 
 class ReadAway extends StatefulWidget {
@@ -65,11 +66,25 @@ class _ReadAwayState extends State<ReadAway> {
                           children: [
                             AppWindowCaption(
                               service: GetIt.I<WindowService>(),
+                              leading: BlocBuilder<ReaderBloc, ReaderState>(
+                                buildWhen: (prev, curr) =>
+                                    prev.hasDocument != curr.hasDocument,
+                                builder: (context, state) => state.hasDocument
+                                    ? MorphIconButton(
+                                        icon: Icons.menu_rounded,
+                                        hoverIcon: Icons.menu_open_rounded,
+                                        tooltip: 'Contents',
+                                        onTap: () => ReaderPage
+                                            .scaffoldKey
+                                            .currentState
+                                            ?.openDrawer(),
+                                      )
+                                    : const SizedBox.shrink(),
+                              ),
                               actions: BlocBuilder<ReaderBloc, ReaderState>(
                                 buildWhen: (prev, curr) =>
                                     prev.hasDocument != curr.hasDocument,
-                                builder: (context, state) =>
-                                    state.hasDocument
+                                builder: (context, state) => state.hasDocument
                                     ? const ReaderCaptionActions()
                                     : const SizedBox.shrink(),
                               ),

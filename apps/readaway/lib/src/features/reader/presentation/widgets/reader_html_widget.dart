@@ -7,17 +7,30 @@ import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 
 import '../../../../core/theme/theme.dart';
+import 'reader_html_layout.dart';
 
+/// Renders the HTML extracted by MuPDF's structured-text output as
+/// soft-wrapping [RichText] paragraphs.
+///
+/// Line fusion, CSS parsing and font-size scaling live in
+/// `reader_html_layout.dart`; this file maps the resulting structure onto
+/// widgets. Colors come from the app theme; the book contributes structure
+/// and relative sizes ([ReaderHtmlWidget.baseFontSize] acts as the scale
+/// anchor).
 class ReaderHtmlWidget extends StatefulWidget {
   const ReaderHtmlWidget({
     super.key,
     required this.html,
     required this.appColors,
+    this.baseFontSize = 18.0,
+    this.lineHeight = 1.75,
     this.onTapUrl,
   });
 
   final String html;
   final AppColors appColors;
+  final double baseFontSize;
+  final double lineHeight;
   final void Function(String url)? onTapUrl;
 
   @override
@@ -27,6 +40,10 @@ class ReaderHtmlWidget extends StatefulWidget {
 class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
   final List<TapGestureRecognizer> _recognizers = [];
 
+  /// Most common font size on the page (MuPDF points), i.e. the body size all
+  /// other sizes are measured against.
+  double? _modalFontSize;
+
   @override
   void dispose() {
     for (final r in _recognizers) {
@@ -34,6 +51,12 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
     }
     super.dispose();
   }
+
+  TextStyle get _baseStyle => readerTextStyle(
+    appColors: widget.appColors,
+    fontSize: widget.baseFontSize,
+    height: widget.lineHeight,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +69,9 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
     final body = document.body;
     if (body == null) return const SizedBox.shrink();
 
-    final children = <Widget>[];
-    for (final node in body.nodes) {
-      final widget = _buildBlockNode(node);
-      if (widget != null) children.add(widget);
-    }
+    _modalFontSize = computeModalFontSize(body);
 
+    final children = _buildChildren(body.nodes);
     if (children.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,18 +79,75 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
     );
   }
 
+  /// Walks container nodes, buffering runs of sibling `<p>` elements so
+  /// [groupParagraphLines] can fuse them into paragraphs.
+  List<Widget> _buildChildren(List<dom.Node> nodes) {
+    final children = <Widget>[];
+    var run = <dom.Element>[];
+
+    void flushRun() {
+      if (run.isEmpty) return;
+      for (final group in groupParagraphLines(run)) {
+        final widget = _buildParagraphGroup(group);
+        if (widget != null) children.add(widget);
+      }
+      run = <dom.Element>[];
+    }
+
+    for (final node in nodes) {
+      if (node is dom.Element && node.localName?.toLowerCase() == 'p') {
+        run.add(node);
+        continue;
+      }
+      // Inter-element whitespace between line-paragraphs must not split a run.
+      if (node is dom.Text && node.text.trim().isEmpty) continue;
+
+      flushRun();
+      final widget = _buildBlockNode(node);
+      if (widget != null) children.add(widget);
+    }
+    flushRun();
+    return children;
+  }
+
+  Widget? _buildParagraphGroup(List<dom.Element> lines) {
+    final spans = <InlineSpan>[];
+    String? prevText;
+
+    for (final line in lines) {
+      final lineSpans = _buildInlineSpans(line.nodes, _baseStyle);
+      if (lineSpans.isEmpty) continue;
+      final lineText = line.text.trim();
+      if (spans.isNotEmpty && prevText != null) {
+        if (shouldDehyphenate(prevText, lineText)) {
+          stripTrailingHyphen(spans);
+        } else if (!cjkBoundary(prevText, lineText)) {
+          spans.add(const TextSpan(text: ' '));
+        }
+      }
+      spans.addAll(lineSpans);
+      prevText = lineText;
+    }
+
+    if (spans.isEmpty) return null;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: RichText(
+        text: TextSpan(children: spans, style: _baseStyle),
+      ),
+    );
+  }
+
   Widget? _buildBlockNode(dom.Node node) {
     if (node is dom.Text) {
       final text = node.text.trim();
       if (text.isEmpty) return null;
-      return Text(text, style: readerTextStyle(appColors: widget.appColors));
+      return Text(text, style: _baseStyle);
     }
     if (node is! dom.Element) return null;
 
     final tag = node.localName?.toLowerCase();
     switch (tag) {
-      case 'p':
-        return _buildParagraph(node);
       case 'div':
         return _buildDiv(node);
       case 'h1':
@@ -108,29 +185,8 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
     }
   }
 
-  Widget _buildParagraph(dom.Element element) {
-    final spans = _buildInlineSpans(
-      element.nodes,
-      readerTextStyle(appColors: widget.appColors),
-    );
-    if (spans.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: RichText(
-        text: TextSpan(
-          children: spans,
-          style: readerTextStyle(appColors: widget.appColors),
-        ),
-      ),
-    );
-  }
-
   Widget _buildDiv(dom.Element element) {
-    final children = <Widget>[];
-    for (final node in element.nodes) {
-      final widget = _buildBlockNode(node);
-      if (widget != null) children.add(widget);
-    }
+    final children = _buildChildren(element.nodes);
     if (children.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,12 +195,9 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
   }
 
   Widget _buildHeading(dom.Element element, int level) {
-    final spans = _buildInlineSpans(
-      element.nodes,
-      readerTextStyle(appColors: widget.appColors),
-    );
+    final spans = _buildInlineSpans(element.nodes, _baseStyle);
     if (spans.isEmpty) return const SizedBox.shrink();
-    final baseStyle = readerTextStyle(appColors: widget.appColors);
+    final baseStyle = _baseStyle;
     final headingStyle = switch (level) {
       1 => baseStyle.copyWith(
         fontSize: baseStyle.fontSize! * 1.5,
@@ -169,11 +222,7 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
   }
 
   Widget _buildBlockquote(dom.Element element) {
-    final children = <Widget>[];
-    for (final node in element.nodes) {
-      final widget = _buildBlockNode(node);
-      if (widget != null) children.add(widget);
-    }
+    final children = _buildChildren(element.nodes);
     if (children.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(left: 16),
@@ -215,11 +264,7 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
   }
 
   Widget? _buildListItem(dom.Element element, {int? index}) {
-    final children = <Widget>[];
-    for (final node in element.nodes) {
-      final widget = _buildBlockNode(node);
-      if (widget != null) children.add(widget);
-    }
+    final children = _buildChildren(element.nodes);
     if (children.isEmpty) return null;
     final prefix = index != null ? '$index. ' : '\u2022 ';
     return Padding(
@@ -227,10 +272,7 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            prefix,
-            style: readerTextStyle(appColors: widget.appColors),
-          ),
+          Text(prefix, style: _baseStyle),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,18 +285,12 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
   }
 
   Widget _buildLink(dom.Element element) {
-    final spans = _buildInlineSpans(
-      element.nodes,
-      readerTextStyle(appColors: widget.appColors),
-    );
+    final spans = _buildInlineSpans(element.nodes, _baseStyle);
     if (spans.isEmpty) return const SizedBox.shrink();
     final href = element.attributes['href'];
     if (href == null || href.isEmpty) {
       return RichText(
-        text: TextSpan(
-          children: spans,
-          style: readerTextStyle(appColors: widget.appColors),
-        ),
+        text: TextSpan(children: spans, style: _baseStyle),
       );
     }
     final recognizer = TapGestureRecognizer()
@@ -263,9 +299,7 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
     return RichText(
       text: TextSpan(
         children: spans,
-        style: readerTextStyle(
-          appColors: widget.appColors,
-        ).copyWith(decoration: TextDecoration.underline),
+        style: _baseStyle.copyWith(decoration: TextDecoration.underline),
         recognizer: recognizer,
       ),
     );
@@ -331,19 +365,15 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
   }
 
   Widget? _buildTableCell(dom.Element element) {
-    final children = <Widget>[];
-    for (final node in element.nodes) {
-      final widget = _buildBlockNode(node);
-      if (widget != null) children.add(widget);
-    }
+    final children = _buildChildren(element.nodes);
     if (children.isEmpty) return null;
     final isHeader = element.localName?.toLowerCase() == 'th';
     return Padding(
       padding: const EdgeInsets.all(8),
       child: DefaultTextStyle(
-        style: readerTextStyle(
-          appColors: widget.appColors,
-        ).copyWith(fontWeight: isHeader ? FontWeight.bold : null),
+        style: _baseStyle.copyWith(
+          fontWeight: isHeader ? FontWeight.bold : null,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: children,
@@ -353,11 +383,7 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
   }
 
   Widget _buildUnknown(dom.Element element) {
-    final children = <Widget>[];
-    for (final node in element.nodes) {
-      final widget = _buildBlockNode(node);
-      if (widget != null) children.add(widget);
-    }
+    final children = _buildChildren(element.nodes);
     if (children.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,7 +412,7 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
     if (node is! dom.Element) return null;
 
     final tag = node.localName?.toLowerCase();
-    final styles = _parseStyles(node);
+    final styles = parseStyles(node);
     final style = _buildTextStyle(styles, baseStyle);
 
     final children = <InlineSpan>[];
@@ -465,23 +491,6 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
     }
   }
 
-  Map<String, String> _parseStyles(dom.Element element) {
-    final style = element.attributes['style'];
-    if (style == null || style.isEmpty) return {};
-    final result = <String, String>{};
-    for (final decl in style.split(';')) {
-      final parts = decl.split(':');
-      if (parts.length == 2) {
-        final key = parts[0].trim().toLowerCase();
-        final value = parts[1].trim();
-        if (key.isNotEmpty && value.isNotEmpty) {
-          result[key] = value;
-        }
-      }
-    }
-    return result;
-  }
-
   TextStyle _buildTextStyle(Map<String, String> styles, TextStyle base) {
     var result = base;
 
@@ -512,11 +521,11 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
 
     final fontSize = styles['font-size'];
     if (fontSize != null) {
-      final value = double.tryParse(
-        fontSize.replaceAll('px', '').replaceAll('pt', '').trim(),
-      );
+      final value = parseCssPt(fontSize);
       if (value != null && value > 0) {
-        result = result.copyWith(fontSize: value);
+        result = result.copyWith(
+          fontSize: resolveFontSize(value, _modalFontSize, widget.baseFontSize),
+        );
       }
     }
 

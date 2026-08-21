@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
+import '../../../settings/domain/models/reader_preferences.dart';
 import '../bloc/reader_bloc.dart';
 import 'reader_error_view.dart';
 import 'reader_html_widget.dart';
@@ -11,19 +12,11 @@ class ReaderPageContent extends StatelessWidget {
   const ReaderPageContent({
     super.key,
     required this.pageController,
+    required this.prefs,
   });
 
   final PageController pageController;
-
-  static Widget htmlWidget(String html, BuildContext context) {
-    return ReaderHtmlWidget(
-      html: html,
-      appColors: context.appColors,
-      onTapUrl: (url) {
-        logger.d('Opening url: $url');
-      },
-    );
-  }
+  final ReaderPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +63,15 @@ class ReaderPageContent extends StatelessWidget {
             ),
             child: SizedBox(
               width: double.infinity,
-              child: ReaderPageContent.htmlWidget(html, context),
+              child: ReaderHtmlWidget(
+                html: html,
+                appColors: context.appColors,
+                baseFontSize: prefs.fontSize,
+                lineHeight: prefs.lineHeight,
+                onTapUrl: (url) {
+                  logger.d('Opening url: $url');
+                },
+              ),
             ),
           ),
         );
@@ -93,4 +94,3 @@ class ReaderPageContent extends StatelessWidget {
     );
   }
 }
-
