@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../bloc/reader_bloc.dart';
 import 'reader_error_view.dart';
+import 'reader_html_widget.dart';
 
 class ReaderPageContent extends StatelessWidget {
   const ReaderPageContent({
@@ -15,15 +15,12 @@ class ReaderPageContent extends StatelessWidget {
 
   final PageController pageController;
 
-  static HtmlWidget htmlWidget(String html, BuildContext context) {
-    return HtmlWidget(
-      html,
-      factoryBuilder: _ReaderHtmlFactory.new,
-      renderMode: RenderMode.column,
-      textStyle: readerTextStyle(appColors: context.appColors),
+  static Widget htmlWidget(String html, BuildContext context) {
+    return ReaderHtmlWidget(
+      html: html,
+      appColors: context.appColors,
       onTapUrl: (url) {
         logger.d('Opening url: $url');
-        return true;
       },
     );
   }
@@ -97,10 +94,3 @@ class ReaderPageContent extends StatelessWidget {
   }
 }
 
-class _ReaderHtmlFactory extends WidgetFactory {
-  @override
-  void parseStyle(BuildTree tree, dynamic style) {
-    if (style.property == 'color') return;
-    super.parseStyle(tree, style);
-  }
-}
