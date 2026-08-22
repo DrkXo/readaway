@@ -54,6 +54,107 @@ class SearchHit {
   });
 }
 
+/// An interactive link hot zone on a page.
+class PageLink {
+  /// Hot zone in page coordinates — the same space as the stext HTML
+  /// `top`/`left` styles.
+  final double x0, y0, x1, y1;
+
+  /// Original URI: external URL or internal destination string.
+  final String uri;
+
+  /// Resolved internal destination (flat page index), or -1 when [uri] is
+  /// external or could not be resolved.
+  final int pageNumber;
+
+  const PageLink({
+    required this.x0, required this.y0,
+    required this.x1, required this.y1,
+    required this.uri,
+    required this.pageNumber,
+  });
+
+  bool get isInternal => pageNumber >= 0;
+}
+
+// --- Direct MuPDF link access ---
+//
+// The wrapper links libmupdf.a with --whole-archive, so MuPDF's own C API
+// stays exported from libmupdf_wrapper.so. Link extraction needs no glue
+// code: these hand-written bindings call fz_load_links & friends directly.
+
+final class FzRect extends Struct {
+  @Float()
+  external double x0;
+  @Float()
+  external double y0;
+  @Float()
+  external double x1;
+  @Float()
+  external double y1;
+}
+
+/// Mirrors fz_link; trailing callback members omitted (never read here and
+/// they sit after every field we need).
+final class FzLink extends Struct {
+  @Int()
+  external int refs;
+
+  external Pointer<FzLink> next;
+
+  external FzRect rect;
+
+  external Pointer<Utf8> uri;
+}
+
+/// Mirrors fz_location (returned/passed by value).
+final class FzLocation extends Struct {
+  @Int32()
+  external int chapter;
+  @Int32()
+  external int page;
+}
+
+typedef FzLoadLinksNative = Pointer<FzLink> Function(
+    Pointer<MupdfContext>, Pointer<MupdfPage>);
+typedef FzLoadLinksDart = Pointer<FzLink> Function(
+    Pointer<MupdfContext>, Pointer<MupdfPage>);
+
+typedef FzDropLinkNative = Void Function(
+    Pointer<MupdfContext>, Pointer<FzLink>);
+typedef FzDropLinkDart = void Function(
+    Pointer<MupdfContext>, Pointer<FzLink>);
+
+typedef FzResolveLinkNative = FzLocation Function(
+    Pointer<MupdfContext>,
+    Pointer<MupdfDocument>,
+    Pointer<Utf8>,
+    Pointer<Float>,
+    Pointer<Float>);
+typedef FzResolveLinkDart = FzLocation Function(
+    Pointer<MupdfContext>,
+    Pointer<MupdfDocument>,
+    Pointer<Utf8>,
+    Pointer<Float>,
+    Pointer<Float>);
+
+typedef FzPageNumberFromLocationNative = Int32 Function(
+    Pointer<MupdfContext>, Pointer<MupdfDocument>, FzLocation);
+typedef FzPageNumberFromLocationDart = int Function(
+    Pointer<MupdfContext>, Pointer<MupdfDocument>, FzLocation);
+
+typedef FzIsExternalLinkNative = Int32 Function(
+    Pointer<MupdfContext>, Pointer<Utf8>);
+typedef FzIsExternalLinkDart = int Function(
+    Pointer<MupdfContext>, Pointer<Utf8>);
+
+/// The wrapper hands out handles to
+/// `struct mupdf_context_s { fz_context* ctx; char last_error[256]; }`;
+/// direct fz_* calls need the inner fz_context*, not the handle.
+final class MupdfContextHandle extends Struct {
+  external Pointer<MupdfContext> inner;
+}
+
 /// Renders a document page to raw pixel data via MuPDF.
 class MuPdfPage {
   final Pointer<MupdfContext> _ctx;
@@ -355,6 +456,46 @@ class MuPdfDocument {
     return MuPdfPage._(_ctx, page);
   }
 
+  /// Loads the interactive links of page [number], resolving internal
+  /// destinations to flat page numbers.
+  List<PageLink> pageLinks(int number) {
+    final page = loadPage(number);
+    try {
+      final ctx = _ctx.cast<MupdfContextHandle>().ref.inner;
+      final head = _lib.fzLoadLinks(ctx, page._page);
+      if (head == nullptr) return [];
+      try {
+        final result = <PageLink>[];
+        for (var ptr = head; ptr != nullptr; ptr = ptr.ref.next) {
+          final link = ptr.ref;
+          final uriPtr = link.uri;
+          final uri =
+              uriPtr == nullptr ? '' : uriPtr.cast<Utf8>().toDartString();
+          var pageNumber = -1;
+          if (uri.isNotEmpty && _lib.fzIsExternalLink(ctx, uriPtr) == 0) {
+            final loc = _lib.fzResolveLink(ctx, _doc, uriPtr, nullptr, nullptr);
+            if (loc.page >= 0) {
+              pageNumber = _lib.fzPageNumberFromLocation(ctx, _doc, loc);
+            }
+          }
+          result.add(PageLink(
+            x0: link.rect.x0,
+            y0: link.rect.y0,
+            x1: link.rect.x1,
+            y1: link.rect.y1,
+            uri: uri,
+            pageNumber: pageNumber,
+          ));
+        }
+        return result;
+      } finally {
+        _lib.fzDropLink(ctx, head);
+      }
+    } finally {
+      page.dispose();
+    }
+  }
+
   void dispose() {
     _lib.mupdfDropDocument(_ctx, _doc);
     _lib.mupdfDropContext(_ctx);
@@ -415,6 +556,13 @@ class _MupdfBindings {
   late final MupdfOutlineFreeDart mupdfOutlineFree;
   late final MupdfLastErrorDart mupdfLastError;
 
+  // Direct MuPDF C API (symbols kept alive by --whole-archive linking).
+  late final FzLoadLinksDart fzLoadLinks;
+  late final FzDropLinkDart fzDropLink;
+  late final FzResolveLinkDart fzResolveLink;
+  late final FzPageNumberFromLocationDart fzPageNumberFromLocation;
+  late final FzIsExternalLinkDart fzIsExternalLink;
+
   _MupdfBindings() {
     final dylib = openMupdfLib();
 
@@ -456,5 +604,11 @@ class _MupdfBindings {
     mupdfOutlineFlatten = dylib.lookupFunction<MupdfOutlineFlattenNative, MupdfOutlineFlattenDart>('mupdf_outline_flatten');
     mupdfOutlineFree = dylib.lookupFunction<MupdfOutlineFreeNative, MupdfOutlineFreeDart>('mupdf_outline_free');
     mupdfLastError = dylib.lookupFunction<MupdfLastErrorNative, MupdfLastErrorDart>('mupdf_last_error');
+
+    fzLoadLinks = dylib.lookupFunction<FzLoadLinksNative, FzLoadLinksDart>('fz_load_links');
+    fzDropLink = dylib.lookupFunction<FzDropLinkNative, FzDropLinkDart>('fz_drop_link');
+    fzResolveLink = dylib.lookupFunction<FzResolveLinkNative, FzResolveLinkDart>('fz_resolve_link');
+    fzPageNumberFromLocation = dylib.lookupFunction<FzPageNumberFromLocationNative, FzPageNumberFromLocationDart>('fz_page_number_from_location');
+    fzIsExternalLink = dylib.lookupFunction<FzIsExternalLinkNative, FzIsExternalLinkDart>('fz_is_external_link');
   }
 }

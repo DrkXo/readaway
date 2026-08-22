@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart' as dom;
+import 'package:mupdf/mupdf.dart';
 
 /// Layout reconstruction for MuPDF's structured-text HTML output.
 ///
@@ -141,6 +142,38 @@ bool stripTrailingHyphen(List<InlineSpan> spans) {
 bool _isCjkChar(String ch) => RegExp(
   r'[\u3000-\u303f\u3040-\u30ff\u4e00-\u9fff\uff00-\uffef]',
 ).hasMatch(ch);
+
+/// Wraps stext line-paragraphs whose geometry intersects a link hot zone in
+/// an `<a href>` so taps reach [ReaderHtmlWidget.onTapUrl]. Internal links
+/// become `#page=N` (flat page index); external URIs are kept verbatim.
+///
+/// ponytail: line granularity — stext HTML lines carry no width, so two
+/// links overlapping one line collapse to the first; word-level rects need
+/// char quads from a custom extractor.
+void mergePageLinks(dom.Document document, List<PageLink> links) {
+  if (links.isEmpty) return;
+  for (final p in document.querySelectorAll('p')) {
+    final geom = StextLineGeom.from(p);
+    if (geom == null || p.text.trim().isEmpty) continue;
+
+    final bottom = geom.top + geom.lineH;
+    for (final link in links) {
+      // 1pt vertical tolerance absorbs rounding between the two extractors.
+      if (link.y0 >= bottom + 1 || link.y1 <= geom.top - 1) continue;
+
+      final anchor = dom.Element.tag('a')
+        ..attributes['href'] = link.isInternal
+            ? '#page=${link.pageNumber}'
+            : link.uri;
+      for (final node in List<dom.Node>.from(p.nodes)) {
+        node.remove();
+        anchor.append(node);
+      }
+      p.append(anchor);
+      break;
+    }
+  }
+}
 
 /// Geometry of one stext line, parsed from its `<p style>` attribute.
 class StextLineGeom {

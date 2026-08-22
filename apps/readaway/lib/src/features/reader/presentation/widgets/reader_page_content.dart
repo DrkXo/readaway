@@ -68,15 +68,25 @@ class ReaderPageContent extends StatelessWidget {
                 appColors: context.appColors,
                 baseFontSize: prefs.fontSize,
                 lineHeight: prefs.lineHeight,
-                onTapUrl: (url) {
-                  logger.d('Opening url: $url');
-                },
+                onTapUrl: (url) => _onTapUrl(context, url),
               ),
             ),
           ),
         );
       },
     );
+  }
+
+  /// Internal links arrive pre-resolved as `#page=N` (flat page index)
+  /// during HTML sanitization. External links are logged only for now.
+  void _onTapUrl(BuildContext context, String url) {
+    final match = RegExp(r'^#page=(\d+)$').firstMatch(url);
+    if (match != null) {
+      final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;
+      pageController.jumpToPage(int.parse(match.group(1)!).clamp(0, maxIndex));
+      return;
+    }
+    logger.d('External link ignored: $url');
   }
 
   Widget _buildImagePage(BuildContext context, int index) {

@@ -2,7 +2,14 @@ import 'dart:ffi';
 import 'dart:io';
 
 /// Resolves the native mupdf_wrapper library.
+///
+/// [MUPDF_WRAPPER_PATH] overrides the default lookup (dev/tests pointing at
+/// a locally built wrapper).
 DynamicLibrary openMupdfLib() {
+  final override = Platform.environment['MUPDF_WRAPPER_PATH'];
+  if (override != null && override.isNotEmpty) {
+    return DynamicLibrary.open(override);
+  }
   if (Platform.isAndroid) {
     return DynamicLibrary.open('libmupdf_wrapper.so');
   } else if (Platform.isIOS || Platform.isMacOS) {
