@@ -19,19 +19,27 @@ import 'package:mupdf/mupdf.dart';
 /// to the first (equal or smaller left edge). This handles both flush-left
 /// books and books that mark paragraphs by first-line indentation alone.
 ///
+/// Two consecutive link-wrapped lines ([mergePageLinks]) never fuse, so TOC
+/// entries render as separate tappable rows instead of one wall of text.
+///
 /// ponytail: geometric heuristic; centered/right-aligned blocks with tight
 /// leading can be split or fused incorrectly — revisit if a book hits it.
+/// ponytail: two adjacent link-bearing prose lines (multi-line hyperlink)
+/// split into two blocks — same line-granularity ceiling as mergePageLinks.
 List<List<dom.Element>> groupParagraphLines(List<dom.Element> lines) {
   final groups = <List<dom.Element>>[];
   var current = <dom.Element>[];
   StextLineGeom? prev;
+  var prevLink = false;
 
   for (final line in lines) {
     final geom = StextLineGeom.from(line);
+    final link = _isLinkLine(line);
     final merges =
         current.isNotEmpty &&
         geom != null &&
         prev != null &&
+        !(link && prevLink) &&
         geom.top > prev.top &&
         geom.top - prev.top <= prev.lineH * 1.5 &&
         geom.left <= prev.left + 3;
@@ -41,10 +49,16 @@ List<List<dom.Element>> groupParagraphLines(List<dom.Element> lines) {
     }
     current.add(line);
     prev = geom;
+    prevLink = link;
   }
   if (current.isNotEmpty) groups.add(current);
   return groups;
 }
+
+/// True when [p]'s content was fully wrapped in an anchor by
+/// [mergePageLinks].
+bool _isLinkLine(dom.Element p) =>
+    p.children.any((c) => c.localName?.toLowerCase() == 'a');
 
 /// Maps an absolute font size extracted from the book onto the user's
 /// preferred [base] size while preserving relative hierarchy around the
