@@ -53,6 +53,10 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i523.ReaderBloc>(
       () => _i523.ReaderBloc(windowService: gh<_i264.WindowService>()),
     );
+    await gh.lazySingletonAsync<_i264.HttpService>(() {
+      final i = _i264.HttpService(logger: gh<_i264.LoggingService>());
+      return i.initialize().then((_) => i);
+    }, preResolve: true);
     await gh.singletonAsync<_i264.ThemeService>(
       () {
         final i = _i264.ThemeService(storage: gh<_i264.AppStorageService>());
@@ -64,11 +68,15 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i585.SettingsBloc>(
       () => _i585.SettingsBloc(storage: gh<_i264.AppStorageService>()),
     );
-    gh.singleton<_i264.MuPdfService>(
-      () => _i264.MuPdfService(loggingService: gh<_i264.LoggingService>()),
+    gh.singleton<_i264.IsolateService>(
+      () => _i264.IsolateService(loggingService: gh<_i264.LoggingService>()),
+      dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i295.AppRoutesGuards>(
       () => _i295.AppRoutesGuards(appRoutes: gh<_i494.AppRoutes>()),
+    );
+    gh.lazySingleton<_i264.LookupService>(
+      () => _i264.LookupService(gh<_i264.HttpService>()),
     );
     gh.singleton<_i295.AppRouter>(
       () => _i295.AppRouter(
@@ -77,6 +85,12 @@ extension GetItInjectableX on _i174.GetIt {
         appRoutes: gh<_i494.AppRoutes>(),
       ),
       dispose: (i) => i.dispose(),
+    );
+    gh.singleton<_i264.MuPdfService>(
+      () => _i264.MuPdfService(
+        isolateService: gh<_i264.IsolateService>(),
+        loggingService: gh<_i264.LoggingService>(),
+      ),
     );
     return this;
   }

@@ -2,42 +2,27 @@ part of 'services.dart';
 
 @singleton
 class MuPdfService {
-  Isolate? _isolate;
-  SendPort? _sendPort;
-  ReceivePort? _receivePort;
-  final _responseController = BehaviorSubject<dynamic>();
-
+  static const String _isolateName = 'mupdf';
+  final IsolateService _isolateService;
   final LoggingService _loggingService;
 
   Logger get _log => _loggingService.logger;
 
   MuPdfService({
+    required this._isolateService,
     required this._loggingService,
   });
 
   Future<void> _ensureIsolate() async {
-    if (_isolate != null) return;
+    if (_isolateService.isSpawned(_isolateName)) return;
 
     _log.info(
       'Spawning MuPdfService background isolate...',
     );
-    _receivePort = ReceivePort();
-    _isolate = await Isolate.spawn(
-      _isolateEntryPoint,
-      _receivePort!.sendPort,
-      debugName: 'MuPdfService Document Parser Isolate',
+    await _isolateService.spawn(
+      name: _isolateName,
+      entryPoint: _isolateEntryPoint,
     );
-
-    final completer = Completer<SendPort>();
-    _receivePort!.listen((message) {
-      if (message is SendPort) {
-        completer.complete(message);
-      } else {
-        _responseController.add(message);
-      }
-    });
-
-    _sendPort = await completer.future;
     _log.info(
       '[MuPdfService] background isolate ready.',
     );
@@ -45,22 +30,7 @@ class MuPdfService {
 
   Future<T> _sendCommand<T>(dynamic command) async {
     await _ensureIsolate();
-    final completer = Completer<T>();
-
-    StreamSubscription? subscription;
-    subscription = _responseController.stream.listen((response) {
-      if (response is Map && response['id'] == command['id']) {
-        subscription?.cancel();
-        if (response.containsKey('error')) {
-          completer.completeError(Exception(response['error']));
-        } else {
-          completer.complete(response['result'] as T);
-        }
-      }
-    });
-
-    _sendPort!.send(command);
-    return completer.future;
+    return _isolateService.sendCommand<T>(_isolateName, command);
   }
 
   Future<void> openDocument(String path) {
@@ -154,7 +124,11 @@ class MuPdfService {
     });
   }
 
-  Future<Map<String, dynamic>?> renderPage(int pageIndex, {double scaleX = 2.0, double scaleY = 2.0}) {
+  Future<Map<String, dynamic>?> renderPage(
+    int pageIndex, {
+    double scaleX = 2.0,
+    double scaleY = 2.0,
+  }) {
     return _sendCommand<Map<String, dynamic>?>({
       'id': DateTime.now().microsecondsSinceEpoch,
       'type': 'renderPage',

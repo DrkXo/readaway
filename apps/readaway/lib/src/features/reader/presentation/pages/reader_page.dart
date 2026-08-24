@@ -42,6 +42,12 @@ class ReaderPage extends StatefulWidget {
 
 class _ReaderPageState extends State<ReaderPage> {
   final PageController _pageController = PageController();
+
+  /// Keeps the reader subtree (PageView page, scroll offsets, selection)
+  /// alive across the wide/narrow breakpoint switch in [_buildReaderView],
+  /// which changes the tree shape above it.
+  final GlobalKey _contentKey = GlobalKey();
+
   late final ReaderBloc _readerBloc;
   late final SettingsBloc _settingsBloc;
   bool _tocPinned = false;
@@ -127,6 +133,7 @@ class _ReaderPageState extends State<ReaderPage> {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 900;
         final content = Stack(
+          key: _contentKey,
           children: [
             _buildBrightnessOverlay(prefs),
             _buildContrastOverlay(prefs),

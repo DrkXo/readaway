@@ -7,7 +7,9 @@ import '../../../../router/router.dart';
 import '../bloc/reader_bloc.dart';
 
 class ReaderCaptionActions extends StatelessWidget {
-  const ReaderCaptionActions({super.key});
+  const ReaderCaptionActions.reFlowable({
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,11 @@ class ReaderCaptionActions extends StatelessWidget {
           icon: Icons.bookmark_border_rounded,
           hoverIcon: Icons.bookmark_rounded,
           tooltip: 'Bookmark',
+        ),
+        MorphIconButton(
+          icon: Icons.library_music,
+          hoverIcon: Icons.library_music_outlined,
+          tooltip: 'Player',
         ),
         MorphIconButton(
           icon: Icons.close_rounded,

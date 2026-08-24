@@ -68,18 +68,31 @@ class ThemeService {
   }
 
   ThemeData getLightTheme() {
+    final scheme = AppColors.light.scheme;
     return ThemeData(
-      colorScheme: AppColors.light.scheme,
+      colorScheme: scheme,
       extensions: [AppColors.light],
       useMaterial3: true,
+      textSelectionTheme: _selectionTheme(scheme),
     );
   }
 
   ThemeData getDarkTheme() {
+    final scheme = AppColors.dark.scheme;
     return ThemeData(
-      colorScheme: AppColors.dark.scheme,
+      colorScheme: scheme,
       extensions: [AppColors.dark],
       useMaterial3: true,
+      textSelectionTheme: _selectionTheme(scheme),
+    );
+  }
+
+  /// Selection highlight + drag handles follow the brand primary.
+  TextSelectionThemeData _selectionTheme(ColorScheme scheme) {
+    return TextSelectionThemeData(
+      cursorColor: scheme.primary,
+      selectionColor: scheme.primary.withValues(alpha: 0.25),
+      selectionHandleColor: scheme.primary,
     );
   }
 

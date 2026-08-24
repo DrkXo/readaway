@@ -171,7 +171,7 @@ List<Widget> _mapBlocks(List<ReaderBlock> blocks, _PaintContext ctx) {
 Widget? _mapBlock(ReaderBlock block, _PaintContext ctx) {
   switch (block) {
     case ParagraphBlock(:final spans, :final padded):
-      final rich = RichText(text: TextSpan(children: spans, style: ctx.baseStyle));
+      final rich = Text.rich(TextSpan(children: spans, style: ctx.baseStyle));
       if (!padded) return RepaintBoundary(child: rich);
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -198,7 +198,7 @@ Widget? _mapBlock(ReaderBlock block, _PaintContext ctx) {
       return Padding(
         padding: EdgeInsets.only(top: level == 1 ? 24 : 16, bottom: 8),
         child: RepaintBoundary(
-          child: RichText(text: TextSpan(children: spans, style: style)),
+          child: Text.rich(TextSpan(children: spans, style: style)),
         ),
       );
     case SpacerBlock():

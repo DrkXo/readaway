@@ -9,6 +9,7 @@ import 'package:injectable/injectable.dart';
 import '../core/routes/routes.dart';
 import '../core/services/services.dart';
 import '../features/library/presentation/pages/library_page.dart';
+import '../features/reader/presentation/pages/reader_lookup_sheet.dart';
 import '../features/reader/presentation/pages/reader_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
 
@@ -121,6 +122,22 @@ class AppRouter {
         path: _appRoutes.reader.path,
         builder: (context, state) {
           return ReaderPage.fromRoute(state);
+        },
+      ),
+
+      // Dictionary / translate results sheet.
+      GoRoute(
+        name: _appRoutes.readerLookup.name,
+        path: _appRoutes.readerLookup.path,
+        pageBuilder: (context, state) {
+          return ModalPage(
+            key: state.pageKey,
+            enableDrag: true,
+            showDragHandle: false,
+            builder: (context) => ReaderLookupSheet(
+              request: state.extra! as ReaderLookupRequest,
+            ),
+          );
         },
       ),
     ],

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -7,6 +8,7 @@ import '../../../settings/domain/models/reader_preferences.dart';
 import '../bloc/reader_bloc.dart';
 import 'reader_error_view.dart';
 import 'reader_html_widget.dart';
+import 'reader_selection_area.dart';
 
 class ReaderPageContent extends StatelessWidget {
   const ReaderPageContent({
@@ -31,13 +33,28 @@ class ReaderPageContent extends StatelessWidget {
         if (!state.hasDocument) {
           return const Center(child: Text('No document open'));
         }
-        return PageView.builder(
-          controller: pageController,
-          itemCount: state.pageCount,
-          onPageChanged: (i) => context.read<ReaderBloc>().add(
-            ReaderEvent.pageChanged(index: i),
+        // Default ScrollBehavior excludes mouse from dragDevices (it fights
+        // text selection), which leaves PageView unpageable by mouse. Opt
+        // this PageView in: over text, SelectionArea's recognizer still wins
+        // the arena; over images/margins mouse drag flips pages.
+        return ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(
+            dragDevices: const {
+              PointerDeviceKind.touch,
+              PointerDeviceKind.stylus,
+              PointerDeviceKind.invertedStylus,
+              PointerDeviceKind.trackpad,
+              PointerDeviceKind.mouse,
+            },
           ),
-          itemBuilder: state.isReflowable ? _buildHtmlPage : _buildImagePage,
+          child: PageView.builder(
+            controller: pageController,
+            itemCount: state.pageCount,
+            onPageChanged: (i) => context.read<ReaderBloc>().add(
+              ReaderEvent.pageChanged(index: i),
+            ),
+            itemBuilder: state.isReflowable ? _buildHtmlPage : _buildImagePage,
+          ),
         );
       },
     );
@@ -63,12 +80,14 @@ class ReaderPageContent extends StatelessWidget {
             ),
             child: SizedBox(
               width: double.infinity,
-              child: ReaderHtmlWidget(
-                html: html,
-                appColors: context.appColors,
-                baseFontSize: prefs.fontSize,
-                lineHeight: prefs.lineHeight,
-                onTapUrl: (url) => _onTapUrl(context, url),
+              child: ReaderSelectionArea(
+                child: ReaderHtmlWidget(
+                  html: html,
+                  appColors: context.appColors,
+                  baseFontSize: prefs.fontSize,
+                  lineHeight: prefs.lineHeight,
+                  onTapUrl: (url) => _onTapUrl(context, url),
+                ),
               ),
             ),
           ),

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'features/settings/presentation/bloc/settings_bloc.dart';
-import 'router/router.dart';
 
 import '../flavors.dart';
 import 'core/services/services.dart';
@@ -10,6 +8,8 @@ import 'core/widgets/core_widgets.dart';
 import 'features/reader/presentation/bloc/reader_bloc.dart';
 import 'features/reader/presentation/pages/reader_page.dart';
 import 'features/reader/presentation/widgets/reader_caption_actions.dart';
+import 'features/settings/presentation/bloc/settings_bloc.dart';
+import 'router/router.dart';
 
 class ReadAway extends StatefulWidget {
   const ReadAway({super.key});
@@ -85,7 +85,7 @@ class _ReadAwayState extends State<ReadAway> {
                                 buildWhen: (prev, curr) =>
                                     prev.hasDocument != curr.hasDocument,
                                 builder: (context, state) => state.hasDocument
-                                    ? const ReaderCaptionActions()
+                                    ? const ReaderCaptionActions.reFlowable()
                                     : const SizedBox.shrink(),
                               ),
                             ),
