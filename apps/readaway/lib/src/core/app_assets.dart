@@ -1,3 +1,5 @@
+/// flutter_gen only generates `assets`/`fonts`/`colors`, not the
+/// `shaders` section, so shader paths stay here.
 class AppShaders {
   const AppShaders._();
 

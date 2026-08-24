@@ -36,17 +36,27 @@ dependencies:
   flutter_shaders: ^0.1.3
   window_manager: ^0.5.2
   morphnext: ^0.6.0
+  just_audio: ^0.10.6
+  just_audio_media_kit: ^2.1.0
+  media_kit_libs_linux: any
+  media_kit_libs_windows_audio: any
+  flutter_tts: ^4.2.5
+  sherpa_onnx: ^1.13.6
+  archive: ^4.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  build_runner: ^2.4.0
+  build_runner: ^2.12.0
+  flutter_gen_runner: ^5.15.0
   freezed: ^3.0.0
   json_serializable: ^6.8.0
   injectable_generator: ^3.1.3
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/tts_models_release.json
   shaders:
     - assets/shaders/tactile_surface.frag

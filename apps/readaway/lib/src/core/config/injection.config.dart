@@ -32,6 +32,22 @@ extension GetItInjectableX on _i174.GetIt {
       final i = _i264.LoggingService();
       return i.init().then((_) => i);
     }, preResolve: true);
+    await gh.singletonAsync<_i264.DeviceTtsService>(
+      () {
+        final i = _i264.DeviceTtsService();
+        return i.init().then((_) => i);
+      },
+      preResolve: true,
+      dispose: (i) => i.dispose(),
+    );
+    await gh.singletonAsync<_i264.JustAudioService>(
+      () {
+        final i = _i264.JustAudioService();
+        return i.init().then((_) => i);
+      },
+      preResolve: true,
+      dispose: (i) => i.dispose(),
+    );
     await gh.singletonAsync<_i264.WindowService>(
       () {
         final i = _i264.WindowService();
@@ -40,6 +56,10 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
+    gh.lazySingleton<_i264.SherpaTtsModelCatalog>(
+      () => _i264.SherpaTtsModelCatalog(),
+    );
+    gh.lazySingleton<_i264.TextChunker>(() => _i264.TextChunker());
     await gh.singletonAsync<_i264.AppStorageService>(
       () {
         final i = _i264.AppStorageService(
@@ -78,6 +98,17 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i264.LookupService>(
       () => _i264.LookupService(gh<_i264.HttpService>()),
     );
+    await gh.singletonAsync<_i264.SherpaOnnxTtsService>(
+      () {
+        final i = _i264.SherpaOnnxTtsService(
+          client: gh<_i264.HttpService>(),
+          sherpaTtsModelCatalog: gh<_i264.SherpaTtsModelCatalog>(),
+        );
+        return i.init().then((_) => i);
+      },
+      preResolve: true,
+      dispose: (i) => i.dispose(),
+    );
     gh.singleton<_i295.AppRouter>(
       () => _i295.AppRouter(
         appRoutesGuards: gh<_i295.AppRoutesGuards>(),
@@ -91,6 +122,19 @@ extension GetItInjectableX on _i174.GetIt {
         isolateService: gh<_i264.IsolateService>(),
         loggingService: gh<_i264.LoggingService>(),
       ),
+    );
+    await gh.singletonAsync<_i264.ReaderTtsController>(
+      () {
+        final i = _i264.ReaderTtsController(
+          gh<_i264.DeviceTtsService>(),
+          gh<_i264.SherpaOnnxTtsService>(),
+          gh<_i264.JustAudioService>(),
+          gh<_i264.TextChunker>(),
+        );
+        return i.init().then((_) => i);
+      },
+      preResolve: true,
+      dispose: (i) => i.dispose(),
     );
     return this;
   }

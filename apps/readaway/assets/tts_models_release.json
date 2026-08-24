@@ -1,0 +1,2538 @@
+[
+ {
+  "name": "vits-vctk.tar.bz2",
+  "size": 151758892
+ },
+ {
+  "name": "espeak-ng-data.tar.bz2",
+  "size": 7252012
+ },
+ {
+  "name": "vits-piper-en_GB-sweetbbak-amy.tar.bz2",
+  "size": 115595629
+ },
+ {
+  "name": "vits-coqui-en-ljspeech.tar.bz2",
+  "size": 115418583
+ },
+ {
+  "name": "vits-coqui-en-ljspeech-neon.tar.bz2",
+  "size": 115418180
+ },
+ {
+  "name": "vits-coqui-en-vctk.tar.bz2",
+  "size": 122412029
+ },
+ {
+  "name": "vits-coqui-da-cv.tar.bz2",
+  "size": 67066232
+ },
+ {
+  "name": "vits-coqui-sl-cv.tar.bz2",
+  "size": 67049105
+ },
+ {
+  "name": "vits-coqui-lt-cv.tar.bz2",
+  "size": 67056512
+ },
+ {
+  "name": "vits-coqui-de-css10.tar.bz2",
+  "size": 67104896
+ },
+ {
+  "name": "vits-coqui-bg-cv.tar.bz2",
+  "size": 67042012
+ },
+ {
+  "name": "vits-coqui-fr-css10.tar.bz2",
+  "size": 67044087
+ },
+ {
+  "name": "vits-coqui-cs-cv.tar.bz2",
+  "size": 67069104
+ },
+ {
+  "name": "vits-coqui-fi-css10.tar.bz2",
+  "size": 67101501
+ },
+ {
+  "name": "vits-coqui-sk-cv.tar.bz2",
+  "size": 67066628
+ },
+ {
+  "name": "vits-coqui-hr-cv.tar.bz2",
+  "size": 67071025
+ },
+ {
+  "name": "vits-coqui-ga-cv.tar.bz2",
+  "size": 67043776
+ },
+ {
+  "name": "vits-coqui-et-cv.tar.bz2",
+  "size": 67065273
+ },
+ {
+  "name": "vits-coqui-ro-cv.tar.bz2",
+  "size": 67065304
+ },
+ {
+  "name": "vits-coqui-nl-css10.tar.bz2",
+  "size": 67116408
+ },
+ {
+  "name": "vits-coqui-pt-cv.tar.bz2",
+  "size": 67043814
+ },
+ {
+  "name": "vits-coqui-bn-custom_female.tar.bz2",
+  "size": 108053596
+ },
+ {
+  "name": "vits-coqui-mt-cv.tar.bz2",
+  "size": 67069724
+ },
+ {
+  "name": "vits-coqui-lv-cv.tar.bz2",
+  "size": 67054606
+ },
+ {
+  "name": "vits-coqui-pl-mai_female.tar.bz2",
+  "size": 67062377
+ },
+ {
+  "name": "vits-coqui-es-css10.tar.bz2",
+  "size": 67086376
+ },
+ {
+  "name": "vits-coqui-sv-cv.tar.bz2",
+  "size": 67067785
+ },
+ {
+  "name": "vits-coqui-uk-mai.tar.bz2",
+  "size": 67010113
+ },
+ {
+  "name": "vits-piper-en_US-glados.tar.bz2",
+  "size": 67208137
+ },
+ {
+  "name": "vits-piper-es-glados-medium.tar.bz2",
+  "size": 67204723
+ },
+ {
+  "name": "vits-mms-nan.tar.bz2",
+  "size": 107721349
+ },
+ {
+  "name": "vits-mms-eng.tar.bz2",
+  "size": 107737708
+ },
+ {
+  "name": "vits-mms-spa.tar.bz2",
+  "size": 107732096
+ },
+ {
+  "name": "vits-mms-fra.tar.bz2",
+  "size": 107713220
+ },
+ {
+  "name": "vits-mms-tha.tar.bz2",
+  "size": 107763751
+ },
+ {
+  "name": "vits-mms-ukr.tar.bz2",
+  "size": 107717953
+ },
+ {
+  "name": "vits-mms-rus.tar.bz2",
+  "size": 107761221
+ },
+ {
+  "name": "vits-mms-deu.tar.bz2",
+  "size": 107710502
+ },
+ {
+  "name": "vits-piper-fa-haaniye_low.tar.bz2",
+  "size": 67092634
+ },
+ {
+  "name": "vits-mimic3-el_GR-rapunzelina_low.tar.bz2",
+  "size": 66887821
+ },
+ {
+  "name": "vits-mimic3-ko_KO-kss_low.tar.bz2",
+  "size": 66838474
+ },
+ {
+  "name": "vits-mimic3-fa-haaniye_low.tar.bz2",
+  "size": 67093314
+ },
+ {
+  "name": "vits-mimic3-hu_HU-diana-majlinger_low.tar.bz2",
+  "size": 66892877
+ },
+ {
+  "name": "vits-mimic3-af_ZA-google-nwu_low.tar.bz2",
+  "size": 79962606
+ },
+ {
+  "name": "vits-mimic3-pl_PL-m-ailabs_low.tar.bz2",
+  "size": 80009992
+ },
+ {
+  "name": "vits-mimic3-gu_IN-cmu-indic_low.tar.bz2",
+  "size": 79992004
+ },
+ {
+  "name": "vits-mimic3-ne_NP-ne-google_low.tar.bz2",
+  "size": 79869474
+ },
+ {
+  "name": "vits-mimic3-vi_VN-vais1000_low.tar.bz2",
+  "size": 66821421
+ },
+ {
+  "name": "vits-mimic3-fi_FI-harri-tapani-ylilammi_low.tar.bz2",
+  "size": 66891147
+ },
+ {
+  "name": "vits-mimic3-bn-multi_low.tar.bz2",
+  "size": 79886227
+ },
+ {
+  "name": "vits-mimic3-es_ES-m-ailabs_low.tar.bz2",
+  "size": 80016960
+ },
+ {
+  "name": "vits-mimic3-tn_ZA-google-nwu_low.tar.bz2",
+  "size": 79920863
+ },
+ {
+  "name": "vits-cantonese-hf-xiaomaiiwn.tar.bz2",
+  "size": 107995442
+ },
+ {
+  "name": "vits-zh-aishell3.tar.bz2",
+  "size": 146922607
+ },
+ {
+  "name": "vits-icefall-zh-aishell3.tar.bz2",
+  "size": 31559701
+ },
+ {
+  "name": "vits-ljs.tar.bz2",
+  "size": 109037061
+ },
+ {
+  "name": "vits-zh-hf-bronya.tar.bz2",
+  "size": 120595102
+ },
+ {
+  "name": "vits-zh-hf-echo.tar.bz2",
+  "size": 120559956
+ },
+ {
+  "name": "vits-zh-hf-abyssinvoker.tar.bz2",
+  "size": 120579632
+ },
+ {
+  "name": "vits-zh-hf-keqing.tar.bz2",
+  "size": 120592220
+ },
+ {
+  "name": "vits-zh-hf-doom.tar.bz2",
+  "size": 120556412
+ },
+ {
+  "name": "vits-zh-hf-eula.tar.bz2",
+  "size": 120562119
+ },
+ {
+  "name": "vits-zh-hf-theresa.tar.bz2",
+  "size": 120596617
+ },
+ {
+  "name": "vits-zh-hf-zenyatta.tar.bz2",
+  "size": 120588994
+ },
+ {
+  "name": "vits-zh-hf-fanchen-ZhiHuiLaoZhe_new.tar.bz2",
+  "size": 119402911
+ },
+ {
+  "name": "vits-zh-hf-fanchen-unity.tar.bz2",
+  "size": 119143475
+ },
+ {
+  "name": "vits-zh-hf-fanchen-C.tar.bz2",
+  "size": 119326431
+ },
+ {
+  "name": "vits-zh-hf-fanchen-ZhiHuiLaoZhe.tar.bz2",
+  "size": 119467924
+ },
+ {
+  "name": "vits-zh-hf-fanchen-wnj.tar.bz2",
+  "size": 119159130
+ },
+ {
+  "name": "sherpa-onnx-vits-zh-ll.tar.bz2",
+  "size": 118810709
+ },
+ {
+  "name": "vits-piper-en_GB-southern_english_female_medium.tar.bz2",
+  "size": 80253832
+ },
+ {
+  "name": "vits-melo-tts-zh_en.tar.bz2",
+  "size": 167006755
+ },
+ {
+  "name": "vits-melo-tts-en.tar.bz2",
+  "size": 162758237
+ },
+ {
+  "name": "vits-piper-nl_BE-rdh-medium.tar.bz2",
+  "size": 67047636
+ },
+ {
+  "name": "vits-piper-nl_BE-rdh-x_low.tar.bz2",
+  "size": 26454425
+ },
+ {
+  "name": "vits-piper-zh_CN-huayan-medium.tar.bz2",
+  "size": 67255926
+ },
+ {
+  "name": "vits-piper-fa_en-rezahedayatfar-ibrahimwalk-medium.tar.bz2",
+  "size": 67246929
+ },
+ {
+  "name": "matcha-tts-fa_en-musa.tar.bz2",
+  "size": 76509077
+ },
+ {
+  "name": "matcha-tts-fa_en-khadijah.tar.bz2",
+  "size": 76513070
+ },
+ {
+  "name": "vits-piper-ka_GE-natia-medium.tar.bz2",
+  "size": 67209457
+ },
+ {
+  "name": "vits-piper-ka_GE-natia-medium-int8.tar.bz2",
+  "size": 21099875
+ },
+ {
+  "name": "vits-piper-ka_GE-natia-medium-fp16.tar.bz2",
+  "size": 35906218
+ },
+ {
+  "name": "vits-piper-kk_KZ-raya-x_low-fp16.tar.bz2",
+  "size": 16485583
+ },
+ {
+  "name": "vits-piper-kk_KZ-issai-high.tar.bz2",
+  "size": 129278805
+ },
+ {
+  "name": "vits-piper-kk_KZ-issai-high-int8.tar.bz2",
+  "size": 35999225
+ },
+ {
+  "name": "vits-piper-kk_KZ-issai-high-fp16.tar.bz2",
+  "size": 64699330
+ },
+ {
+  "name": "vits-piper-kk_KZ-iseke-x_low.tar.bz2",
+  "size": 26517675
+ },
+ {
+  "name": "vits-piper-kk_KZ-iseke-x_low-int8.tar.bz2",
+  "size": 13385789
+ },
+ {
+  "name": "vits-piper-kk_KZ-iseke-x_low-fp16.tar.bz2",
+  "size": 16483081
+ },
+ {
+  "name": "vits-piper-no_NO-talesyntese-medium.tar.bz2",
+  "size": 67194829
+ },
+ {
+  "name": "vits-piper-no_NO-talesyntese-medium-int8.tar.bz2",
+  "size": 21072816
+ },
+ {
+  "name": "vits-piper-no_NO-talesyntese-medium-fp16.tar.bz2",
+  "size": 35890087
+ },
+ {
+  "name": "vits-piper-sl_SI-artur-medium.tar.bz2",
+  "size": 67025668
+ },
+ {
+  "name": "vits-piper-sl_SI-artur-medium-int8.tar.bz2",
+  "size": 21404286
+ },
+ {
+  "name": "vits-piper-sl_SI-artur-medium-fp16.tar.bz2",
+  "size": 35676522
+ },
+ {
+  "name": "vits-piper-sk_SK-lili-medium.tar.bz2",
+  "size": 67183092
+ },
+ {
+  "name": "vits-piper-sk_SK-lili-medium-int8.tar.bz2",
+  "size": 21281868
+ },
+ {
+  "name": "vits-piper-vi_VN-25hours_single-low.tar.bz2",
+  "size": 67059380
+ },
+ {
+  "name": "vits-piper-sk_SK-lili-medium-fp16.tar.bz2",
+  "size": 35877753
+ },
+ {
+  "name": "vits-piper-vi_VN-25hours_single-low-int8.tar.bz2",
+  "size": 21222102
+ },
+ {
+  "name": "vits-piper-vi_VN-25hours_single-low-fp16.tar.bz2",
+  "size": 35794724
+ },
+ {
+  "name": "vits-piper-ml_IN-meera-medium.tar.bz2",
+  "size": 67195010
+ },
+ {
+  "name": "vits-piper-ml_IN-meera-medium-int8.tar.bz2",
+  "size": 21112290
+ },
+ {
+  "name": "vits-piper-ml_IN-meera-medium-fp16.tar.bz2",
+  "size": 35894598
+ },
+ {
+  "name": "vits-piper-sr_RS-serbski_institut-medium-fp16.tar.bz2",
+  "size": 41867282
+ },
+ {
+  "name": "vits-piper-tr_TR-fettah-medium.tar.bz2",
+  "size": 67174342
+ },
+ {
+  "name": "vits-piper-tr_TR-fettah-medium-int8.tar.bz2",
+  "size": 21186168
+ },
+ {
+  "name": "vits-piper-tr_TR-fettah-medium-fp16.tar.bz2",
+  "size": 35869882
+ },
+ {
+  "name": "kokoro-multi-lang-v1_0.tar.bz2",
+  "size": 349418188
+ },
+ {
+  "name": "kokoro-int8-multi-lang-v1_0.tar.bz2",
+  "size": 131839838
+ },
+ {
+  "name": "kokoro-multi-lang-v1_1.tar.bz2",
+  "size": 364816464
+ },
+ {
+  "name": "kokoro-int8-multi-lang-v1_1.tar.bz2",
+  "size": 147031220
+ },
+ {
+  "name": "vits-piper-en_GB-northern_english_male-medium.tar.bz2",
+  "size": 67210490
+ },
+ {
+  "name": "vits-piper-en_GB-northern_english_male-medium-int8.tar.bz2",
+  "size": 21100291
+ },
+ {
+  "name": "vits-piper-en_GB-northern_english_male-medium-fp16.tar.bz2",
+  "size": 35885055
+ },
+ {
+  "name": "vits-piper-en_GB-jenny_dioco-medium.tar.bz2",
+  "size": 67225842
+ },
+ {
+  "name": "vits-piper-en_GB-jenny_dioco-medium-int8.tar.bz2",
+  "size": 20950036
+ },
+ {
+  "name": "vits-piper-en_US-kristin-medium.tar.bz2",
+  "size": 67259230
+ },
+ {
+  "name": "vits-piper-en_GB-jenny_dioco-medium-fp16.tar.bz2",
+  "size": 35924431
+ },
+ {
+  "name": "vits-piper-en_US-kristin-medium-int8.tar.bz2",
+  "size": 20882061
+ },
+ {
+  "name": "vits-piper-en_US-kristin-medium-fp16.tar.bz2",
+  "size": 35953946
+ },
+ {
+  "name": "vits-piper-en_GB-alan-medium.tar.bz2",
+  "size": 67220121
+ },
+ {
+  "name": "vits-piper-en_GB-alan-medium-int8.tar.bz2",
+  "size": 21103831
+ },
+ {
+  "name": "vits-piper-en_GB-alan-medium-fp16.tar.bz2",
+  "size": 35894428
+ },
+ {
+  "name": "vits-piper-en_US-amy-low.tar.bz2",
+  "size": 67095344
+ },
+ {
+  "name": "vits-piper-en_GB-alan-low.tar.bz2",
+  "size": 67086942
+ },
+ {
+  "name": "vits-piper-en_US-amy-low-int8.tar.bz2",
+  "size": 21099246
+ },
+ {
+  "name": "vits-piper-en_GB-alan-low-int8.tar.bz2",
+  "size": 21289969
+ },
+ {
+  "name": "vits-piper-en_US-amy-low-fp16.tar.bz2",
+  "size": 35850818
+ },
+ {
+  "name": "vits-piper-en_GB-alan-low-fp16.tar.bz2",
+  "size": 35835596
+ },
+ {
+  "name": "vits-piper-en_GB-southern_english_male-medium.tar.bz2",
+  "size": 80299212
+ },
+ {
+  "name": "vits-piper-en_GB-southern_english_male-medium-int8.tar.bz2",
+  "size": 23601346
+ },
+ {
+  "name": "vits-piper-en_GB-cori-medium.tar.bz2",
+  "size": 67257412
+ },
+ {
+  "name": "vits-piper-en_GB-southern_english_male-medium-fp16.tar.bz2",
+  "size": 42043651
+ },
+ {
+  "name": "vits-piper-en_GB-cori-medium-int8.tar.bz2",
+  "size": 20768736
+ },
+ {
+  "name": "vits-piper-en_US-lessac-high.tar.bz2",
+  "size": 115545841
+ },
+ {
+  "name": "vits-piper-en_GB-cori-medium-fp16.tar.bz2",
+  "size": 35960750
+ },
+ {
+  "name": "vits-piper-en_GB-cori-high.tar.bz2",
+  "size": 115574061
+ },
+ {
+  "name": "vits-piper-en_US-lessac-high-int8.tar.bz2",
+  "size": 35022847
+ },
+ {
+  "name": "vits-piper-en_US-lessac-high-fp16.tar.bz2",
+  "size": 58440833
+ },
+ {
+  "name": "vits-piper-en_GB-cori-high-int8.tar.bz2",
+  "size": 35038210
+ },
+ {
+  "name": "vits-piper-en_GB-aru-medium.tar.bz2",
+  "size": 80309222
+ },
+ {
+  "name": "vits-piper-en_GB-cori-high-fp16.tar.bz2",
+  "size": 58620472
+ },
+ {
+  "name": "vits-piper-en_GB-aru-medium-int8.tar.bz2",
+  "size": 23125986
+ },
+ {
+  "name": "vits-piper-en_US-norman-medium.tar.bz2",
+  "size": 67203672
+ },
+ {
+  "name": "vits-piper-en_GB-aru-medium-fp16.tar.bz2",
+  "size": 42096585
+ },
+ {
+  "name": "vits-piper-en_US-norman-medium-int8.tar.bz2",
+  "size": 20987233
+ },
+ {
+  "name": "vits-piper-en_GB-alba-medium.tar.bz2",
+  "size": 67212349
+ },
+ {
+  "name": "vits-piper-en_US-norman-medium-fp16.tar.bz2",
+  "size": 35897612
+ },
+ {
+  "name": "vits-piper-en_GB-alba-medium-int8.tar.bz2",
+  "size": 21104326
+ },
+ {
+  "name": "vits-piper-en_GB-alba-medium-fp16.tar.bz2",
+  "size": 35917308
+ },
+ {
+  "name": "vits-piper-en_GB-southern_english_female-low.tar.bz2",
+  "size": 67073626
+ },
+ {
+  "name": "vits-piper-en_GB-southern_english_female-low-int8.tar.bz2",
+  "size": 21207615
+ },
+ {
+  "name": "vits-piper-en_GB-southern_english_female-low-fp16.tar.bz2",
+  "size": 35817072
+ },
+ {
+  "name": "vits-piper-en_GB-semaine-medium.tar.bz2",
+  "size": 80241918
+ },
+ {
+  "name": "vits-piper-en_GB-semaine-medium-int8.tar.bz2",
+  "size": 23227810
+ },
+ {
+  "name": "vits-piper-en_GB-semaine-medium-fp16.tar.bz2",
+  "size": 42002984
+ },
+ {
+  "name": "vits-piper-en_US-arctic-medium-int8.tar.bz2",
+  "size": 23320524
+ },
+ {
+  "name": "vits-piper-en_US-arctic-medium-fp16.tar.bz2",
+  "size": 42116993
+ },
+ {
+  "name": "vits-piper-en_US-glados-high.tar.bz2",
+  "size": 115586982
+ },
+ {
+  "name": "vits-piper-en_US-glados-high-int8.tar.bz2",
+  "size": 35125025
+ },
+ {
+  "name": "vits-piper-en_US-glados-high-fp16.tar.bz2",
+  "size": 58465308
+ },
+ {
+  "name": "vits-piper-en_US-ryan-high.tar.bz2",
+  "size": 115630708
+ },
+ {
+  "name": "vits-piper-en_US-ryan-high-int8.tar.bz2",
+  "size": 34473341
+ },
+ {
+  "name": "vits-piper-en_US-ryan-high-fp16.tar.bz2",
+  "size": 58520438
+ },
+ {
+  "name": "vits-piper-en_US-reza_ibrahim-medium.tar.bz2",
+  "size": 67214755
+ },
+ {
+  "name": "vits-piper-en_US-l2arctic-medium.tar.bz2",
+  "size": 80314104
+ },
+ {
+  "name": "vits-piper-en_US-reza_ibrahim-medium-int8.tar.bz2",
+  "size": 21139277
+ },
+ {
+  "name": "vits-piper-en_US-l2arctic-medium-int8.tar.bz2",
+  "size": 23273574
+ },
+ {
+  "name": "vits-piper-en_US-ryan-low-int8.tar.bz2",
+  "size": 21212659
+ },
+ {
+  "name": "vits-piper-en_US-reza_ibrahim-medium-fp16.tar.bz2",
+  "size": 35897244
+ },
+ {
+  "name": "vits-piper-en_US-l2arctic-medium-fp16.tar.bz2",
+  "size": 42145488
+ },
+ {
+  "name": "vits-piper-en_US-ryan-low-fp16.tar.bz2",
+  "size": 35839979
+ },
+ {
+  "name": "vits-piper-en_US-kusal-medium.tar.bz2",
+  "size": 67219292
+ },
+ {
+  "name": "vits-piper-en_US-kusal-medium-int8.tar.bz2",
+  "size": 21044470
+ },
+ {
+  "name": "vits-piper-en_US-kusal-medium-fp16.tar.bz2",
+  "size": 35899033
+ },
+ {
+  "name": "vits-piper-en_GB-vctk-medium.tar.bz2",
+  "size": 80488085
+ },
+ {
+  "name": "vits-piper-en_GB-vctk-medium-int8.tar.bz2",
+  "size": 23366127
+ },
+ {
+  "name": "vits-piper-en_GB-vctk-medium-fp16.tar.bz2",
+  "size": 42270701
+ },
+ {
+  "name": "vits-piper-en_GB-southern_english_female-medium.tar.bz2",
+  "size": 80275090
+ },
+ {
+  "name": "vits-piper-en_GB-southern_english_female-medium-int8.tar.bz2",
+  "size": 23714066
+ },
+ {
+  "name": "vits-piper-en_GB-southern_english_female-medium-fp16.tar.bz2",
+  "size": 42077474
+ },
+ {
+  "name": "vits-piper-en_US-ljspeech-medium.tar.bz2",
+  "size": 67169893
+ },
+ {
+  "name": "vits-piper-en_US-ljspeech-medium-int8.tar.bz2",
+  "size": 21090429
+ },
+ {
+  "name": "vits-piper-en_US-ljspeech-medium-fp16.tar.bz2",
+  "size": 35830836
+ },
+ {
+  "name": "vits-piper-en_US-ljspeech-high.tar.bz2",
+  "size": 115817679
+ },
+ {
+  "name": "vits-piper-en_US-ljspeech-high-int8.tar.bz2",
+  "size": 33886472
+ },
+ {
+  "name": "vits-piper-en_US-ljspeech-high-fp16.tar.bz2",
+  "size": 58732972
+ },
+ {
+  "name": "kokoro-int8-en-v0_19.tar.bz2",
+  "size": 103248205
+ },
+ {
+  "name": "kokoro-en-v0_19.tar.bz2",
+  "size": 319625534
+ },
+ {
+  "name": "sherpa-onnx-zipvoice-distill-zh-en-emilia.tar.bz2",
+  "size": 634815977
+ },
+ {
+  "name": "sherpa-onnx-zipvoice-zh-en-emilia.tar.bz2",
+  "size": 634731511
+ },
+ {
+  "name": "vits-piper-en_GB-dii-high.tar.bz2",
+  "size": 67229442
+ },
+ {
+  "name": "vits-piper-en_GB-dii-high-int8.tar.bz2",
+  "size": 21037620
+ },
+ {
+  "name": "vits-piper-en_GB-dii-high-fp16.tar.bz2",
+  "size": 35905738
+ },
+ {
+  "name": "vits-piper-en_US-miro-high.tar.bz2",
+  "size": 67198472
+ },
+ {
+  "name": "vits-piper-en_US-miro-high-int8.tar.bz2",
+  "size": 21336806
+ },
+ {
+  "name": "vits-piper-en_US-miro-high-fp16.tar.bz2",
+  "size": 35862796
+ },
+ {
+  "name": "vits-piper-en_GB-miro-high.tar.bz2",
+  "size": 67194499
+ },
+ {
+  "name": "vits-piper-en_GB-miro-high-int8.tar.bz2",
+  "size": 21347062
+ },
+ {
+  "name": "vits-piper-en_GB-miro-high-fp16.tar.bz2",
+  "size": 35861633
+ },
+ {
+  "name": "vits-piper-en_US-kathleen-low.tar.bz2",
+  "size": 67118360
+ },
+ {
+  "name": "vits-piper-en_US-kathleen-low-int8.tar.bz2",
+  "size": 21289266
+ },
+ {
+  "name": "vits-piper-en_US-kathleen-low-fp16.tar.bz2",
+  "size": 35865834
+ },
+ {
+  "name": "vits-piper-en_US-john-medium.tar.bz2",
+  "size": 67249181
+ },
+ {
+  "name": "vits-piper-tr_TR-fahrettin-medium.tar.bz2",
+  "size": 67212827
+ },
+ {
+  "name": "vits-piper-en_US-john-medium-int8.tar.bz2",
+  "size": 20800096
+ },
+ {
+  "name": "vits-piper-tr_TR-fahrettin-medium-int8.tar.bz2",
+  "size": 21118817
+ },
+ {
+  "name": "vits-piper-en_US-john-medium-fp16.tar.bz2",
+  "size": 35965743
+ },
+ {
+  "name": "vits-piper-ru_RU-ruslan-medium.tar.bz2",
+  "size": 67210684
+ },
+ {
+  "name": "vits-piper-tr_TR-fahrettin-medium-fp16.tar.bz2",
+  "size": 35935124
+ },
+ {
+  "name": "vits-piper-en_US-joe-medium.tar.bz2",
+  "size": 67169394
+ },
+ {
+  "name": "vits-piper-ru_RU-ruslan-medium-int8.tar.bz2",
+  "size": 21127907
+ },
+ {
+  "name": "vits-piper-ml_IN-arjun-medium.tar.bz2",
+  "size": 67222458
+ },
+ {
+  "name": "vits-piper-en_US-joe-medium-int8.tar.bz2",
+  "size": 21230019
+ },
+ {
+  "name": "vits-piper-ru_RU-ruslan-medium-fp16.tar.bz2",
+  "size": 35924102
+ },
+ {
+  "name": "vits-piper-en_US-joe-medium-fp16.tar.bz2",
+  "size": 35875903
+ },
+ {
+  "name": "vits-piper-ml_IN-arjun-medium-int8.tar.bz2",
+  "size": 20838242
+ },
+ {
+  "name": "vits-piper-en_US-libritts_r-medium.tar.bz2",
+  "size": 82038311
+ },
+ {
+  "name": "vits-piper-ru_RU-irina-medium.tar.bz2",
+  "size": 67153308
+ },
+ {
+  "name": "vits-piper-en_US-hfc_male-medium.tar.bz2",
+  "size": 67214049
+ },
+ {
+  "name": "vits-piper-uk_UA-lada-x_low.tar.bz2",
+  "size": 26520908
+ },
+ {
+  "name": "vits-piper-ml_IN-arjun-medium-fp16.tar.bz2",
+  "size": 35929831
+ },
+ {
+  "name": "vits-piper-en_US-libritts_r-medium-int8.tar.bz2",
+  "size": 23398348
+ },
+ {
+  "name": "vits-piper-ru_RU-irina-medium-int8.tar.bz2",
+  "size": 21149417
+ },
+ {
+  "name": "vits-piper-sw_CD-lanfrica-medium.tar.bz2",
+  "size": 67217230
+ },
+ {
+  "name": "vits-piper-en_US-hfc_male-medium-int8.tar.bz2",
+  "size": 20984819
+ },
+ {
+  "name": "vits-piper-en_US-sam-medium.tar.bz2",
+  "size": 67249919
+ },
+ {
+  "name": "vits-piper-en_US-libritts_r-medium-fp16.tar.bz2",
+  "size": 43071574
+ },
+ {
+  "name": "vits-piper-uk_UA-lada-x_low-int8.tar.bz2",
+  "size": 13332976
+ },
+ {
+  "name": "vits-piper-lv_LV-aivars-medium.tar.bz2",
+  "size": 67196173
+ },
+ {
+  "name": "vits-piper-ru_RU-irina-medium-fp16.tar.bz2",
+  "size": 35868633
+ },
+ {
+  "name": "vits-piper-en_US-hfc_male-medium-fp16.tar.bz2",
+  "size": 35924983
+ },
+ {
+  "name": "vits-piper-sw_CD-lanfrica-medium-int8.tar.bz2",
+  "size": 21082704
+ },
+ {
+  "name": "vits-piper-en_US-libritts-high.tar.bz2",
+  "size": 131033598
+ },
+ {
+  "name": "vits-piper-en_US-hfc_female-medium.tar.bz2",
+  "size": 67228166
+ },
+ {
+  "name": "vits-piper-uk_UA-lada-x_low-fp16.tar.bz2",
+  "size": 16518117
+ },
+ {
+  "name": "vits-piper-ru_RU-dmitri-medium.tar.bz2",
+  "size": 67188551
+ },
+ {
+  "name": "vits-piper-sw_CD-lanfrica-medium-fp16.tar.bz2",
+  "size": 35925900
+ },
+ {
+  "name": "vits-piper-en_US-sam-medium-int8.tar.bz2",
+  "size": 20874946
+ },
+ {
+  "name": "vits-piper-lv_LV-aivars-medium-int8.tar.bz2",
+  "size": 20990634
+ },
+ {
+  "name": "vits-piper-en_US-hfc_female-medium-int8.tar.bz2",
+  "size": 21021379
+ },
+ {
+  "name": "vits-piper-en_US-libritts-high-int8.tar.bz2",
+  "size": 36406088
+ },
+ {
+  "name": "vits-piper-ru_RU-dmitri-medium-int8.tar.bz2",
+  "size": 21129441
+ },
+ {
+  "name": "vits-piper-en_US-sam-medium-fp16.tar.bz2",
+  "size": 35924166
+ },
+ {
+  "name": "vits-piper-lv_LV-aivars-medium-fp16.tar.bz2",
+  "size": 35917976
+ },
+ {
+  "name": "vits-piper-en_US-hfc_female-medium-fp16.tar.bz2",
+  "size": 35950347
+ },
+ {
+  "name": "vits-piper-en_US-libritts-high-fp16.tar.bz2",
+  "size": 66107085
+ },
+ {
+  "name": "vits-piper-ru_RU-dmitri-medium-fp16.tar.bz2",
+  "size": 35906518
+ },
+ {
+  "name": "vits-piper-en_US-danny-low.tar.bz2",
+  "size": 67107780
+ },
+ {
+  "name": "vits-piper-lb_LU-marylux-medium.tar.bz2",
+  "size": 67184319
+ },
+ {
+  "name": "vits-piper-en_US-ryan-medium.tar.bz2",
+  "size": 67213100
+ },
+ {
+  "name": "vits-piper-en_US-lessac-medium.tar.bz2",
+  "size": 67230653
+ },
+ {
+  "name": "vits-piper-ru_RU-denis-medium.tar.bz2",
+  "size": 67190991
+ },
+ {
+  "name": "vits-piper-en_US-danny-low-int8.tar.bz2",
+  "size": 21184916
+ },
+ {
+  "name": "vits-piper-lb_LU-marylux-medium-int8.tar.bz2",
+  "size": 21143108
+ },
+ {
+  "name": "vits-piper-uk_UA-ukrainian_tts-medium.tar.bz2",
+  "size": 80355083
+ },
+ {
+  "name": "vits-piper-en_US-lessac-medium-int8.tar.bz2",
+  "size": 20969179
+ },
+ {
+  "name": "vits-piper-ru_RU-denis-medium-int8.tar.bz2",
+  "size": 21058905
+ },
+ {
+  "name": "vits-piper-en_US-ryan-medium-int8.tar.bz2",
+  "size": 21083446
+ },
+ {
+  "name": "vits-piper-en_US-danny-low-fp16.tar.bz2",
+  "size": 35828544
+ },
+ {
+  "name": "vits-piper-vi_VN-vais1000-medium.tar.bz2",
+  "size": 67154040
+ },
+ {
+  "name": "vits-piper-vi_VN-vivos-x_low.tar.bz2",
+  "size": 33409065
+ },
+ {
+  "name": "vits-piper-en_US-lessac-medium-fp16.tar.bz2",
+  "size": 35955459
+ },
+ {
+  "name": "vits-piper-lb_LU-marylux-medium-fp16.tar.bz2",
+  "size": 35900797
+ },
+ {
+  "name": "vits-piper-ru_RU-denis-medium-fp16.tar.bz2",
+  "size": 35904400
+ },
+ {
+  "name": "vits-piper-uk_UA-ukrainian_tts-medium-int8.tar.bz2",
+  "size": 22767075
+ },
+ {
+  "name": "vits-piper-en_US-bryce-medium.tar.bz2",
+  "size": 67278133
+ },
+ {
+  "name": "vits-piper-en_US-ryan-medium-fp16.tar.bz2",
+  "size": 35928701
+ },
+ {
+  "name": "vits-piper-vi_VN-vivos-x_low-int8.tar.bz2",
+  "size": 14683150
+ },
+ {
+  "name": "vits-piper-vi_VN-vais1000-medium-int8.tar.bz2",
+  "size": 21574925
+ },
+ {
+  "name": "vits-piper-en_US-lessac-low.tar.bz2",
+  "size": 67097098
+ },
+ {
+  "name": "vits-piper-ro_RO-mihai-medium.tar.bz2",
+  "size": 67182137
+ },
+ {
+  "name": "vits-piper-uk_UA-ukrainian_tts-medium-fp16.tar.bz2",
+  "size": 41843806
+ },
+ {
+  "name": "vits-piper-en_US-bryce-medium-int8.tar.bz2",
+  "size": 20910568
+ },
+ {
+  "name": "vits-piper-kk_KZ-raya-x_low.tar.bz2",
+  "size": 26497880
+ },
+ {
+  "name": "vits-piper-en_US-ryan-low.tar.bz2",
+  "size": 67100179
+ },
+ {
+  "name": "vits-piper-en_US-lessac-low-int8.tar.bz2",
+  "size": 21070568
+ },
+ {
+  "name": "vits-piper-sr_RS-serbski_institut-medium.tar.bz2",
+  "size": 80298557
+ },
+ {
+  "name": "vits-piper-en_US-bryce-medium-fp16.tar.bz2",
+  "size": 35980236
+ },
+ {
+  "name": "vits-piper-vi_VN-vivos-x_low-fp16.tar.bz2",
+  "size": 19814501
+ },
+ {
+  "name": "vits-piper-vi_VN-vais1000-medium-fp16.tar.bz2",
+  "size": 35857397
+ },
+ {
+  "name": "vits-piper-ro_RO-mihai-medium-int8.tar.bz2",
+  "size": 21081899
+ },
+ {
+  "name": "vits-piper-kk_KZ-raya-x_low-int8.tar.bz2",
+  "size": 13315906
+ },
+ {
+  "name": "vits-piper-en_US-lessac-low-fp16.tar.bz2",
+  "size": 35809589
+ },
+ {
+  "name": "vits-piper-en_US-arctic-medium.tar.bz2",
+  "size": 80255511
+ },
+ {
+  "name": "vits-piper-sr_RS-serbski_institut-medium-int8.tar.bz2",
+  "size": 23447445
+ },
+ {
+  "name": "vits-piper-el_GR-rapunzelina-low.tar.bz2",
+  "size": 67105521
+ },
+ {
+  "name": "vits-piper-el_GR-rapunzelina-low-int8.tar.bz2",
+  "size": 21090546
+ },
+ {
+  "name": "vits-piper-el_GR-rapunzelina-low-fp16.tar.bz2",
+  "size": 35822591
+ },
+ {
+  "name": "vits-piper-de_DE-karlsson-low.tar.bz2",
+  "size": 67100500
+ },
+ {
+  "name": "vits-piper-de_DE-karlsson-low-int8.tar.bz2",
+  "size": 21126670
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten_emotional-medium.tar.bz2",
+  "size": 80215792
+ },
+ {
+  "name": "vits-piper-de_DE-karlsson-low-fp16.tar.bz2",
+  "size": 35820147
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten_emotional-medium-int8.tar.bz2",
+  "size": 23479221
+ },
+ {
+  "name": "vits-piper-de_DE-eva_k-x_low.tar.bz2",
+  "size": 26521242
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten_emotional-medium-fp16.tar.bz2",
+  "size": 42066269
+ },
+ {
+  "name": "vits-piper-de_DE-eva_k-x_low-int8.tar.bz2",
+  "size": 13321491
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten-medium.tar.bz2",
+  "size": 67214254
+ },
+ {
+  "name": "vits-piper-de_DE-eva_k-x_low-fp16.tar.bz2",
+  "size": 16520181
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten-medium-int8.tar.bz2",
+  "size": 20949833
+ },
+ {
+  "name": "vits-piper-da_DK-talesyntese-medium.tar.bz2",
+  "size": 67185257
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten-medium-fp16.tar.bz2",
+  "size": 35939362
+ },
+ {
+  "name": "vits-piper-da_DK-talesyntese-medium-int8.tar.bz2",
+  "size": 21025554
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten-low.tar.bz2",
+  "size": 67101576
+ },
+ {
+  "name": "vits-piper-da_DK-talesyntese-medium-fp16.tar.bz2",
+  "size": 35909793
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten-low-int8.tar.bz2",
+  "size": 21292232
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten-low-fp16.tar.bz2",
+  "size": 35856627
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten-high.tar.bz2",
+  "size": 115591546
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten-high-int8.tar.bz2",
+  "size": 35066527
+ },
+ {
+  "name": "vits-piper-de_DE-thorsten-high-fp16.tar.bz2",
+  "size": 58514258
+ },
+ {
+  "name": "vits-piper-de_DE-ramona-low.tar.bz2",
+  "size": 67084795
+ },
+ {
+  "name": "vits-piper-cs_CZ-jirka-medium.tar.bz2",
+  "size": 67212775
+ },
+ {
+  "name": "vits-piper-de_DE-ramona-low-int8.tar.bz2",
+  "size": 21199380
+ },
+ {
+  "name": "vits-piper-cs_CZ-jirka-medium-int8.tar.bz2",
+  "size": 21002417
+ },
+ {
+  "name": "vits-piper-de_DE-ramona-low-fp16.tar.bz2",
+  "size": 35836429
+ },
+ {
+  "name": "vits-piper-cs_CZ-jirka-medium-fp16.tar.bz2",
+  "size": 35939939
+ },
+ {
+  "name": "vits-piper-de_DE-pavoque-low.tar.bz2",
+  "size": 67113377
+ },
+ {
+  "name": "vits-piper-cs_CZ-jirka-low.tar.bz2",
+  "size": 67185771
+ },
+ {
+  "name": "vits-piper-de_DE-pavoque-low-int8.tar.bz2",
+  "size": 21218697
+ },
+ {
+  "name": "vits-piper-cs_CZ-jirka-low-int8.tar.bz2",
+  "size": 21044385
+ },
+ {
+  "name": "vits-piper-de_DE-pavoque-low-fp16.tar.bz2",
+  "size": 35830085
+ },
+ {
+  "name": "vits-piper-cs_CZ-jirka-low-fp16.tar.bz2",
+  "size": 35880475
+ },
+ {
+  "name": "vits-piper-de_DE-miro-high.tar.bz2",
+  "size": 67160790
+ },
+ {
+  "name": "vits-piper-ca_ES-upc_pau-x_low.tar.bz2",
+  "size": 26520095
+ },
+ {
+  "name": "vits-piper-de_DE-miro-high-int8.tar.bz2",
+  "size": 21280966
+ },
+ {
+  "name": "vits-piper-ca_ES-upc_pau-x_low-int8.tar.bz2",
+  "size": 13336411
+ },
+ {
+  "name": "vits-piper-ca_ES-upc_pau-x_low-fp16.tar.bz2",
+  "size": 16519264
+ },
+ {
+  "name": "vits-piper-de_DE-miro-high-fp16.tar.bz2",
+  "size": 35867829
+ },
+ {
+  "name": "vits-piper-ca_ES-upc_ona-x_low.tar.bz2",
+  "size": 26522253
+ },
+ {
+  "name": "vits-piper-de_DE-kerstin-low.tar.bz2",
+  "size": 67107768
+ },
+ {
+  "name": "vits-piper-ca_ES-upc_ona-x_low-int8.tar.bz2",
+  "size": 13350896
+ },
+ {
+  "name": "vits-piper-de_DE-kerstin-low-int8.tar.bz2",
+  "size": 21174728
+ },
+ {
+  "name": "vits-piper-ca_ES-upc_ona-x_low-fp16.tar.bz2",
+  "size": 16520730
+ },
+ {
+  "name": "vits-piper-de_DE-kerstin-low-fp16.tar.bz2",
+  "size": 35827413
+ },
+ {
+  "name": "vits-piper-ca_ES-upc_ona-medium.tar.bz2",
+  "size": 67223188
+ },
+ {
+  "name": "vits-piper-de_DE-glados_turret-medium.tar.bz2",
+  "size": 67197213
+ },
+ {
+  "name": "vits-piper-ca_ES-upc_ona-medium-int8.tar.bz2",
+  "size": 21037706
+ },
+ {
+  "name": "vits-piper-de_DE-glados_turret-medium-int8.tar.bz2",
+  "size": 20949149
+ },
+ {
+  "name": "vits-piper-ca_ES-upc_ona-medium-fp16.tar.bz2",
+  "size": 35940309
+ },
+ {
+  "name": "vits-piper-de_DE-glados_turret-medium-fp16.tar.bz2",
+  "size": 35922963
+ },
+ {
+  "name": "vits-piper-ar_JO-kareem-medium.tar.bz2",
+  "size": 67177830
+ },
+ {
+  "name": "vits-piper-de_DE-glados_turret-low.tar.bz2",
+  "size": 67206901
+ },
+ {
+  "name": "vits-piper-ar_JO-kareem-medium-int8.tar.bz2",
+  "size": 20968771
+ },
+ {
+  "name": "vits-piper-de_DE-glados_turret-low-int8.tar.bz2",
+  "size": 21029949
+ },
+ {
+  "name": "vits-piper-ar_JO-kareem-medium-fp16.tar.bz2",
+  "size": 35893093
+ },
+ {
+  "name": "vits-piper-de_DE-glados_turret-low-fp16.tar.bz2",
+  "size": 35930841
+ },
+ {
+  "name": "vits-piper-ar_JO-kareem-low.tar.bz2",
+  "size": 67117397
+ },
+ {
+  "name": "vits-piper-de_DE-glados_turret-high.tar.bz2",
+  "size": 115573536
+ },
+ {
+  "name": "vits-piper-ar_JO-kareem-low-int8.tar.bz2",
+  "size": 21156438
+ },
+ {
+  "name": "vits-piper-de_DE-glados_turret-high-int8.tar.bz2",
+  "size": 35034925
+ },
+ {
+  "name": "vits-piper-ar_JO-kareem-low-fp16.tar.bz2",
+  "size": 35816733
+ },
+ {
+  "name": "vits-piper-de_DE-glados_turret-high-fp16.tar.bz2",
+  "size": 58422607
+ },
+ {
+  "name": "vits-piper-ar_JO-SA_miro_V2-high.tar.bz2",
+  "size": 66977293
+ },
+ {
+  "name": "vits-piper-de_DE-glados-medium.tar.bz2",
+  "size": 67214838
+ },
+ {
+  "name": "vits-piper-ar_JO-SA_miro_V2-high-int8.tar.bz2",
+  "size": 21875982
+ },
+ {
+  "name": "vits-piper-ar_JO-SA_miro_V2-high-fp16.tar.bz2",
+  "size": 35690929
+ },
+ {
+  "name": "vits-piper-de_DE-glados-medium-int8.tar.bz2",
+  "size": 20966453
+ },
+ {
+  "name": "vits-piper-ar_JO-SA_miro-high.tar.bz2",
+  "size": 66907333
+ },
+ {
+  "name": "vits-piper-de_DE-glados-medium-fp16.tar.bz2",
+  "size": 35928291
+ },
+ {
+  "name": "vits-piper-ar_JO-SA_miro-high-int8.tar.bz2",
+  "size": 22127234
+ },
+ {
+  "name": "vits-piper-de_DE-glados-low.tar.bz2",
+  "size": 67222575
+ },
+ {
+  "name": "vits-piper-ar_JO-SA_miro-high-fp16.tar.bz2",
+  "size": 35613367
+ },
+ {
+  "name": "vits-piper-de_DE-glados-low-int8.tar.bz2",
+  "size": 21035173
+ },
+ {
+  "name": "vits-piper-ar_JO-SA_dii-high.tar.bz2",
+  "size": 66982233
+ },
+ {
+  "name": "vits-piper-de_DE-glados-low-fp16.tar.bz2",
+  "size": 35936903
+ },
+ {
+  "name": "vits-piper-ar_JO-SA_dii-high-int8.tar.bz2",
+  "size": 21998588
+ },
+ {
+  "name": "vits-piper-de_DE-glados-high.tar.bz2",
+  "size": 115594308
+ },
+ {
+  "name": "vits-piper-ar_JO-SA_dii-high-fp16.tar.bz2",
+  "size": 35660844
+ },
+ {
+  "name": "vits-piper-de_DE-glados-high-int8.tar.bz2",
+  "size": 35009386
+ },
+ {
+  "name": "vits-piper-de_DE-glados-high-fp16.tar.bz2",
+  "size": 58427357
+ },
+ {
+  "name": "vits-piper-de_DE-dii-high.tar.bz2",
+  "size": 67200058
+ },
+ {
+  "name": "vits-piper-de_DE-dii-high-int8.tar.bz2",
+  "size": 21030921
+ },
+ {
+  "name": "vits-piper-de_DE-dii-high-fp16.tar.bz2",
+  "size": 35911639
+ },
+ {
+  "name": "vits-piper-it_IT-riccardo-x_low.tar.bz2",
+  "size": 26496614
+ },
+ {
+  "name": "vits-piper-it_IT-riccardo-x_low-int8.tar.bz2",
+  "size": 13329285
+ },
+ {
+  "name": "vits-piper-it_IT-riccardo-x_low-fp16.tar.bz2",
+  "size": 16499635
+ },
+ {
+  "name": "vits-piper-it_IT-paola-medium.tar.bz2",
+  "size": 67221173
+ },
+ {
+  "name": "vits-piper-it_IT-paola-medium-int8.tar.bz2",
+  "size": 21143212
+ },
+ {
+  "name": "vits-piper-it_IT-paola-medium-fp16.tar.bz2",
+  "size": 35942265
+ },
+ {
+  "name": "vits-piper-it_IT-miro-high.tar.bz2",
+  "size": 67162890
+ },
+ {
+  "name": "vits-piper-it_IT-miro-high-int8.tar.bz2",
+  "size": 21238206
+ },
+ {
+  "name": "vits-piper-it_IT-miro-high-fp16.tar.bz2",
+  "size": 35869728
+ },
+ {
+  "name": "vits-piper-is_IS-ugla-medium.tar.bz2",
+  "size": 67376655
+ },
+ {
+  "name": "vits-piper-is_IS-ugla-medium-int8.tar.bz2",
+  "size": 20389158
+ },
+ {
+  "name": "vits-piper-is_IS-ugla-medium-fp16.tar.bz2",
+  "size": 36105990
+ },
+ {
+  "name": "vits-piper-is_IS-steinn-medium.tar.bz2",
+  "size": 67377681
+ },
+ {
+  "name": "vits-piper-it_IT-dii-high.tar.bz2",
+  "size": 67196676
+ },
+ {
+  "name": "vits-piper-is_IS-steinn-medium-int8.tar.bz2",
+  "size": 20053431
+ },
+ {
+  "name": "vits-piper-is_IS-steinn-medium-fp16.tar.bz2",
+  "size": 36086449
+ },
+ {
+  "name": "vits-piper-it_IT-dii-high-int8.tar.bz2",
+  "size": 20998284
+ },
+ {
+  "name": "vits-piper-is_IS-salka-medium.tar.bz2",
+  "size": 67359734
+ },
+ {
+  "name": "vits-piper-it_IT-dii-high-fp16.tar.bz2",
+  "size": 35918948
+ },
+ {
+  "name": "vits-piper-is_IS-salka-medium-int8.tar.bz2",
+  "size": 20189374
+ },
+ {
+  "name": "vits-piper-fr_FR-tom-medium.tar.bz2",
+  "size": 67202955
+ },
+ {
+  "name": "vits-piper-is_IS-salka-medium-fp16.tar.bz2",
+  "size": 36079877
+ },
+ {
+  "name": "vits-piper-is_IS-bui-medium.tar.bz2",
+  "size": 67271654
+ },
+ {
+  "name": "vits-piper-fr_FR-tom-medium-int8.tar.bz2",
+  "size": 21019617
+ },
+ {
+  "name": "vits-piper-is_IS-bui-medium-int8.tar.bz2",
+  "size": 20595115
+ },
+ {
+  "name": "vits-piper-fr_FR-tom-medium-fp16.tar.bz2",
+  "size": 35910915
+ },
+ {
+  "name": "vits-piper-is_IS-bui-medium-fp16.tar.bz2",
+  "size": 35999549
+ },
+ {
+  "name": "vits-piper-id_ID-news_tts-medium.tar.bz2",
+  "size": 67243848
+ },
+ {
+  "name": "vits-piper-fr_FR-siwis-medium.tar.bz2",
+  "size": 67207459
+ },
+ {
+  "name": "vits-piper-id_ID-news_tts-medium-int8.tar.bz2",
+  "size": 21046435
+ },
+ {
+  "name": "vits-piper-fr_FR-siwis-medium-int8.tar.bz2",
+  "size": 20914888
+ },
+ {
+  "name": "vits-piper-id_ID-news_tts-medium-fp16.tar.bz2",
+  "size": 35919731
+ },
+ {
+  "name": "vits-piper-hu_HU-imre-medium.tar.bz2",
+  "size": 67218203
+ },
+ {
+  "name": "vits-piper-fr_FR-siwis-medium-fp16.tar.bz2",
+  "size": 35931166
+ },
+ {
+  "name": "vits-piper-hu_HU-imre-medium-int8.tar.bz2",
+  "size": 21202370
+ },
+ {
+  "name": "vits-piper-fr_FR-siwis-low.tar.bz2",
+  "size": 26522254
+ },
+ {
+  "name": "vits-piper-hu_HU-imre-medium-fp16.tar.bz2",
+  "size": 35923010
+ },
+ {
+  "name": "vits-piper-fr_FR-siwis-low-int8.tar.bz2",
+  "size": 13317962
+ },
+ {
+  "name": "vits-piper-hu_HU-berta-medium.tar.bz2",
+  "size": 67178197
+ },
+ {
+  "name": "vits-piper-fr_FR-siwis-low-fp16.tar.bz2",
+  "size": 16521339
+ },
+ {
+  "name": "vits-piper-hu_HU-berta-medium-int8.tar.bz2",
+  "size": 21072384
+ },
+ {
+  "name": "vits-piper-hu_HU-berta-medium-fp16.tar.bz2",
+  "size": 35910364
+ },
+ {
+  "name": "vits-piper-fr_FR-gilles-low.tar.bz2",
+  "size": 67094350
+ },
+ {
+  "name": "vits-piper-hu_HU-anna-medium.tar.bz2",
+  "size": 67167701
+ },
+ {
+  "name": "vits-piper-fr_FR-gilles-low-int8.tar.bz2",
+  "size": 21248965
+ },
+ {
+  "name": "vits-piper-hu_HU-anna-medium-int8.tar.bz2",
+  "size": 21113090
+ },
+ {
+  "name": "vits-piper-fr_FR-gilles-low-fp16.tar.bz2",
+  "size": 35843760
+ },
+ {
+  "name": "vits-piper-hu_HU-anna-medium-fp16.tar.bz2",
+  "size": 35895143
+ },
+ {
+  "name": "vits-piper-hi_IN-rohan-medium.tar.bz2",
+  "size": 67221139
+ },
+ {
+  "name": "vits-piper-fi_FI-harri-medium.tar.bz2",
+  "size": 67205198
+ },
+ {
+  "name": "vits-piper-hi_IN-rohan-medium-int8.tar.bz2",
+  "size": 21064499
+ },
+ {
+  "name": "vits-piper-fi_FI-harri-medium-int8.tar.bz2",
+  "size": 20984753
+ },
+ {
+  "name": "vits-piper-hi_IN-rohan-medium-fp16.tar.bz2",
+  "size": 35926710
+ },
+ {
+  "name": "vits-piper-fi_FI-harri-medium-fp16.tar.bz2",
+  "size": 35914095
+ },
+ {
+  "name": "vits-piper-hi_IN-priyamvada-medium.tar.bz2",
+  "size": 67240610
+ },
+ {
+  "name": "vits-piper-fi_FI-harri-low.tar.bz2",
+  "size": 67101909
+ },
+ {
+  "name": "vits-piper-hi_IN-priyamvada-medium-int8.tar.bz2",
+  "size": 21097319
+ },
+ {
+  "name": "vits-piper-hi_IN-priyamvada-medium-fp16.tar.bz2",
+  "size": 35957591
+ },
+ {
+  "name": "vits-piper-fi_FI-harri-low-int8.tar.bz2",
+  "size": 21175341
+ },
+ {
+  "name": "vits-piper-hi_IN-pratham-medium.tar.bz2",
+  "size": 67238438
+ },
+ {
+  "name": "vits-piper-fi_FI-harri-low-fp16.tar.bz2",
+  "size": 35852190
+ },
+ {
+  "name": "vits-piper-hi_IN-pratham-medium-int8.tar.bz2",
+  "size": 20987965
+ },
+ {
+  "name": "vits-piper-hi_IN-pratham-medium-fp16.tar.bz2",
+  "size": 35955273
+ },
+ {
+  "name": "vits-piper-fa_IR-reza_ibrahim-medium.tar.bz2",
+  "size": 67187249
+ },
+ {
+  "name": "vits-piper-fr_FR-upmc-medium.tar.bz2",
+  "size": 80422639
+ },
+ {
+  "name": "vits-piper-fa_IR-reza_ibrahim-medium-int8.tar.bz2",
+  "size": 21052889
+ },
+ {
+  "name": "vits-piper-fr_FR-upmc-medium-int8.tar.bz2",
+  "size": 22588190
+ },
+ {
+  "name": "vits-piper-fr_FR-upmc-medium-fp16.tar.bz2",
+  "size": 41748932
+ },
+ {
+  "name": "vits-piper-fa_IR-reza_ibrahim-medium-fp16.tar.bz2",
+  "size": 35912283
+ },
+ {
+  "name": "vits-piper-fr_FR-tjiho-model3.tar.bz2",
+  "size": 67251174
+ },
+ {
+  "name": "vits-piper-fa_IR-gyro-medium.tar.bz2",
+  "size": 67183308
+ },
+ {
+  "name": "vits-piper-fr_FR-tjiho-model3-int8.tar.bz2",
+  "size": 21062372
+ },
+ {
+  "name": "vits-piper-fr_FR-tjiho-model3-fp16.tar.bz2",
+  "size": 35949444
+ },
+ {
+  "name": "vits-piper-fa_IR-gyro-medium-int8.tar.bz2",
+  "size": 20964438
+ },
+ {
+  "name": "vits-piper-fr_FR-tjiho-model2.tar.bz2",
+  "size": 67204483
+ },
+ {
+  "name": "vits-piper-fa_IR-gyro-medium-fp16.tar.bz2",
+  "size": 35885451
+ },
+ {
+  "name": "vits-piper-fr_FR-tjiho-model2-int8.tar.bz2",
+  "size": 21030373
+ },
+ {
+  "name": "vits-piper-fa_IR-ganji_adabi-medium.tar.bz2",
+  "size": 67221431
+ },
+ {
+  "name": "vits-piper-fr_FR-tjiho-model2-fp16.tar.bz2",
+  "size": 35926034
+ },
+ {
+  "name": "vits-piper-fr_FR-tjiho-model1.tar.bz2",
+  "size": 67204019
+ },
+ {
+  "name": "vits-piper-fa_IR-ganji_adabi-medium-int8.tar.bz2",
+  "size": 20746706
+ },
+ {
+  "name": "vits-piper-fr_FR-tjiho-model1-int8.tar.bz2",
+  "size": 21032428
+ },
+ {
+  "name": "vits-piper-fa_IR-ganji_adabi-medium-fp16.tar.bz2",
+  "size": 35920397
+ },
+ {
+  "name": "vits-piper-fr_FR-tjiho-model1-fp16.tar.bz2",
+  "size": 35925379
+ },
+ {
+  "name": "vits-piper-fa_IR-ganji-medium.tar.bz2",
+  "size": 67186157
+ },
+ {
+  "name": "vits-piper-fr_FR-miro-high.tar.bz2",
+  "size": 67162880
+ },
+ {
+  "name": "vits-piper-fr_FR-miro-high-int8.tar.bz2",
+  "size": 21268816
+ },
+ {
+  "name": "vits-piper-fa_IR-ganji-medium-int8.tar.bz2",
+  "size": 20645796
+ },
+ {
+  "name": "vits-piper-fr_FR-miro-high-fp16.tar.bz2",
+  "size": 35870787
+ },
+ {
+  "name": "vits-piper-fa_IR-ganji-medium-fp16.tar.bz2",
+  "size": 35898051
+ },
+ {
+  "name": "vits-piper-fa_IR-amir-medium.tar.bz2",
+  "size": 67180373
+ },
+ {
+  "name": "vits-piper-fa_IR-amir-medium-int8.tar.bz2",
+  "size": 20666906
+ },
+ {
+  "name": "vits-piper-fa_IR-amir-medium-fp16.tar.bz2",
+  "size": 35907916
+ },
+ {
+  "name": "vits-piper-es_MX-claude-high.tar.bz2",
+  "size": 67207890
+ },
+ {
+  "name": "vits-piper-es_MX-claude-high-int8.tar.bz2",
+  "size": 21216685
+ },
+ {
+  "name": "vits-piper-es_MX-claude-high-fp16.tar.bz2",
+  "size": 35879528
+ },
+ {
+  "name": "vits-piper-es_MX-ald-medium.tar.bz2",
+  "size": 67196497
+ },
+ {
+  "name": "vits-piper-es_MX-ald-medium-int8.tar.bz2",
+  "size": 21283187
+ },
+ {
+  "name": "vits-piper-es_MX-ald-medium-fp16.tar.bz2",
+  "size": 35908235
+ },
+ {
+  "name": "vits-piper-es_ES-sharvard-medium.tar.bz2",
+  "size": 80318184
+ },
+ {
+  "name": "vits-piper-es_ES-sharvard-medium-int8.tar.bz2",
+  "size": 23477120
+ },
+ {
+  "name": "vits-piper-es_ES-sharvard-medium-fp16.tar.bz2",
+  "size": 41936560
+ },
+ {
+  "name": "vits-piper-es_ES-miro-high.tar.bz2",
+  "size": 67162898
+ },
+ {
+  "name": "vits-piper-es_ES-miro-high-int8.tar.bz2",
+  "size": 21273088
+ },
+ {
+  "name": "vits-piper-es_ES-miro-high-fp16.tar.bz2",
+  "size": 35869800
+ },
+ {
+  "name": "vits-piper-es_ES-glados-medium.tar.bz2",
+  "size": 67214285
+ },
+ {
+  "name": "vits-piper-es_ES-glados-medium-int8.tar.bz2",
+  "size": 21193827
+ },
+ {
+  "name": "vits-piper-es_ES-glados-medium-fp16.tar.bz2",
+  "size": 35889267
+ },
+ {
+  "name": "vits-piper-es_ES-davefx-medium.tar.bz2",
+  "size": 67184952
+ },
+ {
+  "name": "vits-piper-es_ES-davefx-medium-int8.tar.bz2",
+  "size": 21171632
+ },
+ {
+  "name": "vits-piper-es_ES-davefx-medium-fp16.tar.bz2",
+  "size": 35898551
+ },
+ {
+  "name": "vits-piper-es_ES-carlfm-x_low.tar.bz2",
+  "size": 26520563
+ },
+ {
+  "name": "vits-piper-es_ES-carlfm-x_low-int8.tar.bz2",
+  "size": 13356095
+ },
+ {
+  "name": "vits-piper-es_ES-carlfm-x_low-fp16.tar.bz2",
+  "size": 16519586
+ },
+ {
+  "name": "vits-piper-es_AR-daniela-high.tar.bz2",
+  "size": 115562134
+ },
+ {
+  "name": "vits-piper-es_AR-daniela-high-int8.tar.bz2",
+  "size": 35069782
+ },
+ {
+  "name": "vits-piper-es_AR-daniela-high-fp16.tar.bz2",
+  "size": 58533984
+ },
+ {
+  "name": "sherpa-onnx-zipvoice-distill-int8-zh-en-emilia.tar.bz2",
+  "size": 109162785
+ },
+ {
+  "name": "sherpa-onnx-zipvoice-distill-fp32-zh-en-emilia.tar.bz2",
+  "size": 477800463
+ },
+ {
+  "name": "matcha-icefall-zh-en.tar.bz2",
+  "size": 79033838
+ },
+ {
+  "name": "sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2",
+  "size": 98336520
+ },
+ {
+  "name": "sherpa-onnx-pocket-tts-2026-01-26.tar.bz2",
+  "size": 168148625
+ },
+ {
+  "name": "sherpa-onnx-supertonic-tts-int8-2026-03-06.tar.bz2",
+  "size": 84692981
+ },
+ {
+  "name": "vits-piper-en_US-amy-medium.tar.bz2",
+  "size": 67223746
+ },
+ {
+  "name": "vits-piper-en_US-amy-medium-int8.tar.bz2",
+  "size": 21028122
+ },
+ {
+  "name": "vits-piper-en_US-amy-medium-fp16.tar.bz2",
+  "size": 35923746
+ },
+ {
+  "name": "vits-piper-sq_AL-edon-medium.tar.bz2",
+  "size": 67191820
+ },
+ {
+  "name": "vits-piper-sq_AL-edon-medium-int8.tar.bz2",
+  "size": 21272475
+ },
+ {
+  "name": "vits-piper-sq_AL-edon-medium-fp16.tar.bz2",
+  "size": 35915978
+ },
+ {
+  "name": "vits-piper-nl_NL-ronnie-medium.tar.bz2",
+  "size": 67194164
+ },
+ {
+  "name": "vits-piper-nl_NL-ronnie-medium-int8.tar.bz2",
+  "size": 21158108
+ },
+ {
+  "name": "vits-piper-nl_NL-ronnie-medium-fp16.tar.bz2",
+  "size": 35923684
+ },
+ {
+  "name": "vits-piper-nl_NL-pim-medium.tar.bz2",
+  "size": 67240538
+ },
+ {
+  "name": "vits-piper-pl_PL-zenski_wg_glos-medium.tar.bz2",
+  "size": 67251520
+ },
+ {
+  "name": "vits-piper-nl_NL-pim-medium-int8.tar.bz2",
+  "size": 21127183
+ },
+ {
+  "name": "vits-piper-ur_PK-fasih-medium.tar.bz2",
+  "size": 67227718
+ },
+ {
+  "name": "vits-piper-pl_PL-darkman-medium.tar.bz2",
+  "size": 67215635
+ },
+ {
+  "name": "vits-piper-pl_PL-zenski_wg_glos-medium-int8.tar.bz2",
+  "size": 21028352
+ },
+ {
+  "name": "vits-piper-nl_NL-pim-medium-fp16.tar.bz2",
+  "size": 35925891
+ },
+ {
+  "name": "vits-piper-ur_PK-fasih-medium-int8.tar.bz2",
+  "size": 21167855
+ },
+ {
+  "name": "vits-piper-pl_PL-darkman-medium-int8.tar.bz2",
+  "size": 21078264
+ },
+ {
+  "name": "vits-piper-ur_PK-fasih-medium-fp16.tar.bz2",
+  "size": 35914793
+ },
+ {
+  "name": "vits-piper-nl_BE-nathalie-x_low.tar.bz2",
+  "size": 26502603
+ },
+ {
+  "name": "vits-piper-pl_PL-zenski_wg_glos-medium-fp16.tar.bz2",
+  "size": 35942070
+ },
+ {
+  "name": "vits-piper-pl_PL-darkman-medium-fp16.tar.bz2",
+  "size": 35856106
+ },
+ {
+  "name": "vits-piper-pl_PL-mc_speech-medium.tar.bz2",
+  "size": 67234285
+ },
+ {
+  "name": "vits-piper-nl_BE-nathalie-x_low-int8.tar.bz2",
+  "size": 13392995
+ },
+ {
+  "name": "vits-piper-pl_PL-meski_wg_glos-medium.tar.bz2",
+  "size": 67246175
+ },
+ {
+  "name": "vits-piper-pl_PL-mc_speech-medium-int8.tar.bz2",
+  "size": 20938473
+ },
+ {
+  "name": "vits-piper-nl_NL-miro-high.tar.bz2",
+  "size": 67169101
+ },
+ {
+  "name": "vits-piper-nl_BE-nathalie-x_low-fp16.tar.bz2",
+  "size": 16492574
+ },
+ {
+  "name": "vits-piper-pl_PL-mc_speech-medium-fp16.tar.bz2",
+  "size": 35869476
+ },
+ {
+  "name": "vits-piper-pl_PL-meski_wg_glos-medium-int8.tar.bz2",
+  "size": 21108038
+ },
+ {
+  "name": "vits-piper-nl_BE-nathalie-medium.tar.bz2",
+  "size": 67226472
+ },
+ {
+  "name": "vits-piper-nl_NL-miro-high-int8.tar.bz2",
+  "size": 21359568
+ },
+ {
+  "name": "vits-piper-pl_PL-jarvis_wg_glos-medium.tar.bz2",
+  "size": 67244103
+ },
+ {
+  "name": "vits-piper-pl_PL-meski_wg_glos-medium-fp16.tar.bz2",
+  "size": 35932042
+ },
+ {
+  "name": "vits-piper-nl_BE-nathalie-medium-int8.tar.bz2",
+  "size": 21139955
+ },
+ {
+  "name": "vits-piper-nl_NL-miro-high-fp16.tar.bz2",
+  "size": 35879889
+ },
+ {
+  "name": "vits-piper-pl_PL-jarvis_wg_glos-medium-int8.tar.bz2",
+  "size": 21063665
+ },
+ {
+  "name": "vits-piper-pl_PL-justyna_wg_glos-medium.tar.bz2",
+  "size": 67242145
+ },
+ {
+  "name": "vits-piper-nl_BE-nathalie-medium-fp16.tar.bz2",
+  "size": 35924136
+ },
+ {
+  "name": "vits-piper-nl_NL-dii-high.tar.bz2",
+  "size": 67203791
+ },
+ {
+  "name": "vits-piper-pl_PL-jarvis_wg_glos-medium-fp16.tar.bz2",
+  "size": 35933889
+ },
+ {
+  "name": "vits-piper-eu_ES-antton-medium.tar.bz2",
+  "size": 67216651
+ },
+ {
+  "name": "vits-piper-pl_PL-justyna_wg_glos-medium-int8.tar.bz2",
+  "size": 21068261
+ },
+ {
+  "name": "vits-piper-pl_PL-gosia-medium.tar.bz2",
+  "size": 67211182
+ },
+ {
+  "name": "vits-piper-nl_NL-dii-high-int8.tar.bz2",
+  "size": 21124167
+ },
+ {
+  "name": "vits-piper-eu_ES-antton-medium-int8.tar.bz2",
+  "size": 20969706
+ },
+ {
+  "name": "vits-piper-pl_PL-justyna_wg_glos-medium-fp16.tar.bz2",
+  "size": 35935342
+ },
+ {
+  "name": "vits-piper-pl_PL-gosia-medium-int8.tar.bz2",
+  "size": 21109262
+ },
+ {
+  "name": "vits-piper-nl_NL-dii-high-fp16.tar.bz2",
+  "size": 35922758
+ },
+ {
+  "name": "vits-piper-eu_ES-antton-medium-fp16.tar.bz2",
+  "size": 35920117
+ },
+ {
+  "name": "vits-piper-pl_PL-gosia-medium-fp16.tar.bz2",
+  "size": 35914557
+ },
+ {
+  "name": "vits-piper-pl_PL-bass-high.tar.bz2",
+  "size": 115576949
+ },
+ {
+  "name": "vits-piper-nl_NL-alex-medium.tar.bz2",
+  "size": 67172584
+ },
+ {
+  "name": "vits-piper-pl_PL-bass-high-int8.tar.bz2",
+  "size": 35321483
+ },
+ {
+  "name": "vits-piper-nl_NL-alex-medium-int8.tar.bz2",
+  "size": 21188402
+ },
+ {
+  "name": "vits-piper-pl_PL-bass-high-fp16.tar.bz2",
+  "size": 58512669
+ },
+ {
+  "name": "vits-piper-nl_NL-alex-medium-fp16.tar.bz2",
+  "size": 35908305
+ },
+ {
+  "name": "vits-piper-eu_ES-maider-medium.tar.bz2",
+  "size": 67247291
+ },
+ {
+  "name": "vits-piper-eu_ES-maider-medium-int8.tar.bz2",
+  "size": 20906023
+ },
+ {
+  "name": "vits-piper-eu_ES-maider-medium-fp16.tar.bz2",
+  "size": 35928460
+ },
+ {
+  "name": "vits-piper-tr_TR-dfki-medium.tar.bz2",
+  "size": 67201221
+ },
+ {
+  "name": "vits-piper-tr_TR-dfki-medium-int8.tar.bz2",
+  "size": 21135582
+ },
+ {
+  "name": "vits-piper-tr_TR-dfki-medium-fp16.tar.bz2",
+  "size": 35913883
+ },
+ {
+  "name": "vits-piper-ku_TR-berfin_renas-medium.tar.bz2",
+  "size": 80263336
+ },
+ {
+  "name": "vits-piper-ku_TR-berfin_renas-medium-int8.tar.bz2",
+  "size": 23642539
+ },
+ {
+  "name": "vits-piper-ku_TR-berfin_renas-medium-fp16.tar.bz2",
+  "size": 41917681
+ },
+ {
+  "name": "vits-piper-zh_CN-xiao_ya-medium.tar.bz2",
+  "size": 60462944
+ },
+ {
+  "name": "vits-piper-zh_CN-xiao_ya-medium-int8.tar.bz2",
+  "size": 14016124
+ },
+ {
+  "name": "vits-piper-zh_CN-xiao_ya-medium-fp16.tar.bz2",
+  "size": 29151028
+ },
+ {
+  "name": "vits-piper-zh_CN-chaowen-medium.tar.bz2",
+  "size": 60443846
+ },
+ {
+  "name": "vits-piper-zh_CN-chaowen-medium-int8.tar.bz2",
+  "size": 14011298
+ },
+ {
+  "name": "vits-piper-zh_CN-chaowen-medium-fp16.tar.bz2",
+  "size": 29149650
+ },
+ {
+  "name": "kitten-nano-en-v0_1-fp16.tar.bz2",
+  "size": 26855312
+ },
+ {
+  "name": "kitten-nano-en-v0_2-fp16.tar.bz2",
+  "size": 26586708
+ },
+ {
+  "name": "kitten-mini-en-v0_1-fp16.tar.bz2",
+  "size": 156630103
+ },
+ {
+  "name": "kitten-nano-en-v0_8-fp32.tar.bz2",
+  "size": 63815222
+ },
+ {
+  "name": "kitten-nano-en-v0_8-int8.tar.bz2",
+  "size": 31220690
+ },
+ {
+  "name": "kitten-micro-en-v0_8.tar.bz2",
+  "size": 44423643
+ },
+ {
+  "name": "kitten-mini-en-v0_8.tar.bz2",
+  "size": 67547594
+ },
+ {
+  "name": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2",
+  "size": 128774318
+ },
+ {
+  "name": "matcha-icefall-zh-baker.tar.bz2",
+  "size": 75463442
+ },
+ {
+  "name": "vits-icefall-en_US-ljspeech-medium.tar.bz2",
+  "size": 73513362
+ },
+ {
+  "name": "vits-icefall-en_US-ljspeech-low.tar.bz2",
+  "size": 31722013
+ },
+ {
+  "name": "matcha-icefall-en_US-ljspeech.tar.bz2",
+  "size": 76741121
+ },
+ {
+  "name": "vits-piper-pt_BR-jeff-medium.tar.bz2",
+  "size": 67207052
+ },
+ {
+  "name": "vits-piper-pt_BR-jeff-medium-int8.tar.bz2",
+  "size": 21211448
+ },
+ {
+  "name": "vits-piper-pt_PT-tugao-medium.tar.bz2",
+  "size": 67195014
+ },
+ {
+  "name": "vits-piper-pt_BR-jeff-medium-fp16.tar.bz2",
+  "size": 35896159
+ },
+ {
+  "name": "vits-piper-pt_PT-tugao-medium-int8.tar.bz2",
+  "size": 21253211
+ },
+ {
+  "name": "vits-piper-sv_SE-nst-medium.tar.bz2",
+  "size": 67144884
+ },
+ {
+  "name": "vits-piper-pt_BR-faber-medium.tar.bz2",
+  "size": 67183065
+ },
+ {
+  "name": "vits-piper-pt_PT-tugao-medium-fp16.tar.bz2",
+  "size": 35883637
+ },
+ {
+  "name": "vits-piper-sv_SE-lisa-medium.tar.bz2",
+  "size": 67223955
+ },
+ {
+  "name": "vits-piper-pt_BR-cadu-medium.tar.bz2",
+  "size": 67207562
+ },
+ {
+  "name": "vits-piper-sv_SE-nst-medium-int8.tar.bz2",
+  "size": 20972387
+ },
+ {
+  "name": "vits-piper-pt_BR-faber-medium-int8.tar.bz2",
+  "size": 21336772
+ },
+ {
+  "name": "vits-piper-pt_BR-miro-high.tar.bz2",
+  "size": 67207707
+ },
+ {
+  "name": "vits-piper-sv_SE-nst-medium-fp16.tar.bz2",
+  "size": 35901269
+ },
+ {
+  "name": "vits-piper-pt_BR-cadu-medium-int8.tar.bz2",
+  "size": 21135464
+ },
+ {
+  "name": "vits-piper-sv_SE-lisa-medium-int8.tar.bz2",
+  "size": 21122674
+ },
+ {
+  "name": "vits-piper-pt_BR-miro-high-int8.tar.bz2",
+  "size": 21341456
+ },
+ {
+  "name": "vits-piper-pt_BR-faber-medium-fp16.tar.bz2",
+  "size": 35883794
+ },
+ {
+  "name": "vits-piper-sv_SE-alma-medium.tar.bz2",
+  "size": 67154700
+ },
+ {
+  "name": "vits-piper-pt_BR-cadu-medium-fp16.tar.bz2",
+  "size": 35904411
+ },
+ {
+  "name": "vits-piper-pt_BR-miro-high-fp16.tar.bz2",
+  "size": 35851946
+ },
+ {
+  "name": "vits-piper-sv_SE-lisa-medium-fp16.tar.bz2",
+  "size": 35889123
+ },
+ {
+  "name": "vits-piper-sv_SE-alma-medium-int8.tar.bz2",
+  "size": 21017826
+ },
+ {
+  "name": "vits-piper-pt_BR-edresson-low.tar.bz2",
+  "size": 67081775
+ },
+ {
+  "name": "vits-piper-ne_NP-google-x_low.tar.bz2",
+  "size": 33214875
+ },
+ {
+  "name": "vits-piper-pt_BR-dii-high.tar.bz2",
+  "size": 67238016
+ },
+ {
+  "name": "vits-piper-sv_SE-alma-medium-fp16.tar.bz2",
+  "size": 35889927
+ },
+ {
+  "name": "vits-piper-ne_NP-google-x_low-int8.tar.bz2",
+  "size": 14955184
+ },
+ {
+  "name": "vits-piper-pt_BR-edresson-low-int8.tar.bz2",
+  "size": 21198064
+ },
+ {
+  "name": "vits-piper-pt_PT-miro-high.tar.bz2",
+  "size": 67208098
+ },
+ {
+  "name": "vits-piper-pt_BR-dii-high-int8.tar.bz2",
+  "size": 21117576
+ },
+ {
+  "name": "vits-piper-ne_NP-google-x_low-fp16.tar.bz2",
+  "size": 19659236
+ },
+ {
+  "name": "vits-piper-pt_PT-dii-high.tar.bz2",
+  "size": 67243408
+ },
+ {
+  "name": "vits-piper-pt_BR-dii-high-fp16.tar.bz2",
+  "size": 35918328
+ },
+ {
+  "name": "vits-piper-pt_BR-edresson-low-fp16.tar.bz2",
+  "size": 35787313
+ },
+ {
+  "name": "vits-piper-pt_PT-miro-high-int8.tar.bz2",
+  "size": 21342000
+ },
+ {
+  "name": "vits-piper-ne_NP-google-medium.tar.bz2",
+  "size": 80242801
+ },
+ {
+  "name": "vits-piper-pt_PT-dii-high-int8.tar.bz2",
+  "size": 21076561
+ },
+ {
+  "name": "vits-piper-pt_PT-dii-high-fp16.tar.bz2",
+  "size": 35901370
+ },
+ {
+  "name": "vits-piper-ne_NP-google-medium-int8.tar.bz2",
+  "size": 23618640
+ },
+ {
+  "name": "vits-piper-pt_PT-miro-high-fp16.tar.bz2",
+  "size": 35882497
+ },
+ {
+  "name": "vits-piper-ne_NP-chitwan-medium.tar.bz2",
+  "size": 67213467
+ },
+ {
+  "name": "vits-piper-ne_NP-google-medium-fp16.tar.bz2",
+  "size": 42081290
+ },
+ {
+  "name": "vits-piper-cy_GB-gwryw_gogleddol-medium.tar.bz2",
+  "size": 67230234
+ },
+ {
+  "name": "vits-piper-ne_NP-chitwan-medium-int8.tar.bz2",
+  "size": 21165758
+ },
+ {
+  "name": "vits-piper-ne_NP-chitwan-medium-fp16.tar.bz2",
+  "size": 35898569
+ },
+ {
+  "name": "vits-piper-cy_GB-gwryw_gogleddol-medium-int8.tar.bz2",
+  "size": 21121166
+ },
+ {
+  "name": "vits-piper-cy_GB-gwryw_gogleddol-medium-fp16.tar.bz2",
+  "size": 35922517
+ },
+ {
+  "name": "vits-piper-cy_GB-bu_tts-medium.tar.bz2",
+  "size": 80313215
+ },
+ {
+  "name": "vits-piper-cy_GB-bu_tts-medium-int8.tar.bz2",
+  "size": 23280105
+ },
+ {
+  "name": "vits-piper-cy_GB-bu_tts-medium-fp16.tar.bz2",
+  "size": 42045983
+ },
+ {
+  "name": "vits-inflect-en-nano-v2.tar.bz2",
+  "size": 22429639
+ },
+ {
+  "name": "vits-inflect-en-micro-v2.tar.bz2",
+  "size": 42956555
+ }
+]

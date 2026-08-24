@@ -43,6 +43,64 @@ class LookupService {
 
   final HttpService _client;
 
+  /// Defines [word] using Google's unofficial keyless dictionary endpoint.
+  Future<LookupDefinition> defineWithGoogle(
+    String word, {
+    String language = 'en',
+  }) async {
+    final uri = Uri.https('translate.googleapis.com', '/translate_a/single', {
+      'client': 'gtx',
+      'sl': language,
+      'tl': language,
+      'hl': language,
+      'dt': 'md', // Requests dictionary/meaning definitions
+      'q': word,
+    });
+
+    final data = asList(await getJson(uri));
+    if (data.isEmpty) throw LookupNotFound('No definition found.');
+
+    // Google returns definition objects in the 12th element (index 11 or 12 depending on parameters)
+    // Structure: [null, null, null, ..., [ [ "partOfSpeech", [ [ "definition", ... ] ] ] ]]
+    final definitionsBlock = data.length > 12 ? asList(data[12]) : const [];
+    if (definitionsBlock.isEmpty) throw LookupNotFound('No definition found.');
+
+    final meanings = <LookupMeaning>[];
+
+    for (final rawBlock in definitionsBlock) {
+      final block = asList(rawBlock);
+      if (block.length < 2) continue;
+
+      final partOfSpeech = block[0] as String? ?? '';
+      final rawSenses = asList(block[1]);
+      final senses = <LookupSense>[];
+
+      for (final rawSense in rawSenses) {
+        final senseList = asList(rawSense);
+        if (senseList.isEmpty) continue;
+
+        final definition = senseList[0] as String? ?? '';
+        if (definition.isEmpty) continue;
+
+        // Example sentence is usually at index 2 if present
+        final example = senseList.length > 2 ? senseList[2] as String? : null;
+
+        senses.add(LookupSense(definition: definition, example: example));
+      }
+
+      if (senses.isNotEmpty) {
+        meanings.add(LookupMeaning(partOfSpeech: partOfSpeech, senses: senses));
+      }
+    }
+
+    if (meanings.isEmpty) throw LookupNotFound('No definition found.');
+
+    return LookupDefinition(
+      word: word,
+      meanings: meanings,
+    );
+  }
+
   /// Defines [word] via the keyless Free Dictionary API (English).
   Future<LookupDefinition> define(String word) async {
     final uri = Uri(
