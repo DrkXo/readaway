@@ -1,16 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../settings/domain/models/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings_bloc.dart';
 import '../bloc/reader_bloc.dart';
-import '../widgets/reader_bottom_bar.dart';
-import '../widgets/reader_drawer.dart';
-import '../widgets/reader_page_content.dart';
-import '../widgets/reader_toc_panel.dart';
+import '../controllers/auto_scroll_controller.dart';
+import '../controllers/reader_page_view_controller.dart';
+import '../widgets/reader_widgets.dart';
 
 class ReaderPage extends StatefulWidget {
   const ReaderPage({
@@ -40,8 +42,10 @@ class ReaderPage extends StatefulWidget {
   State<ReaderPage> createState() => _ReaderPageState();
 }
 
-class _ReaderPageState extends State<ReaderPage> {
-  final PageController _pageController = PageController();
+class _ReaderPageState extends State<ReaderPage>
+    with SingleTickerProviderStateMixin {
+  final ReaderPageViewController _pageViewController =
+      ReaderPageViewController();
 
   /// Keeps the reader subtree (PageView page, scroll offsets, selection)
   /// alive across the wide/narrow breakpoint switch in [_buildReaderView],
@@ -50,6 +54,8 @@ class _ReaderPageState extends State<ReaderPage> {
 
   late final ReaderBloc _readerBloc;
   late final SettingsBloc _settingsBloc;
+  late final AutoScrollController _autoScrollController;
+  StreamSubscription<AppLifecycleState>? _lifecycleSub;
   bool _tocPinned = false;
 
   @override
@@ -58,7 +64,37 @@ class _ReaderPageState extends State<ReaderPage> {
     _readerBloc = context.read<ReaderBloc>();
     _settingsBloc = context.read<SettingsBloc>();
 
+    // Route page-change requests from the view controller (swipes, TOC,
+    // drawer, bottom bar, auto-scroll) into the BLoC, which is the single
+    // source of truth for the current page.
+    _pageViewController.onNavigate = (index) {
+      final count = _readerBloc.state.pageCount;
+      if (count <= 0) return;
+      final clamped = index.clamp(0, count - 1);
+      if (clamped == _readerBloc.state.currentPage) return;
+      _readerBloc.add(ReaderEvent.pageChanged(index: clamped));
+    };
+
+    _autoScrollController = AutoScrollController(
+      vsync: this,
+      goToNextPage: () => _pageViewController.nextPage(),
+    );
+
+    // Auto-scroll only runs while the app is in the foreground (screen on).
+    _lifecycleSub = appLifecycleManager.lifecycleState.listen((state) {
+      if (state == AppLifecycleState.resumed) {
+        _autoScrollController.resume();
+      } else {
+        _autoScrollController.pause();
+      }
+    });
+
     _settingsBloc.loadPrefs();
+
+    // Apply persisted wakelock / auto-scroll settings on open (the
+    // BlocListener below only fires on *changes*).
+    _syncWakelock(_settingsBloc.state);
+    _syncAutoScroll(_settingsBloc.state);
 
     if (widget.initialPath != null) {
       if (!_readerBloc.state.loading && !_readerBloc.state.hasDocument) {
@@ -74,8 +110,12 @@ class _ReaderPageState extends State<ReaderPage> {
 
   @override
   void dispose() {
+    _lifecycleSub?.cancel();
+    _autoScrollController.dispose();
+    // Wakelock is scoped to the reader: always release it on close.
+    wakelockService.disable();
     _readerBloc.add(const ReaderEvent.closeDocument());
-    _pageController.dispose();
+    _pageViewController.dispose();
     super.dispose();
   }
 
@@ -93,35 +133,65 @@ class _ReaderPageState extends State<ReaderPage> {
           _settingsBloc.updateActiveDocumentPath(state.fileName);
         }
       },
-      child: BlocBuilder<ReaderBloc, ReaderState>(
-        builder: (context, readerState) {
-          return BlocBuilder<SettingsBloc, SettingsState>(
-            builder: (context, settingsState) {
-              final prefs = settingsState.resolvedReaderPrefs(
-                _readerBloc.state.fileName,
-              );
-
-              return PopScope(
-                canPop: false,
-                onPopInvokedWithResult: (didPop, result) {
-                  if (didPop) return;
-                  _closeReader();
-                },
-                child: Scaffold(
-                  key: ReaderPage.scaffoldKey,
-                  drawer: ReaderDrawer(
-                    onJumpToPage: (page) {
-                      _pageController.jumpToPage(page);
-                    },
-                  ),
-                  body: _buildReaderView(prefs),
-                ),
-              );
-            },
-          );
+      child: BlocListener<SettingsBloc, SettingsState>(
+        listenWhen: (prev, curr) =>
+            prev.appSettings.screenWakeLock !=
+                curr.appSettings.screenWakeLock ||
+            prev.appSettings.globalViewSettings.autoScrollRunning !=
+                curr.appSettings.globalViewSettings.autoScrollRunning ||
+            prev.appSettings.globalViewSettings.autoScrollSpeed !=
+                curr.appSettings.globalViewSettings.autoScrollSpeed,
+        listener: (context, settingsState) {
+          _syncWakelock(settingsState);
+          _syncAutoScroll(settingsState);
         },
+        child: BlocBuilder<ReaderBloc, ReaderState>(
+          builder: (context, readerState) {
+            return BlocBuilder<SettingsBloc, SettingsState>(
+              buildWhen: (prev, curr) =>
+                  prev.resolvedReaderPrefs(_readerBloc.state.fileName) !=
+                  curr.resolvedReaderPrefs(_readerBloc.state.fileName),
+              builder: (context, settingsState) {
+                final prefs = settingsState.resolvedReaderPrefs(
+                  _readerBloc.state.fileName,
+                );
+
+                return PopScope(
+                  canPop: false,
+                  onPopInvokedWithResult: (didPop, result) {
+                    if (didPop) return;
+                    _closeReader();
+                  },
+                  child: Scaffold(
+                    key: ReaderPage.scaffoldKey,
+                    drawer: ReaderDrawer(
+                      onJumpToPage: _pageViewController.goToPage,
+                    ),
+                    body: _buildReaderView(prefs),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
+  }
+
+  /// Applies the "keep screen on" setting while the reader is open.
+  void _syncWakelock(SettingsState settingsState) {
+    wakelockService.setEnabled(settingsState.appSettings.screenWakeLock);
+  }
+
+  /// Starts/stops auto-scroll and applies the speed from settings.
+  void _syncAutoScroll(SettingsState settingsState) {
+    final view = settingsState.appSettings.globalViewSettings;
+    _autoScrollController.setSpeed(view.autoScrollSpeed);
+    if (view.autoScrollRunning) {
+      _autoScrollController.start();
+    } else {
+      _autoScrollController.stop();
+    }
   }
 
   void _toggleTocPanel() {
@@ -137,11 +207,15 @@ class _ReaderPageState extends State<ReaderPage> {
           children: [
             _buildBrightnessOverlay(prefs),
             _buildContrastOverlay(prefs),
-            ReaderPageContent(pageController: _pageController, prefs: prefs),
+            ReaderPageContent(
+              pageViewController: _pageViewController,
+              prefs: prefs,
+              autoScrollController: _autoScrollController,
+            ),
             if (isWide && !_tocPinned)
               ReaderTocPeek(
                 onPin: _toggleTocPanel,
-                onJumpToPage: _pageController.jumpToPage,
+                onJumpToPage: _pageViewController.goToPage,
               ),
             _buildBottomBar(menuTogglesPanel: isWide),
             if (prefs.showStatusBar) _buildStatusBar(),
@@ -162,7 +236,7 @@ class _ReaderPageState extends State<ReaderPage> {
               if (_tocPinned)
                 ReaderTocSidePanel(
                   onUnpin: _toggleTocPanel,
-                  onJumpToPage: _pageController.jumpToPage,
+                  onJumpToPage: _pageViewController.goToPage,
                 ),
               Expanded(child: content),
             ],
@@ -221,7 +295,9 @@ class _ReaderPageState extends State<ReaderPage> {
 
   Widget _buildBottomBar({required bool menuTogglesPanel}) {
     return ReaderBottomBar(
-      pageController: _pageController,
+      onPreviousPage: _pageViewController.previousPage,
+      onNextPage: _pageViewController.nextPage,
+      onSeekToPage: _pageViewController.goToPage,
       onOutlineTap: menuTogglesPanel ? _toggleTocPanel : null,
     );
   }

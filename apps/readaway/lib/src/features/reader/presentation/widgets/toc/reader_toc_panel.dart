@@ -1,7 +1,4 @@
-import 'package:flutter/material.dart';
-
-import '../../../../core/theme/theme.dart';
-import 'reader_toc_content.dart';
+part of '../reader_widgets.dart';
 
 const double _panelWidth = 300;
 const double _peekStripWidth = 24;
@@ -107,8 +104,10 @@ class _ReaderTocPeekState extends State<ReaderTocPeek> {
                             widget.onJumpToPage(page);
                             _hide();
                           },
-                          headerAction:
-                              _PinButton(pinned: false, onTap: widget.onPin),
+                          headerAction: _PinButton(
+                            pinned: false,
+                            onTap: widget.onPin,
+                          ),
                         ),
                       ),
                     ),
@@ -119,26 +118,6 @@ class _ReaderTocPeekState extends State<ReaderTocPeek> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _PinButton extends StatelessWidget {
-  const _PinButton({required this.pinned, required this.onTap});
-
-  final bool pinned;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(
-        pinned ? Icons.push_pin : Icons.push_pin_outlined,
-        size: 20,
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
-      tooltip: pinned ? 'Unpin panel' : 'Pin panel',
-      onPressed: onTap,
     );
   }
 }

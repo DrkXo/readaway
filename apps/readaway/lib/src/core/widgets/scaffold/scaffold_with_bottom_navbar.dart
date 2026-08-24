@@ -20,10 +20,10 @@ class ScaffoldWithBottomNav extends StatelessWidget {
   });
 
   List<NavigationItem> _items() => [
-    NavigationItem(label: 'Library', icon: Icons.home),
+    NavigationItem(label: 'Library', icon: LucideIcons.home),
     NavigationItem(
       label: 'Settings',
-      icon: Icons.person_add_alt_1,
+      icon: LucideIcons.userPlus,
     ),
   ];
 

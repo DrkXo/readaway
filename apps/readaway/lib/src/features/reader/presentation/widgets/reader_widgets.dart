@@ -1,0 +1,42 @@
+import 'dart:io';
+
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SelectedContent;
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' as html_parser;
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mupdf/mupdf.dart';
+
+import '../../../../core/models/reader/reader_block.dart';
+import '../../../../core/models/reader/reader_document.dart';
+import '../../../../core/routes/routes.dart';
+import '../../../../core/services/services.dart';
+import '../../../../core/theme/theme.dart';
+import '../../../../core/utils/reader/reader_html_utils.dart';
+import '../../../../core/widgets/core_widgets.dart';
+import '../../../../router/router.dart';
+import '../../../settings/domain/models/reader_preferences.dart';
+import '../../domain/models/reader_lookup.dart';
+import '../bloc/reader_bloc.dart';
+import '../controllers/auto_scroll_controller.dart';
+import '../controllers/reader_page_view_controller.dart';
+
+part 'controls/reader_bottom_bar.dart';
+part 'controls/reader_caption_actions.dart';
+part 'feedback/reader_error_view.dart';
+part 'page/auto_scrollable_html_page.dart';
+part 'page/reader_html_widget.dart';
+part 'page/reader_page_content.dart';
+part 'page/reader_page_view.dart';
+part 'page/reader_selection_area.dart';
+part 'page/selection_menu.dart';
+part 'toc/outline_item_tile.dart';
+part 'toc/pin_button.dart';
+part 'toc/reader_drawer.dart';
+part 'toc/reader_toc_content.dart';
+part 'toc/reader_toc_panel.dart';

@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/reader_bloc.dart';
+part of '../reader_widgets.dart';
 
 class ReaderErrorView extends StatelessWidget {
   const ReaderErrorView({
@@ -19,7 +17,7 @@ class ReaderErrorView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.error_outline_rounded,
+                  LucideIcons.alertCircle,
                   size: 56,
                   color: scheme.error,
                 ),
@@ -27,16 +25,16 @@ class ReaderErrorView extends StatelessWidget {
                 Text(
                   'Something went wrong',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: scheme.onSurface,
-                      ),
+                    color: scheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   state.error ?? '',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),

@@ -1,24 +1,19 @@
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../../core/services/services.dart';
-import '../../../../core/theme/theme.dart';
-import '../../../settings/domain/models/reader_preferences.dart';
-import '../bloc/reader_bloc.dart';
-import 'reader_error_view.dart';
-import 'reader_html_widget.dart';
-import 'reader_selection_area.dart';
+part of '../reader_widgets.dart';
 
 class ReaderPageContent extends StatelessWidget {
   const ReaderPageContent({
     super.key,
-    required this.pageController,
+    required this.pageViewController,
     required this.prefs,
+    this.autoScrollController,
   });
 
-  final PageController pageController;
+  final ReaderPageViewController pageViewController;
   final ReaderPreferences prefs;
+
+  /// Optional controller that drives auto-scroll. When provided, each
+  /// reflowable page registers its vertical [ScrollController] with it.
+  final AutoScrollController? autoScrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +28,8 @@ class ReaderPageContent extends StatelessWidget {
         if (!state.hasDocument) {
           return const Center(child: Text('No document open'));
         }
+        autoScrollController?.setPageCount(state.pageCount);
+        pageViewController.setCurrentPage(state.currentPage);
         // Default ScrollBehavior excludes mouse from dragDevices (it fights
         // text selection), which leaves PageView unpageable by mouse. Opt
         // this PageView in: over text, SelectionArea's recognizer still wins
@@ -47,17 +44,26 @@ class ReaderPageContent extends StatelessWidget {
               PointerDeviceKind.mouse,
             },
           ),
-          child: PageView.builder(
-            controller: pageController,
-            itemCount: state.pageCount,
-            onPageChanged: (i) => context.read<ReaderBloc>().add(
-              ReaderEvent.pageChanged(index: i),
-            ),
+          child: ReaderPageView(
+            currentPage: state.currentPage,
+            pageCount: state.pageCount,
+            transition: prefs.pageTransition,
+            direction: prefs.scrollDirection,
             itemBuilder: state.isReflowable ? _buildHtmlPage : _buildImagePage,
+            onPageChangeRequested: (index) =>
+                _onPageChangeRequested(context, index),
           ),
         );
       },
     );
+  }
+
+  void _onPageChangeRequested(BuildContext context, int index) {
+    final state = context.read<ReaderBloc>().state;
+    final clamped = index.clamp(0, state.pageCount - 1);
+    if (clamped == state.currentPage) return;
+    context.read<ReaderBloc>().add(ReaderEvent.pageChanged(index: clamped));
+    autoScrollController?.setCurrentPage(clamped);
   }
 
   Widget _buildHtmlPage(BuildContext context, int index) {
@@ -69,30 +75,12 @@ class ReaderPageContent extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          clipBehavior: Clip.none,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight - 32,
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: ReaderSelectionArea(
-                child: ReaderHtmlWidget(
-                  html: html,
-                  appColors: context.appColors,
-                  baseFontSize: prefs.fontSize,
-                  lineHeight: prefs.lineHeight,
-                  onTapUrl: (url) => _onTapUrl(context, url),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return _AutoScrollableHtmlPage(
+      index: index,
+      html: html,
+      prefs: prefs,
+      autoScrollController: autoScrollController,
+      onTapUrl: (url) => _onTapUrl(context, url),
     );
   }
 
@@ -102,7 +90,10 @@ class ReaderPageContent extends StatelessWidget {
     final match = RegExp(r'^#page=(\d+)$').firstMatch(url);
     if (match != null) {
       final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;
-      pageController.jumpToPage(int.parse(match.group(1)!).clamp(0, maxIndex));
+      _onPageChangeRequested(
+        context,
+        int.parse(match.group(1)!).clamp(0, maxIndex),
+      );
       return;
     }
     logger.d('External link ignored: $url');
@@ -122,4 +113,10 @@ class ReaderPageContent extends StatelessWidget {
       child: RawImage(image: image, fit: BoxFit.contain),
     );
   }
+
+  static FontWeight _resolveFontWeight(String weight) => switch (weight) {
+    'lighter' => FontWeight.w300,
+    'bold' => FontWeight.w700,
+    _ => FontWeight.normal,
+  };
 }

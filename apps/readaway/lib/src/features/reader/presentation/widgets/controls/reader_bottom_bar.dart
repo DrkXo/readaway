@@ -1,8 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../../core/theme/theme.dart';
-import '../bloc/reader_bloc.dart';
+part of '../reader_widgets.dart';
 
 /// Single-row compact control bar: page nav, seek slider, progress and
 /// outline toggle. Hidden by default; revealed on hover (desktop) or by
@@ -10,11 +6,20 @@ import '../bloc/reader_bloc.dart';
 class ReaderBottomBar extends StatefulWidget {
   const ReaderBottomBar({
     super.key,
-    required this.pageController,
+    required this.onPreviousPage,
+    required this.onNextPage,
+    required this.onSeekToPage,
     this.onOutlineTap,
   });
 
-  final PageController pageController;
+  /// Navigates to the previous page.
+  final VoidCallback onPreviousPage;
+
+  /// Navigates to the next page.
+  final VoidCallback onNextPage;
+
+  /// Seeks to a specific page index.
+  final ValueChanged<int> onSeekToPage;
 
   /// When set, the outline button toggles the desktop side panel instead
   /// of opening the mobile drawer.
@@ -28,32 +33,6 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
   bool _visible = false;
   bool _isDragging = false;
   double? _dragValue;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.pageController.addListener(_onPageScroll);
-  }
-
-  @override
-  void didUpdateWidget(ReaderBottomBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.pageController != widget.pageController) {
-      oldWidget.pageController.removeListener(_onPageScroll);
-      widget.pageController.addListener(_onPageScroll);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.pageController.removeListener(_onPageScroll);
-    super.dispose();
-  }
-
-  void _onPageScroll() {
-    if (_isDragging) return;
-    setState(() {});
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,22 +94,16 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
             children: [
               _buildNavButton(
                 enabled: state.currentPage > 0,
-                icon: Icons.chevron_left_rounded,
+                icon: LucideIcons.chevronLeft,
                 tooltip: 'Previous page',
-                onTap: () => widget.pageController.previousPage(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOut,
-                ),
+                onTap: widget.onPreviousPage,
               ),
               Expanded(child: _buildSlider(context, state)),
               _buildNavButton(
                 enabled: state.currentPage < state.pageCount - 1,
-                icon: Icons.chevron_right_rounded,
+                icon: LucideIcons.chevronRight,
                 tooltip: 'Next page',
-                onTap: () => widget.pageController.nextPage(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOut,
-                ),
+                onTap: widget.onNextPage,
               ),
               const SizedBox(width: 8),
               Text(
@@ -150,7 +123,7 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
                 onPressed:
                     widget.onOutlineTap ??
                     () => Scaffold.of(context).openDrawer(),
-                icon: const Icon(Icons.more_vert_outlined, size: 20),
+                icon: const Icon(LucideIcons.moreVertical, size: 20),
                 color: scheme.onSurfaceVariant,
                 visualDensity: VisualDensity.compact,
                 tooltip: 'Outline',
@@ -196,11 +169,7 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
             _isDragging = false;
             _dragValue = null;
           });
-          widget.pageController.animateToPage(
-            target,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-          );
+          widget.onSeekToPage(target);
         },
       ),
     );

@@ -14,4 +14,6 @@ abstract class SettingsEvent with _$SettingsEvent {
   const factory SettingsEvent.importReaderPrefs(
     Map<String, ReaderPreferences> all,
   ) = _ImportReaderPrefs;
+  const factory SettingsEvent.updateAppSettings(Settings settings) =
+      _UpdateAppSettings;
 }

@@ -1,8 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-
-import '../../../../core/theme/theme.dart';
-import 'reader_toc_content.dart';
+part of '../reader_widgets.dart';
 
 class ReaderDrawer extends StatelessWidget {
   const ReaderDrawer({super.key, required this.onJumpToPage});
@@ -36,7 +32,7 @@ class ReaderDrawer extends StatelessWidget {
               onJumpToPage: onJumpToPage,
               headerAction: IconButton(
                 icon: Icon(
-                  Icons.close_rounded,
+                  LucideIcons.x,
                   color: scheme.onSurfaceVariant,
                 ),
                 splashRadius: 20,

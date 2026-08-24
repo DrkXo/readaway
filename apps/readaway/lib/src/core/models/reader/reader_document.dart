@@ -1,15 +1,15 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 
-import '../../../../core/theme/theme.dart';
-import 'reader_html_layout.dart';
+import '../../theme/theme.dart';
+import '../../utils/reader/reader_html_utils.dart';
+import 'reader_block.dart';
 
-/// Intermediate representation between MuPDF HTML and Flutter widgets.
+/// Builds the render-ready [ReaderBlock] tree from MuPDF structured-text HTML.
 ///
 /// [ReaderDocument.fromDom] does everything that depends on the book
 /// content (parsing support, line fusion, inline span construction); the
@@ -19,99 +19,6 @@ import 'reader_html_layout.dart';
 /// re-parse) and gives upcoming features a stable surface: TTS can iterate
 /// [ParagraphBlock]s, annotations/bookmarks can anchor to
 /// `(pageIndex, blockIndex)`.
-sealed class ReaderBlock {
-  const ReaderBlock();
-}
-
-/// A fused logical paragraph (or a bare block-level link run when
-/// [padded] is false) rendered as one soft-wrapping RichText.
-class ParagraphBlock extends ReaderBlock {
-  const ParagraphBlock(this.spans, {this.padded = true});
-
-  final List<InlineSpan> spans;
-
-  /// Whether the standard vertical padding applies.
-  final bool padded;
-}
-
-/// Stray top-level text outside any container element.
-class LooseTextBlock extends ReaderBlock {
-  const LooseTextBlock(this.text);
-
-  final String text;
-}
-
-class HeadingBlock extends ReaderBlock {
-  const HeadingBlock(this.level, this.spans);
-
-  final int level;
-  final List<InlineSpan> spans;
-}
-
-/// `<br>` between blocks.
-class SpacerBlock extends ReaderBlock {
-  const SpacerBlock();
-}
-
-/// `<hr>`.
-class RuleBlock extends ReaderBlock {
-  const RuleBlock();
-}
-
-/// Exactly one of [bytes], [file], [url] is set; decoded during model
-/// build so rebuilds never re-decode base64.
-class ImageBlock extends ReaderBlock {
-  const ImageBlock({this.bytes, this.file, this.url});
-
-  final Uint8List? bytes;
-  final String? file;
-  final String? url;
-}
-
-/// Generic flow container (`div`, unknown tags).
-class ContainerBlock extends ReaderBlock {
-  const ContainerBlock(this.children);
-
-  final List<ReaderBlock> children;
-}
-
-class QuoteBlock extends ReaderBlock {
-  const QuoteBlock(this.children);
-
-  final List<ReaderBlock> children;
-}
-
-class ListBlock extends ReaderBlock {
-  const ListBlock({required this.ordered, required this.items});
-
-  final bool ordered;
-  final List<List<ReaderBlock>> items;
-}
-
-class ReaderTableCell {
-  const ReaderTableCell({required this.children, required this.isHeader});
-
-  final List<ReaderBlock> children;
-  final bool isHeader;
-}
-
-class ReaderTableRow {
-  const ReaderTableRow(this.cells);
-
-  final List<ReaderTableCell> cells;
-}
-
-class TableBlock extends ReaderBlock {
-  const TableBlock(this.rows);
-
-  final List<ReaderTableRow> rows;
-}
-
-/// Provides (possibly cached) gesture recognizers for `<a href>` spans so
-/// taps survive rebuilds without leaking; ownership stays with the caller.
-typedef RecognizerProvider = TapGestureRecognizer? Function(String href);
-
-/// Parsed + fused reader content.
 class ReaderDocument {
   const ReaderDocument({required this.blocks, this.modalFontSize});
 
@@ -128,6 +35,10 @@ class ReaderDocument {
     required double baseFontSize,
     required double lineHeight,
     required RecognizerProvider recognizerFor,
+    String serifFont = 'Noto Serif',
+    String sansSerifFont = 'Noto Sans',
+    String monospaceFont = 'Fira Code',
+    bool overrideFont = false,
   }) {
     return ReaderDocument.fromDom(
       html_parser.parse(html),
@@ -135,6 +46,10 @@ class ReaderDocument {
       baseFontSize: baseFontSize,
       lineHeight: lineHeight,
       recognizerFor: recognizerFor,
+      serifFont: serifFont,
+      sansSerifFont: sansSerifFont,
+      monospaceFont: monospaceFont,
+      overrideFont: overrideFont,
     );
   }
 
@@ -148,6 +63,10 @@ class ReaderDocument {
     required double lineHeight,
     required RecognizerProvider recognizerFor,
     double? modalFontSize,
+    String serifFont = 'Noto Serif',
+    String sansSerifFont = 'Noto Sans',
+    String monospaceFont = 'Fira Code',
+    bool overrideFont = false,
   }) {
     final body = document.body;
     if (body == null) return const ReaderDocument(blocks: []);
@@ -162,6 +81,10 @@ class ReaderDocument {
       baseFontSize: baseFontSize,
       modalFontSize: modalFontSize,
       recognizerFor: recognizerFor,
+      serifFont: serifFont,
+      sansSerifFont: sansSerifFont,
+      monospaceFont: monospaceFont,
+      overrideFont: overrideFont,
     );
 
     return ReaderDocument(
@@ -254,7 +177,11 @@ class ReaderDocument {
         return _linkBlock(node, ctx);
       case 'ul':
       case 'ol':
-        return _list(node, ordered: node.localName?.toLowerCase() == 'ol', ctx: ctx);
+        return _list(
+          node,
+          ordered: node.localName?.toLowerCase() == 'ol',
+          ctx: ctx,
+        );
       case 'blockquote':
         final inner = _buildBlocks(node.nodes, ctx);
         if (inner.isEmpty) return null;
@@ -343,10 +270,12 @@ class ReaderDocument {
         if (tag != 'td' && tag != 'th') continue;
         final cellChildren = _buildBlocks(child.nodes, ctx);
         if (cellChildren.isNotEmpty) {
-          cells.add(ReaderTableCell(
-            children: cellChildren,
-            isHeader: tag == 'th',
-          ));
+          cells.add(
+            ReaderTableCell(
+              children: cellChildren,
+              isHeader: tag == 'th',
+            ),
+          );
         }
       }
       if (cells.isNotEmpty) rows.add(ReaderTableRow(cells));
@@ -362,12 +291,30 @@ class _BuildContext {
     required this.baseFontSize,
     required this.modalFontSize,
     required this.recognizerFor,
+    this.serifFont = 'Noto Serif',
+    this.sansSerifFont = 'Noto Sans',
+    this.monospaceFont = 'Fira Code',
+    this.overrideFont = false,
   });
 
   final TextStyle baseStyle;
   final double baseFontSize;
   final double? modalFontSize;
   final RecognizerProvider recognizerFor;
+
+  /// Font used for the book's `font-family: serif` generic family.
+  final String serifFont;
+
+  /// Font used for the book's `font-family: sans-serif` generic family.
+  final String sansSerifFont;
+
+  /// Font used for the book's `font-family: monospace` generic family (and
+  /// `<code>`/`<tt>`).
+  final String monospaceFont;
+
+  /// When true, force the base font on all text, ignoring the book's own
+  /// `font-family` declarations.
+  final bool overrideFont;
 }
 
 final RegExp _dataUriRegex = RegExp(r'data:image/[^;]+;base64,');
@@ -470,13 +417,15 @@ InlineSpan? _inlineSpan(
     case 'code':
     case 'tt':
       return TextSpan(
-        style: style.copyWith(fontFamily: 'monospace'),
+        style: style.copyWith(fontFamily: ctx.monospaceFont),
         children: children,
       );
     default:
       final text = node.text.trim();
       if (text.isNotEmpty) return TextSpan(text: text, style: style);
-      if (children.isNotEmpty) return TextSpan(style: style, children: children);
+      if (children.isNotEmpty) {
+        return TextSpan(style: style, children: children);
+      }
       return null;
   }
 }
@@ -497,12 +446,29 @@ InlineSpan _withRecognizer(InlineSpan span, GestureRecognizer recognizer) {
   return TextSpan(
     text: span.text,
     style: span.style,
-    children: [for (final child in children) _withRecognizer(child, recognizer)],
+    children: [
+      for (final child in children) _withRecognizer(child, recognizer),
+    ],
   );
 }
 
-TextStyle _textStyle(Map<String, String> styles, TextStyle base, _BuildContext ctx) {
+TextStyle _textStyle(
+  Map<String, String> styles,
+  TextStyle base,
+  _BuildContext ctx,
+) {
   var result = base;
+
+  // Honor the book's `font-family` unless the user chose to override fonts.
+  if (!ctx.overrideFont) {
+    final family = styles['font-family'];
+    if (family != null) {
+      final resolved = _resolveFontFamily(family, ctx);
+      if (resolved != null) {
+        result = result.copyWith(fontFamily: resolved);
+      }
+    }
+  }
 
   final weight = styles['font-weight'];
   if (weight != null) {
@@ -543,7 +509,9 @@ TextStyle _textStyle(Map<String, String> styles, TextStyle base, _BuildContext c
   final decoration = styles['text-decoration'];
   if (decoration != null) {
     final decorations = <TextDecoration>[];
-    if (decoration.contains('underline')) decorations.add(TextDecoration.underline);
+    if (decoration.contains('underline')) {
+      decorations.add(TextDecoration.underline);
+    }
     if (decoration.contains('line-through')) {
       decorations.add(TextDecoration.lineThrough);
     }
@@ -553,4 +521,35 @@ TextStyle _textStyle(Map<String, String> styles, TextStyle base, _BuildContext c
   }
 
   return result;
+}
+
+/// Resolves a CSS `font-family` value against the user's configured fonts.
+///
+/// Generic families (`serif`, `sans-serif`, `monospace`) map to the matching
+/// configured font. Named families pass through unchanged so Flutter can
+/// resolve them (falling back to the base font if unavailable). Returns null
+/// when nothing usable is found, in which case the caller keeps the base font.
+String? _resolveFontFamily(String raw, _BuildContext ctx) {
+  // `font-family` is a comma-separated fallback list; walk it in order and
+  // return the first entry we can map.
+  for (final part in raw.split(',')) {
+    final name = part.trim().replaceAll(RegExp('^["\']+|["\']+\$'), '');
+    if (name.isEmpty) continue;
+    switch (name.toLowerCase()) {
+      case 'serif':
+        return ctx.serifFont;
+      case 'sans-serif':
+        return ctx.sansSerifFont;
+      case 'monospace':
+        return ctx.monospaceFont;
+      case 'cursive':
+      case 'fantasy':
+      case 'system-ui':
+        // No dedicated mapping; fall through to the next candidate.
+        continue;
+      default:
+        return name;
+    }
+  }
+  return null;
 }

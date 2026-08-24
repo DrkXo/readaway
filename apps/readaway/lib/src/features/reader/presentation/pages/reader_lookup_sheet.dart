@@ -1,23 +1,11 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
-
-/// Which lookup [ReaderLookupSheet] performs.
-enum ReaderLookupKind { dictionary, translate }
-
-class ReaderLookupRequest extends Equatable {
-  const ReaderLookupRequest({required this.kind, required this.text});
-
-  final ReaderLookupKind kind;
-  final String text;
-
-  @override
-  List<Object?> get props => [kind, text];
-}
+import '../../domain/models/reader_lookup.dart';
 
 /// In-app results sheet for dictionary / translate lookups, opened from the
 /// reader selection popup as its own route (`/reader/lookup`).
@@ -132,7 +120,7 @@ class _ReaderLookupSheetState extends State<ReaderLookupSheet> {
               IconButton(
                 tooltip: 'Close',
                 onPressed: context.pop,
-                icon: const Icon(Icons.close_rounded),
+                icon: const Icon(LucideIcons.x),
               ),
             ],
           ),
@@ -288,7 +276,7 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline_rounded, size: 28, color: scheme.error),
+          Icon(LucideIcons.alertCircle, size: 28, color: scheme.error),
           const SizedBox(height: 10),
           Text(
             message,
@@ -298,7 +286,7 @@ class _ErrorView extends StatelessWidget {
           const SizedBox(height: 14),
           OutlinedButton.icon(
             onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded, size: 18),
+            icon: const Icon(LucideIcons.refreshCw, size: 18),
             label: const Text('Retry'),
           ),
         ],

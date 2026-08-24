@@ -1,22 +1,13 @@
-import 'dart:io';
-
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:html/dom.dart' as dom;
-import 'package:html/parser.dart' as html_parser;
-
-import '../../../../core/theme/theme.dart';
-import 'reader_html_layout.dart';
-import 'reader_html_model.dart';
+part of '../reader_widgets.dart';
 
 /// Renders MuPDF structured-text HTML as soft-wrapping [RichText]
 /// paragraphs.
 ///
 /// Parsing, line fusion and span construction run once per content change
-/// and live in [ReaderDocument] (`reader_html_model.dart`); this widget
-/// only maps blocks onto widgets. Theme or typography changes rebuild from
-/// the cached document without re-parsing. Colors come from the app theme;
-/// [ReaderHtmlWidget.baseFontSize] acts as the scale anchor.
+/// and live in [ReaderDocument] (`core/models/reader/reader_document.dart`);
+/// this widget only maps blocks onto widgets. Theme or typography changes
+/// rebuild from the cached document without re-parsing. Colors come from the
+/// app theme; [ReaderHtmlWidget.baseFontSize] acts as the scale anchor.
 class ReaderHtmlWidget extends StatefulWidget {
   const ReaderHtmlWidget({
     super.key,
@@ -24,6 +15,17 @@ class ReaderHtmlWidget extends StatefulWidget {
     required this.appColors,
     this.baseFontSize = 18.0,
     this.lineHeight = 1.75,
+    this.letterSpacing = -0.2,
+    this.fontFamily,
+    this.fontWeight = FontWeight.normal,
+    this.wordSpacing = 0,
+    this.textIndent = 0,
+    this.fullJustification = true,
+    this.paragraphMargin = 8,
+    this.serifFont = 'Noto Serif',
+    this.sansSerifFont = 'Noto Sans',
+    this.monospaceFont = 'Fira Code',
+    this.overrideFont = false,
     this.onTapUrl,
   });
 
@@ -31,6 +33,30 @@ class ReaderHtmlWidget extends StatefulWidget {
   final AppColors appColors;
   final double baseFontSize;
   final double lineHeight;
+  final double letterSpacing;
+  final String? fontFamily;
+  final FontWeight fontWeight;
+  final double wordSpacing;
+  final double textIndent;
+  final bool fullJustification;
+
+  /// Vertical padding applied around each paragraph block.
+  final double paragraphMargin;
+
+  /// Font used for the book's `font-family: serif` generic family.
+  final String serifFont;
+
+  /// Font used for the book's `font-family: sans-serif` generic family.
+  final String sansSerifFont;
+
+  /// Font used for the book's `font-family: monospace` generic family (and
+  /// `<code>`/`<tt>`).
+  final String monospaceFont;
+
+  /// When true, force [fontFamily] on all text, ignoring the book's own
+  /// `font-family` declarations.
+  final bool overrideFont;
+
   final void Function(String url)? onTapUrl;
 
   @override
@@ -41,10 +67,19 @@ class ReaderHtmlWidget extends StatefulWidget {
     List<ReaderBlock> blocks, {
     required TextStyle baseStyle,
     required Color foregroundColor,
+    double paragraphMargin = 8,
+    double textIndent = 0,
+    bool fullJustification = true,
   }) {
     return _mapBlocks(
       blocks,
-      _PaintContext(baseStyle: baseStyle, foregroundColor: foregroundColor),
+      _PaintContext(
+        baseStyle: baseStyle,
+        foregroundColor: foregroundColor,
+        paragraphMargin: paragraphMargin,
+        textIndent: textIndent,
+        fullJustification: fullJustification,
+      ),
     );
   }
 }
@@ -80,6 +115,13 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
   ReaderDocument? _document;
   double? _docFontSize;
   double? _docLineHeight;
+  double? _docLetterSpacing;
+  String? _docFontFamily;
+  FontWeight? _docFontWeight;
+  String? _docSerifFont;
+  String? _docSansSerifFont;
+  String? _docMonospaceFont;
+  bool? _docOverrideFont;
   AppColors? _docColors;
 
   @override
@@ -104,6 +146,13 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
     if (cached != null &&
         _docFontSize == widget.baseFontSize &&
         _docLineHeight == widget.lineHeight &&
+        _docLetterSpacing == widget.letterSpacing &&
+        _docFontFamily == widget.fontFamily &&
+        _docFontWeight == widget.fontWeight &&
+        _docSerifFont == widget.serifFont &&
+        _docSansSerifFont == widget.sansSerifFont &&
+        _docMonospaceFont == widget.monospaceFont &&
+        _docOverrideFont == widget.overrideFont &&
         identical(_docColors, widget.appColors)) {
       return cached;
     }
@@ -121,11 +170,22 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
       lineHeight: widget.lineHeight,
       recognizerFor: _linkHandlers.recognizerFor,
       modalFontSize: _modalFontSize,
+      serifFont: widget.serifFont,
+      sansSerifFont: widget.sansSerifFont,
+      monospaceFont: widget.monospaceFont,
+      overrideFont: widget.overrideFont,
     );
 
     _document = doc;
     _docFontSize = widget.baseFontSize;
     _docLineHeight = widget.lineHeight;
+    _docLetterSpacing = widget.letterSpacing;
+    _docFontFamily = widget.fontFamily;
+    _docFontWeight = widget.fontWeight;
+    _docSerifFont = widget.serifFont;
+    _docSansSerifFont = widget.sansSerifFont;
+    _docMonospaceFont = widget.monospaceFont;
+    _docOverrideFont = widget.overrideFont;
     _docColors = widget.appColors;
     return doc;
   }
@@ -145,18 +205,34 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
           appColors: widget.appColors,
           fontSize: widget.baseFontSize,
           height: widget.lineHeight,
+          letterSpacing: widget.letterSpacing,
+          fontFamily: widget.fontFamily,
+          fontWeight: widget.fontWeight,
+          wordSpacing: widget.wordSpacing,
         ),
         foregroundColor: widget.appColors.readerForeground,
+        paragraphMargin: widget.paragraphMargin,
+        textIndent: widget.textIndent,
+        fullJustification: widget.fullJustification,
       ),
     );
   }
 }
 
 class _PaintContext {
-  const _PaintContext({required this.baseStyle, required this.foregroundColor});
+  const _PaintContext({
+    required this.baseStyle,
+    required this.foregroundColor,
+    this.paragraphMargin = 8,
+    this.textIndent = 0,
+    this.fullJustification = true,
+  });
 
   final TextStyle baseStyle;
   final Color foregroundColor;
+  final double paragraphMargin;
+  final double textIndent;
+  final bool fullJustification;
 }
 
 List<Widget> _mapBlocks(List<ReaderBlock> blocks, _PaintContext ctx) {
@@ -171,10 +247,22 @@ List<Widget> _mapBlocks(List<ReaderBlock> blocks, _PaintContext ctx) {
 Widget? _mapBlock(ReaderBlock block, _PaintContext ctx) {
   switch (block) {
     case ParagraphBlock(:final spans, :final padded):
-      final rich = Text.rich(TextSpan(children: spans, style: ctx.baseStyle));
+      final textAlign = ctx.fullJustification ? TextAlign.justify : null;
+      final effectiveSpans = <InlineSpan>[
+        if (ctx.textIndent > 0)
+          TextSpan(
+            text: '\u200B${' ' * ctx.textIndent.round()}',
+            style: ctx.baseStyle,
+          ),
+        ...spans,
+      ];
+      final rich = Text.rich(
+        TextSpan(children: effectiveSpans, style: ctx.baseStyle),
+        textAlign: textAlign,
+      );
       if (!padded) return RepaintBoundary(child: rich);
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.symmetric(vertical: ctx.paragraphMargin),
         child: RepaintBoundary(child: rich),
       );
     case LooseTextBlock(:final text):
@@ -256,41 +344,48 @@ Widget? _mapBlock(ReaderBlock block, _PaintContext ctx) {
       for (final item in items) {
         final prefix = ordered ? '$index. ' : '\u2022 ';
         index++;
-        children.add(Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(prefix, style: ctx.baseStyle),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _mapBlocks(item, ctx),
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(prefix, style: ctx.baseStyle),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _mapBlocks(item, ctx),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ));
+        );
       }
       if (children.isEmpty) return null;
-      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      );
     case TableBlock(:final rows):
       final tableRows = <TableRow>[];
       for (final row in rows) {
         final cells = <Widget>[];
         for (final cell in row.cells) {
-          cells.add(Padding(
-            padding: const EdgeInsets.all(8),
-            child: DefaultTextStyle(
-              style: ctx.baseStyle.copyWith(
-                fontWeight: cell.isHeader ? FontWeight.bold : null,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _mapBlocks(cell.children, ctx),
+          cells.add(
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: DefaultTextStyle(
+                style: ctx.baseStyle.copyWith(
+                  fontWeight: cell.isHeader ? FontWeight.bold : null,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _mapBlocks(cell.children, ctx),
+                ),
               ),
             ),
-          ));
+          );
         }
         if (cells.isNotEmpty) tableRows.add(TableRow(children: cells));
       }
@@ -299,7 +394,9 @@ Widget? _mapBlock(ReaderBlock block, _PaintContext ctx) {
         scrollDirection: Axis.horizontal,
         child: Table(
           defaultColumnWidth: const IntrinsicColumnWidth(),
-          border: TableBorder.all(color: ctx.foregroundColor.withValues(alpha: 0.2)),
+          border: TableBorder.all(
+            color: ctx.foregroundColor.withValues(alpha: 0.2),
+          ),
           children: tableRows,
         ),
       );

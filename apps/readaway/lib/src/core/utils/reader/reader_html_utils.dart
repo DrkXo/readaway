@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:mupdf/mupdf.dart';
 
+import '../../models/reader/stext_line_geom.dart';
+import '../../services/css_service.dart';
+
 /// Layout reconstruction for MuPDF's structured-text HTML output.
 ///
 /// That extraction emits one `<p style="top;left;line-height">` per rendered
@@ -95,18 +98,7 @@ double? parseCssPt(String? raw) {
 Map<String, String> parseStyles(dom.Element element) {
   final style = element.attributes['style'];
   if (style == null || style.isEmpty) return {};
-  final result = <String, String>{};
-  for (final decl in style.split(';')) {
-    final parts = decl.split(':');
-    if (parts.length == 2) {
-      final key = parts[0].trim().toLowerCase();
-      final value = parts[1].trim();
-      if (key.isNotEmpty && value.isNotEmpty) {
-        result[key] = value;
-      }
-    }
-  }
-  return result;
+  return cssService.parseDeclarations(style);
 }
 
 /// True when joining two lines must not insert a space because of CJK text
@@ -129,6 +121,8 @@ bool shouldDehyphenate(String prevLine, String nextLine) {
 
 /// Removes a trailing '-' from the rightmost text span so joined lines read
 /// "refined" instead of "refined- essences". Returns true once stripped.
+///
+/// **Mutates [spans] in place** — caller must pass a mutable list.
 bool stripTrailingHyphen(List<InlineSpan> spans) {
   for (var i = spans.length - 1; i >= 0; i--) {
     final span = spans[i];
@@ -158,7 +152,7 @@ bool _isCjkChar(String ch) => RegExp(
 ).hasMatch(ch);
 
 /// Wraps stext line-paragraphs whose geometry intersects a link hot zone in
-/// an `<a href>` so taps reach [ReaderHtmlWidget.onTapUrl]. Internal links
+/// an `<a href>` so taps reach the reader widget's `onTapUrl`. Internal links
 /// become `#page=N` (flat page index); external URIs are kept verbatim.
 ///
 /// ponytail: line granularity — stext HTML lines carry no width, so two
@@ -186,23 +180,5 @@ void mergePageLinks(dom.Document document, List<PageLink> links) {
       p.append(anchor);
       break;
     }
-  }
-}
-
-/// Geometry of one stext line, parsed from its `<p style>` attribute.
-class StextLineGeom {
-  const StextLineGeom(this.top, this.left, this.lineH);
-
-  final double top;
-  final double left;
-  final double lineH;
-
-  static StextLineGeom? from(dom.Element p) {
-    final styles = parseStyles(p);
-    final top = parseCssPt(styles['top']);
-    final left = parseCssPt(styles['left']);
-    final lineH = parseCssPt(styles['line-height']);
-    if (top == null || left == null || lineH == null || lineH <= 0) return null;
-    return StextLineGeom(top, left, lineH);
   }
 }

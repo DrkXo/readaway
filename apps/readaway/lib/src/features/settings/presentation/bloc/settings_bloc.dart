@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
+
+import '../../../../core/models/models.dart';
 import '../../../../core/services/services.dart';
 import '../../domain/models/reader_preferences.dart';
 
@@ -16,19 +18,27 @@ part 'settings_state.dart';
 @Singleton()
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final AppStorageService _storage;
+  final SettingsService _settingsService;
 
   SettingsBloc({
     required this._storage,
+    required this._settingsService,
   }) : super(
-         const SettingsState(
+         SettingsState(
            globalReaderPrefs: ReaderPreferences(),
            documentReaderPrefs: {},
+           appSettings: _settingsService.settings,
          ),
        ) {
-    on<_SetGlobalReaderPref>(_onSetGlobalReaderPref, transformer: droppable());
+    // `restartable` (not `droppable`) so rapid slider drags always land on the
+    // final value: each new event cancels the previous in-flight handler.
+    on<_SetGlobalReaderPref>(
+      _onSetGlobalReaderPref,
+      transformer: restartable(),
+    );
     on<_SetDocumentReaderPref>(
       _onSetDocumentReaderPref,
-      transformer: droppable(),
+      transformer: restartable(),
     );
     on<_ResetDocumentReaderPref>(
       _onResetDocumentReaderPref,
@@ -36,6 +46,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     );
     on<_ResetAllReaderPrefs>(_onResetAllReaderPrefs, transformer: droppable());
     on<_ImportReaderPrefs>(_onImportReaderPrefs, transformer: droppable());
+    on<_UpdateAppSettings>(_onUpdateAppSettings, transformer: droppable());
   }
 
   static SettingsBloc get settingsBloc => GetIt.I.get<SettingsBloc>();
@@ -93,6 +104,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     try {
       await _storage.resetStorage();
+      await _settingsService.save(const Settings());
       emit(
         const SettingsState(
           globalReaderPrefs: ReaderPreferences(),
@@ -103,6 +115,15 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     } catch (e) {
       logger.e('Failed to reset all prefs: $e');
     }
+  }
+
+  void _onUpdateAppSettings(
+    _UpdateAppSettings event,
+    Emitter<SettingsState> emit,
+  ) {
+    _settingsService.scheduleSave(event.settings);
+    emit(state.copyWith(appSettings: event.settings));
+    logger.d('App settings updated');
   }
 
   void _onImportReaderPrefs(
@@ -155,9 +176,15 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
 extension SettingsStateX on SettingsState {
   ReaderPreferences resolvedReaderPrefs(String? documentPath) {
-    if (documentPath != null && documentReaderPrefs.containsKey(documentPath)) {
-      return documentReaderPrefs[documentPath]!;
+    if (documentPath == null ||
+        !documentReaderPrefs.containsKey(documentPath)) {
+      return globalReaderPrefs;
     }
-    return globalReaderPrefs;
+    final docJson = documentReaderPrefs[documentPath]!.toJson();
+    final merged = Map<String, dynamic>.from(globalReaderPrefs.toJson());
+    for (final entry in docJson.entries) {
+      if (entry.value != null) merged[entry.key] = entry.value;
+    }
+    return ReaderPreferences.fromJson(merged);
   }
 }

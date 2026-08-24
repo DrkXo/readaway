@@ -312,16 +312,20 @@ class _SurfacePainter extends CustomPainter {
 
 TextStyle readerTextStyle({
   required AppColors appColors,
-  String fontFamily = 'Roboto',
+  String? fontFamily,
   double fontSize = 18.0,
   double height = 1.75,
   double letterSpacing = -0.2,
+  FontWeight fontWeight = FontWeight.normal,
+  double wordSpacing = 0,
 }) {
   return TextStyle(
     fontFamily: fontFamily,
     fontSize: fontSize,
     height: height,
     letterSpacing: letterSpacing,
+    fontWeight: fontWeight,
+    wordSpacing: wordSpacing,
     color: appColors.readerForeground,
     leadingDistribution: TextLeadingDistribution.even,
   );

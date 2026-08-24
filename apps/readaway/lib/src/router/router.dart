@@ -9,8 +9,8 @@ import 'package:injectable/injectable.dart';
 import '../core/routes/routes.dart';
 import '../core/services/services.dart';
 import '../features/library/presentation/pages/library_page.dart';
-import '../features/reader/presentation/pages/reader_lookup_sheet.dart';
-import '../features/reader/presentation/pages/reader_page.dart';
+import '../features/reader/reader.dart';
+import '../features/settings/presentation/pages/custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
 
 part 'custom_routes.dart';
@@ -107,13 +107,25 @@ class AppRouter {
           return ModalPage(
             key: state.pageKey,
             isScrollControlled: true,
-            // If you want a semi-transparent dark overlay behind the modal:
-            modalBarrierColor: Colors.black54,
-            // Turn off native drag handle if you build a custom styled sheet container
             showDragHandle: false,
             builder: (context) => const SettingsPage(),
           );
         },
+        routes: [
+          // Custom fonts management, presented as a modal on top of settings.
+          GoRoute(
+            name: _appRoutes.customFonts.name,
+            path: _appRoutes.customFonts.path,
+            pageBuilder: (context, state) {
+              return ModalPage(
+                key: state.pageKey,
+                isScrollControlled: true,
+                showDragHandle: false,
+                builder: (context) => const CustomFontsPage(),
+              );
+            },
+          ),
+        ],
       ),
 
       // Full-screen route

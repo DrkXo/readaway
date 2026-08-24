@@ -8,8 +8,8 @@ class SettingsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MorphIconButton(
-      icon: Icons.tune_rounded,
-      hoverIcon: Icons.settings_rounded,
+      icon: LucideIcons.slidersHorizontal,
+      hoverIcon: LucideIcons.settings,
       tooltip: 'Reader options',
       onTap: () {
         appRouter.push(appRoutes.settings.path);

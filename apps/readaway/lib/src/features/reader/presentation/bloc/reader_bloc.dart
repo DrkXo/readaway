@@ -5,14 +5,14 @@ import 'dart:ui' as ui;
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:get_it/get_it.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:injectable/injectable.dart';
 import 'package:mupdf/mupdf.dart';
 
+import '../../../../core/services/css_service.dart';
 import '../../../../core/services/services.dart';
-import '../widgets/reader_html_layout.dart';
+import '../../../../core/utils/reader/reader_html_utils.dart';
 
 part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';
@@ -21,9 +21,11 @@ part 'reader_state.dart';
 @singleton
 class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   final WindowService _windowService;
+  final MuPdfService _muPdfService;
 
   ReaderBloc({
     required this._windowService,
+    required this._muPdfService,
   }) : super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
     on<_PageChanged>(_onPageChanged);
@@ -35,10 +37,17 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _OpenDocument event,
     Emitter<ReaderState> emit,
   ) async {
-    emit(state.copyWith(loading: true, error: null, htmlPages: null, pageImages: null));
+    emit(
+      state.copyWith(
+        loading: true,
+        error: null,
+        htmlPages: null,
+        pageImages: null,
+      ),
+    );
 
     try {
-      final service = GetIt.I<MuPdfService>();
+      final service = _muPdfService;
       await service.closeDocument();
       await service.openDocument(event.path);
 
@@ -112,10 +121,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
 
     try {
-      final service = GetIt.I<MuPdfService>();
-      final (rawHtml, links) =
-          await (service.extractPageHtml(index), service.getPageLinks(index))
-              .wait;
+      final service = _muPdfService;
+      final (rawHtml, links) = await (
+        service.extractPageHtml(index),
+        service.getPageLinks(index),
+      ).wait;
       final html = _sanitizeHtml(rawHtml, links) ?? '';
 
       final pages = List<String?>.from(state.htmlPages!);
@@ -147,14 +157,15 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     if (state.pageImages == null || index < 0 || index >= state.pageCount) {
       return;
     }
-    if (state.pageImages![index] != null || state.loadingPages.contains(index)) {
+    if (state.pageImages![index] != null ||
+        state.loadingPages.contains(index)) {
       return;
     }
 
     emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
 
     try {
-      final rendered = await GetIt.I<MuPdfService>().renderPage(index);
+      final rendered = await _muPdfService.renderPage(index);
       final images = List<ui.Image?>.from(state.pageImages!);
       images[index] = rendered == null ? null : await _decodePage(rendered);
       emit(
@@ -165,7 +176,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       );
     } catch (e) {
       logger.d('Failed to render page $index');
-      emit(state.copyWith(loadingPages: {...state.loadingPages}..remove(index)));
+      emit(
+        state.copyWith(loadingPages: {...state.loadingPages}..remove(index)),
+      );
     }
   }
 
@@ -205,7 +218,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _CloseDocument event,
     Emitter<ReaderState> emit,
   ) {
-    GetIt.I<MuPdfService>().closeDocument();
+    _muPdfService.closeDocument();
     _windowService.setDefaultTitle();
     emit(const ReaderState());
   }
@@ -238,15 +251,13 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     final style = element.attributes['style'];
     if (style == null || style.isEmpty) return;
 
-    final kept = style.split(';').map((d) => d.trim()).where((decl) {
-      if (decl.isEmpty) return false;
-      return decl.split(':').first.trim().toLowerCase() != 'height';
-    }).toList();
-
-    if (kept.isEmpty) {
+    final declarations = cssService.parseDeclarations(style)..remove('height');
+    if (declarations.isEmpty) {
       element.attributes.remove('style');
     } else {
-      element.attributes['style'] = '${kept.join('; ')};';
+      element.attributes['style'] = declarations.entries
+          .map((e) => '${e.key}: ${e.value};')
+          .join(' ');
     }
   }
 }

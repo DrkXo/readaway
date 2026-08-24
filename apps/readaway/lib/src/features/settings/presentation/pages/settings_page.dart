@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../widgets/theme_mode_changer_widget.dart';
-import '../widgets/tts_manager_widget.dart';
+import '../widgets/widgets.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, this.showScopeToggle = true});
+
+  final bool showScopeToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +15,6 @@ class SettingsPage extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        // Adjust alpha / opacity to your preference (e.g. 0.85 - 0.95)
         color: scheme.surface.withValues(alpha: 0.92),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -21,14 +22,14 @@ class SettingsPage extends StatelessWidget {
         top: false,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
           ),
           child: DefaultTabController(
-            length: 2,
+            length: 5,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Top Drag Handle
+                // Top drag handle
                 const SizedBox(height: 12),
                 Container(
                   width: 36,
@@ -39,7 +40,7 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
 
-                // Header: Title & Close Button
+                // Header: title & close button
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 8, 4),
                   child: Row(
@@ -52,7 +53,7 @@ class SettingsPage extends StatelessWidget {
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(LucideIcons.x),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],
@@ -61,29 +62,52 @@ class SettingsPage extends StatelessWidget {
                 const Divider(height: 1),
 
                 TabBar(
+                  isScrollable: false,
+                  tabAlignment: TabAlignment.fill,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  dividerColor: Colors.transparent,
                   tabs: const [
-                    Tab(text: 'General'),
-                    Tab(text: 'TTS'),
+                    Tab(
+                      icon: Icon(
+                        LucideIcons.type,
+                      ),
+                      text: 'Font',
+                    ),
+                    Tab(
+                      icon: Icon(
+                        LucideIcons.space,
+                      ),
+                      text: 'Layout',
+                    ),
+                    Tab(
+                      icon: Icon(
+                        LucideIcons.hand,
+                      ),
+                      text: 'Behavior',
+                    ),
+                    Tab(
+                      icon: Icon(
+                        LucideIcons.palette,
+                      ),
+                      text: 'Appearance',
+                    ),
+                    Tab(
+                      icon: Icon(
+                        LucideIcons.mic,
+                      ),
+                      text: 'TTS',
+                    ),
                   ],
-                  indicatorSize: TabBarIndicatorSize.tab,
                 ),
 
                 Flexible(
                   child: TabBarView(
                     children: [
-                      ListView(
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        children: const [
-                          ThemeModeChangerWidget(),
-                        ],
-                      ),
-                      ListView(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        children: const [
-                          TtsManagerWidget(),
-                        ],
-                      ),
+                      FontPanel(showScopeToggle: showScopeToggle),
+                      LayoutPanel(showScopeToggle: showScopeToggle),
+                      const BehaviorPanel(),
+                      const AppearancePanel(),
+                      TtsPanel(),
                     ],
                   ),
                 ),

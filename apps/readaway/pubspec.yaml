@@ -19,12 +19,15 @@ dependencies:
   freezed_annotation: ^3.0.0
   json_annotation: ^4.9.0
   go_router: ^17.5.0
+  google_fonts: ^6.2.1
+  lucide_icons_flutter: ^3.1.17
   injectable: ^3.0.0
   get_it: ^9.2.1
   logging: ^1.3.0
   equatable: ^2.1.0
   rxdart: ^0.28.0
   flutter_animate: ^4.5.0
+  csslib: ^1.0.2
   dio: ^5.9.0
   native_dio_adapter: ^1.8.0
   hive_ce: ^2.19.3
@@ -58,5 +61,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/tts_models_release.json
+    - assets/google_fonts/
   shaders:
     - assets/shaders/tactile_surface.frag

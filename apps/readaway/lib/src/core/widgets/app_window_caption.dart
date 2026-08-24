@@ -68,7 +68,7 @@ class AppWindowCaption extends StatelessWidget {
                     ?actions,
                     SettingsButton(),
                     IconButton(
-                      icon: const Icon(Icons.remove_rounded),
+                      icon: const Icon(LucideIcons.minus),
                       tooltip: 'Minimize',
                       iconSize: 18,
                       splashRadius: 16,
@@ -77,7 +77,7 @@ class AppWindowCaption extends StatelessWidget {
                     ),
                     _MaximizeCaptionButton(service: service),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded),
+                      icon: const Icon(LucideIcons.x),
                       tooltip: 'Close',
                       iconSize: 18,
                       splashRadius: 16,
@@ -124,7 +124,7 @@ class _MaximizeCaptionButtonState extends State<_MaximizeCaptionButton> {
         final isMaximized = snapshot.data ?? false;
         return IconButton(
           icon: Icon(
-            isMaximized ? Icons.filter_none_rounded : Icons.crop_square_rounded,
+            isMaximized ? LucideIcons.copy : LucideIcons.square,
           ),
           tooltip: isMaximized ? 'Restore' : 'Maximize',
           iconSize: 16,

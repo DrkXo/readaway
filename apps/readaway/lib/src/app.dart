@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../flavors.dart';
 import 'core/services/services.dart';
 import 'core/widgets/core_widgets.dart';
-import 'features/reader/presentation/bloc/reader_bloc.dart';
-import 'features/reader/presentation/pages/reader_page.dart';
-import 'features/reader/presentation/widgets/reader_caption_actions.dart';
+import 'features/reader/reader.dart';
 import 'features/settings/presentation/bloc/settings_bloc.dart';
 import 'router/router.dart';
 
@@ -71,8 +70,8 @@ class _ReadAwayState extends State<ReadAway> {
                                     prev.hasDocument != curr.hasDocument,
                                 builder: (context, state) => state.hasDocument
                                     ? MorphIconButton(
-                                        icon: Icons.menu_rounded,
-                                        hoverIcon: Icons.menu_open_rounded,
+                                        icon: LucideIcons.menu,
+                                        hoverIcon: LucideIcons.panelLeftOpen,
                                         tooltip: 'Contents',
                                         onTap: () => ReaderPage
                                             .scaffoldKey

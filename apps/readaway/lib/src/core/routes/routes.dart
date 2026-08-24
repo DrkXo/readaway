@@ -29,10 +29,12 @@ AppRoutes get appRoutes => GetIt.I<AppRoutes>();
 
 @singleton
 class AppRoutes {
+  Routes get library => Routes(path: '/', name: 'Library');
   Routes get reader => Routes(path: '/reader', name: 'Reader');
-  Routes get library => Routes(path: '/library', name: 'Library');
   Routes get settings => Routes(path: '/settings', name: 'Settings');
-  Routes get readerLookup => Routes(path: '/reader/lookup', name: 'ReaderLookup');
+  Routes get customFonts => Routes(path: 'custom-fonts', name: 'CustomFonts');
+  Routes get readerLookup =>
+      Routes(path: '/reader/lookup', name: 'ReaderLookup');
 }
 
 extension RoutesX on Routes {

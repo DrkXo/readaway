@@ -2,9 +2,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/routes/routes.dart';
-import '../../../reader/presentation/bloc/reader_bloc.dart';
+import '../../../reader/reader.dart';
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -35,7 +36,7 @@ class LibraryPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(),
       floatingActionButton: FloatingActionButton.small(
-        child: Icon(Icons.file_open_outlined),
+        child: Icon(LucideIcons.folderOpen),
         onPressed: () => _pickAndOpen(context),
       ),
     );
