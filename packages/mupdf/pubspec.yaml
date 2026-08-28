@@ -8,3 +8,6 @@ environment:
 
 dependencies:
   ffi: ^2.1.0
+
+dev_dependencies:
+  ffigen: ^21.0.0
