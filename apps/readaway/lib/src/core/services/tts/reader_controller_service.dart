@@ -3,13 +3,11 @@ part of '../services.dart';
 @singleton
 class ReaderTtsController {
   ReaderTtsController(
-    this._deviceTts,
     this._sherpaTts,
     this._audio,
     this._textChunker,
   );
 
-  final DeviceTtsService _deviceTts;
   final SherpaOnnxTtsService _sherpaTts;
   final JustAudioService _audio;
   final TextChunker _textChunker;
@@ -26,40 +24,33 @@ class ReaderTtsController {
   final _stateController = StreamController<TtsPlaybackEvent>.broadcast();
   final _chunkController = StreamController<TtsChunk>.broadcast();
 
-  /// Playback lifecycle events (playing/paused/stopped/error), merged from
-  /// whichever engine is active.
+  /// Playback lifecycle events (playing/paused/stopped/error).
   Stream<TtsPlaybackEvent> get playbackState => _stateController.stream;
 
   /// Fires with the sentence currently being spoken — use this to drive
   /// read-along highlighting in the reader UI.
   Stream<TtsChunk> get currentChunk => _chunkController.stream;
 
-  @PostConstruct(preResolve: true)
-  Future<void> init() async {
-    await _deviceTts.init();
-    _deviceTts.events.listen(_stateController.add);
-  }
-
   // ---------------------------------------------------------------------
-  // Voice selection — this is where "maximum choice" is exposed.
+  // Voice selection
   // ---------------------------------------------------------------------
 
-  /// All device voices *plus* every already-downloaded sherpa-onnx voice.
-  /// Feed this straight into a voice picker; call [availableSherpaModels]
-  /// separately if you also want to show voices that aren't downloaded
-  /// yet (with a "download" affordance).
+  /// Every already-downloaded sherpa-onnx voice. Feed this straight into a
+  /// voice picker; call [availableSherpaModels] separately if you also want
+  /// to show voices that aren't downloaded yet (with a "download"
+  /// affordance).
   Future<List<TtsVoiceOption>> getInstalledVoices() async {
-    final deviceVoices = await _deviceTts.getVoices();
     final sherpaModels = await _sherpaTts.getDownloadedModels();
-    final sherpaVoices = sherpaModels.map(
-      (m) => TtsVoiceOption(
-        engine: TtsEngineKind.sherpaOnnx,
-        id: m.id,
-        label: m.displayName,
-        languageCode: m.languageCode,
-      ),
-    );
-    return [...deviceVoices, ...sherpaVoices];
+    return sherpaModels
+        .map(
+          (m) => TtsVoiceOption(
+            engine: TtsEngineKind.sherpaOnnx,
+            id: m.id,
+            label: m.displayName,
+            languageCode: m.languageCode,
+          ),
+        )
+        .toList();
   }
 
   /// The full catalog of downloadable sherpa-onnx voices (downloaded or
@@ -75,31 +66,18 @@ class ReaderTtsController {
 
   Future<void> setVoice(TtsVoiceOption voice) async {
     _voice = voice;
-    switch (voice.engine) {
-      case TtsEngineKind.device:
-        await _deviceTts.setVoice(voice);
-        break;
-      case TtsEngineKind.sherpaOnnx:
-        await _sherpaTts.loadModel(voice.id);
-        break;
-    }
+    await _sherpaTts.loadModel(voice.id);
   }
 
   TtsVoiceOption? get currentVoice => _voice;
 
   Future<void> setRate(double rate) async {
     _rate = rate;
-    if (_voice?.engine == TtsEngineKind.device) {
-      await _deviceTts.setRate(rate.clamp(0.0, 1.0));
-    }
     // sherpa's `speed` multiplier is applied per-generate() call below.
   }
 
   Future<void> setPitch(double pitch) async {
     _pitch = pitch;
-    if (_voice?.engine == TtsEngineKind.device) {
-      await _deviceTts.setPitch(pitch);
-    }
     // sherpa-onnx offline TTS does not expose a runtime pitch knob.
   }
 
@@ -139,25 +117,7 @@ class ReaderTtsController {
     _chunkController.add(chunk);
     _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.playing));
 
-    final voice = _voice!;
-    if (voice.engine == TtsEngineKind.device) {
-      // flutter_tts's completion handler drives the next chunk. Only one
-      // listener should be active at a time, so replace any previous one.
-      await _deviceQueueSub?.cancel();
-      _deviceQueueSub = _deviceTts.events.listen(_onDeviceEventForQueue);
-      await _deviceTts.speak(chunk.text);
-    } else {
-      await _playSherpaChunk(chunk, voice);
-    }
-  }
-
-  StreamSubscription<TtsPlaybackEvent>? _deviceQueueSub;
-
-  void _onDeviceEventForQueue(TtsPlaybackEvent event) {
-    if (event.state == TtsPlaybackState.stopped && !_stopRequested) {
-      unawaited(_deviceQueueSub?.cancel());
-      unawaited(_playNext());
-    }
+    await _playSherpaChunk(chunk, _voice!);
   }
 
   Future<void> _playSherpaChunk(TtsChunk chunk, TtsVoiceOption voice) async {
@@ -188,40 +148,23 @@ class ReaderTtsController {
   }
 
   Future<void> pause() async {
-    if (_voice?.engine == TtsEngineKind.device) {
-      await _deviceTts.pause();
-    } else {
-      await _audio.pause();
-      _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.paused));
-    }
+    await _audio.pause();
+    _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.paused));
   }
 
   Future<void> resume() async {
-    if (_voice?.engine == TtsEngineKind.device) {
-      // flutter_tts has no resume; re-speak the current chunk.
-      if (_queueIndex >= 0 && _queueIndex < _queue.length) {
-        await _deviceTts.speak(_queue[_queueIndex].text);
-      }
-    } else {
-      await _audio.resume();
-      _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.playing));
-    }
+    await _audio.resume();
+    _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.playing));
   }
 
   Future<void> stop() async {
     _stopRequested = true;
-    _deviceQueueSub?.cancel();
-    await _deviceTts.stop();
     await _audio.stop();
     _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.stopped));
   }
 
   Future<void> skipToNextSentence() async {
-    if (_voice?.engine == TtsEngineKind.device) {
-      await _deviceTts.stop();
-    } else {
-      await _audio.stop();
-    }
+    await _audio.stop();
     await _playNext();
   }
 

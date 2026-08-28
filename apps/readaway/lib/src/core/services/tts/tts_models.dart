@@ -1,6 +1,6 @@
 part of '../services.dart';
 
-enum TtsEngineKind { device, sherpaOnnx }
+enum TtsEngineKind { sherpaOnnx }
 
 /// One selectable voice, regardless of which engine it comes from.
 class TtsVoiceOption {
@@ -14,7 +14,6 @@ class TtsVoiceOption {
 
   final TtsEngineKind engine;
 
-  /// For [TtsEngineKind.device]: the OS voice name/identifier.
   /// For [TtsEngineKind.sherpaOnnx]: the model id (see [SherpaTtsModelInfo.id]).
   final String id;
 
@@ -22,8 +21,7 @@ class TtsVoiceOption {
   final String? languageCode;
 
   /// Only meaningful for sherpa-onnx multi-speaker models
-  /// (e.g. Kokoro speaker index). Null / 0 for single-speaker models and
-  /// for device voices.
+  /// (e.g. Kokoro speaker index). Null / 0 for single-speaker models.
   final int? sherpaSpeakerId;
 }
 

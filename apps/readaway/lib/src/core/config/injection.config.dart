@@ -35,14 +35,6 @@ extension GetItInjectableX on _i174.GetIt {
       final i = _i264.LoggingService();
       return i.init().then((_) => i);
     }, preResolve: true);
-    await gh.singletonAsync<_i264.DeviceTtsService>(
-      () {
-        final i = _i264.DeviceTtsService();
-        return i.init().then((_) => i);
-      },
-      preResolve: true,
-      dispose: (i) => i.dispose(),
-    );
     await gh.singletonAsync<_i264.JustAudioService>(
       () {
         final i = _i264.JustAudioService();
@@ -114,10 +106,16 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
+    gh.singleton<_i264.SherpaTtsModelDownloader>(
+      () => _i264.SherpaTtsModelDownloader(
+        client: gh<_i264.HttpService>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
     await gh.singletonAsync<_i264.SherpaOnnxTtsService>(
       () {
         final i = _i264.SherpaOnnxTtsService(
-          client: gh<_i264.HttpService>(),
+          downloader: gh<_i264.SherpaTtsModelDownloader>(),
           sherpaTtsModelCatalog: gh<_i264.SherpaTtsModelCatalog>(),
         );
         return i.init().then((_) => i);
@@ -145,17 +143,12 @@ extension GetItInjectableX on _i174.GetIt {
         loggingService: gh<_i264.LoggingService>(),
       ),
     );
-    await gh.singletonAsync<_i264.ReaderTtsController>(
-      () {
-        final i = _i264.ReaderTtsController(
-          gh<_i264.DeviceTtsService>(),
-          gh<_i264.SherpaOnnxTtsService>(),
-          gh<_i264.JustAudioService>(),
-          gh<_i264.TextChunker>(),
-        );
-        return i.init().then((_) => i);
-      },
-      preResolve: true,
+    gh.singleton<_i264.ReaderTtsController>(
+      () => _i264.ReaderTtsController(
+        gh<_i264.SherpaOnnxTtsService>(),
+        gh<_i264.JustAudioService>(),
+        gh<_i264.TextChunker>(),
+      ),
       dispose: (i) => i.dispose(),
     );
     gh.singleton<_i523.ReaderBloc>(

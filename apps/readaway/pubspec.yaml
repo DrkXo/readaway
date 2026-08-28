@@ -43,7 +43,6 @@ dependencies:
   just_audio_media_kit: ^2.1.0
   media_kit_libs_linux: any
   media_kit_libs_windows_audio: any
-  flutter_tts: ^4.2.5
   sherpa_onnx: ^1.13.6
   archive: ^4.0.2
 
