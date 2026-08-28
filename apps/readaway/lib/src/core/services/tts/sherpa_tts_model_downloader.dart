@@ -123,20 +123,24 @@ class SherpaTtsModelDownloader {
 
     onProgress(ModelDownloadStage.extracting, 0);
     final bytes = await archiveFile.readAsBytes();
-    final archive = _decodeArchive(bytes, archivePath);
-
-    for (final entry in archive.files) {
-      if (!entry.isFile) continue;
-      // Archives typically nest everything under one top folder
-      // (e.g. `vits-piper-en_US-amy-low/model.onnx`); strip it so files
-      // land directly in destDir regardless of the archive's internal name.
-      final relative = _stripTopLevelDir(entry.name);
-      if (relative.isEmpty) continue;
-      final outPath = p.join(destDir.path, relative);
-      final outFile = File(outPath);
-      await outFile.parent.create(recursive: true);
-      await outFile.writeAsBytes(entry.content as List<int>);
-    }
+    final destPath = destDir.path;
+    // Decompression + file writes are CPU/IO heavy (tens to hundreds of MB);
+    // run them on a background isolate so the UI thread stays responsive.
+    await Isolate.run(() async {
+      final archive = _decodeArchive(bytes, archivePath);
+      for (final entry in archive.files) {
+        if (!entry.isFile) continue;
+        // Archives typically nest everything under one top folder
+        // (e.g. `vits-piper-en_US-amy-low/model.onnx`); strip it so files
+        // land directly in destDir regardless of the archive's internal name.
+        final relative = _stripTopLevelDir(entry.name);
+        if (relative.isEmpty) continue;
+        final outPath = p.join(destPath, relative);
+        final outFile = File(outPath);
+        await outFile.parent.create(recursive: true);
+        await outFile.writeAsBytes(entry.content as List<int>);
+      }
+    });
 
     onProgress(ModelDownloadStage.extracting, 1);
     await archiveFile.delete();
@@ -158,7 +162,7 @@ class SherpaTtsModelDownloader {
     );
   }
 
-  Archive _decodeArchive(Uint8List bytes, String path) {
+  static Archive _decodeArchive(Uint8List bytes, String path) {
     if (path.endsWith('.tar.bz2') || path.endsWith('.tbz2')) {
       final tarBytes = BZip2Decoder().decodeBytes(bytes);
       return TarDecoder().decodeBytes(tarBytes);
@@ -171,7 +175,7 @@ class SherpaTtsModelDownloader {
     throw SherpaTtsException('Unsupported archive format: $path');
   }
 
-  String _stripTopLevelDir(String entryName) {
+  static String _stripTopLevelDir(String entryName) {
     final normalized = entryName.replaceAll('\\', '/');
     final firstSlash = normalized.indexOf('/');
     if (firstSlash == -1) return normalized;

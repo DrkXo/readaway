@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
 import '../../../../core/services/services.dart';
 
 part 'tts_bloc.freezed.dart';
@@ -74,10 +75,15 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
       ),
     );
 
-    _downloadSubs[id] = _ttsService.downloadModel(event.model).listen(
+    _downloadSubs[id] = _ttsService
+        .downloadModel(event.model)
+        .listen(
           (progress) => add(
-            _DownloadProgress(progress.modelId, progress.stage,
-                progress.fraction),
+            _DownloadProgress(
+              progress.modelId,
+              progress.stage,
+              progress.fraction,
+            ),
           ),
           onError: (Object _) => add(_DownloadFailed(id)),
           cancelOnError: true,
@@ -146,12 +152,13 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
       emit(
         state.copyWith(
           downloadedIds: state.downloadedIds.where((e) => e != id).toSet(),
-          activeModelId:
-              state.activeModelId == id ? null : state.activeModelId,
+          activeModelId: state.activeModelId == id ? null : state.activeModelId,
         ),
       );
     } catch (e) {
-      emit(state.copyWith(error: 'Failed to delete ${event.model.displayName}'));
+      emit(
+        state.copyWith(error: 'Failed to delete ${event.model.displayName}'),
+      );
     }
   }
 
@@ -179,6 +186,7 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
 
   void _onPreview(_Preview event, Emitter<TtsState> emit) async {
     if (state.busyModelId != null) return;
+    final previousActive = state.activeModelId;
     emit(state.copyWith(busyModelId: event.modelId, error: null));
     try {
       if (_ttsService.activeModel?.id != event.modelId) {
@@ -192,9 +200,13 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
       );
 
       unawaited(_audio.playFile(file.path));
-      emit(
-        state.copyWith(activeModelId: event.modelId, busyModelId: null),
-      );
+
+      // Previewing must not change the active voice: restore the model that
+      // was loaded before the preview (if any) so the reader keeps using it.
+      if (previousActive != null && previousActive != event.modelId) {
+        await _ttsService.loadModel(previousActive);
+      }
+      emit(state.copyWith(busyModelId: null));
     } on SherpaTtsException catch (e) {
       emit(state.copyWith(error: e.message, busyModelId: null));
     } catch (_) {

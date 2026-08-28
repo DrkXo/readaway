@@ -13,9 +13,12 @@ class TtsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Singleton from GetIt: state (and running downloads) survive the
-    // settings sheet being closed and reopened.
-    return BlocProvider<TtsBloc>(
-      create: (_) => GetIt.I.get<TtsBloc>(),
+    // settings sheet being closed and reopened. Use BlocProvider.value so
+    // the panel does NOT close the shared singleton when it's disposed —
+    // otherwise the next visit would get a closed bloc and every tap would
+    // throw "Cannot add new events after calling close".
+    return BlocProvider<TtsBloc>.value(
+      value: GetIt.I.get<TtsBloc>(),
       child: BlocListener<TtsBloc, TtsState>(
         listenWhen: (prev, curr) =>
             curr.error != null && prev.error != curr.error,
@@ -50,6 +53,14 @@ class _TtsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TtsBloc, TtsState>(
+      // Only rebuild the outer list when the catalog, downloaded set, or
+      // active voice changes. Download progress ticks are handled by the
+      // individual _VoiceTile builders, so they don't need to rebuild the
+      // whole (potentially 200+ tile) tree on every tick.
+      buildWhen: (prev, curr) =>
+          prev.availableModels != curr.availableModels ||
+          prev.downloadedIds != curr.downloadedIds ||
+          prev.activeModelId != curr.activeModelId,
       builder: (context, state) {
         if (state.availableModels.isEmpty) {
           return const Center(child: CircularProgressIndicator());
@@ -105,7 +116,7 @@ class _TtsView extends StatelessWidget {
   }
 }
 
-class _LanguageGroupTile extends StatelessWidget {
+class _LanguageGroupTile extends StatefulWidget {
   const _LanguageGroupTile({
     required this.language,
     required this.models,
@@ -117,18 +128,58 @@ class _LanguageGroupTile extends StatelessWidget {
   final bool initiallyExpanded;
 
   @override
+  State<_LanguageGroupTile> createState() => _LanguageGroupTileState();
+}
+
+class _LanguageGroupTileState extends State<_LanguageGroupTile> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  @override
+  void didUpdateWidget(_LanguageGroupTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Auto-expand when the active voice newly lands in this group (but
+    // don't force-reopen a group the user collapsed).
+    if (!oldWidget.initiallyExpanded &&
+        widget.initiallyExpanded &&
+        !_expanded) {
+      _expanded = true;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
-    return Theme(
-      data: theme.copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-        childrenPadding: EdgeInsets.zero,
-        title: Text('$language (${models.length})'),
-        initiallyExpanded: initiallyExpanded,
-        children: [for (final model in models) _VoiceTile(model: model)],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${widget.language} (${widget.models.length})',
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                ),
+                Icon(
+                  _expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                  size: 20,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Build voice tiles lazily: collapsed groups stay cheap even with
+        // hundreds of models in the catalog.
+        if (_expanded)
+          for (final model in widget.models) _VoiceTile(model: model),
+      ],
     );
   }
 }
