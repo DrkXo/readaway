@@ -7,7 +7,8 @@ import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import '../../../../core/services/services.dart';
+import '../../../../../core/services/services.dart';
+
 
 part 'tts_bloc.freezed.dart';
 part 'tts_event.dart';
@@ -20,12 +21,14 @@ part 'tts_state.dart';
 class TtsBloc extends Bloc<TtsEvent, TtsState> {
   final SherpaOnnxTtsService _ttsService;
   final JustAudioService _audio;
+  final SettingsService _settingsService;
 
   final _downloadSubs = <String, StreamSubscription<ModelDownloadProgress>>{};
 
   TtsBloc({
     required this._ttsService,
     required this._audio,
+    required this._settingsService,
   }) : super(const TtsState()) {
     on<_Refresh>(_onRefresh, transformer: concurrent());
     on<_StartDownload>(_onStartDownload, transformer: concurrent());
@@ -49,11 +52,29 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
   void _onRefresh(_Refresh event, Emitter<TtsState> emit) async {
     try {
       final downloaded = await _ttsService.getDownloadedModels();
+      final downloadedIds = downloaded.map((m) => m.id).toSet();
+
+      // Restore the persisted active voice (if any) so the selection
+      // survives app restarts. Only load it when its files are on disk.
+      var activeModelId = _ttsService.activeModel?.id;
+      if (activeModelId == null) {
+        final persisted = _settingsService.settings.globalViewSettings.ttsVoice;
+        if (persisted != null && downloadedIds.contains(persisted)) {
+          try {
+            await _ttsService.loadModel(persisted);
+            activeModelId = persisted;
+          } on SherpaTtsException {
+            // Model files present but failed to load — fall through to
+            // "no active voice" rather than crashing the refresh.
+          }
+        }
+      }
+
       emit(
         state.copyWith(
           availableModels: _ttsService.availableModels,
-          downloadedIds: downloaded.map((m) => m.id).toSet(),
-          activeModelId: _ttsService.activeModel?.id,
+          downloadedIds: downloadedIds,
+          activeModelId: activeModelId,
         ),
       );
     } catch (e) {
@@ -149,10 +170,25 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
     final id = event.model.id;
     try {
       await _ttsService.deleteModel(id);
+      final wasActive = state.activeModelId == id;
+      if (wasActive) {
+        // Clear the persisted selection so we don't try to restore a
+        // deleted voice on the next launch.
+        final current = _settingsService.settings;
+        if (current.globalViewSettings.ttsVoice == id) {
+          _settingsService.scheduleSave(
+            current.copyWith(
+              globalViewSettings: current.globalViewSettings.copyWith(
+                ttsVoice: null,
+              ),
+            ),
+          );
+        }
+      }
       emit(
         state.copyWith(
           downloadedIds: state.downloadedIds.where((e) => e != id).toSet(),
-          activeModelId: state.activeModelId == id ? null : state.activeModelId,
+          activeModelId: wasActive ? null : state.activeModelId,
         ),
       );
     } catch (e) {
@@ -169,6 +205,8 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
       if (_ttsService.activeModel?.id != event.modelId) {
         await _ttsService.loadModel(event.modelId);
       }
+      // Persist the selection so it survives app restarts.
+      _persistActiveVoice(event.modelId);
       emit(
         state.copyWith(activeModelId: event.modelId, busyModelId: null),
       );
@@ -182,6 +220,20 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
         ),
       );
     }
+  }
+
+  /// Writes the active voice id into app settings (debounced) so it's
+  /// restored on the next launch.
+  void _persistActiveVoice(String modelId) {
+    final current = _settingsService.settings;
+    if (current.globalViewSettings.ttsVoice == modelId) return;
+    _settingsService.scheduleSave(
+      current.copyWith(
+        globalViewSettings: current.globalViewSettings.copyWith(
+          ttsVoice: modelId,
+        ),
+      ),
+    );
   }
 
   void _onPreview(_Preview event, Emitter<TtsState> emit) async {

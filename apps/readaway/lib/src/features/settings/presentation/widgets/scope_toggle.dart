@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/models/reader_preferences.dart';
-import '../bloc/settings_bloc.dart';
+import '../bloc/settings/settings_bloc.dart';
 
 /// Segmented control for choosing whether reader settings apply to all books
 /// (global) or only the currently open book (per-book).

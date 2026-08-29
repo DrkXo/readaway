@@ -7,7 +7,7 @@ import '../flavors.dart';
 import 'core/services/services.dart';
 import 'core/widgets/core_widgets.dart';
 import 'features/reader/reader.dart';
-import 'features/settings/presentation/bloc/settings_bloc.dart';
+import 'features/settings/presentation/bloc/settings/settings_bloc.dart';
 import 'router/router.dart';
 
 class ReadAway extends StatefulWidget {

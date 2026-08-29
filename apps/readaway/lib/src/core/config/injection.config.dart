@@ -13,8 +13,8 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
 import '../../features/reader/presentation/bloc/reader_bloc.dart' as _i523;
-import '../../features/settings/presentation/bloc/settings_bloc.dart' as _i585;
-import '../../features/settings/presentation/bloc/tts_bloc.dart' as _i992;
+import '../../features/settings/presentation/bloc/settings/settings_bloc.dart' as _i585;
+import '../../features/settings/presentation/bloc/tts/tts_bloc.dart' as _i992;
 import '../../router/router.dart' as _i295;
 import '../routes/routes.dart' as _i494;
 import '../services/css_service.dart' as _i213;
@@ -127,6 +127,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i992.TtsBloc(
         ttsService: gh<_i264.SherpaOnnxTtsService>(),
         audio: gh<_i264.JustAudioService>(),
+        settingsService: gh<_i264.SettingsService>(),
       ),
     );
     gh.singleton<_i295.AppRouter>(

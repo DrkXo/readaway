@@ -6,7 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/models/models.dart';
 import '../../../../../core/routes/routes.dart';
 import '../../../domain/models/reader_preferences.dart';
-import '../../bloc/settings_bloc.dart';
+import '../../bloc/settings/settings_bloc.dart';
 import '../widgets.dart';
 
 class FontPanel extends StatefulWidget {

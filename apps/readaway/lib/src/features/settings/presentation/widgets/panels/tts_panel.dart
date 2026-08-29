@@ -4,7 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/services/services.dart';
-import '../../bloc/tts_bloc.dart';
+import '../../bloc/tts/tts_bloc.dart';
 import '../widgets.dart';
 
 class TtsPanel extends StatelessWidget {

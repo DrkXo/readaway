@@ -6,9 +6,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../core/models/models.dart';
-import '../../../../core/services/services.dart';
-import '../../domain/models/reader_preferences.dart';
+import '../../../../../core/models/models.dart';
+import '../../../../../core/services/services.dart';
+import '../../../domain/models/reader_preferences.dart';
 
 part 'settings_bloc.freezed.dart';
 part 'settings_bloc.g.dart';
