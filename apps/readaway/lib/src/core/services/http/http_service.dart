@@ -10,6 +10,10 @@ class HttpService {
   bool _isInitialized = false;
   Completer<void>? _initCompleter;
 
+  /// On-disk cache used by [getCached]. Null until [initialize] runs.
+  CacheStore? _cacheStore;
+  DioCacheInterceptor? _cacheInterceptor;
+
   static const _defaultTimeout = Duration(seconds: 30);
 
   Dio get dio => _dio;
@@ -56,6 +60,7 @@ class HttpService {
     _initCompleter = Completer<void>();
 
     try {
+      await _initCache();
       _addInterceptors();
       _isInitialized = true;
       _initCompleter!.complete();
@@ -66,8 +71,26 @@ class HttpService {
     }
   }
 
+  /// Sets up the on-disk HTTP cache used by [getCached]. The default policy
+  /// is [CachePolicy.noCache], so ordinary requests (and large model
+  /// downloads) are never cached — only callers that opt in via [getCached]
+  /// get cached responses.
+  Future<void> _initCache() async {
+    final support = await getApplicationSupportDirectory();
+    final dir = Directory(p.join(support.path, 'dio_cache'));
+    await dir.create(recursive: true);
+    _cacheStore = FileCacheStore(dir.path);
+    _cacheInterceptor = DioCacheInterceptor(
+      options: CacheOptions(
+        store: _cacheStore!,
+        policy: CachePolicy.noCache,
+      ),
+    );
+  }
+
   void _addInterceptors() {
     _dio.interceptors.addAll([
+      ?_cacheInterceptor,
       InterceptorsWrapper(
         onError: _onError,
       ),
@@ -172,6 +195,62 @@ class HttpService {
       path,
       queryParameters: queryParameters,
       options: options,
+      cancelToken: cancelToken,
+      onReceiveProgress: onReceiveProgress,
+    );
+  }
+
+  /// Like [get], but serves a cached response for [maxStale] and falls back
+  /// to the last-known-good cached copy (even if stale) when the network is
+  /// unreachable. Intended for slowly-changing remote data such as the TTS
+  /// model manifest.
+  Future<Response<T>> getCached<T>({
+    required String path,
+    Map<String, dynamic>? queryParameters,
+    Duration maxStale = const Duration(days: 1),
+    Map<String, String>? headers,
+    ResponseType? responseType,
+    CancelToken? cancelToken,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    await _ensureInitialized();
+    // Tell the cache interceptor (and any upstream proxy) that we're happy
+    // to serve a response up to [maxStale] old. Without this, the freshness
+    // of a cached entry is governed solely by the server's Cache-Control
+    // (e.g. GitHub's `max-age=60`), which would revalidate far too often.
+    final cacheControl = 'max-stale=${maxStale.inSeconds}';
+    final mergedHeaders = <String, String>{
+      ...?headers,
+      if (!(headers?.containsKey('Cache-Control') ?? false))
+        'Cache-Control': cacheControl,
+    };
+    final store = _cacheStore;
+    if (store == null) {
+      return get<T>(
+        path: path,
+        queryParameters: queryParameters,
+        options: Options(
+          headers: mergedHeaders,
+          responseType: responseType,
+        ),
+        cancelToken: cancelToken,
+        onReceiveProgress: onReceiveProgress,
+      );
+    }
+    return _dio.get<T>(
+      path,
+      queryParameters: queryParameters,
+      options:
+          CacheOptions(
+            store: store,
+            policy: CachePolicy.request,
+            maxStale: maxStale,
+            // Serve the last-known-good copy when offline instead of failing.
+            hitCacheOnErrorExcept: const [401, 403],
+          ).toOptions().copyWith(
+            headers: mergedHeaders,
+            responseType: responseType,
+          ),
       cancelToken: cancelToken,
       onReceiveProgress: onReceiveProgress,
     );
