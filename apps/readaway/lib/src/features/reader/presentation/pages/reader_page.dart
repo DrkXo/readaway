@@ -9,6 +9,7 @@ import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../settings/domain/models/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
+import '../../../tts_player/tts_player.dart';
 import '../bloc/reader_bloc.dart';
 import '../controllers/auto_scroll_controller.dart';
 import '../controllers/reader_page_view_controller.dart';
@@ -54,6 +55,7 @@ class _ReaderPageState extends State<ReaderPage>
 
   late final ReaderBloc _readerBloc;
   late final SettingsBloc _settingsBloc;
+  late final TtsPlayerBloc _ttsPlayerBloc;
   late final AutoScrollController _autoScrollController;
   StreamSubscription<AppLifecycleState>? _lifecycleSub;
   bool _tocPinned = false;
@@ -63,6 +65,7 @@ class _ReaderPageState extends State<ReaderPage>
     super.initState();
     _readerBloc = context.read<ReaderBloc>();
     _settingsBloc = context.read<SettingsBloc>();
+    _ttsPlayerBloc = context.read<TtsPlayerBloc>();
 
     // Route page-change requests from the view controller (swipes, TOC,
     // drawer, bottom bar, auto-scroll) into the BLoC, which is the single
@@ -114,6 +117,10 @@ class _ReaderPageState extends State<ReaderPage>
     _autoScrollController.dispose();
     // Wakelock is scoped to the reader: always release it on close.
     wakelockService.disable();
+    // TTS is scoped to the reader too: closing the ebook must stop playback
+    // and hide the mini-player (the bloc is a singleton that outlives this
+    // page).
+    _ttsPlayerBloc.add(const TtsPlayerEvent.closePlayer());
     _readerBloc.add(const ReaderEvent.closeDocument());
     _pageViewController.dispose();
     super.dispose();
@@ -218,6 +225,7 @@ class _ReaderPageState extends State<ReaderPage>
                 onJumpToPage: _pageViewController.goToPage,
               ),
             _buildBottomBar(menuTogglesPanel: isWide),
+            const TtsMiniPlayer(),
             if (prefs.showStatusBar) _buildStatusBar(),
           ],
         );

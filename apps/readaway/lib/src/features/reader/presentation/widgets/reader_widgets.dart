@@ -21,6 +21,7 @@ import '../../../../core/utils/reader/reader_html_utils.dart';
 import '../../../../core/widgets/core_widgets.dart';
 import '../../../../router/router.dart';
 import '../../../settings/domain/models/reader_preferences.dart';
+import '../../../tts_player/tts_player.dart';
 import '../../domain/models/reader_lookup.dart';
 import '../bloc/reader_bloc.dart';
 import '../controllers/auto_scroll_controller.dart';

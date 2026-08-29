@@ -116,6 +116,14 @@ class MuPdfService {
     });
   }
 
+  Future<String?> extractPageText(int pageIndex) {
+    return _sendCommand<String?>({
+      'id': DateTime.now().microsecondsSinceEpoch,
+      'type': 'extractText',
+      'index': pageIndex,
+    });
+  }
+
   Future<List<PageLink>> getPageLinks(int pageIndex) {
     return _sendCommand<List<PageLink>>({
       'id': DateTime.now().microsecondsSinceEpoch,
@@ -209,6 +217,15 @@ class MuPdfService {
             final html = page.extractHtml();
             page.dispose();
             mainSendPort.send({'id': id, 'result': html});
+          } else if (type == 'extractText') {
+            final index = message['index'] as int;
+            if (doc == null) {
+              throw Exception('No document open');
+            }
+            final page = doc!.loadPage(index);
+            final text = page.extractText();
+            page.dispose();
+            mainSendPort.send({'id': id, 'result': text});
           } else if (type == 'extractLinks') {
             final index = message['index'] as int;
             if (doc == null) throw Exception('No document open');

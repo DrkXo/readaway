@@ -16,5 +16,6 @@ abstract class TtsEvent with _$TtsEvent {
     ModelDownloadStage stage,
     double fraction,
   ) = _DownloadProgress;
-  const factory TtsEvent.downloadFailed(String modelId) = _DownloadFailed;
+  const factory TtsEvent.downloadFailed(String modelId, String error) =
+      _DownloadFailed;
 }

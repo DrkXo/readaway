@@ -10,8 +10,8 @@ part of '../services.dart';
 ///
 /// The full list of downloadable archives lives at
 /// https://github.com/k2-fsa/sherpa-onnx/releases/tag/tts-models and is
-/// mirrored into `assets/tts_models_release.json`; [SherpaTtsModelCatalog]
-/// derives the browsable model list from it at startup.
+/// fetched live from the GitHub release API (cached for a day);
+/// [SherpaTtsModelCatalog] derives the browsable model list from it.
 
 /// Which underlying sherpa-onnx TTS architecture a model uses. This decides
 /// which sub-config (`vits` / `matcha` / `kokoro`) we populate on
@@ -33,6 +33,7 @@ class SherpaTtsModelInfo {
     this.description = '',
     this.sampleRateHint = 22050,
     this.vocoderUrl,
+    this.needsEspeakData = false,
   });
 
   /// Stable identifier, also used as the folder name under the app's
@@ -61,6 +62,10 @@ class SherpaTtsModelInfo {
   /// self-contained.
   final String? vocoderUrl;
 
+  /// Whether this model needs the shared `espeak-ng-data` phonemization
+  /// directory (installed once into the models root by the downloader).
+  final bool needsEspeakData;
+
   String get archiveFileName => downloadUrl.split('/').last;
   String? get vocoderFileName => vocoderUrl?.split('/').last;
 
@@ -70,7 +75,19 @@ class SherpaTtsModelInfo {
 
 @lazySingleton
 class SherpaTtsModelCatalog {
-  final String assetPath = Assets.ttsModelsRelease;
+  SherpaTtsModelCatalog({
+    required this._httpService,
+  });
+
+  final HttpService _httpService;
+
+  /// GitHub release whose `assets` array is the live model manifest.
+  static const String _releaseApiUrl =
+      'https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/tts-models';
+
+  /// sha256 checksums for every release asset (one `<hash>  <name>` per line).
+  static const String _checksumUrl =
+      'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/checksum.txt';
 
   final String _releaseBase =
       'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models';
@@ -79,27 +96,82 @@ class SherpaTtsModelCatalog {
   /// vocoder is downloaded next to them (see downloadModel).
   String get _hifiganUrl => '$_releaseBase/hifigan_v2.onnx';
 
+  /// Shared espeak-ng phonemization data required by piper-family models
+  /// (piper/mimic3/mms/kokoro/matcha/melo). Downloaded once into the models
+  /// root by [SherpaTtsModelDownloader].
+  String get espeakDataUrl => '$_releaseBase/espeak-ng-data.tar.bz2';
+
   List<SherpaTtsModelInfo> _models = const [];
   List<SherpaTtsModelInfo> get models => _models;
 
-  /// Parses the bundled release manifest into the model list. Call once at
-  /// startup ([SherpaOnnxTtsService.init] does it).
+  Map<String, String> _checksums = const {};
+
+  /// sha256 of a release asset by file name, or null when the checksum file
+  /// hasn't been fetched (or doesn't list that file).
+  String? checksumFor(String fileName) => _checksums[fileName];
+
+  /// Fetches the live release manifest (cached for a day) and derives the
+  /// model list. Call once at startup ([SherpaOnnxTtsService.init] does it).
+  ///
+  /// Never throws: on failure the catalog stays empty (the UI surfaces the
+  /// error) so a transient network problem can't take down app startup.
   Future<void> load() async {
     if (_models.isNotEmpty) return;
-    final raw = jsonDecode(await rootBundle.loadString(assetPath)) as List;
-    final parsed = <SherpaTtsModelInfo>[];
-    for (final a in raw) {
-      final m = _fromAsset(
-        (a as Map)['name'] as String,
-        (a['size'] as num).toInt(),
+    try {
+      final response = await _httpService.getCached<Map<String, dynamic>>(
+        path: _releaseApiUrl,
+        maxStale: const Duration(days: 1),
+        headers: const {'User-Agent': 'readaway'},
       );
-      if (m != null) parsed.add(m);
+      final assets = response.data?['assets'] as List? ?? const [];
+      final parsed = <SherpaTtsModelInfo>[];
+      for (final a in assets) {
+        final map = a as Map;
+        final name = map['name'] as String?;
+        final size = (map['size'] as num?)?.toInt();
+        final downloadUrl = map['browser_download_url'] as String?;
+        if (name == null || size == null || downloadUrl == null) continue;
+        final m = _fromAsset(name, size, downloadUrl);
+        if (m != null) parsed.add(m);
+      }
+      _models = parsed
+        ..sort((a, b) {
+          final c = a.languageLabel.compareTo(b.languageLabel);
+          return c != 0 ? c : a.displayName.compareTo(b.displayName);
+        });
+      await _loadChecksums();
+    } catch (e, stackTrace) {
+      logger.e('Failed to load TTS model catalog', e, stackTrace);
     }
-    _models = parsed
-      ..sort((a, b) {
-        final c = a.languageLabel.compareTo(b.languageLabel);
-        return c != 0 ? c : a.displayName.compareTo(b.displayName);
-      });
+  }
+
+  Future<void> _loadChecksums() async {
+    try {
+      final response = await _httpService.getCached<String>(
+        path: _checksumUrl,
+        maxStale: const Duration(days: 1),
+        headers: const {'User-Agent': 'readaway'},
+        responseType: ResponseType.plain,
+      );
+      final text = response.data;
+      if (text == null) return;
+      final map = <String, String>{};
+      for (final line in text.split('\n')) {
+        final trimmed = line.trim();
+        if (trimmed.isEmpty) continue;
+        // checksum.txt format: "<name>  <hash>" (name first, sha256 last).
+        final parts = trimmed.split(RegExp(r'\s+'));
+        if (parts.length < 2) continue;
+        final hash = parts.last.toLowerCase();
+        if (hash.length != 64) continue;
+        map[parts.sublist(0, parts.length - 1).join(' ')] = hash;
+      }
+      _checksums = map;
+    } catch (e) {
+      // Checksums are best-effort: downloads proceed without verification.
+      logger.w('Failed to load TTS checksums; skipping verification');
+      _checksums = const {};
+    }
   }
 
   SherpaTtsModelInfo? byId(String id) {
@@ -203,7 +275,11 @@ class SherpaTtsModelCatalog {
     'nan': 'Min Nan',
   };
 
-  SherpaTtsModelInfo? _fromAsset(String name, int sizeBytes) {
+  SherpaTtsModelInfo? _fromAsset(
+    String name,
+    int sizeBytes,
+    String downloadUrl,
+  ) {
     if (!name.endsWith('.tar.bz2')) return null;
     final id = name.substring(0, name.length - '.tar.bz2'.length);
     // Quantized variants duplicate the base voice; keep only the base pack.
@@ -280,7 +356,7 @@ class SherpaTtsModelCatalog {
       languageCode: langToken.replaceFirst('_', '-'),
       languageLabel: _langLabels[langToken.split('_').first] ?? langToken,
       type: type,
-      downloadUrl: '$_releaseBase/$name',
+      downloadUrl: downloadUrl,
       approxSizeMb: sizeBytes / 1024 / 1024,
       isMultiSpeaker:
           isKokoroMulti || id.contains('vctk') || id.contains('aishell3'),
@@ -292,7 +368,22 @@ class SherpaTtsModelCatalog {
           ? 22050
           : 16000,
       vocoderUrl: type == SherpaTtsModelType.matcha ? _hifiganUrl : null,
+      needsEspeakData: _needsEspeakData(id, type),
     );
+  }
+
+  /// Whether this model needs the shared espeak-ng phonemization data.
+  /// Piper-family engines (piper/mimic3/mms/melo) plus kokoro and matcha all
+  /// require it; coqui and icefall VITS packs are self-contained.
+  bool _needsEspeakData(String id, SherpaTtsModelType type) {
+    if (type == SherpaTtsModelType.kokoro ||
+        type == SherpaTtsModelType.matcha) {
+      return true;
+    }
+    return id.contains('piper-') ||
+        id.contains('mimic3-') ||
+        id.contains('mms-') ||
+        id.contains('melo-');
   }
 
   String _titleCase(String word) =>

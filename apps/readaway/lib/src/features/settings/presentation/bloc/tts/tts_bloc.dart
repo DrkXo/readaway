@@ -9,7 +9,6 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/services/services.dart';
 
-
 part 'tts_bloc.freezed.dart';
 part 'tts_event.dart';
 part 'tts_state.dart';
@@ -106,7 +105,7 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
               progress.fraction,
             ),
           ),
-          onError: (Object _) => add(_DownloadFailed(id)),
+          onError: (Object e) => add(_DownloadFailed(id, e.toString())),
           cancelOnError: true,
         );
   }
@@ -126,7 +125,10 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
       return;
     }
     if (event.stage == ModelDownloadStage.failed) {
-      _onDownloadFailed(_DownloadFailed(event.modelId), emit);
+      // The downloader emits a `failed` progress event followed by the
+      // stream error; the error (with the real message) arrives via
+      // onError -> _DownloadFailed, so just clear the in-flight entry here.
+      _removeDownload(event.modelId, emit);
       return;
     }
     if (!state.downloads.containsKey(event.modelId)) return;
@@ -145,7 +147,10 @@ class TtsBloc extends Bloc<TtsEvent, TtsState> {
       final name = _modelById(event.modelId)?.displayName ?? 'voice';
       final downloads = Map.of(state.downloads)..remove(event.modelId);
       emit(
-        state.copyWith(error: 'Failed to download $name', downloads: downloads),
+        state.copyWith(
+          error: 'Failed to download $name: ${event.error}',
+          downloads: downloads,
+        ),
       );
     }
   }

@@ -6,7 +6,9 @@ class ReaderTtsController {
     this._sherpaTts,
     this._audio,
     this._textChunker,
-  );
+  ) {
+    _initQueuePipeline();
+  }
 
   final SherpaOnnxTtsService _sherpaTts;
   final JustAudioService _audio;
@@ -19,26 +21,123 @@ class ReaderTtsController {
 
   List<TtsChunk> _queue = [];
   int _queueIndex = -1;
-  bool _stopRequested = false;
 
-  final _stateController = StreamController<TtsPlaybackEvent>.broadcast();
-  final _chunkController = StreamController<TtsChunk>.broadcast();
+  // Gapless-playback buffer
+  TtsAudio? _prefetchedAudio;
+  int _prefetchedIndex = -1;
+
+  // Reactive Pipeline Controls
+  final _playTriggerSubject = PublishSubject<int>();
+  final _stateController = BehaviorSubject<TtsPlaybackEvent>.seeded(
+    const TtsPlaybackEvent(TtsPlaybackState.stopped),
+  );
+  final _chunkController = BehaviorSubject<TtsChunk?>();
+
+  StreamSubscription<void>? _pipelineSubscription;
 
   /// Playback lifecycle events (playing/paused/stopped/error).
-  Stream<TtsPlaybackEvent> get playbackState => _stateController.stream;
+  ValueStream<TtsPlaybackEvent> get playbackState => _stateController.stream;
 
   /// Fires with the sentence currently being spoken — use this to drive
   /// read-along highlighting in the reader UI.
-  Stream<TtsChunk> get currentChunk => _chunkController.stream;
+  Stream<TtsChunk> get currentChunk => _chunkController.stream.whereNotNull();
+
+  // ---------------------------------------------------------------------
+  // Reactive Pipeline Setup
+  // ---------------------------------------------------------------------
+
+  void _initQueuePipeline() {
+    // switchMap automatically cancels any ongoing sentence playback sequence
+    // whenever a new index or command (-1 for stop) is pushed to the subject.
+    _pipelineSubscription = _playTriggerSubject
+        .switchMap((startIndex) => _playSequenceStream(startIndex))
+        .listen(
+          (_) {},
+          onError: (Object error) {
+            _stateController.add(
+              TtsPlaybackEvent(
+                TtsPlaybackState.error,
+                message: error.toString(),
+              ),
+            );
+          },
+        );
+  }
+
+  Stream<void> _playSequenceStream(int startIndex) async* {
+    if (startIndex < 0 || _queue.isEmpty || startIndex >= _queue.length) {
+      _queueIndex = -1;
+      _invalidatePrefetch();
+      _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.stopped));
+      return;
+    }
+
+    _queueIndex = startIndex;
+
+    while (_queueIndex < _queue.length) {
+      final chunk = _queue[_queueIndex];
+      _chunkController.add(chunk);
+      _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.playing));
+
+      try {
+        // Use pre-generated audio if index matches, otherwise synthesize
+        // now. generate() now round-trips to the sherpa isolate, so this
+        // has to be awaited — it's no longer a synchronous CPU call.
+        final TtsAudio audio;
+        if (_prefetchedIndex == _queueIndex && _prefetchedAudio != null) {
+          audio = _prefetchedAudio!;
+        } else {
+          audio = await _sherpaTts.generate(
+            text: chunk.text,
+            speakerId: _voice?.sherpaSpeakerId ?? 0,
+            speed: _rate <= 0 ? 1.0 : _rate,
+          );
+        }
+
+        _invalidatePrefetch();
+
+        // Start playing
+        await _audio.playPcm(audio);
+
+        // Kick off synthesis of the next chunk in the background while the
+        // current clip plays — deliberately not awaited here.
+        unawaited(_prefetchNext());
+
+        // Await current clip audio completion
+        await _audio.playerState.firstWhere(
+          (state) => state.processingState == ProcessingState.completed,
+        );
+
+        _queueIndex++;
+      } catch (e) {
+        _stateController.add(
+          TtsPlaybackEvent(TtsPlaybackState.error, message: e.toString()),
+        );
+        return;
+      }
+    }
+
+    _queueIndex = -1;
+    _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.stopped));
+  }
+
+  // ---------------------------------------------------------------------
+  // Queue introspection (for the player UI)
+  // ---------------------------------------------------------------------
+
+  /// The sentences queued for the current `playText` call.
+  List<TtsChunk> get queue => List.unmodifiable(_queue);
+
+  /// Number of sentences in the current queue.
+  int get queueLength => _queue.length;
+
+  /// Index of the sentence currently being spoken, or null when idle.
+  int? get currentChunkIndex => _queueIndex >= 0 ? _queueIndex : null;
 
   // ---------------------------------------------------------------------
   // Voice selection
   // ---------------------------------------------------------------------
 
-  /// Every already-downloaded sherpa-onnx voice. Feed this straight into a
-  /// voice picker; call [availableSherpaModels] separately if you also want
-  /// to show voices that aren't downloaded yet (with a "download"
-  /// affordance).
   Future<List<TtsVoiceOption>> getInstalledVoices() async {
     final sherpaModels = await _sherpaTts.getDownloadedModels();
     return sherpaModels
@@ -53,8 +152,6 @@ class ReaderTtsController {
         .toList();
   }
 
-  /// The full catalog of downloadable sherpa-onnx voices (downloaded or
-  /// not) — for a "browse more voices" screen.
   List<SherpaTtsModelInfo> get availableSherpaModels =>
       _sherpaTts.availableModels;
 
@@ -65,28 +162,30 @@ class ReaderTtsController {
       _sherpaTts.deleteModel(modelId);
 
   Future<void> setVoice(TtsVoiceOption voice) async {
+    if (_voice?.id == voice.id) return;
     _voice = voice;
-    await _sherpaTts.loadModel(voice.id);
+    _invalidatePrefetch();
+    if (_sherpaTts.activeModel?.id != voice.id) {
+      await _sherpaTts.loadModel(voice.id);
+    }
   }
 
   TtsVoiceOption? get currentVoice => _voice;
 
   Future<void> setRate(double rate) async {
+    if (_rate == rate) return;
     _rate = rate;
-    // sherpa's `speed` multiplier is applied per-generate() call below.
+    _invalidatePrefetch();
   }
 
   Future<void> setPitch(double pitch) async {
     _pitch = pitch;
-    // sherpa-onnx offline TTS does not expose a runtime pitch knob.
   }
 
   // ---------------------------------------------------------------------
-  // Playback
+  // Playback Controls
   // ---------------------------------------------------------------------
 
-  /// Splits [text] into sentences and reads them in order, emitting
-  /// [currentChunk] as each one starts. Call [stop] to cancel.
   Future<void> playText(String text, {int startAtChunkIndex = 0}) async {
     if (_voice == null) {
       _stateController.add(
@@ -98,53 +197,44 @@ class ReaderTtsController {
       return;
     }
 
-    _stopRequested = false;
     _queue = _textChunker.chunkSentences(text);
-    _queueIndex = startAtChunkIndex - 1;
-
-    await _playNext();
+    _invalidatePrefetch();
+    _playTriggerSubject.add(startAtChunkIndex);
   }
 
-  Future<void> _playNext() async {
-    if (_stopRequested) return;
-    _queueIndex++;
-    if (_queueIndex >= _queue.length) {
-      _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.stopped));
-      return;
-    }
+  /// Synthesizes the next queued chunk in the background so playback can
+  /// stay gapless. Fire-and-forget from the caller's perspective, but the
+  /// work itself is a real async isolate round trip now — so results are
+  /// guarded against the queue having moved on (skip/stop/voice change)
+  /// while the synthesis was in flight.
+  Future<void> _prefetchNext() async {
+    final nextIndex = _queueIndex + 1;
+    if (nextIndex >= _queue.length) return;
+    if (_prefetchedIndex == nextIndex) return;
 
-    final chunk = _queue[_queueIndex];
-    _chunkController.add(chunk);
-    _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.playing));
-
-    await _playSherpaChunk(chunk, _voice!);
-  }
-
-  Future<void> _playSherpaChunk(TtsChunk chunk, TtsVoiceOption voice) async {
+    final chunk = _queue[nextIndex];
+    _prefetchedIndex = nextIndex;
     try {
-      final audio = _sherpaTts.generate(
+      final audio = await _sherpaTts.generate(
         text: chunk.text,
-        speakerId: voice.sherpaSpeakerId ?? 0,
+        speakerId: _voice?.sherpaSpeakerId ?? 0,
         speed: _rate <= 0 ? 1.0 : _rate,
       );
-      // Attach the completion listener before playback starts so a very
-      // short clip can't finish before we're listening.
-      final completer = Completer<void>();
-      late final StreamSubscription sub;
-      sub = _audio.playerState.listen((state) {
-        if (state.processingState == ProcessingState.completed) {
-          sub.cancel();
-          completer.complete();
-        }
-      });
-      await _audio.playPcm(audio);
-      await completer.future;
-      if (!_stopRequested) await _playNext();
-    } catch (e) {
-      _stateController.add(
-        TtsPlaybackEvent(TtsPlaybackState.error, message: e.toString()),
-      );
+      // Only keep it if nothing invalidated/moved past this index while
+      // we were awaiting the isolate.
+      if (_prefetchedIndex == nextIndex) {
+        _prefetchedAudio = audio;
+      }
+    } catch (_) {
+      if (_prefetchedIndex == nextIndex) {
+        _invalidatePrefetch();
+      }
     }
+  }
+
+  void _invalidatePrefetch() {
+    _prefetchedAudio = null;
+    _prefetchedIndex = -1;
   }
 
   Future<void> pause() async {
@@ -158,18 +248,30 @@ class ReaderTtsController {
   }
 
   Future<void> stop() async {
-    _stopRequested = true;
     await _audio.stop();
-    _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.stopped));
+    _playTriggerSubject.add(-1); // Cancels sequence loop via switchMap
   }
 
   Future<void> skipToNextSentence() async {
-    await _audio.stop();
-    await _playNext();
+    if (_queueIndex + 1 < _queue.length) {
+      await _audio.stop();
+      _playTriggerSubject.add(_queueIndex + 1);
+    } else {
+      await stop();
+    }
+  }
+
+  Future<void> skipToPreviousSentence() async {
+    if (_queueIndex > 0) {
+      await _audio.stop();
+      _playTriggerSubject.add(_queueIndex - 1);
+    }
   }
 
   @disposeMethod
   void dispose() {
+    _pipelineSubscription?.cancel();
+    _playTriggerSubject.close();
     _stateController.close();
     _chunkController.close();
   }
