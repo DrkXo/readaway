@@ -12,7 +12,6 @@ import '../features/library/presentation/pages/library_page.dart';
 import '../features/reader/reader.dart';
 import '../features/settings/presentation/pages/custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
-import '../features/tts_player/tts_player.dart';
 
 part 'custom_routes.dart';
 part 'guards.dart';
@@ -152,13 +151,6 @@ class AppRouter {
             ),
           );
         },
-      ),
-
-      // Full-screen TTS "music player".
-      GoRoute(
-        name: _appRoutes.ttsPlayer.name,
-        path: _appRoutes.ttsPlayer.path,
-        builder: (context, state) => const TtsPlayerPage(),
       ),
     ],
   );

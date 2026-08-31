@@ -2,7 +2,6 @@ part of '../services.dart';
 
 enum TtsEngineKind { sherpaOnnx }
 
-/// One selectable voice, regardless of which engine it comes from.
 class TtsVoiceOption {
   const TtsVoiceOption({
     required this.engine,
@@ -14,14 +13,11 @@ class TtsVoiceOption {
 
   final TtsEngineKind engine;
 
-  /// For [TtsEngineKind.sherpaOnnx]: the model id (see [SherpaTtsModelInfo.id]).
   final String id;
 
   final String label;
   final String? languageCode;
 
-  /// Only meaningful for sherpa-onnx multi-speaker models
-  /// (e.g. Kokoro speaker index). Null / 0 for single-speaker models.
   final int? sherpaSpeakerId;
 }
 
@@ -31,4 +27,93 @@ class TtsPlaybackEvent {
   const TtsPlaybackEvent(this.state, {this.message});
   final TtsPlaybackState state;
   final String? message;
+}
+
+enum SherpaTtsModelType { vits, matcha, kokoro }
+
+class SherpaTtsModelInfo {
+  const SherpaTtsModelInfo({
+    required this.id,
+    required this.displayName,
+    required this.languageCode,
+    required this.languageLabel,
+    required this.type,
+    required this.downloadUrl,
+    required this.approxSizeMb,
+    this.isMultiSpeaker = false,
+    this.speakerCount = 0,
+    this.description = '',
+    this.sampleRateHint = 22050,
+    this.vocoderUrl,
+    this.needsEspeakData = false,
+  });
+
+  final String id;
+
+  final String displayName;
+
+  final String languageCode;
+  final String languageLabel;
+
+  final SherpaTtsModelType type;
+
+  final String downloadUrl;
+
+  final double approxSizeMb;
+  final bool isMultiSpeaker;
+  final int speakerCount;
+  final String description;
+  final int sampleRateHint;
+
+  final String? vocoderUrl;
+
+  final bool needsEspeakData;
+
+  String get archiveFileName => downloadUrl.split('/').last;
+  String? get vocoderFileName => vocoderUrl?.split('/').last;
+
+  @override
+  String toString() => 'SherpaTtsModelInfo($id, $displayName, $type)';
+}
+
+class ModelDownloadProgress {
+  const ModelDownloadProgress({
+    required this.modelId,
+    required this.stage,
+    required this.fraction,
+  });
+
+  final String modelId;
+  final ModelDownloadStage stage;
+
+  final double fraction;
+}
+
+enum ModelDownloadStage { downloading, extracting, done, failed }
+
+class TtsAudio {
+  const TtsAudio({
+    required this.samples,
+    required this.sampleRate,
+    this.chunkId,
+  });
+
+  final Float32List samples;
+  final int sampleRate;
+  final String? chunkId;
+
+  double get durationInSeconds => samples.length / sampleRate;
+}
+
+class SherpaTtsSpeaker {
+  const SherpaTtsSpeaker({required this.id, required this.label});
+  final int id;
+  final String label;
+}
+
+class SherpaTtsException implements Exception {
+  SherpaTtsException(this.message);
+  final String message;
+  @override
+  String toString() => 'SherpaTtsException: $message';
 }

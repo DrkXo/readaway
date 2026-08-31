@@ -1,81 +1,8 @@
-part of '../services.dart';
-
-/// Model catalog & value types for the sherpa-onnx offline TTS engine.
-///
-/// sherpa-onnx ships several different *model families*, each with its own
-/// config shape (see OfflineTtsModelConfig in the sherpa_onnx package):
-///   - VITS    (e.g. Piper voices, icefall VITS, MeloTTS)   -> single onnx + tokens (+ optional lexicon/dict)
-///   - Matcha  (acoustic model + separate vocoder onnx)
-///   - Kokoro  (onnx + voices.bin + tokens, many built-in speakers)
-///
-/// The full list of downloadable archives lives at
-/// https://github.com/k2-fsa/sherpa-onnx/releases/tag/tts-models and is
-/// fetched live from the GitHub release API (cached for a day);
-/// [SherpaTtsModelCatalog] derives the browsable model list from it.
-
-/// Which underlying sherpa-onnx TTS architecture a model uses. This decides
-/// which sub-config (`vits` / `matcha` / `kokoro`) we populate on
-/// [OfflineTtsModelConfig] when loading the model.
-enum SherpaTtsModelType { vits, matcha, kokoro }
-
-/// Describes one downloadable sherpa-onnx TTS voice pack.
-class SherpaTtsModelInfo {
-  const SherpaTtsModelInfo({
-    required this.id,
-    required this.displayName,
-    required this.languageCode,
-    required this.languageLabel,
-    required this.type,
-    required this.downloadUrl,
-    required this.approxSizeMb,
-    this.isMultiSpeaker = false,
-    this.speakerCount = 0,
-    this.description = '',
-    this.sampleRateHint = 22050,
-    this.vocoderUrl,
-    this.needsEspeakData = false,
-  });
-
-  /// Stable identifier, also used as the folder name under the app's
-  /// documents directory once the model is downloaded & extracted.
-  final String id;
-
-  final String displayName;
-
-  /// BCP-47-ish language code, e.g. `en-US`, `de-DE`, `zh-CN`.
-  final String languageCode;
-  final String languageLabel;
-
-  final SherpaTtsModelType type;
-
-  /// Direct URL to the `.tar.bz2` archive on GitHub releases.
-  final String downloadUrl;
-
-  final double approxSizeMb;
-  final bool isMultiSpeaker;
-  final int speakerCount;
-  final String description;
-  final int sampleRateHint;
-
-  /// Matcha models ship the acoustic model separately from the vocoder
-  /// (e.g. a shared HiFiGAN `.onnx`). Null for VITS/Kokoro, which are
-  /// self-contained.
-  final String? vocoderUrl;
-
-  /// Whether this model needs the shared `espeak-ng-data` phonemization
-  /// directory (installed once into the models root by the downloader).
-  final bool needsEspeakData;
-
-  String get archiveFileName => downloadUrl.split('/').last;
-  String? get vocoderFileName => vocoderUrl?.split('/').last;
-
-  @override
-  String toString() => 'SherpaTtsModelInfo($id, $displayName, $type)';
-}
+part of '../../services.dart';
 
 @lazySingleton
-class SherpaTtsModelCatalog {
-  SherpaTtsModelCatalog({
+class SherpaTtsModelCatalogService {
+  SherpaTtsModelCatalogService({
     required this._httpService,
   });
 
@@ -85,7 +12,8 @@ class SherpaTtsModelCatalog {
   static const String _releaseApiUrl =
       'https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/tts-models';
 
-  /// sha256 checksums for every release asset (one `<hash>  <name>` per line).
+  /// sha256 checksums for every release asset (one `<hash>  <name>` per line,
+  /// standard `sha256sum` output format).
   static const String _checksumUrl =
       'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/checksum.txt';
 
@@ -98,7 +26,7 @@ class SherpaTtsModelCatalog {
 
   /// Shared espeak-ng phonemization data required by piper-family models
   /// (piper/mimic3/mms/kokoro/matcha/melo). Downloaded once into the models
-  /// root by [SherpaTtsModelDownloader].
+  /// root by [SherpaTtsModelDownloaderService].
   String get espeakDataUrl => '$_releaseBase/espeak-ng-data.tar.bz2';
 
   List<SherpaTtsModelInfo> _models = const [];
@@ -159,14 +87,26 @@ class SherpaTtsModelCatalog {
       for (final line in text.split('\n')) {
         final trimmed = line.trim();
         if (trimmed.isEmpty) continue;
-        // checksum.txt format: "<name>  <hash>" (name first, sha256 last).
+        // checksum.txt is standard `sha256sum` output: "<hash>  <name>"
+        // (hash first, name last — historically this was parsed backwards
+        // here, which silently disabled checksum verification for every
+        // download since no 64-char hash was ever found in `parts.last`).
         final parts = trimmed.split(RegExp(r'\s+'));
         if (parts.length < 2) continue;
-        final hash = parts.last.toLowerCase();
+        final hash = parts.first.toLowerCase();
         if (hash.length != 64) continue;
-        map[parts.sublist(0, parts.length - 1).join(' ')] = hash;
+        final name = parts.sublist(1).join(' ');
+        map[name] = hash;
       }
       _checksums = map;
+      if (_checksums.isEmpty) {
+        // Defensive: if parsing produced nothing, surface it loudly rather
+        // than silently downloading everything unverified.
+        logger.w(
+          'Parsed 0 TTS checksums from $_checksumUrl — '
+          'unexpected format? Downloads will proceed unverified.',
+        );
+      }
     } catch (e) {
       // Checksums are best-effort: downloads proceed without verification.
       logger.w('Failed to load TTS checksums; skipping verification');
@@ -388,52 +328,4 @@ class SherpaTtsModelCatalog {
 
   String _titleCase(String word) =>
       word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}';
-}
-
-/// Progress event emitted while a model archive is downloading/extracting.
-class ModelDownloadProgress {
-  const ModelDownloadProgress({
-    required this.modelId,
-    required this.stage,
-    required this.fraction,
-  });
-
-  final String modelId;
-  final ModelDownloadStage stage;
-
-  /// 0.0 - 1.0
-  final double fraction;
-}
-
-enum ModelDownloadStage { downloading, extracting, done, failed }
-
-/// One synthesized voice sample, ready to hand to an audio player or to
-/// write to disk.
-class TtsAudio {
-  const TtsAudio({required this.samples, required this.sampleRate});
-
-  /// Mono PCM float samples in [-1.0, 1.0], matching sherpa's GeneratedAudio.
-  final Float32List samples;
-  final int sampleRate;
-
-  Duration get duration =>
-      Duration(milliseconds: (samples.length / sampleRate * 1000).round());
-}
-
-/// A single sherpa-onnx built-in speaker exposed by the currently loaded
-/// model (for multi-speaker models such as Kokoro).
-class SherpaTtsSpeaker {
-  const SherpaTtsSpeaker({required this.id, required this.label});
-  final int id;
-  final String label;
-}
-
-/// Thrown for any recoverable TTS-service failure (bad archive, no model
-/// loaded, unsupported model layout, etc.) so callers can show a real error
-/// instead of a crash.
-class SherpaTtsException implements Exception {
-  SherpaTtsException(this.message);
-  final String message;
-  @override
-  String toString() => 'SherpaTtsException: $message';
 }

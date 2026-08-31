@@ -1,25 +1,8 @@
-part of '../services.dart';
+part of '../../services.dart';
 
-/// Name this isolate is registered under in [IsolateService].
 const sherpaTtsIsolateName = 'sherpa-tts';
 
-/// Entry point for the dedicated isolate that owns the sherpa-onnx
-/// [sherpa.OfflineTts] engine.
-///
-/// IMPORTANT: sherpa's native handles are FFI pointers wrapped in plain
-/// Dart classes — they are NOT one of the types Dart can send across a
-/// `SendPort` (only primitives, collections of primitives, TypedData,
-/// SendPort/Capability, etc. are). So the engine must be created *and*
-/// used entirely inside this isolate; only plain, copyable data (Strings,
-/// nums, bools, Float32List) is ever sent back to the caller.
-///
-/// This also means model load + `generate()` no longer run on the UI
-/// isolate, so a 300MB model no longer blocks the UI thread (which can
-/// look like a hang/ANR on Android) while it loads or synthesizes.
 void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
-  // Each isolate needs its own bindings init — the DynamicLibrary handle
-  // itself is cheap to re-open, but Dart-level static state in the
-  // sherpa_onnx package is per-isolate.
   sherpa.initBindings();
 
   final commandPort = ReceivePort();
@@ -42,20 +25,13 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
     try {
       switch (type) {
         case 'loadModel':
-          // Free the previous engine BEFORE constructing the new one.
-          // This is the fix for the crash on large models: the old code
-          // kept the old engine alive while building the new one, so
-          // switching models briefly needed ~2x the model's memory. For a
-          // 300MB model that's often enough to get the process OOM-killed.
           tts?.free();
           tts = null;
 
           final modelConfig = _sherpaConfigFromMessage(message);
           final config = sherpa.OfflineTtsConfig(
             model: modelConfig,
-            // Batches multiple sentences per generate() call for
-            // VITS-family models; higher can be a little more efficient
-            // for long paragraphs.
+
             maxNumSenetences: 1,
           );
           final newTts = sherpa.OfflineTts(config);
@@ -119,7 +95,7 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             speed: speed,
             callback: (samples) {
               mainSendPort.send({'id': id, 'chunk': samples});
-              return 1; // keep generating
+              return 1;
             },
           );
           mainSendPort.send({'id': id, 'done': true});
@@ -140,9 +116,6 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
   });
 }
 
-/// Rebuilds a [sherpa.OfflineTtsModelConfig] from the plain data sent over
-/// the SendPort. Mirrors the old `_buildModelConfig`, but note it now runs
-/// *inside* the worker isolate, not on the caller's side.
 sherpa.OfflineTtsModelConfig _sherpaConfigFromMessage(Map message) {
   final type = message['modelType'] as String;
   final numThreads = message['numThreads'] as int? ?? 2;

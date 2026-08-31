@@ -120,9 +120,7 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
                 ),
               ),
               IconButton(
-                onPressed: () => context.read<TtsPlayerBloc>().add(
-                  TtsPlayerEvent.playFromPage(state.currentPage),
-                ),
+                onPressed: null,
                 icon: const Icon(LucideIcons.audioLines, size: 20),
                 color: scheme.onSurfaceVariant,
                 visualDensity: VisualDensity.compact,

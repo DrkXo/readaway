@@ -7,12 +7,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/core_widgets.dart';
 import '../../../settings/domain/models/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
-import '../../../tts_player/tts_player.dart';
 import '../bloc/reader_bloc.dart';
 import '../controllers/auto_scroll_controller.dart';
 import '../controllers/reader_page_view_controller.dart';
+import '../widgets/reader/reader_status_bar.dart';
 import '../widgets/reader_widgets.dart';
 
 class ReaderPage extends StatefulWidget {
@@ -55,7 +56,7 @@ class _ReaderPageState extends State<ReaderPage>
 
   late final ReaderBloc _readerBloc;
   late final SettingsBloc _settingsBloc;
-  late final TtsPlayerBloc _ttsPlayerBloc;
+
   late final AutoScrollController _autoScrollController;
   StreamSubscription<AppLifecycleState>? _lifecycleSub;
   bool _tocPinned = false;
@@ -65,7 +66,6 @@ class _ReaderPageState extends State<ReaderPage>
     super.initState();
     _readerBloc = context.read<ReaderBloc>();
     _settingsBloc = context.read<SettingsBloc>();
-    _ttsPlayerBloc = context.read<TtsPlayerBloc>();
 
     // Route page-change requests from the view controller (swipes, TOC,
     // drawer, bottom bar, auto-scroll) into the BLoC, which is the single
@@ -117,10 +117,7 @@ class _ReaderPageState extends State<ReaderPage>
     _autoScrollController.dispose();
     // Wakelock is scoped to the reader: always release it on close.
     wakelockService.disable();
-    // TTS is scoped to the reader too: closing the ebook must stop playback
-    // and hide the mini-player (the bloc is a singleton that outlives this
-    // page).
-    _ttsPlayerBloc.add(const TtsPlayerEvent.closePlayer());
+
     _readerBloc.add(const ReaderEvent.closeDocument());
     _pageViewController.dispose();
     super.dispose();
@@ -225,7 +222,7 @@ class _ReaderPageState extends State<ReaderPage>
                 onJumpToPage: _pageViewController.goToPage,
               ),
             _buildBottomBar(menuTogglesPanel: isWide),
-            const TtsMiniPlayer(),
+
             if (prefs.showStatusBar) _buildStatusBar(),
           ],
         );
@@ -269,36 +266,7 @@ class _ReaderPageState extends State<ReaderPage>
   Widget _buildContrastOverlay(ReaderPreferences prefs) {
     if (prefs.contrastOverlay <= 0) return const SizedBox.shrink();
     final contrast = 1.0 + prefs.contrastOverlay;
-    return Animate(
-      effects: [
-        FadeEffect(duration: 200.ms, curve: Curves.easeOut),
-      ],
-      child: ColorFiltered(
-        colorFilter: ColorFilter.matrix(<double>[
-          contrast,
-          0,
-          0,
-          0,
-          0,
-          0,
-          contrast,
-          0,
-          0,
-          0,
-          0,
-          0,
-          contrast,
-          0,
-          0,
-          0,
-          0,
-          0,
-          1,
-          0,
-        ]),
-        child: const SizedBox.expand(),
-      ),
-    );
+    return const SizedBox.expand().withContrastOverlay(contrast);
   }
 
   Widget _buildBottomBar({required bool menuTogglesPanel}) {
@@ -317,48 +285,8 @@ class _ReaderPageState extends State<ReaderPage>
       right: 0,
       child: SafeArea(
         bottom: false,
-        child: _ReaderStatusBar(readerBloc: _readerBloc),
+        child: ReaderStatusBar(readerBloc: _readerBloc),
       ),
-    );
-  }
-}
-
-class _ReaderStatusBar extends StatelessWidget {
-  const _ReaderStatusBar({required this.readerBloc});
-
-  final ReaderBloc readerBloc;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ReaderBloc, ReaderState>(
-      bloc: readerBloc,
-      buildWhen: (prev, curr) =>
-          prev.currentPage != curr.currentPage ||
-          prev.pageCount != curr.pageCount ||
-          prev.fileName != curr.fileName ||
-          prev.htmlPages != curr.htmlPages ||
-          prev.pageImages != curr.pageImages,
-      builder: (context, state) {
-        if (!state.hasDocument) return const SizedBox.shrink();
-        final scheme = Theme.of(context).colorScheme;
-        final progress = state.pageCount > 1
-            ? state.currentPage / (state.pageCount - 1)
-            : 0.0;
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LinearProgressIndicator(
-              value: progress,
-              minHeight: 2,
-              backgroundColor: scheme.surfaceContainerHighest.withValues(
-                alpha: 0.3,
-              ),
-              valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
-            ),
-          ],
-        );
-      },
     );
   }
 }

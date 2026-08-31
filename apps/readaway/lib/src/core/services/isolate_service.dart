@@ -1,7 +1,5 @@
 part of 'services.dart';
 
-/// Thrown when a command sent to a worker isolate fails on the other side,
-/// or when the isolate itself crashes/exits while a command is pending.
 class IsolateCommandException implements Exception {
   IsolateCommandException(this.message);
   final String message;
@@ -17,8 +15,16 @@ class _IsolateInstance {
   ReceivePort? errorPort;
   ReceivePort? exitPort;
 
-  // Plain broadcast controller — no external dependency needed for this.
-  final responseController = StreamController<dynamic>.broadcast();
+  /// RxDart PublishSubject acts as a broadcast controller with Rx operators built-in.
+  final responseSubject = PublishSubject<dynamic>();
+
+  Future<void> dispose() async {
+    await responseSubject.close();
+    receivePort?.close();
+    errorPort?.close();
+    exitPort?.close();
+    isolate?.kill(priority: Isolate.immediate);
+  }
 }
 
 @singleton
@@ -34,14 +40,6 @@ class IsolateService {
 
   bool isSpawned(String name) => _instances[name]?.sendPort != null;
 
-  /// Spawns [entryPoint] as isolate [name]. [entryPoint] must, as its first
-  /// action, send its own `SendPort` back over the `SendPort` it receives —
-  /// that's how this method knows the isolate is ready to accept commands.
-  ///
-  /// Unlike the original version, a crash or unexpected exit inside the
-  /// isolate now surfaces as an [IsolateCommandException] on every pending
-  /// (and future) [sendCommand]/[sendStreamCommand] call instead of hanging
-  /// forever.
   Future<SendPort> spawn({
     required String name,
     required void Function(SendPort) entryPoint,
@@ -63,8 +61,8 @@ class IsolateService {
 
     void failAll(Object error) {
       if (!completer.isCompleted) completer.completeError(error);
-      if (!instance.responseController.isClosed) {
-        instance.responseController.addError(error);
+      if (!instance.responseSubject.isClosed) {
+        instance.responseSubject.addError(error);
       }
     }
 
@@ -92,7 +90,7 @@ class IsolateService {
       if (message is SendPort) {
         if (!completer.isCompleted) completer.complete(message);
       } else {
-        instance.responseController.add(message);
+        instance.responseSubject.add(message);
       }
     });
 
@@ -101,8 +99,7 @@ class IsolateService {
     return instance.sendPort!;
   }
 
-  /// Sends [command] (must contain a unique `'id'`) and resolves with the
-  /// matching `{'id': ..., 'result': ...}` response's `result` field.
+  /// Sends [command] and awaits the corresponding response matching `id`.
   Future<T> sendCommand<T>(String name, Map<String, dynamic> command) async {
     final instance = _instances[name];
     if (instance == null || instance.sendPort == null) {
@@ -110,37 +107,27 @@ class IsolateService {
     }
 
     final id = command['id'];
-    final completer = Completer<T>();
-    late final StreamSubscription subscription;
-    subscription = instance.responseController.stream.listen(
-      (response) {
-        if (response is Map && response['id'] == id) {
-          subscription.cancel();
-          if (response.containsKey('error')) {
-            completer.completeError(
-              IsolateCommandException(response['error'].toString()),
-            );
-          } else if (!completer.isCompleted) {
-            completer.complete(response['result'] as T);
-          }
-        }
-      },
-      onError: (Object e, StackTrace st) {
-        subscription.cancel();
-        if (!completer.isCompleted) completer.completeError(e, st);
-      },
-    );
 
+    // 1. Send the command first
     instance.sendPort!.send(command);
-    return completer.future;
+
+    // 2. Filter stream to map responses matching this ID
+    final response = await instance.responseSubject.stream
+        .whereType<Map<String, dynamic>>()
+        .firstWhere(
+          (msg) => msg['id'] == id,
+          orElse: () =>
+              throw IsolateCommandException('No response received for id: $id'),
+        );
+
+    if (response.containsKey('error')) {
+      throw IsolateCommandException(response['error'].toString());
+    }
+
+    return response['result'] as T;
   }
 
-  /// Like [sendCommand], but for handlers that stream back multiple partial
-  /// results before finishing (e.g. TTS synthesis callbacks).
-  ///
-  /// The isolate-side handler should send `{'id': id, 'chunk': ...}` for
-  /// each item, then finally either `{'id': id, 'done': true}` or
-  /// `{'id': id, 'error': ...}`.
+  /// Streams partial results back for commands with ongoing chunks.
   Stream<T> sendStreamCommand<T>(String name, Map<String, dynamic> command) {
     final instance = _instances[name];
     if (instance == null || instance.sendPort == null) {
@@ -148,46 +135,39 @@ class IsolateService {
     }
 
     final id = command['id'];
-    final controller = StreamController<T>();
-    StreamSubscription? subscription;
 
-    controller.onListen = () {
-      subscription = instance.responseController.stream.listen(
-        (response) {
-          if (response is! Map || response['id'] != id) return;
-          if (response.containsKey('error')) {
-            controller.addError(
-              IsolateCommandException(response['error'].toString()),
-            );
-            controller.close();
-            subscription?.cancel();
-          } else if (response['done'] == true) {
-            controller.close();
-            subscription?.cancel();
-          } else if (response.containsKey('chunk')) {
-            controller.add(response['chunk'] as T);
+    // RxDart StreamTransformer setup via operators
+    final stream = instance.responseSubject.stream
+        // Filter only maps matching target command ID
+        .whereType<Map<String, dynamic>>()
+        .where((msg) => msg['id'] == id)
+        // Auto-terminate the stream when 'done' flag or 'error' key is emitted
+        .takeWhile((msg) => msg['done'] != true)
+        // Transform the map response into the yield payload or throw
+        .map<T>((msg) {
+          if (msg.containsKey('error')) {
+            throw IsolateCommandException(msg['error'].toString());
           }
-        },
-        onError: (Object e, StackTrace st) {
-          controller.addError(e, st);
-          controller.close();
-          subscription?.cancel();
-        },
-      );
-      instance.sendPort!.send(command);
-    };
-    controller.onCancel = () => subscription?.cancel();
-    return controller.stream;
+          if (msg.containsKey('chunk')) {
+            return msg['chunk'] as T;
+          }
+          throw IsolateCommandException(
+            'Malformed isolate message for id: $id',
+          );
+        })
+        // Dispatch command lazily when a consumer listens to the stream
+        .doOnListen(() {
+          instance.sendPort!.send(command);
+        });
+
+    return stream;
   }
 
   Future<void> disposeIsolate(String name) async {
     final instance = _instances.remove(name);
     if (instance == null) return;
-    await instance.responseController.close();
-    instance.receivePort?.close();
-    instance.errorPort?.close();
-    instance.exitPort?.close();
-    instance.isolate?.kill(priority: Isolate.immediate);
+
+    await instance.dispose();
   }
 
   @disposeMethod
