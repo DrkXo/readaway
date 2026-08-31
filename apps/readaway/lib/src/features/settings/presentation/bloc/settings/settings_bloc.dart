@@ -153,8 +153,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
   Future<void> loadPrefs() async {
     try {
-      final global =
-          _storage.readReaderGlobalPrefs() ?? const ReaderPreferences();
+      final global = await _storage.readReaderGlobalPrefs();
       final docs = await _storage.readAllReaderDocumentPrefs();
       // ignore: invalid_use_of_visible_for_testing_member
       emit(

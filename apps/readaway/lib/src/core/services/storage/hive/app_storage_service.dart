@@ -2,19 +2,72 @@ part of '../../services.dart';
 
 AppStorageService get appStorageService => GetIt.I.get<AppStorageService>();
 
+/// Standalone entry point function required by [Isolate.spawn].
+/// Must be a top-level or static function.
+void _appStorageIsolateEntryPoint(SendPort mainSendPort) {
+  final receivePort = ReceivePort();
+  mainSendPort.send(receivePort.sendPort);
+
+  receivePort.listen((message) {
+    if (message is! Map) return;
+
+    final id = message['id'];
+    final action = message['action'] as String?;
+
+    try {
+      switch (action) {
+        case 'decodeJson':
+          final rawJson = message['rawJson'] as String;
+          final decoded = jsonDecode(rawJson);
+          mainSendPort.send({'id': id, 'result': decoded});
+          break;
+
+        case 'encodeJson':
+          final data = message['data'];
+          final encoded = jsonEncode(data);
+          mainSendPort.send({'id': id, 'result': encoded});
+          break;
+
+        case 'encodeExport':
+          final schemaVersion = message['schemaVersion'] as int;
+          final global = message['global'] as Map<String, dynamic>?;
+          final docs = message['docs'] as Map<String, dynamic>;
+
+          final exportMap = <String, dynamic>{
+            'schemaVersion': schemaVersion,
+            'global': global,
+            for (final entry in docs.entries) entry.key: entry.value,
+          };
+
+          final encoded = jsonEncode(exportMap);
+          mainSendPort.send({'id': id, 'result': encoded});
+          break;
+
+        default:
+          mainSendPort.send({'id': id, 'error': 'Unknown action: $action'});
+      }
+    } catch (e) {
+      mainSendPort.send({'id': id, 'error': e.toString()});
+    }
+  });
+}
+
 @Singleton()
 class AppStorageService {
   final HiveConfigService _config;
+  final IsolateService _isolateService;
 
   late final Box<String> _box;
 
   Box<String> get box => _box;
 
+  static const String _isolateName = 'app_storage_worker';
   static const String _schemaVersionKey = 'schema_version';
   static const int _schemaVersion = 1;
 
   AppStorageService({
     required this._config,
+    required this._isolateService,
   });
 
   @PostConstruct(preResolve: true)
@@ -23,6 +76,12 @@ class AppStorageService {
     Hive.init(hiveDir);
 
     _box = await Hive.openBox<String>(HiveConfigService.boxName);
+
+    // Spawn the worker isolate during initialization
+    await _isolateService.spawn(
+      name: _isolateName,
+      entryPoint: _appStorageIsolateEntryPoint,
+    );
 
     await _handleStaleData();
   }
@@ -63,6 +122,7 @@ class AppStorageService {
 
   @disposeMethod
   Future<void> dispose() async {
+    await _isolateService.disposeIsolate(_isolateName);
     await _box.close();
   }
 
@@ -120,26 +180,55 @@ class AppStorageService {
     }
   }
 
-  ReaderPreferences? readReaderGlobalPrefs() {
+  Future<ReaderPreferences> readReaderGlobalPrefs() async {
     final value = readAsString('reader_global');
-    if (value == null) return null;
+    if (value == null) return const ReaderPreferences();
     try {
-      return ReaderPreferences.fromJson(jsonDecode(value));
+      final decoded = await _isolateService.sendCommand<Map<String, dynamic>>(
+        _isolateName,
+        {
+          'id': DateTime.now().microsecondsSinceEpoch.toString(),
+          'action': 'decodeJson',
+          'rawJson': value,
+        },
+      );
+      return ReaderPreferences.fromJson(decoded);
     } catch (e) {
       logger.e('Failed to parse reader global prefs: $e');
-      return null;
+      return const ReaderPreferences();
     }
   }
 
   Future<void> writeReaderGlobalPrefs(ReaderPreferences prefs) async {
-    await writeAsString('reader_global', jsonEncode(prefs.toJson()));
+    try {
+      final jsonString = await _isolateService.sendCommand<String>(
+        _isolateName,
+        {
+          'id': DateTime.now().microsecondsSinceEpoch.toString(),
+          'action': 'encodeJson',
+          'data': prefs.toJson(),
+        },
+      );
+      await writeAsString('reader_global', jsonString);
+    } catch (e) {
+      logger.e('Failed to write reader global prefs: $e');
+      rethrow;
+    }
   }
 
-  ReaderPreferences? readReaderDocumentPrefs(String path) {
+  Future<ReaderPreferences?> readReaderDocumentPrefs(String path) async {
     final value = readAsString('reader_doc_$path');
     if (value == null) return null;
     try {
-      return ReaderPreferences.fromJson(jsonDecode(value));
+      final decoded = await _isolateService.sendCommand<Map<String, dynamic>>(
+        _isolateName,
+        {
+          'id': DateTime.now().microsecondsSinceEpoch.toString(),
+          'action': 'decodeJson',
+          'rawJson': value,
+        },
+      );
+      return ReaderPreferences.fromJson(decoded);
     } catch (e) {
       logger.e('Failed to parse reader doc prefs for $path: $e');
       return null;
@@ -150,7 +239,20 @@ class AppStorageService {
     String path,
     ReaderPreferences prefs,
   ) async {
-    await writeAsString('reader_doc_$path', jsonEncode(prefs.toJson()));
+    try {
+      final jsonString = await _isolateService.sendCommand<String>(
+        _isolateName,
+        {
+          'id': DateTime.now().microsecondsSinceEpoch.toString(),
+          'action': 'encodeJson',
+          'data': prefs.toJson(),
+        },
+      );
+      await writeAsString('reader_doc_$path', jsonString);
+    } catch (e) {
+      logger.e('Failed to write reader document prefs for $path: $e');
+      rethrow;
+    }
   }
 
   Future<void> deleteReaderDocumentPrefs(String path) async {
@@ -162,7 +264,7 @@ class AppStorageService {
     for (final key in _box.keys.cast<String>()) {
       if (key.startsWith('reader_doc_')) {
         final path = key.substring('reader_doc_'.length);
-        final prefs = readReaderDocumentPrefs(path);
+        final prefs = await readReaderDocumentPrefs(path);
         if (prefs != null) {
           result[path] = prefs;
         }
@@ -172,16 +274,23 @@ class AppStorageService {
   }
 
   Future<String> exportAll() async {
-    final global = readReaderGlobalPrefs();
+    final global = await readReaderGlobalPrefs();
     final docs = await readAllReaderDocumentPrefs();
 
-    final map = <String, dynamic>{
-      'schemaVersion': _schemaVersion,
-      'global': global?.toJson(),
+    final docsJson = <String, dynamic>{
       for (final entry in docs.entries) entry.key: entry.value.toJson(),
     };
 
-    return jsonEncode(map);
+    return await _isolateService.sendCommand<String>(
+      _isolateName,
+      {
+        'id': DateTime.now().microsecondsSinceEpoch.toString(),
+        'action': 'encodeExport',
+        'schemaVersion': _schemaVersion,
+        'global': global.toJson(),
+        'docs': docsJson,
+      },
+    );
   }
 }
 

@@ -56,20 +56,42 @@ extension GetItInjectableX on _i174.GetIt {
       dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i264.TextChunker>(() => _i264.TextChunker());
+    await gh.lazySingletonAsync<_i264.HttpService>(() {
+      final i = _i264.HttpService(logger: gh<_i264.LoggingService>());
+      return i.initialize().then((_) => i);
+    }, preResolve: true);
+    gh.singleton<_i264.IsolateService>(
+      () => _i264.IsolateService(loggingService: gh<_i264.LoggingService>()),
+      dispose: (i) => i.dispose(),
+    );
+    gh.lazySingleton<_i295.AppRoutesGuards>(
+      () => _i295.AppRoutesGuards(appRoutes: gh<_i494.AppRoutes>()),
+    );
+    gh.lazySingleton<_i264.SherpaTtsModelCatalog>(
+      () => _i264.SherpaTtsModelCatalog(httpService: gh<_i264.HttpService>()),
+    );
+    gh.lazySingleton<_i264.LookupService>(
+      () => _i264.LookupService(gh<_i264.HttpService>()),
+    );
+    gh.singleton<_i295.AppRouter>(
+      () => _i295.AppRouter(
+        appRoutesGuards: gh<_i295.AppRoutesGuards>(),
+        logger: gh<_i264.LoggingService>(),
+        appRoutes: gh<_i494.AppRoutes>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
     await gh.singletonAsync<_i264.AppStorageService>(
       () {
         final i = _i264.AppStorageService(
           config: gh<_i264.HiveConfigService>(),
+          isolateService: gh<_i264.IsolateService>(),
         );
         return i.init().then((_) => i);
       },
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    await gh.lazySingletonAsync<_i264.HttpService>(() {
-      final i = _i264.HttpService(logger: gh<_i264.LoggingService>());
-      return i.initialize().then((_) => i);
-    }, preResolve: true);
     await gh.singletonAsync<_i264.SettingsService>(
       () {
         final i = _i264.SettingsService(storage: gh<_i264.AppStorageService>());
@@ -84,39 +106,6 @@ extension GetItInjectableX on _i174.GetIt {
         settingsService: gh<_i264.SettingsService>(),
       ),
     );
-    gh.singleton<_i264.IsolateService>(
-      () => _i264.IsolateService(loggingService: gh<_i264.LoggingService>()),
-      dispose: (i) => i.dispose(),
-    );
-    gh.lazySingleton<_i295.AppRoutesGuards>(
-      () => _i295.AppRoutesGuards(appRoutes: gh<_i494.AppRoutes>()),
-    );
-    gh.lazySingleton<_i264.SherpaTtsModelCatalog>(
-      () => _i264.SherpaTtsModelCatalog(httpService: gh<_i264.HttpService>()),
-    );
-    gh.lazySingleton<_i264.LookupService>(
-      () => _i264.LookupService(gh<_i264.HttpService>()),
-    );
-    await gh.singletonAsync<_i264.FontService>(() {
-      final i = _i264.FontService(settings: gh<_i264.SettingsService>());
-      return i.init().then((_) => i);
-    }, preResolve: true);
-    await gh.singletonAsync<_i264.ThemeService>(
-      () {
-        final i = _i264.ThemeService(settings: gh<_i264.SettingsService>());
-        return i.init().then((_) => i);
-      },
-      preResolve: true,
-      dispose: (i) => i.dispose(),
-    );
-    gh.singleton<_i295.AppRouter>(
-      () => _i295.AppRouter(
-        appRoutesGuards: gh<_i295.AppRoutesGuards>(),
-        logger: gh<_i264.LoggingService>(),
-        appRoutes: gh<_i494.AppRoutes>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
     gh.singleton<_i264.MuPdfService>(
       () => _i264.MuPdfService(
         isolateService: gh<_i264.IsolateService>(),
@@ -128,6 +117,18 @@ extension GetItInjectableX on _i174.GetIt {
         client: gh<_i264.HttpService>(),
         catalog: gh<_i264.SherpaTtsModelCatalog>(),
       ),
+      dispose: (i) => i.dispose(),
+    );
+    await gh.singletonAsync<_i264.FontService>(() {
+      final i = _i264.FontService(settings: gh<_i264.SettingsService>());
+      return i.init().then((_) => i);
+    }, preResolve: true);
+    await gh.singletonAsync<_i264.ThemeService>(
+      () {
+        final i = _i264.ThemeService(settings: gh<_i264.SettingsService>());
+        return i.init().then((_) => i);
+      },
+      preResolve: true,
       dispose: (i) => i.dispose(),
     );
     await gh.singletonAsync<_i264.SherpaOnnxTtsService>(
