@@ -153,6 +153,14 @@ class MuPdfService {
     });
   }
 
+  /// Kills the background isolate, releasing the native MuPDF context and
+  /// any document still held inside it. Called by the DI container on
+  /// shutdown so the isolate doesn't leak across app restarts.
+  @disposeMethod
+  Future<void> dispose() async {
+    await _isolateService.disposeIsolate(_isolateName);
+  }
+
   static void _isolateEntryPoint(SendPort mainSendPort) {
     final receivePort = ReceivePort();
     mainSendPort.send(receivePort.sendPort);

@@ -12,3 +12,4 @@ import '../services/services.dart';
 part 'app_window_caption.dart';
 part 'buttons/buttons.dart';
 part 'scaffold/scaffold_with_bottom_navbar.dart';
+part 'overlay/overlay_extensions.dart';

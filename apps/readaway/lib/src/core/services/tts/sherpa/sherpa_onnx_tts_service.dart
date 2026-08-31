@@ -1,4 +1,4 @@
-part of '../services.dart';
+part of '../../services.dart';
 
 @singleton
 class SherpaOnnxTtsService {
@@ -8,8 +8,8 @@ class SherpaOnnxTtsService {
     required this._isolateService,
   });
 
-  final SherpaTtsModelDownloader _downloader;
-  final SherpaTtsModelCatalog _sherpaTtsModelCatalog;
+  final SherpaTtsModelDownloaderService _downloader;
+  final SherpaTtsModelCatalogService _sherpaTtsModelCatalog;
   final IsolateService _isolateService;
 
   SherpaTtsModelInfo? _activeModel;
@@ -23,18 +23,9 @@ class SherpaOnnxTtsService {
 
   bool _bindingsInitialized = false;
 
-  // ---------------------------------------------------------------------
-  // Lifecycle
-  // ---------------------------------------------------------------------
-
-  /// Call once at app startup (or via an injectable `@preResolve` module)
-  /// before using any other method.
   @PostConstruct(preResolve: true)
   Future<void> init() async {
     if (!_bindingsInitialized) {
-      // Needed on the main isolate too, for the lightweight sherpa.writeWave
-      // call used by synthesizeToFile. The heavy engine itself lives in the
-      // dedicated worker isolate spawned below.
       sherpa.initBindings();
       _bindingsInitialized = true;
     }
@@ -66,12 +57,6 @@ class SherpaOnnxTtsService {
     _speakerCount = null;
   }
 
-  // ---------------------------------------------------------------------
-  // Catalog / model discovery
-  // ---------------------------------------------------------------------
-
-  /// Every voice the user could download, derived from the bundled
-  /// sherpa-onnx release manifest.
   List<SherpaTtsModelInfo> get availableModels => _sherpaTtsModelCatalog.models;
 
   Directory _modelDir(String modelId) {
@@ -82,12 +67,38 @@ class SherpaOnnxTtsService {
     return Directory(p.join(root.path, modelId));
   }
 
-  /// Whether [modelId]'s files are already extracted on disk.
   Future<bool> isModelDownloaded(String modelId) async {
     final dir = _modelDir(modelId);
     if (!await dir.exists()) return false;
-    final files = await dir.list(recursive: true).toList();
-    return files.any((f) => f is File && f.path.endsWith('.onnx'));
+
+    final model = _sherpaTtsModelCatalog.byId(modelId);
+    if (model == null) return false;
+
+    try {
+      final files = await _indexModelFiles(dir);
+
+      final bool structurallyComplete;
+      switch (model.type) {
+        case SherpaTtsModelType.vits:
+          structurallyComplete = files.onnxPrimary != null;
+          break;
+        case SherpaTtsModelType.kokoro:
+          structurallyComplete =
+              files.onnxPrimary != null && files.voicesBin != null;
+          break;
+        case SherpaTtsModelType.matcha:
+          structurallyComplete =
+              files.onnxPrimary != null && files.onnxSecondary != null;
+          break;
+      }
+      if (!structurallyComplete) return false;
+
+      if (model.needsEspeakData && files.espeakDataDir == null) return false;
+
+      return true;
+    } on SherpaTtsException {
+      return false;
+    }
   }
 
   Future<List<SherpaTtsModelInfo>> getDownloadedModels() async {
@@ -98,8 +109,6 @@ class SherpaOnnxTtsService {
     return result;
   }
 
-  /// Frees disk space by deleting a downloaded voice. If it's the active
-  /// model, unloads it first.
   Future<void> deleteModel(String modelId) async {
     if (_activeModel?.id == modelId) {
       await _isolateService.sendCommand<bool>(sherpaTtsIsolateName, {
@@ -116,39 +125,13 @@ class SherpaOnnxTtsService {
     }
   }
 
-  // ---------------------------------------------------------------------
-  // Download + extract
-  // ---------------------------------------------------------------------
-
-  /// Downloads and extracts [model], reporting progress. Safe to call again
-  /// for an already-downloaded model (re-downloads/overwrites); check
-  /// [isModelDownloaded] first if you want to skip that.
-  ///
-  /// Cancel by cancelling your subscription to the returned stream; the
-  /// underlying Dio request is cancelled with it.
-  ///
-  /// This stays on the main isolate — it's I/O bound (network + disk), not
-  /// CPU/memory heavy, so there's no jank/OOM risk here.
   Stream<ModelDownloadProgress> downloadModel(SherpaTtsModelInfo model) {
     return _downloader.downloadModel(model, _modelDir(model.id));
   }
 
-  // ---------------------------------------------------------------------
-  // Loading a model for synthesis
-  // ---------------------------------------------------------------------
-
   SherpaTtsModelInfo? get activeModel => _activeModel;
   bool get hasLoadedModel => _sampleRate != null;
 
-  /// Loads [modelId] (must already be downloaded) into memory, replacing
-  /// whatever was previously loaded. Cheap to call again to switch voices —
-  /// the previous native instance is freed *before* the new one is built,
-  /// inside the worker isolate, so peak memory never has to hold two
-  /// engines at once.
-  ///
-  /// File indexing/validation happens here on the main isolate (cheap
-  /// directory listing) so obviously-missing-file errors fail fast without
-  /// a round trip; the actual model construction happens in the isolate.
   Future<void> loadModel(
     String modelId, {
     int numThreads = 2,
@@ -184,17 +167,9 @@ class SherpaOnnxTtsService {
     _speakerCount = result['speakerCount'] as int;
   }
 
-  /// Scans an extracted model directory and buckets files by role so we
-  /// don't have to hardcode exact filenames per model (they vary release
-  /// to release). Pure directory listing — safe on the main isolate.
   Future<_ModelFiles> _indexModelFiles(Directory dir) async {
     String? onnxA, onnxB, tokens, voicesBin, dataDir, dictDir;
-    // Multi-lingual Kokoro models (>= v1.0) ship one lexicon file per
-    // language — e.g. lexicon-us-en.txt, lexicon-gb-en.txt, lexicon-zh.txt
-    // — instead of a single lexicon.txt. The native API wants all of them
-    // as one comma-joined string (mirrors the --kokoro-lexicon=a.txt,b.txt
-    // CLI flag), so collect every lexicon*.txt rather than matching only
-    // the exact filename.
+
     final lexiconFiles = <String>[];
     final entries = await dir.list(recursive: true).toList();
 
@@ -222,9 +197,6 @@ class SherpaOnnxTtsService {
       }
     }
 
-    // Piper-family models (and kokoro/matcha/melo) need the shared
-    // espeak-ng-data directory, which the downloader installs once into the
-    // models root rather than inside each model folder.
     if (dataDir == null && _modelsRootDir != null) {
       final shared = Directory(p.join(_modelsRootDir!.path, 'espeak-ng-data'));
       if (await shared.exists()) {
@@ -238,10 +210,6 @@ class SherpaOnnxTtsService {
       );
     }
 
-    // Sort for deterministic ordering — directory listing order isn't
-    // guaranteed to be stable across platforms/filesystems, and the join
-    // order shouldn't matter for lexicon lookups but stability makes this
-    // reproducible/debuggable.
     lexiconFiles.sort();
 
     return _ModelFiles(
@@ -255,10 +223,6 @@ class SherpaOnnxTtsService {
     );
   }
 
-  /// Builds the plain-data `loadModel` command sent to the worker isolate.
-  /// Deliberately does NOT construct any `sherpa.*ModelConfig` object here —
-  /// those wrap native state and can't cross the isolate boundary, so the
-  /// equivalent construction happens inside `sherpaTtsIsolateEntryPoint`.
   Map<String, dynamic> _buildLoadModelMessage(
     SherpaTtsModelInfo model,
     _ModelFiles files, {
@@ -295,12 +259,7 @@ class SherpaOnnxTtsService {
             'Kokoro model ${model.id} needs both a .onnx file and a voices .bin file.',
           );
         }
-        // Multi-lingual Kokoro (>= v1.0) is driven by the per-language
-        // lexicon files (already joined into `base['lexicon']` above) with
-        // `lang` left empty; single-language voices go the other way and
-        // just set `lang`. Passing neither is what produces the native
-        // "please pass --kokoro-lexicon or --kokoro-lang" warning and
-        // silently wrong/empty pronunciation.
+
         final isMultiLingual = model.languageCode == 'multi';
         if (isMultiLingual &&
             (files.lexicon == null || files.lexicon!.isEmpty)) {
@@ -319,10 +278,6 @@ class SherpaOnnxTtsService {
         };
 
       case SherpaTtsModelType.matcha:
-        // Vocoder is downloaded next to the acoustic model (see
-        // downloadModel), so the two .onnx files live in the same dir. We
-        // disambiguate by filename: the vocoder is the one whose name
-        // matches model.vocoderFileName.
         final vocoderName = model.vocoderFileName;
         String? acoustic, vocoder;
         for (final f in [files.onnxPrimary, files.onnxSecondary]) {
@@ -347,10 +302,6 @@ class SherpaOnnxTtsService {
     }
   }
 
-  // ---------------------------------------------------------------------
-  // Speakers (multi-speaker models like Kokoro)
-  // ---------------------------------------------------------------------
-
   int get sampleRate {
     final rate = _sampleRate;
     if (rate == null) throw SherpaTtsException('No model loaded.');
@@ -363,10 +314,6 @@ class SherpaOnnxTtsService {
     return count;
   }
 
-  /// Best-effort speaker list. sherpa-onnx doesn't expose per-speaker
-  /// names, only a count — so beyond "Speaker 0, Speaker 1, ..." you'll
-  /// want to ship your own id->name mapping per model (e.g. Kokoro's voice
-  /// ids like `af_heart`, `bm_george` are documented on its model card).
   List<SherpaTtsSpeaker> get speakers {
     final count = speakerCount;
     return List.generate(
@@ -375,21 +322,6 @@ class SherpaOnnxTtsService {
     );
   }
 
-  // ---------------------------------------------------------------------
-  // Synthesis
-  // ---------------------------------------------------------------------
-
-  /// Synthesizes [text] with the currently loaded model.
-  ///
-  /// [speakerId] selects a built-in speaker for multi-speaker models
-  /// (ignored otherwise). [speed] is a multiplier: 1.0 normal, <1.0 slower,
-  /// >1.0 faster.
-  ///
-  /// Runs entirely in the dedicated TTS isolate, so a long synthesis never
-  /// blocks the UI thread. For very long text (multiple paragraphs) prefer
-  /// chunking with a text splitter and calling this per-chunk so playback
-  /// can start on the first chunk while later ones are still generating.
-  /// See `TextChunker` alongside this service.
   Future<TtsAudio> generate({
     required String text,
     int speakerId = 0,
@@ -414,15 +346,6 @@ class SherpaOnnxTtsService {
     );
   }
 
-  /// Like [generate], but streams partial sample chunks as they're produced
-  /// (useful for starting playback before the whole utterance is ready, or
-  /// for a live waveform / word-progress indicator).
-  ///
-  /// The returned stream completes after the final chunk. Note: cancelling
-  /// your subscription stops delivering chunks to you, but the native
-  /// generation call inside the isolate currently runs to completion
-  /// regardless (sherpa's callback API doesn't expose a cancel token) — if
-  /// you need hard cancellation, kill/respawn the isolate.
   Stream<Float32List> generateStreaming({
     required String text,
     int speakerId = 0,
@@ -443,9 +366,6 @@ class SherpaOnnxTtsService {
     );
   }
 
-  /// Synthesizes [text] and writes it straight to a WAV file at
-  /// [outputPath] — handy for pre-rendering a whole chapter for offline
-  /// listening/downloads within the app.
   Future<File> synthesizeToFile({
     required String text,
     required String outputPath,

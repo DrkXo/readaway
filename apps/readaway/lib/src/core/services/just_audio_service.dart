@@ -1,6 +1,6 @@
 // ignore_for_file: experimental_member_use
 
-part of '../services.dart';
+part of 'services.dart';
 
 /// Injectable wrapper around a single shared [AudioPlayer] (just_audio).
 ///

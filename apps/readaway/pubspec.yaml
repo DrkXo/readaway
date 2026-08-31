@@ -49,6 +49,8 @@ dependencies:
   dio_cache_interceptor: ^3.5.1
   dio_cache_interceptor_file_store: ^1.2.3
   crypto: ^3.0.7
+  mutex: ^3.1.0
+  styled_text: ^10.0.0
 
 dev_dependencies:
   flutter_test:

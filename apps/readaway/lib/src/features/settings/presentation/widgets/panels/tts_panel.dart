@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/services/services.dart';
@@ -12,14 +11,7 @@ class TtsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Singleton from GetIt: state (and running downloads) survive the
-    // settings sheet being closed and reopened. Use BlocProvider.value so
-    // the panel does NOT close the shared singleton when it's disposed —
-    // otherwise the next visit would get a closed bloc and every tap would
-    // throw "Cannot add new events after calling close".
-    return BlocProvider<TtsBloc>.value(
-      value: GetIt.I.get<TtsBloc>(),
-      child: BlocListener<TtsBloc, TtsState>(
+    return BlocListener<TtsBloc, TtsState>(
         listenWhen: (prev, curr) =>
             curr.error != null && prev.error != curr.error,
         listener: (context, state) {
@@ -31,7 +23,7 @@ class TtsPanel extends StatelessWidget {
           );
         },
         child: const _TtsView(),
-      ),
+      
     );
   }
 }

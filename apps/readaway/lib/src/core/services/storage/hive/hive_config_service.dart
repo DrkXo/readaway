@@ -10,9 +10,10 @@ class HiveConfigService {
   String get lockFileName => '$boxName$lockExtension';
 
   Future<String> getHiveDirectory() async {
-    final dir = await getApplicationDocumentsDirectory();
+    // final dir = await getApplicationDocumentsDirectory();
+    final dir = await getApplicationSupportDirectory();
 
-    return p.join(dir.path, F.name);
+    return p.join(dir.path, 'config');
   }
 
   Future<String> getBoxPath() async {
