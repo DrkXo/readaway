@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:injectable/injectable.dart';
@@ -10,6 +11,7 @@ import '../core/routes/routes.dart';
 import '../core/services/services.dart';
 import '../core/widgets/core_widgets.dart';
 import '../features/library/presentation/pages/library_page.dart';
+import '../features/reader/presentation/bloc/reader_bloc.dart';
 import '../features/reader/reader.dart';
 import '../features/settings/presentation/pages/custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
@@ -103,7 +105,10 @@ class AppRouter {
       // 2. Reader Shell Route carrying the TTS Overlay ONLY for Reader
       ShellRoute(
         builder: (context, state, child) {
-          return TtsOverlayShell(child: child);
+          return BlocProvider<ReaderBloc>(
+            create: (_) => GetIt.I.get<ReaderBloc>(),
+            child: TtsOverlayShell(child: child),
+          );
         },
         routes: [
           GoRoute(

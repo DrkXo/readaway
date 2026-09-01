@@ -95,6 +95,44 @@ class _TtsOverlayShellState extends State<TtsOverlayShell>
           // 1. Reader View Content
           Positioned.fill(child: widget.child),
 
+          // 1.5 Reader-specific caption content (menu button + caption actions)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: BlocBuilder<ReaderBloc, ReaderState>(
+              buildWhen: (prev, curr) => prev.hasDocument != curr.hasDocument,
+              builder: (context, state) {
+                if (!state.hasDocument) {
+                  return const SizedBox.shrink();
+                }
+                return SafeArea(
+                  bottom: false,
+                  child: SizedBox(
+                    height: 40,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 16),
+                        MorphIconButton(
+                          icon: LucideIcons.menu,
+                          hoverIcon: LucideIcons.panelLeftOpen,
+                          tooltip: 'Contents',
+                          onTap: () => ReaderPage
+                              .scaffoldKey
+                              .currentState
+                              ?.openDrawer(),
+                        ),
+                        const Spacer(),
+                        const ReaderCaptionActions.reFlowable(),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
           // 2. Continuous Drag & Morph Overlay
           if (_isPlaybackActive)
             AnimatedBuilder(

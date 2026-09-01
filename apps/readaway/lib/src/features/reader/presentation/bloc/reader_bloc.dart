@@ -18,7 +18,7 @@ part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';
 part 'reader_state.dart';
 
-@singleton
+@injectable
 class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   final WindowService _windowService;
   final MuPdfService _muPdfService;

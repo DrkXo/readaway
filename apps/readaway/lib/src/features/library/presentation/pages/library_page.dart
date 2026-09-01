@@ -1,11 +1,9 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/routes/routes.dart';
-import '../../../reader/reader.dart';
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -22,9 +20,6 @@ class LibraryPage extends StatelessWidget {
     final fileName = result.first.name;
 
     if (context.mounted) {
-      context.read<ReaderBloc>().add(
-        ReaderEvent.openDocument(path: path, fileName: fileName),
-      );
       GoRouter.of(context).push(
         '${appRoutes.reader.path}?path=${Uri.encodeComponent(path)}&fileName=${Uri.encodeComponent(fileName)}',
       );

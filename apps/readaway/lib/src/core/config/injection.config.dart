@@ -167,7 +167,7 @@ extension GetItInjectableX on _i174.GetIt {
         settingsService: gh<_i264.SettingsService>(),
       ),
     );
-    gh.singleton<_i523.ReaderBloc>(
+    gh.factory<_i523.ReaderBloc>(
       () => _i523.ReaderBloc(
         windowService: gh<_i264.WindowService>(),
         muPdfService: gh<_i264.MuPdfService>(),
