@@ -16,4 +16,22 @@ abstract class SettingsEvent with _$SettingsEvent {
   ) = _ImportReaderPrefs;
   const factory SettingsEvent.updateAppSettings(Settings settings) =
       _UpdateAppSettings;
+
+  const factory SettingsEvent.refreshTts() = _RefreshTts;
+  const factory SettingsEvent.startTtsDownload(SherpaTtsModelInfo model) =
+      _StartTtsDownload;
+  const factory SettingsEvent.cancelTtsDownload(String modelId) =
+      _CancelTtsDownload;
+  const factory SettingsEvent.deleteTtsModel(SherpaTtsModelInfo model) =
+      _DeleteTtsModel;
+  const factory SettingsEvent.activateTts(String modelId) = _ActivateTts;
+  const factory SettingsEvent.previewTts(String modelId) = _PreviewTts;
+
+  const factory SettingsEvent.ttsDownloadProgress(
+    String modelId,
+    ModelDownloadStage stage,
+    double fraction,
+  ) = _TtsDownloadProgress;
+  const factory SettingsEvent.ttsDownloadFailed(String modelId, String error) =
+      _TtsDownloadFailed;
 }

@@ -15,14 +15,21 @@ part 'settings_bloc.g.dart';
 part 'settings_event.dart';
 part 'settings_state.dart';
 
-@Singleton()
+@Injectable()
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final AppStorageService _storage;
   final SettingsService _settingsService;
+  final SherpaOnnxTtsService _ttsService;
+  final JustAudioService _audio;
+
+  final _ttsDownloadSubs =
+      <String, StreamSubscription<ModelDownloadProgress>>{};
 
   SettingsBloc({
     required this._storage,
     required this._settingsService,
+    required this._ttsService,
+    required this._audio,
   }) : super(
          SettingsState(
            globalReaderPrefs: ReaderPreferences(),
@@ -47,6 +54,17 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_ResetAllReaderPrefs>(_onResetAllReaderPrefs, transformer: droppable());
     on<_ImportReaderPrefs>(_onImportReaderPrefs, transformer: droppable());
     on<_UpdateAppSettings>(_onUpdateAppSettings, transformer: droppable());
+
+    on<_RefreshTts>(_onRefreshTts, transformer: concurrent());
+    on<_StartTtsDownload>(_onStartTtsDownload, transformer: concurrent());
+    on<_CancelTtsDownload>(_onCancelTtsDownload);
+    on<_DeleteTtsModel>(_onDeleteTtsModel);
+    on<_ActivateTts>(_onActivateTts, transformer: droppable());
+    on<_PreviewTts>(_onPreviewTts, transformer: droppable());
+    on<_TtsDownloadProgress>(_onTtsDownloadProgress);
+    on<_TtsDownloadFailed>(_onTtsDownloadFailed);
+
+    add(const _RefreshTts());
   }
 
   static SettingsBloc get settingsBloc => GetIt.I.get<SettingsBloc>();
@@ -171,19 +189,259 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       emit(state.copyWith(activeDocumentPath: path));
     }
   }
-}
 
-extension SettingsStateX on SettingsState {
-  ReaderPreferences resolvedReaderPrefs(String? documentPath) {
-    if (documentPath == null ||
-        !documentReaderPrefs.containsKey(documentPath)) {
-      return globalReaderPrefs;
+  SherpaTtsModelInfo? _ttsModelById(String id) {
+    for (final m in _ttsService.availableModels) {
+      if (m.id == id) return m;
     }
-    final docJson = documentReaderPrefs[documentPath]!.toJson();
-    final merged = Map<String, dynamic>.from(globalReaderPrefs.toJson());
-    for (final entry in docJson.entries) {
-      if (entry.value != null) merged[entry.key] = entry.value;
+    return null;
+  }
+
+  void _onRefreshTts(_RefreshTts event, Emitter<SettingsState> emit) async {
+    try {
+      final downloaded = await _ttsService.getDownloadedModels();
+      final downloadedIds = downloaded.map((m) => m.id).toSet();
+
+      var activeModelId = _ttsService.activeModel?.id;
+      if (activeModelId == null) {
+        final persisted = _settingsService.settings.globalViewSettings.ttsVoice;
+        if (persisted != null && downloadedIds.contains(persisted)) {
+          try {
+            await _ttsService.loadModel(persisted);
+            activeModelId = persisted;
+          } on SherpaTtsException {
+            // Model files present but failed to load — fall through
+          }
+        }
+      }
+
+      emit(
+        state.copyWith(
+          ttsAvailableModels: _ttsService.availableModels,
+          ttsDownloadedIds: downloadedIds,
+          ttsActiveModelId: activeModelId,
+        ),
+      );
+    } catch (e) {
+      emit(state.copyWith(ttsError: 'Failed to load voice catalog'));
     }
-    return ReaderPreferences.fromJson(merged);
+  }
+
+  void _onStartTtsDownload(
+    _StartTtsDownload event,
+    Emitter<SettingsState> emit,
+  ) {
+    final id = event.model.id;
+    if (_ttsDownloadSubs.containsKey(id)) return;
+
+    emit(
+      state.copyWith(
+        ttsError: null,
+        ttsDownloads: {
+          ...state.ttsDownloads,
+          id: const SettingsDownloadStatus(
+            stage: ModelDownloadStage.downloading,
+          ),
+        },
+      ),
+    );
+
+    _ttsDownloadSubs[id] = _ttsService
+        .downloadModel(event.model)
+        .listen(
+          (progress) => add(
+            _TtsDownloadProgress(
+              progress.modelId,
+              progress.stage,
+              progress.fraction,
+            ),
+          ),
+          onError: (Object e) => add(_TtsDownloadFailed(id, e.toString())),
+          cancelOnError: true,
+        );
+  }
+
+  void _onCancelTtsDownload(
+    _CancelTtsDownload event,
+    Emitter<SettingsState> emit,
+  ) {
+    _ttsDownloadSubs.remove(event.modelId)?.cancel();
+    _removeTtsDownload(event.modelId, emit);
+  }
+
+  void _onTtsDownloadProgress(
+    _TtsDownloadProgress event,
+    Emitter<SettingsState> emit,
+  ) {
+    if (event.stage == ModelDownloadStage.done) {
+      _ttsDownloadSubs.remove(event.modelId)?.cancel();
+      _finishTtsDownload(event.modelId, emit);
+      return;
+    }
+    if (event.stage == ModelDownloadStage.failed) {
+      _removeTtsDownload(event.modelId, emit);
+      return;
+    }
+    if (!state.ttsDownloads.containsKey(event.modelId)) return;
+
+    final downloads = Map<String, SettingsDownloadStatus>.of(
+      state.ttsDownloads,
+    );
+    downloads[event.modelId] = SettingsDownloadStatus(
+      stage: event.stage,
+      fraction: event.fraction,
+    );
+    emit(state.copyWith(ttsDownloads: downloads));
+  }
+
+  void _onTtsDownloadFailed(
+    _TtsDownloadFailed event,
+    Emitter<SettingsState> emit,
+  ) {
+    if (_ttsDownloadSubs.remove(event.modelId) != null ||
+        state.ttsDownloads.containsKey(event.modelId)) {
+      final name = _ttsModelById(event.modelId)?.displayName ?? 'voice';
+      final downloads = Map<String, SettingsDownloadStatus>.of(
+        state.ttsDownloads,
+      )..remove(event.modelId);
+      emit(
+        state.copyWith(
+          ttsError: 'Failed to download $name: ${event.error}',
+          ttsDownloads: downloads,
+        ),
+      );
+    }
+  }
+
+  void _removeTtsDownload(String id, Emitter<SettingsState> emit) {
+    if (!state.ttsDownloads.containsKey(id)) return;
+    final downloads = Map<String, SettingsDownloadStatus>.of(state.ttsDownloads)
+      ..remove(id);
+    emit(state.copyWith(ttsDownloads: downloads));
+  }
+
+  void _finishTtsDownload(String id, Emitter<SettingsState> emit) {
+    final downloads = Map<String, SettingsDownloadStatus>.of(state.ttsDownloads)
+      ..remove(id);
+    emit(
+      state.copyWith(
+        ttsDownloads: downloads,
+        ttsDownloadedIds: {...state.ttsDownloadedIds, id},
+      ),
+    );
+  }
+
+  void _onDeleteTtsModel(
+    _DeleteTtsModel event,
+    Emitter<SettingsState> emit,
+  ) async {
+    final id = event.model.id;
+    try {
+      await _ttsService.deleteModel(id);
+      final wasActive = state.ttsActiveModelId == id;
+      if (wasActive) {
+        final current = _settingsService.settings;
+        if (current.globalViewSettings.ttsVoice == id) {
+          _settingsService.scheduleSave(
+            current.copyWith(
+              globalViewSettings: current.globalViewSettings.copyWith(
+                ttsVoice: null,
+              ),
+            ),
+          );
+        }
+      }
+      emit(
+        state.copyWith(
+          ttsDownloadedIds: state.ttsDownloadedIds
+              .where((e) => e != id)
+              .toSet(),
+          ttsActiveModelId: wasActive ? null : state.ttsActiveModelId,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(ttsError: 'Failed to delete ${event.model.displayName}'),
+      );
+    }
+  }
+
+  void _onActivateTts(_ActivateTts event, Emitter<SettingsState> emit) async {
+    if (state.ttsBusyModelId != null) return;
+    emit(state.copyWith(ttsBusyModelId: event.modelId, ttsError: null));
+    try {
+      if (_ttsService.activeModel?.id != event.modelId) {
+        await _ttsService.loadModel(event.modelId);
+      }
+      _persistActiveVoice(event.modelId);
+      emit(
+        state.copyWith(ttsActiveModelId: event.modelId, ttsBusyModelId: null),
+      );
+    } on SherpaTtsException catch (e) {
+      emit(state.copyWith(ttsError: e.message, ttsBusyModelId: null));
+    } catch (_) {
+      emit(
+        state.copyWith(
+          ttsError: 'Failed to activate voice',
+          ttsBusyModelId: null,
+        ),
+      );
+    }
+  }
+
+  void _persistActiveVoice(String modelId) {
+    final current = _settingsService.settings;
+    if (current.globalViewSettings.ttsVoice == modelId) return;
+    _settingsService.scheduleSave(
+      current.copyWith(
+        globalViewSettings: current.globalViewSettings.copyWith(
+          ttsVoice: modelId,
+        ),
+      ),
+    );
+  }
+
+  void _onPreviewTts(_PreviewTts event, Emitter<SettingsState> emit) async {
+    if (state.ttsBusyModelId != null) return;
+    final previousActive = state.ttsActiveModelId;
+    emit(state.copyWith(ttsBusyModelId: event.modelId, ttsError: null));
+
+    try {
+      if (_ttsService.activeModel?.id != event.modelId) {
+        await _ttsService.loadModel(event.modelId);
+      }
+
+      final pcmAudio = await _ttsService.generate(
+        text: 'Hello. This is what this voice sounds like while reading.',
+        speakerId: 0,
+        speed: 1.0,
+      );
+
+      await _audio.playPreview(pcmAudio);
+
+      if (previousActive != null && previousActive != event.modelId) {
+        await _ttsService.loadModel(previousActive);
+      }
+
+      emit(state.copyWith(ttsBusyModelId: null));
+    } on SherpaTtsException catch (e) {
+      emit(state.copyWith(ttsError: e.message, ttsBusyModelId: null));
+    } catch (_) {
+      emit(
+        state.copyWith(
+          ttsError: 'Failed to preview voice',
+          ttsBusyModelId: null,
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<void> close() {
+    for (final sub in _ttsDownloadSubs.values) {
+      sub.cancel();
+    }
+    _ttsDownloadSubs.clear();
+    return super.close();
   }
 }
