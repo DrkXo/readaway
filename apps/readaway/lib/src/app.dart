@@ -6,7 +6,6 @@ import '../flavors.dart';
 import 'core/services/services.dart';
 import 'core/widgets/core_widgets.dart';
 import 'features/settings/presentation/bloc/settings/settings_bloc.dart';
-import 'features/settings/presentation/bloc/tts/tts_bloc.dart';
 import 'router/router.dart';
 
 class ReadAway extends StatefulWidget {
@@ -32,10 +31,6 @@ class _ReadAwayState extends State<ReadAway> {
       providers: [
         BlocProvider(
           create: (context) => GetIt.I.get<SettingsBloc>()..loadPrefs(),
-        ),
-
-        BlocProvider(
-          create: (context) => GetIt.I.get<TtsBloc>(),
         ),
       ],
       child: BlocBuilder<SettingsBloc, SettingsState>(

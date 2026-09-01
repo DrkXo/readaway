@@ -1,9 +1,11 @@
+import 'package:csslib/parser.dart' as css;
+import 'package:csslib/visitor.dart' as css;
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' as html_parser;
 import 'package:mupdf/mupdf.dart';
 
 import '../../models/reader/stext_line_geom.dart';
-import '../../services/css_service.dart';
 
 /// Layout reconstruction for MuPDF's structured-text HTML output.
 ///
@@ -98,7 +100,7 @@ double? parseCssPt(String? raw) {
 Map<String, String> parseStyles(dom.Element element) {
   final style = element.attributes['style'];
   if (style == null || style.isEmpty) return {};
-  return cssService.parseDeclarations(style);
+  return parseDeclarations(style);
 }
 
 /// True when joining two lines must not insert a space because of CJK text
@@ -181,4 +183,97 @@ void mergePageLinks(dom.Document document, List<PageLink> links) {
       break;
     }
   }
+}
+
+/// Strips `height` from [raw]'s elements, then folds [links] onto their
+/// intersecting `<p>` lines (see [mergePageLinks]).
+///
+/// Returns the rewritten HTML, or [raw] itself when null/empty.
+String? sanitizeHtml(String? raw, List<PageLink> links) {
+  if (raw == null || raw.isEmpty) return raw;
+
+  final document = html_parser.parse(raw);
+  for (final element in document.querySelectorAll('*')) {
+    stripHeight(element);
+  }
+  mergePageLinks(document, links);
+  return document.outerHtml;
+}
+
+/// Removes `height` from an element's attributes and inline style, leaving
+/// the remaining declarations intact (dropping the `style` attribute when it
+/// becomes empty).
+void stripHeight(dom.Element element) {
+  element.attributes.remove('height');
+
+  final style = element.attributes['style'];
+  if (style == null || style.isEmpty) return;
+
+  final declarations = parseDeclarations(style)..remove('height');
+  if (declarations.isEmpty) {
+    element.attributes.remove('style');
+  } else {
+    element.attributes['style'] = declarations.entries
+        .map((e) => '${e.key}: ${e.value};')
+        .join(' ');
+  }
+}
+
+/// Indices surrounding [currentIndex] (current, next, previous) that fall
+/// within `[0, pageCount)`, in that order. The caller skips any that are
+/// already loaded or queued.
+List<int> precacheCandidates(int currentIndex, int pageCount) {
+  return [
+    currentIndex,
+    currentIndex + 1,
+    currentIndex - 1,
+  ].where((idx) => idx >= 0 && idx < pageCount).toList();
+}
+
+/// Parses CSS declaration blocks (the content of a `style` attribute) into a
+/// property → value map.
+///
+/// This is the single shared entry point for all CSS parsing in the app. It
+/// delegates to `package:csslib`'s real tokenizer/parser instead of the
+/// fragile `split(';')`/`split(':')` string splitting that used to live in
+/// [parseStyles] and `_stripHeight`. Because it returns the same
+/// `Map<String, String>` contract, existing consumers are unaffected.
+///
+/// csslib parses full stylesheets, so a bare declaration block is wrapped in
+/// a dummy selector (`x { ... }`) before parsing, then the first ruleset's
+/// declarations are extracted. Errors are collected and ignored (best-effort),
+/// so malformed CSS degrades to an empty/partial map rather than throwing.
+/// Parses [style] (a CSS declaration block, e.g. `color: red; font-size: 12pt`)
+/// into a map of lowercased property → trimmed value.
+///
+/// Returns an empty map for null/empty input or when nothing parses.
+Map<String, String> parseDeclarations(String style) {
+  final trimmed = style.trim();
+  if (trimmed.isEmpty) return const {};
+
+  final errors = <css.Message>[];
+  // Wrap the declaration block in a dummy selector so csslib parses it as a
+  // ruleset's declaration group.
+  final sheet = css.parse('x { $trimmed }', errors: errors);
+
+  final result = <String, String>{};
+  for (final top in sheet.topLevels) {
+    if (top is! css.RuleSet) continue;
+    for (final node in top.declarationGroup.declarations) {
+      if (node is! css.Declaration) continue;
+      final value = _serializeValue(node);
+      if (value.isEmpty) continue;
+      result[node.property.toLowerCase()] = value;
+    }
+  }
+  return result;
+}
+
+/// Serializes a declaration's expression back to its CSS value string.
+String _serializeValue(css.Declaration declaration) {
+  final expression = declaration.expression;
+  if (expression == null) return '';
+  final printer = css.CssPrinter();
+  expression.visit(printer);
+  return printer.toString().trim();
 }

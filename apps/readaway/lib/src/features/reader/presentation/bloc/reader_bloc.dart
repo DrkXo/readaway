@@ -1,18 +1,15 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:html/dom.dart' as dom;
-import 'package:html/parser.dart' as html_parser;
 import 'package:injectable/injectable.dart';
 import 'package:mupdf/mupdf.dart';
 
-import '../../../../core/services/css_service.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/utils/reader/reader_html_utils.dart';
+import '../../../../core/utils/reader/reader_image_utils.dart';
 
 part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';
@@ -141,7 +138,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         service.extractPageHtml(index),
         service.getPageLinks(index),
       ).wait;
-      final html = _sanitizeHtml(rawHtml, links) ?? '';
+      final html = sanitizeHtml(rawHtml, links) ?? '';
 
       final pages = List<String?>.from(state.htmlPages!);
       pages[index] = html;
@@ -182,7 +179,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     try {
       final rendered = await _muPdfService.renderPage(index);
       final images = List<ui.Image?>.from(state.pageImages!);
-      images[index] = rendered == null ? null : await _decodePage(rendered);
+      images[index] = rendered == null
+          ? null
+          : await decodeRenderedPage(rendered);
       emit(
         state.copyWith(
           pageImages: images,
@@ -195,38 +194,6 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         state.copyWith(loadingPages: {...state.loadingPages}..remove(index)),
       );
     }
-  }
-
-  static Future<ui.Image> _decodePage(Map<String, dynamic> rendered) {
-    final w = rendered['width'] as int;
-    final h = rendered['height'] as int;
-    final stride = rendered['stride'] as int;
-    final comps = rendered['components'] as int;
-    final src = rendered['pixels'] as Uint8List;
-
-    // mupdf renders RGB(A); Flutter needs RGBA.
-    final rgba = Uint8List(w * h * 4);
-    for (var y = 0; y < h; y++) {
-      var s = y * stride;
-      var d = y * w * 4;
-      for (var x = 0; x < w; x++) {
-        rgba[d++] = src[s];
-        rgba[d++] = src[s + 1];
-        rgba[d++] = src[s + 2];
-        rgba[d++] = comps == 4 ? src[s + 3] : 255;
-        s += comps;
-      }
-    }
-
-    final completer = Completer<ui.Image>();
-    ui.decodeImageFromPixels(
-      rgba,
-      w,
-      h,
-      ui.PixelFormat.rgba8888,
-      completer.complete,
-    );
-    return completer.future;
   }
 
   void _onCloseDocument(
@@ -242,37 +209,10 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     final pages = state.isReflowable ? state.htmlPages : state.pageImages;
     if (pages == null) return;
 
-    for (final idx in [currentIndex, currentIndex + 1, currentIndex - 1]) {
-      if (idx >= 0 && idx < state.pageCount && pages[idx] == null) {
+    for (final idx in precacheCandidates(currentIndex, state.pageCount)) {
+      if (pages[idx] == null) {
         add(ReaderEvent.loadPage(index: idx));
       }
-    }
-  }
-
-  static String? _sanitizeHtml(String? raw, List<PageLink> links) {
-    if (raw == null || raw.isEmpty) return raw;
-
-    final document = html_parser.parse(raw);
-    for (final element in document.querySelectorAll('*')) {
-      _stripHeight(element);
-    }
-    mergePageLinks(document, links);
-    return document.outerHtml;
-  }
-
-  static void _stripHeight(dom.Element element) {
-    element.attributes.remove('height');
-
-    final style = element.attributes['style'];
-    if (style == null || style.isEmpty) return;
-
-    final declarations = cssService.parseDeclarations(style)..remove('height');
-    if (declarations.isEmpty) {
-      element.attributes.remove('style');
-    } else {
-      element.attributes['style'] = declarations.entries
-          .map((e) => '${e.key}: ${e.value};')
-          .join(' ');
     }
   }
 }

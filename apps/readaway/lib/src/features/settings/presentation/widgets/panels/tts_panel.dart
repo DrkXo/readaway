@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/services/services.dart';
-import '../../bloc/tts/tts_bloc.dart';
+import '../../bloc/settings/settings_bloc.dart';
 import '../widgets.dart';
 
 class TtsPanel extends StatelessWidget {
@@ -11,13 +11,13 @@ class TtsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<TtsBloc, TtsState>(
+    return BlocListener<SettingsBloc, SettingsState>(
         listenWhen: (prev, curr) =>
-            curr.error != null && prev.error != curr.error,
+            curr.ttsError != null && prev.ttsError != curr.ttsError,
         listener: (context, state) {
           ScaffoldMessenger.maybeOf(context)?.showSnackBar(
             SnackBar(
-              content: Text(state.error!),
+              content: Text(state.ttsError!),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -31,7 +31,6 @@ class TtsPanel extends StatelessWidget {
 class _TtsView extends StatelessWidget {
   const _TtsView();
 
-  /// Groups models by display language, preserving the catalog's order.
   static Map<String, List<SherpaTtsModelInfo>> _groupedByLanguage(
     List<SherpaTtsModelInfo> models,
   ) {
@@ -44,22 +43,18 @@ class _TtsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TtsBloc, TtsState>(
-      // Only rebuild the outer list when the catalog, downloaded set, or
-      // active voice changes. Download progress ticks are handled by the
-      // individual _VoiceTile builders, so they don't need to rebuild the
-      // whole (potentially 200+ tile) tree on every tick.
+    return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.availableModels != curr.availableModels ||
-          prev.downloadedIds != curr.downloadedIds ||
-          prev.activeModelId != curr.activeModelId,
+          prev.ttsAvailableModels != curr.ttsAvailableModels ||
+          prev.ttsDownloadedIds != curr.ttsDownloadedIds ||
+          prev.ttsActiveModelId != curr.ttsActiveModelId,
       builder: (context, state) {
-        if (state.availableModels.isEmpty) {
+        if (state.ttsAvailableModels.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final active = state.availableModels
-            .where((m) => m.id == state.activeModelId)
+        final active = state.ttsAvailableModels
+            .where((m) => m.id == state.ttsActiveModelId)
             .firstOrNull;
 
         Widget? previewButton;
@@ -68,7 +63,7 @@ class _TtsView extends StatelessWidget {
             tooltip: 'Preview',
             icon: const Icon(LucideIcons.playCircle),
             onPressed: () =>
-                context.read<TtsBloc>().add(TtsEvent.preview(active.id)),
+                context.read<SettingsBloc>().add(SettingsEvent.previewTts(active.id)),
           );
         }
 
@@ -90,13 +85,13 @@ class _TtsView extends StatelessWidget {
               title: 'Available voices',
               rows: [
                 for (final entry in _groupedByLanguage(
-                  state.availableModels,
+                  state.ttsAvailableModels,
                 ).entries)
                   _LanguageGroupTile(
                     language: entry.key,
                     models: entry.value,
                     initiallyExpanded: entry.value.any(
-                      (m) => m.id == (state.activeModelId ?? ''),
+                      (m) => m.id == (state.ttsActiveModelId ?? ''),
                     ),
                   ),
               ],
@@ -129,8 +124,6 @@ class _LanguageGroupTileState extends State<_LanguageGroupTile> {
   @override
   void didUpdateWidget(_LanguageGroupTile oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Auto-expand when the active voice newly lands in this group (but
-    // don't force-reopen a group the user collapsed).
     if (!oldWidget.initiallyExpanded &&
         widget.initiallyExpanded &&
         !_expanded) {
@@ -167,8 +160,6 @@ class _LanguageGroupTileState extends State<_LanguageGroupTile> {
             ),
           ),
         ),
-        // Build voice tiles lazily: collapsed groups stay cheap even with
-        // hundreds of models in the catalog.
         if (_expanded)
           for (final model in widget.models) _VoiceTile(model: model),
       ],
@@ -183,19 +174,19 @@ class _VoiceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TtsBloc, TtsState>(
+    return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.downloadOf(model.id) != curr.downloadOf(model.id) ||
-          prev.isDownloaded(model.id) != curr.isDownloaded(model.id) ||
-          prev.isActive(model.id) != curr.isActive(model.id) ||
-          prev.isBusy(model.id) != curr.isBusy(model.id),
+          prev.ttsDownloadOf(model.id) != curr.ttsDownloadOf(model.id) ||
+          prev.isTtsDownloaded(model.id) != curr.isTtsDownloaded(model.id) ||
+          prev.isTtsActive(model.id) != curr.isTtsActive(model.id) ||
+          prev.isTtsBusy(model.id) != curr.isTtsBusy(model.id),
       builder: (context, state) {
         final theme = Theme.of(context);
         final scheme = theme.colorScheme;
-        final download = state.downloadOf(model.id);
-        final isDownloaded = state.isDownloaded(model.id);
-        final isActive = state.isActive(model.id);
-        final isBusy = state.isBusy(model.id);
+        final download = state.ttsDownloadOf(model.id);
+        final isDownloaded = state.isTtsDownloaded(model.id);
+        final isActive = state.isTtsActive(model.id);
+        final isBusy = state.isTtsBusy(model.id);
 
         final subtitle = [
           model.languageLabel,
@@ -306,7 +297,7 @@ class _VoiceActions extends StatelessWidget {
   });
 
   final SherpaTtsModelInfo model;
-  final TtsDownloadStatus? download;
+  final SettingsDownloadStatus? download;
   final bool isDownloaded;
   final bool isActive;
   final bool isBusy;
@@ -332,20 +323,20 @@ class _VoiceActions extends StatelessWidget {
       ),
     );
     if (confirmed == true && context.mounted) {
-      context.read<TtsBloc>().add(TtsEvent.deleteModel(model));
+      context.read<SettingsBloc>().add(SettingsEvent.deleteTtsModel(model));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final bloc = context.read<TtsBloc>();
+    final bloc = context.read<SettingsBloc>();
 
     if (download != null) {
       return IconButton(
         tooltip: 'Cancel download',
         icon: const Icon(LucideIcons.x),
-        onPressed: () => bloc.add(TtsEvent.cancelDownload(model.id)),
+        onPressed: () => bloc.add(SettingsEvent.cancelTtsDownload(model.id)),
       );
     }
 
@@ -353,7 +344,7 @@ class _VoiceActions extends StatelessWidget {
       return IconButton(
         tooltip: 'Download',
         icon: const Icon(LucideIcons.download),
-        onPressed: () => bloc.add(TtsEvent.startDownload(model)),
+        onPressed: () => bloc.add(SettingsEvent.startTtsDownload(model)),
       );
     }
 
@@ -366,13 +357,13 @@ class _VoiceActions extends StatelessWidget {
             LucideIcons.playCircle,
             color: isBusy ? scheme.onSurfaceVariant : scheme.primary,
           ),
-          onPressed: isBusy ? null : () => bloc.add(TtsEvent.preview(model.id)),
+          onPressed: isBusy ? null : () => bloc.add(SettingsEvent.previewTts(model.id)),
         ),
         if (!isActive)
           TextButton(
             onPressed: isBusy
                 ? null
-                : () => bloc.add(TtsEvent.activate(model.id)),
+                : () => bloc.add(SettingsEvent.activateTts(model.id)),
             child: const Text('Use'),
           )
         else

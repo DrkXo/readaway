@@ -15,10 +15,8 @@ import 'package:injectable/injectable.dart' as _i526;
 import '../../features/reader/presentation/bloc/reader_bloc.dart' as _i523;
 import '../../features/settings/presentation/bloc/settings/settings_bloc.dart'
     as _i228;
-import '../../features/settings/presentation/bloc/tts/tts_bloc.dart' as _i558;
 import '../../router/router.dart' as _i295;
 import '../routes/routes.dart' as _i494;
-import '../services/css_service.dart' as _i213;
 import '../services/services.dart' as _i264;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -30,7 +28,6 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     gh.factory<_i264.HiveConfigService>(() => _i264.HiveConfigService());
     gh.singleton<_i494.AppRoutes>(() => _i494.AppRoutes());
-    gh.singleton<_i213.CssService>(() => _i213.CssService());
     gh.singleton<_i264.AppLifecycleManager>(() => _i264.AppLifecycleManager());
     await gh.singletonAsync<_i264.JustAudioService>(
       () {
@@ -131,12 +128,6 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.singleton<_i228.SettingsBloc>(
-      () => _i228.SettingsBloc(
-        storage: gh<_i264.AppStorageService>(),
-        settingsService: gh<_i264.SettingsService>(),
-      ),
-    );
     gh.singleton<_i264.MuPdfService>(
       () => _i264.MuPdfService(
         isolateService: gh<_i264.IsolateService>(),
@@ -156,19 +147,20 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
+    gh.factory<_i228.SettingsBloc>(
+      () => _i228.SettingsBloc(
+        storage: gh<_i264.AppStorageService>(),
+        settingsService: gh<_i264.SettingsService>(),
+        ttsService: gh<_i264.SherpaOnnxTtsService>(),
+        audio: gh<_i264.JustAudioService>(),
+      ),
+    );
     gh.factory<_i523.ReaderBloc>(
       () => _i523.ReaderBloc(
         windowService: gh<_i264.WindowService>(),
         muPdfService: gh<_i264.MuPdfService>(),
         ttsController: gh<_i264.TtsControllerService>(),
       )..init(),
-    );
-    gh.singleton<_i558.TtsBloc>(
-      () => _i558.TtsBloc(
-        ttsService: gh<_i264.SherpaOnnxTtsService>(),
-        audio: gh<_i264.JustAudioService>(),
-        settingsService: gh<_i264.SettingsService>(),
-      ),
     );
     return this;
   }
