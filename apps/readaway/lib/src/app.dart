@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../flavors.dart';
 import 'core/services/services.dart';
 import 'core/widgets/core_widgets.dart';
-import 'features/reader/reader.dart';
 import 'features/settings/presentation/bloc/settings/settings_bloc.dart';
 import 'features/settings/presentation/bloc/tts/tts_bloc.dart';
 import 'router/router.dart';
@@ -32,9 +30,6 @@ class _ReadAwayState extends State<ReadAway> {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (context) => GetIt.I.get<ReaderBloc>(),
-        ),
         BlocProvider(
           create: (context) => GetIt.I.get<SettingsBloc>()..loadPrefs(),
         ),
@@ -70,28 +65,6 @@ class _ReadAwayState extends State<ReadAway> {
                           children: [
                             AppWindowCaption(
                               service: GetIt.I<WindowService>(),
-                              leading: BlocBuilder<ReaderBloc, ReaderState>(
-                                buildWhen: (prev, curr) =>
-                                    prev.hasDocument != curr.hasDocument,
-                                builder: (context, state) => state.hasDocument
-                                    ? MorphIconButton(
-                                        icon: LucideIcons.menu,
-                                        hoverIcon: LucideIcons.panelLeftOpen,
-                                        tooltip: 'Contents',
-                                        onTap: () => ReaderPage
-                                            .scaffoldKey
-                                            .currentState
-                                            ?.openDrawer(),
-                                      )
-                                    : const SizedBox.shrink(),
-                              ),
-                              actions: BlocBuilder<ReaderBloc, ReaderState>(
-                                buildWhen: (prev, curr) =>
-                                    prev.hasDocument != curr.hasDocument,
-                                builder: (context, state) => state.hasDocument
-                                    ? const ReaderCaptionActions.reFlowable()
-                                    : const SizedBox.shrink(),
-                              ),
                             ),
                             Expanded(child: content),
                           ],

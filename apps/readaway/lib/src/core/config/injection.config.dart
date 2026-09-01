@@ -65,12 +65,8 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i295.AppRoutesGuards>(
       () => _i295.AppRoutesGuards(appRoutes: gh<_i494.AppRoutes>()),
     );
-    await gh.lazySingletonAsync<_i264.TtsChunkingService>(
-      () {
-        final i = _i264.TtsChunkingService(gh<_i264.IsolateService>());
-        return i.init().then((_) => i);
-      },
-      preResolve: true,
+    gh.lazySingleton<_i264.TtsChunkingService>(
+      () => _i264.TtsChunkingService(gh<_i264.IsolateService>()),
       dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i264.SherpaTtsModelCatalogService>(
@@ -124,7 +120,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i264.SherpaOnnxTtsService>(),
         gh<_i264.JustAudioService>(),
         gh<_i264.TtsChunkingService>(),
-      )..initPipeline(),
+      ),
       dispose: (i) => i.dispose(),
     );
     await gh.singletonAsync<_i264.SettingsService>(
@@ -160,17 +156,18 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
+    gh.factory<_i523.ReaderBloc>(
+      () => _i523.ReaderBloc(
+        windowService: gh<_i264.WindowService>(),
+        muPdfService: gh<_i264.MuPdfService>(),
+        ttsController: gh<_i264.TtsControllerService>(),
+      )..init(),
+    );
     gh.singleton<_i558.TtsBloc>(
       () => _i558.TtsBloc(
         ttsService: gh<_i264.SherpaOnnxTtsService>(),
         audio: gh<_i264.JustAudioService>(),
         settingsService: gh<_i264.SettingsService>(),
-      ),
-    );
-    gh.singleton<_i523.ReaderBloc>(
-      () => _i523.ReaderBloc(
-        windowService: gh<_i264.WindowService>(),
-        muPdfService: gh<_i264.MuPdfService>(),
       ),
     );
     return this;
