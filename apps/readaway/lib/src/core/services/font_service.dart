@@ -29,7 +29,7 @@ class FontService {
 
   @PostConstruct(preResolve: true)
   Future<void> init() async {
-    final docs = await getApplicationDocumentsDirectory();
+    final docs = await getApplicationSupportDirectory();
     _fontsDir = Directory(p.join(docs.path, F.name, _fontsDirName));
     if (!await _fontsDir!.exists()) {
       await _fontsDir!.create(recursive: true);
