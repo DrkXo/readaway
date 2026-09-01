@@ -32,10 +32,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i494.AppRoutes>(() => _i494.AppRoutes());
     gh.singleton<_i213.CssService>(() => _i213.CssService());
     gh.singleton<_i264.AppLifecycleManager>(() => _i264.AppLifecycleManager());
-    await gh.singletonAsync<_i264.LoggingService>(() {
-      final i = _i264.LoggingService();
-      return i.init().then((_) => i);
-    }, preResolve: true);
     await gh.singletonAsync<_i264.JustAudioService>(
       () {
         final i = _i264.JustAudioService();
@@ -44,6 +40,10 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
+    await gh.singletonAsync<_i264.LoggingService>(() {
+      final i = _i264.LoggingService();
+      return i.init().then((_) => i);
+    }, preResolve: true);
     gh.singleton<_i264.WakelockService>(() => _i264.WakelockService());
     await gh.singletonAsync<_i264.WindowService>(
       () {

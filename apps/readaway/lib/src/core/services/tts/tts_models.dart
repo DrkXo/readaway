@@ -92,13 +92,17 @@ class ModelDownloadProgress {
 enum ModelDownloadStage { downloading, extracting, done, failed }
 
 class TtsAudio {
-  const TtsAudio({required this.samples, required this.sampleRate});
+  const TtsAudio({
+    required this.samples,
+    required this.sampleRate,
+    this.chunkId,
+  });
 
   final Float32List samples;
   final int sampleRate;
+  final String? chunkId;
 
-  Duration get duration =>
-      Duration(milliseconds: (samples.length / sampleRate * 1000).round());
+  double get durationInSeconds => samples.length / sampleRate;
 }
 
 class SherpaTtsSpeaker {
