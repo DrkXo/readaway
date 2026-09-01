@@ -18,19 +18,34 @@ part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';
 part 'reader_state.dart';
 
-@injectable
+@Injectable()
 class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   final WindowService _windowService;
   final MuPdfService _muPdfService;
+  final TtsControllerService _ttsController;
 
   ReaderBloc({
     required this._windowService,
     required this._muPdfService,
+    required this._ttsController,
   }) : super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
     on<_PageChanged>(_onPageChanged);
     on<_LoadPage>(_onLoadPage, transformer: droppable());
     on<_CloseDocument>(_onCloseDocument);
+  }
+
+  @postConstruct
+  FutureOr<void> init() {
+    _ttsController.start();
+  }
+
+  @override
+  Future<void> close() async {
+    await _ttsController.stopPipeline();
+    await _muPdfService.closeDocument();
+    await _windowService.setDefaultTitle();
+    return super.close();
   }
 
   Future<void> _onOpenDocument(

@@ -1,5 +1,9 @@
 part of '../services.dart';
 
+/// Manages TTS playback pipeline: chunking, synthesis, and gapless audio
+/// enqueue. Scoped to the ReaderBloc lifecycle — [start] is called on bloc
+/// construction and [stopPipeline] is called on [ReaderBloc.close]. The
+/// terminal [dispose] is reserved for app-shutdown via GetIt.
 @lazySingleton
 class TtsControllerService {
   TtsControllerService(
@@ -32,6 +36,8 @@ class TtsControllerService {
   StreamSubscription<int?>? _indexSubscription;
   StreamSubscription<PlayerState>? _playerStateSubscription;
 
+  bool _pipelineStarted = false;
+
   ValueStream<TtsPlaybackEvent> get playbackState => _stateController.stream;
 
   Stream<TtsChunk> get currentChunk => _chunkController.stream.whereNotNull();
@@ -47,8 +53,15 @@ class TtsControllerService {
   List<SherpaTtsModelInfo> get availableSherpaModels =>
       _sherpaTts.availableModels;
 
-  @PostConstruct()
-  void initPipeline() {
+  /// Sets up stream subscriptions that sync UI state with the native audio
+  /// player. Idempotent — safe to call multiple times across reader open/close
+  /// cycles (the [start] check + [stopPipeline] reset make it re-entrant).
+  void start() {
+    logger.d('Starting TTS pipeline');
+    if (_pipelineStarted) return;
+
+    _pipelineStarted = true;
+
     // 1. Sync UI state with native audio player state
     _playerStateSubscription = _audio.sessionStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
@@ -60,7 +73,8 @@ class TtsControllerService {
         _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.paused));
       }
     });
-
+    logger.d('TTS pipeline started');
+    logger.d('TTS pipeline listeners starting');
     // 2. Track current active chunk natively as track indices change
     _indexSubscription = _audio.currentIndexStream.listen((index) {
       if (index != null && index >= 0 && index < _masterQueue.length) {
@@ -68,6 +82,26 @@ class TtsControllerService {
         _chunkController.add(_masterQueue[index]);
       }
     });
+    logger.d('TTS pipeline listeners started');
+  }
+
+  /// Tears down active subscriptions, halts any in-flight playback, and kills
+  /// the chunking isolate. Non-terminal — the [BehaviorSubject] controllers
+  /// remain open so the singleton can be re-started by a subsequent
+  /// [start] call. Called by [ReaderBloc.close]; the terminal [dispose] is
+  /// reserved for app shutdown via GetIt.
+  Future<void> stopPipeline() async {
+    logger.d('Stopping TTS pipeline');
+    _activeSessionId++;
+    await _audio.stopSession();
+    _indexSubscription?.cancel();
+    _indexSubscription = null;
+    _playerStateSubscription?.cancel();
+    _playerStateSubscription = null;
+    _pipelineStarted = false;
+    _resetPlaybackState();
+    await _chunkingService.stop();
+    logger.d('TTS pipeline stopped');
   }
 
   /// Synthesizes text into chunks and streams them into the audio queue gaplessly.
@@ -195,9 +229,8 @@ class TtsControllerService {
   }
 
   @disposeMethod
-  void dispose() {
-    _indexSubscription?.cancel();
-    _playerStateSubscription?.cancel();
+  Future<void> dispose() async {
+    await stopPipeline();
     _stateController.close();
     _chunkController.close();
   }

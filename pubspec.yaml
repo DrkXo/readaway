@@ -30,6 +30,10 @@ melos:
     format:
       run: melos exec -- dart format --set-exit-if-changed .
       description: Check formatting in all packages
+    codegen:apps:
+      run: cd apps/readaway && dart run build_runner build
+      description: Run codegen in all apps
+
     submodules:update:
       run: git submodule update --init --recursive
       description: Update git submodules (MuPDF source)

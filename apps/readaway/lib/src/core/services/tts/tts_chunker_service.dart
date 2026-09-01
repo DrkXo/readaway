@@ -42,6 +42,9 @@ void _textChunkerIsolateEntryPoint(SendPort mainSendPort) {
 }
 
 /// Facade service managing background isolate text chunking for TTS.
+///
+/// Scoped to the ReaderBloc lifecycle: [start] is called when a reader
+/// session begins and [stop] is called when it ends.
 @lazySingleton
 class TtsChunkingService {
   final IsolateService _isolateService;
@@ -51,9 +54,9 @@ class TtsChunkingService {
 
   TtsChunkingService(this._isolateService);
 
-  /// Spawns worker isolate using a thread-safe initializer guard.
-  @PostConstruct(preResolve: true)
-  Future<void> init() async {
+  /// Spawns the worker isolate on demand. Idempotent — safe to call multiple
+  /// times across reader open/close cycles.
+  Future<void> start() async {
     if (_isolateService.isSpawned(_isolateName)) return;
 
     await _isolateService.spawn(
@@ -62,8 +65,12 @@ class TtsChunkingService {
     );
   }
 
-  /// Kills the worker isolate. Called by the DI container on shutdown so
-  /// the isolate doesn't leak across app restarts.
+  /// Kills the worker isolate. Safe to call when the isolate is already dead
+  /// (the underlying [IsolateService] is null-guarded).
+  Future<void> stop() => dispose();
+
+  /// Fully tears down the isolate. Called both by the ReaderBloc lifecycle
+  /// (via [stop]) and by the DI container on app shutdown.
   @disposeMethod
   Future<void> dispose() async {
     await _isolateService.disposeIsolate(_isolateName);
@@ -76,7 +83,7 @@ class TtsChunkingService {
   }) async {
     if (text.trim().isEmpty) return const [];
 
-    await init();
+    await start();
 
     final commandId = _nextCommandId++;
     final response = await _isolateService.sendCommand<List<dynamic>>(
