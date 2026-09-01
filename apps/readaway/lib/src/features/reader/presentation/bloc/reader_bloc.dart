@@ -10,6 +10,7 @@ import 'package:mupdf/mupdf.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/utils/reader/reader_html_utils.dart';
 import '../../../../core/utils/reader/reader_image_utils.dart';
+import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 
 part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';
@@ -20,25 +21,42 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   final WindowService _windowService;
   final MuPdfService _muPdfService;
   final TtsControllerService _ttsController;
+  final SettingsBloc _settingsBloc;
+
+  StreamSubscription<TtsPlaybackEvent>? _ttsStateSub;
+
+  /// Guards against re-entrant auto-advance while the next page's TTS is
+  /// being spun up (extract text + playText are async).
+  bool _autoAdvancing = false;
 
   ReaderBloc({
     required this._windowService,
     required this._muPdfService,
     required this._ttsController,
+    required this._settingsBloc,
   }) : super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
     on<_PageChanged>(_onPageChanged);
     on<_LoadPage>(_onLoadPage, transformer: droppable());
     on<_CloseDocument>(_onCloseDocument);
+    on<_TtsStart>(_onTtsStart);
+    on<_TtsClose>(_onTtsClose);
+
+    // Auto-advance to the next page when TTS genuinely finishes the current
+    // page's queue.
+    _ttsStateSub = _ttsController.playbackState.listen((event) {
+      if (event.state == TtsPlaybackState.completed) {
+        _onPageTtsCompleted();
+      }
+    });
   }
 
-  @postConstruct
-  FutureOr<void> init() {
-    _ttsController.start();
-  }
+  /// Exposes the TTS playback controller to reader widgets.
+  TtsControllerService get ttsController => _ttsController;
 
   @override
   Future<void> close() async {
+    await _ttsStateSub?.cancel();
     await _ttsController.stopPipeline();
     await _muPdfService.closeDocument();
     await _windowService.setDefaultTitle();
@@ -83,7 +101,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           loading: false,
         ),
       );
-
+      add(const ReaderEvent.loadPage(index: 0));
       _precachePages(0);
 
       final metaTitle = await service.getMetaData('title');
@@ -203,6 +221,96 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _muPdfService.closeDocument();
     _windowService.setDefaultTitle();
     emit(const ReaderState());
+  }
+
+  /// Starts TTS playback for the current page. The pipeline is only spun up
+  /// here (on user tap), never on document load.
+  Future<void> _onTtsStart(
+    _TtsStart event,
+    Emitter<ReaderState> emit,
+  ) async {
+    if (!state.isReflowable) return;
+
+    emit(state.copyWith(ttsActive: true));
+    await _beginPageTts(state.currentPage);
+  }
+
+  /// Starts TTS playback for the page at [pageIndex]: sets the active voice
+  /// from settings, spins up the pipeline, and plays the page's text. Shared
+  /// by the initial Listen action and the auto-advance path.
+  Future<void> _beginPageTts(int pageIndex) async {
+    // Set the active voice from settings
+    final activeModelId = _settingsBloc.state.ttsActiveModelId;
+    if (activeModelId != null) {
+      final models = _settingsBloc.state.ttsAvailableModels;
+      for (final m in models) {
+        if (m.id == activeModelId) {
+          _ttsController.setVoice(
+            TtsVoiceOption(
+              engine: TtsEngineKind.sherpaOnnx,
+              id: m.id,
+              label: m.displayName,
+              languageCode: m.languageCode,
+              sherpaSpeakerId: m.speakerCount > 0 ? 0 : null,
+            ),
+          );
+          break;
+        }
+      }
+    }
+
+    final text = await _muPdfService.extractPageText(pageIndex);
+    if (text == null || text.trim().isEmpty) return;
+
+    _ttsController.start();
+    await _ttsController.playText(text);
+  }
+
+  /// Called when [TtsControllerService] reports a genuine page-end (every
+  /// chunk of the current page was enqueued and played). If a next page with
+  /// readable text exists, navigates to it and continues TTS playback;
+  /// otherwise playback stops at book end.
+  Future<void> _onPageTtsCompleted() async {
+    if (_autoAdvancing) return;
+    if (!state.isReflowable || !state.ttsActive) return;
+    if (state.currentPage >= state.pageCount - 1) return;
+
+    _autoAdvancing = true;
+    try {
+      // Skip forward to the next page that has readable text.
+      int? next;
+      for (var i = state.currentPage + 1; i < state.pageCount; i++) {
+        String? text;
+        try {
+          text = await _muPdfService.extractPageText(i);
+        } catch (e) {
+          logger.d('TTS auto-advance: failed to extract text for page $i', e);
+        }
+        if (text != null && text.trim().isNotEmpty) {
+          next = i;
+          break;
+        }
+      }
+      if (next == null) return; // No readable page remains — stop at book end.
+
+      add(ReaderEvent.pageChanged(index: next));
+      try {
+        await _beginPageTts(next);
+      } catch (e) {
+        logger.d('TTS auto-advance failed for page $next', e);
+      }
+    } finally {
+      _autoAdvancing = false;
+    }
+  }
+
+  /// Stops playback and hides the TTS player.
+  Future<void> _onTtsClose(
+    _TtsClose event,
+    Emitter<ReaderState> emit,
+  ) async {
+    await _ttsController.stop();
+    emit(state.copyWith(ttsActive: false));
   }
 
   void _precachePages(int currentIndex) {

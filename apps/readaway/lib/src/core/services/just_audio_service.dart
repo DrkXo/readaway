@@ -88,6 +88,7 @@ class JustAudioService {
   AudioPlayer? _sessionPlayer;
   AudioPlayer? _previewPlayer;
   bool _initialized = false;
+  int _queuedChunkCount = 0;
 
   /// Stream of current active index in the queue (e.g. tracking sentence/paragraph index)
   Stream<int?> get currentIndexStream => player.currentIndexStream;
@@ -141,27 +142,33 @@ class JustAudioService {
     }
   }
 
-  /// Dynamically appends a synthesized PCM chunk to the active queue.
   Future<void> enqueueChunk(TtsAudio audio) async {
     final source = PcmAudioSource(audio);
+    final wasEmpty = _queuedChunkCount == 0;
 
-    // Add source directly to AudioPlayer's dynamic queue
     await player.addAudioSource(source);
+    _queuedChunkCount++;
 
-    // Auto-resume if queue was previously completed or empty
-    if (!player.playing &&
-        player.processingState == ProcessingState.completed) {
+    final shouldStart =
+        wasEmpty ||
+        (!player.playing &&
+            player.processingState == ProcessingState.completed);
+    if (shouldStart) {
       await player.play();
     }
   }
 
-  /// Appends multiple PCM chunks to the active queue.
   Future<void> enqueueChunks(List<TtsAudio> audioList) async {
+    final wasEmpty = _queuedChunkCount == 0;
     final sources = audioList.map((a) => PcmAudioSource(a)).toList();
     await player.addAudioSources(sources);
+    _queuedChunkCount += sources.length;
 
-    if (!player.playing &&
-        player.processingState == ProcessingState.completed) {
+    final shouldStart =
+        wasEmpty ||
+        (!player.playing &&
+            player.processingState == ProcessingState.completed);
+    if (shouldStart) {
       await player.play();
     }
   }
@@ -175,6 +182,7 @@ class JustAudioService {
   Future<void> stopSession() async {
     await player.stop();
     await player.clearAudioSources();
+    _queuedChunkCount = 0;
   }
 
   // ==========================================

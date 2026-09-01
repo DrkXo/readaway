@@ -19,6 +19,11 @@ class TtsControllerService {
   TtsVoiceOption? _voice;
   double _rate = 1.0;
 
+  final _voiceController = BehaviorSubject<TtsVoiceOption?>.seeded(null);
+
+  ValueStream<TtsVoiceOption?> get currentVoiceOption =>
+      _voiceController.stream;
+
   // ignore: unused_field
   double _pitch = 1.0;
 
@@ -33,14 +38,28 @@ class TtsControllerService {
   );
   final _chunkController = BehaviorSubject<TtsChunk?>();
 
+  /// Bumped whenever [_masterQueue] is (re)built so UI can rebuild its
+  /// sentence list even before the first chunk starts playing.
+  final _queueController = BehaviorSubject<int>.seeded(0);
+
   StreamSubscription<int?>? _indexSubscription;
   StreamSubscription<PlayerState>? _playerStateSubscription;
 
   bool _pipelineStarted = false;
 
+  /// True once the synthesis pipeline has enqueued every chunk of the current
+  /// page. Lets the player-state listener distinguish a genuine page-end
+  /// ([TtsPlaybackState.completed]) from a transient queue completion that
+  /// happens while synthesis is still enqueuing (which
+  /// [JustAudioService.enqueueChunk] auto-resumes).
+  bool _pipelineDone = false;
+
   ValueStream<TtsPlaybackEvent> get playbackState => _stateController.stream;
 
   Stream<TtsChunk> get currentChunk => _chunkController.stream.whereNotNull();
+
+  /// Emits a new value each time the sentence queue is rebuilt.
+  ValueStream<int> get queueVersion => _queueController.stream;
 
   List<TtsChunk> get queue => List.unmodifiable(_masterQueue);
 
@@ -65,7 +84,16 @@ class TtsControllerService {
     // 1. Sync UI state with native audio player state
     _playerStateSubscription = _audio.sessionStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
-        _resetPlaybackState();
+        if (_pipelineDone) {
+          // Genuine page-end: every chunk was enqueued and the queue finished.
+          _currentIndex = -1;
+          _chunkController.add(null);
+          _stateController.add(
+            const TtsPlaybackEvent(TtsPlaybackState.completed),
+          );
+        }
+        // Otherwise this is a transient completion while synthesis is still
+        // enqueuing; JustAudioService.enqueueChunk auto-resumes playback.
       } else if (playerState.playing) {
         _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.playing));
       } else if (!playerState.playing &&
@@ -105,7 +133,11 @@ class TtsControllerService {
   }
 
   /// Synthesizes text into chunks and streams them into the audio queue gaplessly.
-  Future<void> playText(String text, {int startAtChunkIndex = 0}) async {
+  Future<void> playText(
+    String text, {
+    int startAtChunkIndex = 0,
+    void Function()? onPlaybackStarted,
+  }) async {
     if (_voice == null) {
       _stateController.add(
         const TtsPlaybackEvent(
@@ -116,17 +148,16 @@ class TtsControllerService {
       return;
     }
 
-    // Increment session marker to cancel active background synthesis loops
     final sessionId = ++_activeSessionId;
-
-    // Reset current active player queue
     await _audio.stopSession();
 
     final chunks = await _chunkingService.chunkText(text);
-
     if (sessionId != _activeSessionId) return;
 
     _masterQueue = chunks;
+    _currentIndex = -1;
+    _chunkController.add(null);
+    _queueController.add(_queueController.value + 1);
 
     if (_masterQueue.isEmpty) {
       _resetPlaybackState();
@@ -134,8 +165,20 @@ class TtsControllerService {
     }
 
     final startIndex = startAtChunkIndex.clamp(0, _masterQueue.length - 1);
+    _pipelineDone = false;
 
-    // Start playback streaming pipeline asynchronously
+    StreamSubscription<TtsPlaybackEvent>? startSub;
+    if (onPlaybackStarted != null) {
+      startSub = _stateController.stream.listen((event) {
+        if (event.state == TtsPlaybackState.playing ||
+            event.state == TtsPlaybackState.error) {
+          // fire (or bail) once, then stop listening either way
+          if (event.state == TtsPlaybackState.playing) onPlaybackStarted();
+          startSub?.cancel();
+        }
+      });
+    }
+
     unawaited(_synthesizeAndEnqueuePipeline(sessionId, startIndex));
   }
 
@@ -169,6 +212,13 @@ class TtsControllerService {
         return;
       }
     }
+
+    // Every chunk of the current page has been enqueued. Mark the queue as
+    // finalized so the next ProcessingState.completed is treated as a genuine
+    // page-end rather than a transient completion.
+    if (sessionId == _activeSessionId) {
+      _pipelineDone = true;
+    }
   }
 
   Future<void> pause() async {
@@ -199,6 +249,12 @@ class TtsControllerService {
     }
   }
 
+  /// Seeks playback to the sentence at [index] in the current queue.
+  Future<void> seekToChunk(int index) async {
+    if (index < 0 || index >= _masterQueue.length) return;
+    await _audio.seekToChunk(index);
+  }
+
   void _resetPlaybackState() {
     _currentIndex = -1;
     _chunkController.add(null);
@@ -214,6 +270,7 @@ class TtsControllerService {
             id: m.id,
             label: m.displayName,
             languageCode: m.languageCode,
+            sherpaSpeakerId: m.speakerCount > 0 ? 0 : null,
           ),
         )
         .toList(growable: false);
@@ -228,10 +285,17 @@ class TtsControllerService {
     _pitch = pitch;
   }
 
+  Future<void> setVoice(TtsVoiceOption voice) async {
+    _voice = voice;
+    _voiceController.add(voice);
+  }
+
   @disposeMethod
   Future<void> dispose() async {
     await stopPipeline();
     _stateController.close();
     _chunkController.close();
+    _queueController.close();
+    _voiceController.close();
   }
 }

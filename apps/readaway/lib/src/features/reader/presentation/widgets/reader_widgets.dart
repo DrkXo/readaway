@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,7 @@ import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mupdf/mupdf.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../../../../core/models/reader/reader_block.dart';
 import '../../../../core/models/reader/reader_document.dart';
@@ -25,6 +28,7 @@ import '../../domain/models/reader_lookup.dart';
 import '../bloc/reader_bloc.dart';
 import '../controllers/auto_scroll_controller.dart';
 import '../controllers/reader_page_view_controller.dart';
+import '../pages/reader_page.dart';
 
 part 'page/auto_scrollable_html_page.dart';
 part 'page/reader_html_widget.dart';
@@ -40,3 +44,6 @@ part 'toc/pin_button.dart';
 part 'toc/reader_drawer.dart';
 part 'toc/reader_toc_content.dart';
 part 'toc/reader_toc_panel.dart';
+part 'tts/tts_full_player_view.dart';
+part 'tts/tts_mini_player_bar.dart';
+part 'tts/tts_overlay_shell.dart';

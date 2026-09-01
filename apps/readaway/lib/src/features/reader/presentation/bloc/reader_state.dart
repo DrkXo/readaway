@@ -15,6 +15,7 @@ abstract class ReaderState with _$ReaderState {
     List<OutlineItem>? outline,
     String? bookTitle,
     String? author,
+    @Default(false) bool ttsActive,
   }) = _ReaderState;
 
   const ReaderState._();

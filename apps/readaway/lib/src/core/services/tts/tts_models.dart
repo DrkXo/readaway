@@ -21,7 +21,15 @@ class TtsVoiceOption {
   final int? sherpaSpeakerId;
 }
 
-enum TtsPlaybackState { idle, loading, playing, paused, stopped, error }
+enum TtsPlaybackState {
+  idle,
+  loading,
+  playing,
+  paused,
+  stopped,
+  completed,
+  error,
+}
 
 class TtsPlaybackEvent {
   const TtsPlaybackEvent(this.state, {this.message});

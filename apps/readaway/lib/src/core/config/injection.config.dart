@@ -160,7 +160,8 @@ extension GetItInjectableX on _i174.GetIt {
         windowService: gh<_i264.WindowService>(),
         muPdfService: gh<_i264.MuPdfService>(),
         ttsController: gh<_i264.TtsControllerService>(),
-      )..init(),
+        settingsBloc: gh<_i228.SettingsBloc>(),
+      ),
     );
     return this;
   }
