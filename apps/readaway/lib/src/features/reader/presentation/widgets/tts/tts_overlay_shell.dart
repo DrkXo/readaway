@@ -112,16 +112,6 @@ class _TtsOverlayShellState extends State<TtsOverlayShell>
                   height: 48,
                   child: Row(
                     children: [
-                      const SizedBox(width: 16),
-                      IconButton(
-                        icon: const Icon(LucideIcons.menu),
-                        tooltip: 'Contents',
-                        onPressed: () {
-                          context
-                              .findAncestorStateOfType<ReaderPageState>()
-                              ?.openDrawer();
-                        },
-                      ),
                       const Spacer(),
                       const ReaderCaptionActions.reFlowable(),
                       const SizedBox(width: 8),

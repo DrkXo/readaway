@@ -19,6 +19,10 @@ class TtsControllerService {
   TtsVoiceOption? _voice;
   double _rate = 1.0;
 
+  final _voiceController = BehaviorSubject<TtsVoiceOption?>.seeded(null);
+
+  ValueStream<TtsVoiceOption?> get currentVoiceOption => _voiceController.stream;
+
   // ignore: unused_field
   double _pitch = 1.0;
 
@@ -228,6 +232,7 @@ class TtsControllerService {
             id: m.id,
             label: m.displayName,
             languageCode: m.languageCode,
+            sherpaSpeakerId: m.speakerCount > 0 ? 0 : null,
           ),
         )
         .toList(growable: false);
@@ -242,11 +247,17 @@ class TtsControllerService {
     _pitch = pitch;
   }
 
+  Future<void> setVoice(TtsVoiceOption voice) async {
+    _voice = voice;
+    _voiceController.add(voice);
+  }
+
   @disposeMethod
   Future<void> dispose() async {
     await stopPipeline();
     _stateController.close();
     _chunkController.close();
     _queueController.close();
+    _voiceController.close();
   }
 }

@@ -10,6 +10,7 @@ import 'package:mupdf/mupdf.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/utils/reader/reader_html_utils.dart';
 import '../../../../core/utils/reader/reader_image_utils.dart';
+import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 
 part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';
@@ -20,11 +21,13 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   final WindowService _windowService;
   final MuPdfService _muPdfService;
   final TtsControllerService _ttsController;
+  final SettingsBloc _settingsBloc;
 
   ReaderBloc({
     required this._windowService,
     required this._muPdfService,
     required this._ttsController,
+    required this._settingsBloc,
   }) : super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
     on<_PageChanged>(_onPageChanged);
@@ -211,11 +214,30 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _TtsStart event,
     Emitter<ReaderState> emit,
   ) async {
-    if (!state.isReflowable || state.htmlPages == null) return;
-    final html = state.htmlPages![state.currentPage];
-    if (html == null) return;
-    final text = extractPageText(html);
-    if (text.trim().isEmpty) return;
+    if (!state.isReflowable) return;
+
+    // Set the active voice from settings
+    final activeModelId = _settingsBloc.state.ttsActiveModelId;
+    if (activeModelId != null) {
+      final models = _settingsBloc.state.ttsAvailableModels;
+      for (final m in models) {
+        if (m.id == activeModelId) {
+          _ttsController.setVoice(
+            TtsVoiceOption(
+              engine: TtsEngineKind.sherpaOnnx,
+              id: m.id,
+              label: m.displayName,
+              languageCode: m.languageCode,
+              sherpaSpeakerId: m.speakerCount > 0 ? 0 : null,
+            ),
+          );
+          break;
+        }
+      }
+    }
+
+    final text = await _muPdfService.extractPageText(state.currentPage);
+    if (text == null || text.trim().isEmpty) return;
 
     _ttsController.start();
     emit(state.copyWith(ttsActive: true));
