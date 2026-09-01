@@ -9,9 +9,7 @@ import 'package:injectable/injectable.dart';
 
 import '../core/routes/routes.dart';
 import '../core/services/services.dart';
-import '../core/widgets/core_widgets.dart';
 import '../features/library/presentation/pages/library_page.dart';
-import '../features/reader/presentation/bloc/reader_bloc.dart';
 import '../features/reader/reader.dart';
 import '../features/settings/presentation/pages/custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';

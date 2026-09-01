@@ -57,10 +57,14 @@ class _AutoScrollableHtmlPageState extends State<_AutoScrollableHtmlPage> {
           clipBehavior: Clip.none,
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight:
-                  constraints.maxHeight -
-                  widget.prefs.marginTop -
-                  widget.prefs.marginBottom,
+              // Clamp to 0: during initial layout the viewport height can be
+              // 0, which would otherwise produce a negative (invalid) minHeight.
+              minHeight: math.max(
+                0.0,
+                constraints.maxHeight -
+                    widget.prefs.marginTop -
+                    widget.prefs.marginBottom,
+              ),
             ),
             child: SizedBox(
               width: double.infinity,

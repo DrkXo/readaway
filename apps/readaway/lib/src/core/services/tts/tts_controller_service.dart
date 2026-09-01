@@ -33,6 +33,10 @@ class TtsControllerService {
   );
   final _chunkController = BehaviorSubject<TtsChunk?>();
 
+  /// Bumped whenever [_masterQueue] is (re)built so UI can rebuild its
+  /// sentence list even before the first chunk starts playing.
+  final _queueController = BehaviorSubject<int>.seeded(0);
+
   StreamSubscription<int?>? _indexSubscription;
   StreamSubscription<PlayerState>? _playerStateSubscription;
 
@@ -41,6 +45,9 @@ class TtsControllerService {
   ValueStream<TtsPlaybackEvent> get playbackState => _stateController.stream;
 
   Stream<TtsChunk> get currentChunk => _chunkController.stream.whereNotNull();
+
+  /// Emits a new value each time the sentence queue is rebuilt.
+  ValueStream<int> get queueVersion => _queueController.stream;
 
   List<TtsChunk> get queue => List.unmodifiable(_masterQueue);
 
@@ -127,6 +134,7 @@ class TtsControllerService {
     if (sessionId != _activeSessionId) return;
 
     _masterQueue = chunks;
+    _queueController.add(_queueController.value + 1);
 
     if (_masterQueue.isEmpty) {
       _resetPlaybackState();
@@ -199,6 +207,12 @@ class TtsControllerService {
     }
   }
 
+  /// Seeks playback to the sentence at [index] in the current queue.
+  Future<void> seekToChunk(int index) async {
+    if (index < 0 || index >= _masterQueue.length) return;
+    await _audio.seekToChunk(index);
+  }
+
   void _resetPlaybackState() {
     _currentIndex = -1;
     _chunkController.add(null);
@@ -233,5 +247,6 @@ class TtsControllerService {
     await stopPipeline();
     _stateController.close();
     _chunkController.close();
+    _queueController.close();
   }
 }

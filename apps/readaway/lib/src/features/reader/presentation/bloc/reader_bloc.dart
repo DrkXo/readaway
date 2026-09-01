@@ -30,12 +30,12 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_PageChanged>(_onPageChanged);
     on<_LoadPage>(_onLoadPage, transformer: droppable());
     on<_CloseDocument>(_onCloseDocument);
+    on<_TtsStart>(_onTtsStart);
+    on<_TtsClose>(_onTtsClose);
   }
 
-  @postConstruct
-  FutureOr<void> init() {
-    _ttsController.start();
-  }
+  /// Exposes the TTS playback controller to reader widgets.
+  TtsControllerService get ttsController => _ttsController;
 
   @override
   Future<void> close() async {
@@ -83,7 +83,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           loading: false,
         ),
       );
-
+      add(const ReaderEvent.loadPage(index: 0));
       _precachePages(0);
 
       final metaTitle = await service.getMetaData('title');
@@ -203,6 +203,32 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _muPdfService.closeDocument();
     _windowService.setDefaultTitle();
     emit(const ReaderState());
+  }
+
+  /// Starts TTS playback for the current page. The pipeline is only spun up
+  /// here (on user tap), never on document load.
+  Future<void> _onTtsStart(
+    _TtsStart event,
+    Emitter<ReaderState> emit,
+  ) async {
+    if (!state.isReflowable || state.htmlPages == null) return;
+    final html = state.htmlPages![state.currentPage];
+    if (html == null) return;
+    final text = extractPageText(html);
+    if (text.trim().isEmpty) return;
+
+    _ttsController.start();
+    emit(state.copyWith(ttsActive: true));
+    await _ttsController.playText(text);
+  }
+
+  /// Stops playback and hides the TTS player.
+  Future<void> _onTtsClose(
+    _TtsClose event,
+    Emitter<ReaderState> emit,
+  ) async {
+    await _ttsController.stop();
+    emit(state.copyWith(ttsActive: false));
   }
 
   void _precachePages(int currentIndex) {

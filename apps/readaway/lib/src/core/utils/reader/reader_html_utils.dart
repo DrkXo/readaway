@@ -60,6 +60,21 @@ List<List<dom.Element>> groupParagraphLines(List<dom.Element> lines) {
   return groups;
 }
 
+/// Extracts plain text from MuPDF structured-text HTML for TTS playback.
+///
+/// Joins each `<p>` block with a newline so sentence chunking preserves
+/// paragraph boundaries, then collapses runs of whitespace.
+String extractPageText(String html) {
+  final doc = html_parser.parse(html);
+  final body = doc.body;
+  if (body == null) return '';
+  final paragraphs = body
+      .querySelectorAll('p')
+      .map((e) => e.text.trim())
+      .where((t) => t.isNotEmpty);
+  return paragraphs.join('\n');
+}
+
 /// True when [p]'s content was fully wrapped in an anchor by
 /// [mergePageLinks].
 bool _isLinkLine(dom.Element p) =>

@@ -36,30 +36,25 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _visible = true),
-        onExit: (_) => setState(() => _visible = false),
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () => setState(() => _visible = !_visible),
-          child: SizedBox(
-            height: 48,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: IgnorePointer(
-                ignoring: !_visible,
-                child: AnimatedOpacity(
-                  opacity: _visible ? 1 : 0,
-                  duration: const Duration(milliseconds: 150),
-                  child: AnimatedSlide(
-                    offset: _visible ? Offset.zero : const Offset(0, 1),
-                    duration: const Duration(milliseconds: 150),
-                    child: _buildContent(context),
-                  ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _visible = true),
+      onExit: (_) => setState(() => _visible = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => setState(() => _visible = !_visible),
+        child: SizedBox(
+          height: 56,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: AnimatedOpacity(
+              opacity: _visible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 150),
+              child: AnimatedSlide(
+                offset: _visible ? Offset.zero : const Offset(0, 1),
+                duration: const Duration(milliseconds: 150),
+                child: IgnorePointer(
+                  ignoring: !_visible,
+                  child: _buildContent(context),
                 ),
               ),
             ),
@@ -120,7 +115,11 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
                 ),
               ),
               IconButton(
-                onPressed: null,
+                onPressed: state.isReflowable && state.hasDocument
+                    ? () => context.read<ReaderBloc>().add(
+                        const ReaderEvent.ttsStart(),
+                      )
+                    : null,
                 icon: const Icon(LucideIcons.audioLines, size: 20),
                 color: scheme.onSurfaceVariant,
                 visualDensity: VisualDensity.compact,
@@ -129,7 +128,11 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
               IconButton(
                 onPressed:
                     widget.onOutlineTap ??
-                    () => Scaffold.of(context).openDrawer(),
+                    () => context
+                        .findAncestorStateOfType<ReaderPageState>()
+                        ?.scaffoldKey
+                        .currentState
+                        ?.openDrawer(),
                 icon: const Icon(LucideIcons.moreVertical, size: 20),
                 color: scheme.onSurfaceVariant,
                 visualDensity: VisualDensity.compact,

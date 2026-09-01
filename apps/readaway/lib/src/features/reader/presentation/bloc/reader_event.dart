@@ -9,4 +9,6 @@ abstract class ReaderEvent with _$ReaderEvent {
   const factory ReaderEvent.pageChanged({required int index}) = _PageChanged;
   const factory ReaderEvent.loadPage({required int index}) = _LoadPage;
   const factory ReaderEvent.closeDocument() = _CloseDocument;
+  const factory ReaderEvent.ttsStart() = _TtsStart;
+  const factory ReaderEvent.ttsClose() = _TtsClose;
 }
