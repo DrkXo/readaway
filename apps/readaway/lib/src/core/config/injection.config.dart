@@ -17,7 +17,6 @@ import '../../features/settings/presentation/bloc/settings/settings_bloc.dart'
     as _i228;
 import '../../router/router.dart' as _i295;
 import '../routes/routes.dart' as _i494;
-import '../services/css_service.dart' as _i213;
 import '../services/services.dart' as _i264;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -29,7 +28,6 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     gh.factory<_i264.HiveConfigService>(() => _i264.HiveConfigService());
     gh.singleton<_i494.AppRoutes>(() => _i494.AppRoutes());
-    gh.singleton<_i213.CssService>(() => _i213.CssService());
     gh.singleton<_i264.AppLifecycleManager>(() => _i264.AppLifecycleManager());
     await gh.singletonAsync<_i264.JustAudioService>(
       () {
