@@ -1,7 +1,14 @@
-part of '../reader_widgets.dart';
+library;
 
-class _SelectionMenu extends StatelessWidget {
-  const _SelectionMenu({
+import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../../../../core/theme/theme.dart';
+import '../../../domain/models/reader_lookup.dart';
+
+class SelectionMenu extends StatelessWidget {
+  const SelectionMenu({
+    super.key,
     required this.band,
     required this.text,
     required this.onDismiss,
@@ -15,7 +22,6 @@ class _SelectionMenu extends StatelessWidget {
   final VoidCallback onCopy;
   final void Function(ReaderLookupKind kind) onLookup;
 
-  // ponytail: fixed estimate for clamping; measure the card if it ever clips.
   static const _size = Size(216, 132);
 
   @override
@@ -31,7 +37,6 @@ class _SelectionMenu extends StatelessWidget {
 
     return Stack(
       children: [
-        // Full-screen catcher: the first tap anywhere just closes the menu.
         Positioned.fill(
           child: GestureDetector(onTap: onDismiss),
         ),
@@ -69,7 +74,6 @@ class _SelectionMenu extends StatelessWidget {
                         onPressed: onCopy,
                         icon: const Icon(LucideIcons.copy),
                       ),
-                      // Dictionary lookup only makes sense for one word.
                       if (!text.trim().contains(RegExp(r'\s')))
                         IconButton.filledTonal(
                           tooltip: 'Dictionary',

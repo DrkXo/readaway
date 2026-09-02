@@ -10,8 +10,11 @@ import 'package:injectable/injectable.dart';
 import '../core/routes/routes.dart';
 import '../core/services/services.dart';
 import '../features/library/presentation/pages/library_page.dart';
-import '../features/reader/reader.dart';
-import '../features/settings/presentation/pages/custom_fonts_page.dart';
+import '../features/reader/domain/models/reader_lookup.dart';
+import '../features/reader/presentation/bloc/reader_bloc.dart';
+import '../features/reader/presentation/pages/reader_lookup_sheet.dart';
+import '../features/reader/presentation/pages/reader_page.dart';
+import '../features/settings/presentation/pages/settings_custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
 
 part 'custom_routes.dart';
@@ -100,23 +103,15 @@ class AppRouter {
         builder: (context, state) => const LibraryPage(),
       ),
 
-      // 2. Reader Shell Route carrying the TTS Overlay ONLY for Reader
-      ShellRoute(
-        builder: (context, state, child) {
+      GoRoute(
+        name: _appRoutes.reader.name,
+        path: _appRoutes.reader.path,
+        builder: (context, state) {
           return BlocProvider<ReaderBloc>(
             create: (_) => GetIt.I.get<ReaderBloc>(),
-            child: TtsOverlayShell(child: child),
+            child: ReaderPage.fromRoute(state),
           );
         },
-        routes: [
-          GoRoute(
-            name: _appRoutes.reader.name,
-            path: _appRoutes.reader.path,
-            builder: (context, state) {
-              return ReaderPage.fromRoute(state);
-            },
-          ),
-        ],
       ),
 
       // Global Modals overlaid on top of the router
@@ -140,7 +135,7 @@ class AppRouter {
                 key: state.pageKey,
                 isScrollControlled: true,
                 showDragHandle: false,
-                builder: (context) => const CustomFontsPage(),
+                builder: (context) => const SettingsCustomFontsPage(),
               );
             },
           ),

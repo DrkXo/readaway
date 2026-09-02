@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+part of '../core_widgets.dart';
 
 /// Base boxed-list row: [label] + optional [description] on the left,
 /// [trailing] control on the right. Optionally tappable via [onTap].

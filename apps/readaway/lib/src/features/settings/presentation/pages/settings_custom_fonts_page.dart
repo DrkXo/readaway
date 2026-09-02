@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/models/models.dart';
 import '../../../../core/services/services.dart';
+import '../../../../core/widgets/core_widgets.dart';
 import '../bloc/settings/settings_bloc.dart';
 import '../widgets/widgets.dart';
 
@@ -14,8 +15,8 @@ import '../widgets/widgets.dart';
 /// Lets the user pick `.ttf`/`.otf` files, which are copied into app storage
 /// and registered at runtime via [FontService]. Added fonts become available
 /// in the reader's font pickers.
-class CustomFontsPage extends StatelessWidget {
-  const CustomFontsPage({super.key});
+class SettingsCustomFontsPage extends StatelessWidget {
+  const SettingsCustomFontsPage({super.key});
 
   Future<void> _addFont(BuildContext context) async {
     final settingsBloc = context.read<SettingsBloc>();

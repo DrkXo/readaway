@@ -16,13 +16,18 @@ abstract class SettingsState with _$SettingsState {
     String? activeDocumentPath,
     @Default(Settings()) Settings appSettings,
     @JsonKey(includeFromJson: false, includeToJson: false)
-    @Default([]) List<SherpaTtsModelInfo> ttsAvailableModels,
+    @Default([])
+    List<SherpaTtsModelInfo> ttsAvailableModels,
     @JsonKey(includeFromJson: false, includeToJson: false)
-    @Default({}) Set<String> ttsDownloadedIds,
+    @Default({})
+    Set<String> ttsDownloadedIds,
     @JsonKey(includeFromJson: false, includeToJson: false)
-    @Default({}) Map<String, SettingsDownloadStatus> ttsDownloads,
-    @JsonKey(includeFromJson: false, includeToJson: false) String? ttsActiveModelId,
-    @JsonKey(includeFromJson: false, includeToJson: false) String? ttsBusyModelId,
+    @Default({})
+    Map<String, SettingsDownloadStatus> ttsDownloads,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    String? ttsActiveModelId,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    String? ttsBusyModelId,
     @JsonKey(includeFromJson: false, includeToJson: false) String? ttsError,
   }) = _SettingsState;
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'settings_row.dart';
+import '../../../../../core/widgets/core_widgets.dart';
+
+
 
 /// Row whose trailing control is a [Switch]; tapping anywhere on the row
 /// toggles it.

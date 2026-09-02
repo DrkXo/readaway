@@ -1,4 +1,14 @@
-part of '../reader_widgets.dart';
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mupdf/mupdf.dart';
+
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/core_widgets.dart';
+import '../../bloc/reader_bloc.dart';
+import 'outline_item_tile.dart';
 
 /// Shared table-of-contents UI used by the mobile drawer and the
 /// desktop side panel.
@@ -53,7 +63,6 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final appColors = context.appColors;
     final scheme = appColors.scheme;
     final threadColors = <Color>[
@@ -93,44 +102,35 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        AppText(
                           'CONTENTS',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            letterSpacing: 1.4,
-                            fontWeight: FontWeight.w700,
-                            color: scheme.primary,
-                          ),
+                          variant: AppTextVariant.label,
+                          letterSpacing: 1.4,
+                          fontWeight: FontWeight.w700,
+                          color: scheme.primary,
                         ),
                         const SizedBox(height: 8),
                         if (bookTitle != null && bookTitle.isNotEmpty)
-                          Text(
+                          AppText(
                             bookTitle,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: scheme.onSurface,
-                            ),
+                            variant: AppTextVariant.title,
+                            fontWeight: FontWeight.w600,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         if (author != null && author.isNotEmpty) ...[
                           const SizedBox(height: 2),
-                          Text(
+                          AppCaption(
                             author,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
                         const SizedBox(height: 4),
-                        Text(
+                        AppCaption(
                           outline == null || outline.isEmpty
                               ? 'Table of contents'
                               : '${outline.where((o) => o.level == 0).length} chapters',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
                         ),
                       ],
                     ),
@@ -146,13 +146,10 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
             ),
             Expanded(
               child: outline == null || outline.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No table of contents',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
+                  ? const AppEmptyView(
+                      icon: LucideIcons.listTree,
+                      title: 'No table of contents',
+                      message: 'This document does not expose an outline.',
                     )
                   : ListView.builder(
                       controller: _scrollController,
@@ -165,10 +162,9 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                         if (title == null || title.isEmpty) {
                           return const SizedBox.shrink();
                         }
-                        return _OutlineItemTile(
+                        return OutlineItemTile(
                           item: item,
                           isCurrent: index == currentIndex,
-                          theme: theme,
                           threadColors: threadColors,
                           onTap: () => widget.onJumpToPage(item.page),
                         );

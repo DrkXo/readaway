@@ -1,4 +1,7 @@
-part of '../reader_widgets.dart';
+import 'package:flutter/material.dart';
+
+import '../../../../settings/domain/models/reader_preferences.dart';
+import '../../extensions/reader_page_transition_extension.dart';
 
 /// A state-driven, keyed page view for the reader.
 ///
@@ -153,52 +156,14 @@ class _ReaderPageViewState extends State<ReaderPageView>
       child: page,
       builder: (context, child) {
         final t = _controller.value;
-        return _applyTransition(child!, t, outgoing: outgoing);
+        return widget.transition.applyTransition(
+          child!,
+          t,
+          outgoing: outgoing,
+          horizontal: widget.direction == ReaderScrollDirection.horizontal,
+          goingForward: _goingForward,
+        );
       },
     );
-  }
-
-  Widget _applyTransition(
-    Widget child,
-    double t, {
-    required bool outgoing,
-  }) {
-    final horizontal = widget.direction == ReaderScrollDirection.horizontal;
-    final sign = _goingForward ? 1.0 : -1.0;
-
-    switch (widget.transition) {
-      case ReaderPageTransition.none:
-        return child;
-
-      case ReaderPageTransition.fade:
-        return Opacity(opacity: outgoing ? (1 - t) : t, child: child);
-
-      case ReaderPageTransition.slide:
-        final offset = outgoing
-            ? Offset(-sign * t, 0)
-            : Offset(sign * (1 - t), 0);
-        final slideOffset = horizontal ? offset : Offset(offset.dy, offset.dx);
-        return FractionalTranslation(
-          translation: slideOffset,
-          child: child,
-        );
-
-      case ReaderPageTransition.sharedAxis:
-        final offset = outgoing
-            ? Offset(-sign * t, 0)
-            : Offset(sign * (1 - t), 0);
-        final slideOffset = horizontal ? offset : Offset(offset.dy, offset.dx);
-        final scale = outgoing ? (1 - 0.05 * t) : (0.95 + 0.05 * t);
-        return Opacity(
-          opacity: outgoing ? (1 - t) : t,
-          child: Transform.scale(
-            scale: scale,
-            child: FractionalTranslation(
-              translation: slideOffset,
-              child: child,
-            ),
-          ),
-        );
-    }
   }
 }

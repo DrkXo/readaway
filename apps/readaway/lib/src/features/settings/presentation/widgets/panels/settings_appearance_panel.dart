@@ -5,8 +5,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../widgets.dart';
 
-class AppearancePanel extends StatelessWidget {
-  const AppearancePanel({super.key});
+class SettingsAppearancePanel extends StatelessWidget {
+  const SettingsAppearancePanel({super.key});
 
   @override
   Widget build(BuildContext context) {

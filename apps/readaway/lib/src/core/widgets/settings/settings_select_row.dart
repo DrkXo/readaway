@@ -1,7 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-import 'settings_row.dart';
+part of '../core_widgets.dart';
 
 /// One selectable entry of a [SettingsSelectRow].
 class SettingsSelectEntry<T> {

@@ -1,4 +1,10 @@
-part of '../reader_widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/core_widgets.dart';
+import 'reader_toc_content.dart';
 
 class ReaderDrawer extends StatelessWidget {
   const ReaderDrawer({super.key, required this.onJumpToPage});
@@ -8,7 +14,6 @@ class ReaderDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appColors = context.appColors;
-    final scheme = appColors.scheme;
 
     return Animate(
       effects: [
@@ -30,13 +35,11 @@ class ReaderDrawer extends StatelessWidget {
           child: SafeArea(
             child: ReaderTocContent(
               onJumpToPage: onJumpToPage,
-              headerAction: IconButton(
-                icon: Icon(
-                  LucideIcons.x,
-                  color: scheme.onSurfaceVariant,
-                ),
-                splashRadius: 20,
+              headerAction: AppIconButton(
+                icon: LucideIcons.x,
+                tooltip: 'Close',
                 onPressed: () => Navigator.of(context).pop(),
+                size: AppIconButtonSize.small,
               ),
             ),
           ),

@@ -1,5 +1,16 @@
-part of '../reader_widgets.dart';
+import 'dart:ui';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../../core/services/services.dart';
+import '../../../../settings/domain/models/reader_preferences.dart';
+import '../../bloc/reader_bloc.dart';
+import '../../controllers/auto_scroll_controller.dart';
+import '../../controllers/reader_page_view_controller.dart';
+import '../widgets.dart';
+
+/// The page content widget that wraps the reader's page view.
 class ReaderPageContent extends StatelessWidget {
   const ReaderPageContent({
     super.key,
@@ -49,7 +60,21 @@ class ReaderPageContent extends StatelessWidget {
             pageCount: state.pageCount,
             transition: prefs.pageTransition,
             direction: prefs.scrollDirection,
-            itemBuilder: state.isReflowable ? _buildHtmlPage : _buildImagePage,
+            itemBuilder: state.isReflowable
+                ? (context, index) => ReaderHtmlPage(
+                    index: index,
+                    state: state,
+                    prefs: prefs,
+                    autoScrollController: autoScrollController,
+                    onPageChangeRequested: (index) =>
+                        _onPageChangeRequested(context, index),
+                  )
+                : (context, index) => ReaderImagePage(
+                    index: index,
+                    state: state,
+                    onPageChangeRequested: (index) =>
+                        _onPageChangeRequested(context, index),
+                  ),
             onPageChangeRequested: (index) =>
                 _onPageChangeRequested(context, index),
           ),
@@ -65,9 +90,28 @@ class ReaderPageContent extends StatelessWidget {
     context.read<ReaderBloc>().add(ReaderEvent.pageChanged(index: clamped));
     autoScrollController?.setCurrentPage(clamped);
   }
+}
 
-  Widget _buildHtmlPage(BuildContext context, int index) {
-    final state = context.read<ReaderBloc>().state;
+/// A reflowable HTML page widget that lazily loads page content and renders
+/// it with auto-scroll support.
+class ReaderHtmlPage extends StatelessWidget {
+  const ReaderHtmlPage({
+    super.key,
+    required this.index,
+    required this.state,
+    required this.prefs,
+    required this.autoScrollController,
+    required this.onPageChangeRequested,
+  });
+
+  final int index;
+  final ReaderState state;
+  final ReaderPreferences prefs;
+  final AutoScrollController? autoScrollController;
+  final void Function(int) onPageChangeRequested;
+
+  @override
+  Widget build(BuildContext context) {
     final html = state.htmlPages![index];
 
     if (html == null) {
@@ -75,7 +119,7 @@ class ReaderPageContent extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return _AutoScrollableHtmlPage(
+    return AutoScrollableHtmlPage(
       index: index,
       html: html,
       prefs: prefs,
@@ -84,23 +128,34 @@ class ReaderPageContent extends StatelessWidget {
     );
   }
 
-  /// Internal links arrive pre-resolved as `#page=N` (flat page index)
-  /// during HTML sanitization. External links are logged only for now.
   void _onTapUrl(BuildContext context, String url) {
     final match = RegExp(r'^#page=(\d+)$').firstMatch(url);
     if (match != null) {
       final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;
-      _onPageChangeRequested(
-        context,
+      onPageChangeRequested(
         int.parse(match.group(1)!).clamp(0, maxIndex),
       );
       return;
     }
     logger.d('External link ignored: $url');
   }
+}
 
-  Widget _buildImagePage(BuildContext context, int index) {
-    final state = context.read<ReaderBloc>().state;
+/// An image page widget that lazily loads page content.
+class ReaderImagePage extends StatelessWidget {
+  const ReaderImagePage({
+    super.key,
+    required this.index,
+    required this.state,
+    required this.onPageChangeRequested,
+  });
+
+  final int index;
+  final ReaderState state;
+  final void Function(int) onPageChangeRequested;
+
+  @override
+  Widget build(BuildContext context) {
     final image = state.pageImages![index];
 
     if (image == null) {
@@ -113,10 +168,4 @@ class ReaderPageContent extends StatelessWidget {
       child: RawImage(image: image, fit: BoxFit.contain),
     );
   }
-
-  static FontWeight _resolveFontWeight(String weight) => switch (weight) {
-    'lighter' => FontWeight.w300,
-    'bold' => FontWeight.w700,
-    _ => FontWeight.normal,
-  };
 }

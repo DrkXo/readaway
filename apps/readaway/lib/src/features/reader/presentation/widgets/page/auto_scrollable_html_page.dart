@@ -1,13 +1,16 @@
-part of '../reader_widgets.dart';
+import 'dart:math' as math;
 
-/// A single reflowable page that owns its vertical [ScrollController] and
-/// registers it with the [AutoScrollController] so auto-scroll can drive it.
-///
-/// Owning the controller in a `StatefulWidget` is important: `PageView.builder`
-/// mounts/unmounts pages on demand, so the controller must be created and
-/// disposed alongside the page to avoid leaking or holding stale references.
-class _AutoScrollableHtmlPage extends StatefulWidget {
-  const _AutoScrollableHtmlPage({
+import 'package:flutter/material.dart';
+
+import '../../../../../core/theme/theme.dart';
+import '../../../../settings/domain/models/reader_preferences.dart';
+import '../../controllers/auto_scroll_controller.dart';
+import 'reader_html_widget.dart';
+import 'reader_selection_area.dart';
+
+class AutoScrollableHtmlPage extends StatefulWidget {
+  const AutoScrollableHtmlPage({
+    super.key,
     required this.index,
     required this.html,
     required this.prefs,
@@ -22,12 +25,17 @@ class _AutoScrollableHtmlPage extends StatefulWidget {
   final ValueChanged<String> onTapUrl;
 
   @override
-  State<_AutoScrollableHtmlPage> createState() =>
-      _AutoScrollableHtmlPageState();
+  State<AutoScrollableHtmlPage> createState() => AutoScrollableHtmlPageState();
 }
 
-class _AutoScrollableHtmlPageState extends State<_AutoScrollableHtmlPage> {
+class AutoScrollableHtmlPageState extends State<AutoScrollableHtmlPage> {
   final ScrollController _scrollController = ScrollController();
+
+  static FontWeight _resolveFontWeight(String weight) => switch (weight) {
+    'lighter' => FontWeight.w300,
+    'bold' => FontWeight.w700,
+    _ => FontWeight.normal,
+  };
 
   @override
   void initState() {
@@ -57,8 +65,6 @@ class _AutoScrollableHtmlPageState extends State<_AutoScrollableHtmlPage> {
           clipBehavior: Clip.none,
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              // Clamp to 0: during initial layout the viewport height can be
-              // 0, which would otherwise produce a negative (invalid) minHeight.
               minHeight: math.max(
                 0.0,
                 constraints.maxHeight -
@@ -76,9 +82,7 @@ class _AutoScrollableHtmlPageState extends State<_AutoScrollableHtmlPage> {
                   lineHeight: widget.prefs.lineHeight,
                   letterSpacing: widget.prefs.letterSpacing,
                   fontFamily: widget.prefs.fontFamily,
-                  fontWeight: ReaderPageContent._resolveFontWeight(
-                    widget.prefs.fontWeight,
-                  ),
+                  fontWeight: _resolveFontWeight(widget.prefs.fontWeight),
                   wordSpacing: widget.prefs.wordSpacing,
                   textIndent: widget.prefs.textIndent,
                   fullJustification: widget.prefs.fullJustification,

@@ -1,17 +1,17 @@
-part of '../reader_widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:mupdf/mupdf.dart';
 
-class _OutlineItemTile extends StatelessWidget {
-  const _OutlineItemTile({
+class OutlineItemTile extends StatelessWidget {
+  const OutlineItemTile({
+    super.key,
     required this.item,
     required this.isCurrent,
-    required this.theme,
     required this.threadColors,
     required this.onTap,
   });
 
   final OutlineItem item;
   final bool isCurrent;
-  final ThemeData theme;
   final List<Color> threadColors;
   final VoidCallback onTap;
 
@@ -20,6 +20,7 @@ class _OutlineItemTile extends StatelessWidget {
     final title = item.title;
     if (title == null || title.isEmpty) return const SizedBox.shrink();
 
+    final theme = Theme.of(context);
     final color = threadColors[item.level % threadColors.length];
     final isTopLevel = item.level == 0;
 

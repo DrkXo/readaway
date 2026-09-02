@@ -5,22 +5,24 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/models/models.dart';
 import '../../../../../core/routes/routes.dart';
-import '../../../domain/models/reader_preferences.dart';
+import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/settings/settings_bloc.dart';
+import '../primitives/reader_prefs_builder.dart';
+import '../settings_bloc_x.dart';
 import '../widgets.dart';
+import 'settings_panel_state.dart';
 
-class FontPanel extends StatefulWidget {
-  const FontPanel({super.key, this.showScopeToggle = false});
+class SettingsFontPanel extends StatefulWidget {
+  const SettingsFontPanel({super.key, this.showScopeToggle = false});
 
   final bool showScopeToggle;
 
   @override
-  State<FontPanel> createState() => _FontPanelState();
+  State<SettingsFontPanel> createState() => _SettingsFontPanelState();
 }
 
-class _FontPanelState extends State<FontPanel> {
-  bool _isGlobalMode = true;
-
+class _SettingsFontPanelState extends State<SettingsFontPanel>
+    with SettingsPanelState {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
@@ -30,38 +32,16 @@ class _FontPanelState extends State<FontPanel> {
         final activePath = state.activeDocumentPath;
         final showScope = widget.showScopeToggle && activePath != null;
         final scope = showScope
-            ? (_isGlobalMode ? SettingsScope.global : SettingsScope.perBook)
+            ? (isGlobalMode ? SettingsScope.global : SettingsScope.perBook)
             : null;
-
-        void resetSection(
-          ReaderPreferences Function(ReaderPreferences) update,
-        ) {
-          final bloc = context.read<SettingsBloc>();
-          final current = bloc.state;
-          final path = current.activeDocumentPath;
-          if (!_isGlobalMode && path != null) {
-            bloc.add(
-              SettingsEvent.setDocumentReaderPref(
-                path: path,
-                prefs: update(current.resolvedReaderPrefs(path)),
-              ),
-            );
-          } else {
-            bloc.add(
-              SettingsEvent.setGlobalReaderPref(
-                update(current.globalReaderPrefs),
-              ),
-            );
-          }
-        }
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
             if (showScope) ...[
-              ScopeToggle(
-                isGlobalMode: _isGlobalMode,
-                onChanged: (v) => setState(() => _isGlobalMode = v),
+              SettingsScopeToggle(
+                isGlobalMode: isGlobalMode,
+                onChanged: (v) => setState(() => isGlobalMode = v),
               ),
               const SizedBox(height: 16),
             ],
@@ -73,11 +53,11 @@ class _FontPanelState extends State<FontPanel> {
               ),
               rows: [
                 _FontFamilyRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
                 _FontSizeRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
               ],
@@ -97,23 +77,23 @@ class _FontPanelState extends State<FontPanel> {
               ),
               rows: [
                 _SerifFontRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
                 _SansSerifFontRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
                 _MonospaceFontRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
                 _FontWeightRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
                 _OverrideFontRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
               ],
@@ -193,12 +173,11 @@ class _FontFamilyRow extends StatelessWidget {
           label: 'Font family',
           value: current,
           entries: entries,
-          onChanged: (family) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(
+          onChanged: (family) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(
               fontFamily: family == _system ? null : family,
             ),
           ),
@@ -219,12 +198,9 @@ class _FontSizeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).fontSize !=
-          curr.resolvedReaderPrefs(activePath).fontSize,
-      builder: (context, state) {
-        final prefs = state.resolvedReaderPrefs(activePath);
+    return ReaderPrefsBuilder(
+      activePath: activePath,
+      builder: (context, prefs) {
         return SettingsSliderRow(
           label: 'Font size',
           value: prefs.fontSize,
@@ -232,12 +208,11 @@ class _FontSizeRow extends StatelessWidget {
           max: 32,
           divisions: 22,
           format: (v) => '${v.round()} px',
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(fontSize: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: context.read<SettingsBloc>().state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(fontSize: v),
           ),
         );
       },
@@ -285,12 +260,11 @@ class _SerifFontRow extends StatelessWidget {
           label: 'Serif font',
           value: font,
           entries: entries,
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(serifFont: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(serifFont: v),
           ),
         );
       },
@@ -328,12 +302,11 @@ class _SansSerifFontRow extends StatelessWidget {
           label: 'Sans-serif font',
           value: font,
           entries: entries,
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(sansSerifFont: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(sansSerifFont: v),
           ),
         );
       },
@@ -375,12 +348,11 @@ class _MonospaceFontRow extends StatelessWidget {
           label: 'Monospace font',
           value: font,
           entries: entries,
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(monospaceFont: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(monospaceFont: v),
           ),
         );
       },
@@ -415,12 +387,11 @@ class _FontWeightRow extends StatelessWidget {
           label: 'Font weight',
           value: weight,
           entries: _entries,
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(fontWeight: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(fontWeight: v),
           ),
         );
       },
@@ -449,12 +420,11 @@ class _OverrideFontRow extends StatelessWidget {
           label: 'Override book fonts',
           description: 'Force your font choices on all books',
           value: enabled,
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(overrideFont: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(overrideFont: v),
           ),
         );
       },

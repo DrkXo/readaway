@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import '../../../../../core/widgets/core_widgets.dart';
 import '../../../domain/models/reader_preferences.dart';
+
 import '../../bloc/settings/settings_bloc.dart';
 import '../widgets.dart';
 
-class BehaviorPanel extends StatelessWidget {
-  const BehaviorPanel({super.key});
+class SettingsBehaviorPanel extends StatelessWidget {
+  const SettingsBehaviorPanel({super.key});
 
   @override
   Widget build(BuildContext context) {

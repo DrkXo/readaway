@@ -1,4 +1,11 @@
-part of '../reader_widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../../../../core/routes/routes.dart';
+import '../../../../../core/widgets/core_widgets.dart';
+import '../../../../../router/router.dart';
+import '../../bloc/reader_bloc.dart';
 
 class ReaderCaptionActions extends StatelessWidget {
   const ReaderCaptionActions.reFlowable({
@@ -10,14 +17,14 @@ class ReaderCaptionActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        MorphIconButton(
+        AppIconButton(
           icon: LucideIcons.x,
-          hoverIcon: LucideIcons.xCircle,
           tooltip: 'Close document',
-          onTap: () {
+          onPressed: () {
             context.read<ReaderBloc>().add(const ReaderEvent.closeDocument());
             appRouter.goNamed(appRoutes.library.name);
           },
+          size: AppIconButtonSize.small,
         ),
       ],
     );

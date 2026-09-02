@@ -8,4 +8,4 @@ export 'domain/models/reader_lookup.dart';
 export 'presentation/bloc/reader_bloc.dart';
 export 'presentation/pages/reader_lookup_sheet.dart';
 export 'presentation/pages/reader_page.dart';
-export 'presentation/widgets/reader_widgets.dart';
+export 'presentation/widgets/widgets.dart';

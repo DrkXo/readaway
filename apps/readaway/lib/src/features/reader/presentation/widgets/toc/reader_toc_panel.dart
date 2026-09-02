@@ -1,4 +1,8 @@
-part of '../reader_widgets.dart';
+import 'package:flutter/material.dart';
+
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/core_widgets.dart';
+import 'reader_toc_content.dart';
 
 const double _panelWidth = 300;
 const double _peekStripWidth = 24;
@@ -27,7 +31,7 @@ class ReaderTocSidePanel extends StatelessWidget {
           child: SafeArea(
             child: ReaderTocContent(
               onJumpToPage: onJumpToPage,
-              headerAction: _PinButton(pinned: true, onTap: onUnpin),
+              headerAction: PinButton(pinned: true, onTap: onUnpin),
             ),
           ),
         ),
@@ -104,7 +108,7 @@ class _ReaderTocPeekState extends State<ReaderTocPeek> {
                             widget.onJumpToPage(page);
                             _hide();
                           },
-                          headerAction: _PinButton(
+                          headerAction: PinButton(
                             pinned: false,
                             onTap: widget.onPin,
                           ),

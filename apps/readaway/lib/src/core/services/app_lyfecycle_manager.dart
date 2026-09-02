@@ -115,7 +115,7 @@ class AppLifecycleManager with WidgetsBindingObserver {
     _isInitialized = true;
     _foregroundTime = DateTime.now();
 
-     logger.d('[AppLifecycleManager] Initialized');
+    logger.d('[AppLifecycleManager] Initialized');
 
     // Emit initialization event
     _lifecycleEventSubject.add(
@@ -129,7 +129,7 @@ class AppLifecycleManager with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-     logger.d(
+    logger.d(
       '[AppLifecycleManager] State changed: ${_previousState?.name} -> ${state.name}',
     );
 

@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../domain/models/reader_preferences.dart';
 import '../../bloc/settings/settings_bloc.dart';
+import '../settings_bloc_x.dart';
 import '../widgets.dart';
+import 'settings_panel_state.dart';
 
-class LayoutPanel extends StatefulWidget {
-  const LayoutPanel({super.key, this.showScopeToggle = false});
+class SettingsLayoutPanel extends StatefulWidget {
+  const SettingsLayoutPanel({super.key, this.showScopeToggle = false});
 
   final bool showScopeToggle;
 
   @override
-  State<LayoutPanel> createState() => _LayoutPanelState();
+  State<SettingsLayoutPanel> createState() => _SettingsLayoutPanelState();
 }
 
-class _LayoutPanelState extends State<LayoutPanel> {
-  bool _isGlobalMode = true;
-
+class _SettingsLayoutPanelState extends State<SettingsLayoutPanel>
+    with SettingsPanelState {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
@@ -26,38 +26,16 @@ class _LayoutPanelState extends State<LayoutPanel> {
         final activePath = state.activeDocumentPath;
         final showScope = widget.showScopeToggle && activePath != null;
         final scope = showScope
-            ? (_isGlobalMode ? SettingsScope.global : SettingsScope.perBook)
+            ? (isGlobalMode ? SettingsScope.global : SettingsScope.perBook)
             : null;
-
-        void resetSection(
-          ReaderPreferences Function(ReaderPreferences) update,
-        ) {
-          final bloc = context.read<SettingsBloc>();
-          final current = bloc.state;
-          final path = current.activeDocumentPath;
-          if (!_isGlobalMode && path != null) {
-            bloc.add(
-              SettingsEvent.setDocumentReaderPref(
-                path: path,
-                prefs: update(current.resolvedReaderPrefs(path)),
-              ),
-            );
-          } else {
-            bloc.add(
-              SettingsEvent.setGlobalReaderPref(
-                update(current.globalReaderPrefs),
-              ),
-            );
-          }
-        }
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
             if (showScope) ...[
-              ScopeToggle(
-                isGlobalMode: _isGlobalMode,
-                onChanged: (v) => setState(() => _isGlobalMode = v),
+              SettingsScopeToggle(
+                isGlobalMode: isGlobalMode,
+                onChanged: (v) => setState(() => isGlobalMode = v),
               ),
               const SizedBox(height: 16),
             ],
@@ -73,11 +51,11 @@ class _LayoutPanelState extends State<LayoutPanel> {
               ),
               rows: [
                 _MarginPresetRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
                 _MarginSliderRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
               ],
@@ -95,15 +73,15 @@ class _LayoutPanelState extends State<LayoutPanel> {
               ),
               rows: [
                 _ParagraphSpacingRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
                 _TextIndentRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
                 _FullJustificationRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
               ],
@@ -121,15 +99,15 @@ class _LayoutPanelState extends State<LayoutPanel> {
               ),
               rows: [
                 _LineHeightRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
                 _LetterSpacingRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
                 _WordSpacingRow(
-                  isGlobalMode: _isGlobalMode,
+                  isGlobalMode: isGlobalMode,
                   activePath: activePath,
                 ),
               ],
@@ -179,12 +157,11 @@ class _MarginPresetRow extends StatelessWidget {
             emptySelectionAllowed: true,
             onSelectionChanged: (s) {
               if (s.isEmpty) return;
-              updateReaderPrefs(
-                context,
-                state,
-                activePath,
-                isGlobalMode,
-                (p) => p.copyWith(
+              context.read<SettingsBloc>().updateReaderPrefs(
+                state: state,
+                activePath: activePath,
+                isGlobalMode: isGlobalMode,
+                update: (p) => p.copyWith(
                   marginHorizontal: s.first,
                   marginTop: s.first,
                   marginBottom: s.first,
@@ -226,12 +203,11 @@ class _MarginSliderRow extends StatelessWidget {
           max: 64,
           divisions: 16,
           format: (v) => '${v.round()} px',
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(
               marginHorizontal: v,
               marginTop: v,
               marginBottom: v,
@@ -267,12 +243,11 @@ class _ParagraphSpacingRow extends StatelessWidget {
           max: 2,
           divisions: 20,
           format: (v) => v.toStringAsFixed(1),
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(paragraphMargin: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(paragraphMargin: v),
           ),
         );
       },
@@ -304,12 +279,11 @@ class _TextIndentRow extends StatelessWidget {
           max: 4,
           divisions: 8,
           format: (v) => '${v.toStringAsFixed(1)} em',
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(textIndent: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(textIndent: v),
           ),
         );
       },
@@ -337,12 +311,11 @@ class _FullJustificationRow extends StatelessWidget {
         return SettingsSwitchRow(
           label: 'Full justification',
           value: enabled,
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(fullJustification: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(fullJustification: v),
           ),
         );
       },
@@ -374,12 +347,11 @@ class _LineHeightRow extends StatelessWidget {
           max: 3,
           divisions: 44,
           format: (v) => v.toStringAsFixed(2),
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(lineHeight: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(lineHeight: v),
           ),
         );
       },
@@ -411,12 +383,11 @@ class _LetterSpacingRow extends StatelessWidget {
           max: 0.3,
           divisions: 40,
           format: (v) => v.toStringAsFixed(2),
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(letterSpacing: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(letterSpacing: v),
           ),
         );
       },
@@ -448,12 +419,11 @@ class _WordSpacingRow extends StatelessWidget {
           max: 10,
           divisions: 10,
           format: (v) => '${v.round()} px',
-          onChanged: (v) => updateReaderPrefs(
-            context,
-            state,
-            activePath,
-            isGlobalMode,
-            (p) => p.copyWith(wordSpacing: v),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            state: state,
+            activePath: activePath,
+            isGlobalMode: isGlobalMode,
+            update: (p) => p.copyWith(wordSpacing: v),
           ),
         );
       },

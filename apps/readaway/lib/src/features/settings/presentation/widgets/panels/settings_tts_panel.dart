@@ -3,27 +3,27 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/services/services.dart';
+import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../widgets.dart';
 
-class TtsPanel extends StatelessWidget {
-  const TtsPanel({super.key});
+class SettingsTtsPanel extends StatelessWidget {
+  const SettingsTtsPanel({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<SettingsBloc, SettingsState>(
-        listenWhen: (prev, curr) =>
-            curr.ttsError != null && prev.ttsError != curr.ttsError,
-        listener: (context, state) {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            SnackBar(
-              content: Text(state.ttsError!),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        },
-        child: const _TtsView(),
-      
+      listenWhen: (prev, curr) =>
+          curr.ttsError != null && prev.ttsError != curr.ttsError,
+      listener: (context, state) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text(state.ttsError!),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+      child: const _TtsView(),
     );
   }
 }
@@ -62,8 +62,9 @@ class _TtsView extends StatelessWidget {
           previewButton = IconButton(
             tooltip: 'Preview',
             icon: const Icon(LucideIcons.playCircle),
-            onPressed: () =>
-                context.read<SettingsBloc>().add(SettingsEvent.previewTts(active.id)),
+            onPressed: () => context.read<SettingsBloc>().add(
+              SettingsEvent.previewTts(active.id),
+            ),
           );
         }
 
@@ -357,7 +358,9 @@ class _VoiceActions extends StatelessWidget {
             LucideIcons.playCircle,
             color: isBusy ? scheme.onSurfaceVariant : scheme.primary,
           ),
-          onPressed: isBusy ? null : () => bloc.add(SettingsEvent.previewTts(model.id)),
+          onPressed: isBusy
+              ? null
+              : () => bloc.add(SettingsEvent.previewTts(model.id)),
         ),
         if (!isActive)
           TextButton(

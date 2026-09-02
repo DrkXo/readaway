@@ -1,4 +1,14 @@
-part of '../reader_widgets.dart';
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../../core/routes/routes.dart';
+import '../../../../../core/theme/theme.dart';
+import '../../../domain/models/reader_lookup.dart';
+import 'selection_menu.dart';
 
 /// Contextual (non-modal) text-selection menu for reflowable reader pages.
 ///
@@ -42,7 +52,7 @@ class _ReaderSelectionAreaState extends State<ReaderSelectionArea> {
       event.position,
     );
     _menu = OverlayEntry(
-      builder: (_) => _SelectionMenu(
+      builder: (_) => SelectionMenu(
         band: band,
         text: text,
         onDismiss: _closeMenu,

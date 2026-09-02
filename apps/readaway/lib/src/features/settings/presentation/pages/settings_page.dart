@@ -103,11 +103,11 @@ class SettingsPage extends StatelessWidget {
                 Flexible(
                   child: TabBarView(
                     children: [
-                      FontPanel(showScopeToggle: showScopeToggle),
-                      LayoutPanel(showScopeToggle: showScopeToggle),
-                      const BehaviorPanel(),
-                      const AppearancePanel(),
-                      TtsPanel(),
+                      SettingsFontPanel(showScopeToggle: showScopeToggle),
+                      SettingsLayoutPanel(showScopeToggle: showScopeToggle),
+                      const SettingsBehaviorPanel(),
+                      const SettingsAppearancePanel(),
+                      SettingsTtsPanel(),
                     ],
                   ),
                 ),

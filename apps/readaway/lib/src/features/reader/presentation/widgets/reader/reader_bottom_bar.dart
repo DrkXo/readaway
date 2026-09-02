@@ -1,201 +1,199 @@
-part of '../reader_widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// Single-row compact control bar: page nav, seek slider, progress and
-/// outline toggle. Hidden by default; revealed on hover (desktop) or by
-/// tapping its strip (touch).
-class ReaderBottomBar extends StatefulWidget {
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/core_widgets.dart';
+import '../../../reader.dart';
+
+/// Bottom bar hosting reader controls and stacking the TTS mini-player above it when active.
+class ReaderBottomBar extends StatelessWidget {
   const ReaderBottomBar({
     super.key,
     required this.onPreviousPage,
     required this.onNextPage,
     required this.onSeekToPage,
+    this.onOpenDrawer,
     this.onOutlineTap,
   });
 
-  /// Navigates to the previous page.
   final VoidCallback onPreviousPage;
-
-  /// Navigates to the next page.
   final VoidCallback onNextPage;
-
-  /// Seeks to a specific page index.
   final ValueChanged<int> onSeekToPage;
-
-  /// When set, the outline button toggles the desktop side panel instead
-  /// of opening the mobile drawer.
   final VoidCallback? onOutlineTap;
+  final VoidCallback? onOpenDrawer;
 
-  @override
-  State<ReaderBottomBar> createState() => _ReaderBottomBarState();
-}
-
-class _ReaderBottomBarState extends State<ReaderBottomBar> {
-  bool _visible = false;
-  bool _isDragging = false;
-  double? _dragValue;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _visible = true),
-      onExit: (_) => setState(() => _visible = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () => setState(() => _visible = !_visible),
-        child: SizedBox(
-          height: 56,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: AnimatedOpacity(
-              opacity: _visible ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 150),
-              child: AnimatedSlide(
-                offset: _visible ? Offset.zero : const Offset(0, 1),
-                duration: const Duration(milliseconds: 150),
-                child: IgnorePointer(
-                  ignoring: !_visible,
-                  child: _buildContent(context),
-                ),
-              ),
+  void _openFullPlayer(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) {
+        final mediaQuery = MediaQuery.of(bottomSheetContext);
+        return Container(
+          height: mediaQuery.size.height * 0.9,
+          decoration: BoxDecoration(
+            color: Theme.of(bottomSheetContext).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(24),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContent(BuildContext context) {
-    return BlocBuilder<ReaderBloc, ReaderState>(
-      buildWhen: (prev, curr) =>
-          prev.currentPage != curr.currentPage ||
-          prev.pageCount != curr.pageCount ||
-          prev.htmlPages != curr.htmlPages ||
-          prev.pageImages != curr.pageImages,
-      builder: (context, state) {
-        if (!state.hasDocument) return const SizedBox.shrink();
-        final scheme = Theme.of(context).colorScheme;
-        final page = _isDragging ? _dragValue! : state.currentPage.toDouble();
-        final percent = state.pageCount > 0
-            ? ((page / (state.pageCount - 1)) * 100).round()
-            : 0;
-
-        return Container(
-          padding: const EdgeInsets.fromLTRB(8, 2, 4, 2),
-          decoration: BoxDecoration(
-            color: scheme.surface.withValues(alpha: 0.85),
-            boxShadow: context.appColors.shadowMd,
-          ),
-          child: Row(
-            children: [
-              _buildNavButton(
-                enabled: state.currentPage > 0,
-                icon: LucideIcons.chevronLeft,
-                tooltip: 'Previous page',
-                onTap: widget.onPreviousPage,
-              ),
-              Expanded(child: _buildSlider(context, state)),
-              _buildNavButton(
-                enabled: state.currentPage < state.pageCount - 1,
-                icon: LucideIcons.chevronRight,
-                tooltip: 'Next page',
-                onTap: widget.onNextPage,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${state.currentPage + 1} / ${state.pageCount}',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$percent%',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              IconButton(
-                onPressed: state.isReflowable && state.hasDocument
-                    ? () => context.read<ReaderBloc>().add(
-                        const ReaderEvent.ttsStart(),
-                      )
-                    : null,
-                icon: const Icon(LucideIcons.audioLines, size: 20),
-                color: scheme.onSurfaceVariant,
-                visualDensity: VisualDensity.compact,
-                tooltip: 'Listen (TTS player)',
-              ),
-              IconButton(
-                onPressed:
-                    widget.onOutlineTap ??
-                    () => context
-                        .findAncestorStateOfType<ReaderPageState>()
-                        ?.scaffoldKey
-                        .currentState
-                        ?.openDrawer(),
-                icon: const Icon(LucideIcons.moreVertical, size: 20),
-                color: scheme.onSurfaceVariant,
-                visualDensity: VisualDensity.compact,
-                tooltip: 'Outline',
-              ),
-            ],
+          clipBehavior: Clip.antiAlias,
+          child: BlocProvider.value(
+            value: context.read<ReaderBloc>(),
+            child: ReaderTtsFullPlayerView(
+              onClose: () => Navigator.of(bottomSheetContext).pop(),
+              onClosePlayer: () {
+                Navigator.of(bottomSheetContext).pop();
+                context.read<ReaderBloc>().add(const ReaderEvent.ttsClose());
+              },
+              onDragUpdate: (DragUpdateDetails details) {},
+              onDragEnd: (DragEndDetails details) {},
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildSlider(BuildContext context, ReaderState state) {
-    final scheme = Theme.of(context).colorScheme;
-    final page = _isDragging ? _dragValue! : state.currentPage.toDouble();
-    return SliderTheme(
-      data: SliderTheme.of(context).copyWith(
-        trackHeight: 2,
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-        activeTrackColor: scheme.primary,
-        inactiveTrackColor: scheme.onSurface.withValues(alpha: 0.12),
-        thumbColor: scheme.primary,
-        overlayColor: scheme.primary.withValues(alpha: 0.08),
-      ),
-      child: Slider(
-        value: page
-            .clamp(0, (state.pageCount - 1).clamp(0, double.infinity))
-            .toDouble(),
-        min: 0,
-        max: (state.pageCount - 1).clamp(1, double.infinity).toDouble(),
-        onChangeStart: (v) {
-          setState(() {
-            _isDragging = true;
-            _dragValue = v;
-          });
-        },
-        onChanged: (v) {
-          setState(() => _dragValue = v);
-        },
-        onChangeEnd: (v) {
-          final target = v.round();
-          setState(() {
-            _isDragging = false;
-            _dragValue = null;
-          });
-          widget.onSeekToPage(target);
-        },
-      ),
-    );
+  void _handleHorizontalDragEnd(BuildContext context, DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final tts = context.read<ReaderBloc>().ttsController;
+    if (velocity < -200) {
+      tts.skipToNextSentence();
+    } else if (velocity > 200) {
+      tts.skipToPreviousSentence();
+    }
   }
 
-  Widget _buildNavButton({
-    required bool enabled,
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onTap,
-  }) {
-    return IconButton(
-      onPressed: enabled ? onTap : null,
-      icon: Icon(icon, size: 22),
-      visualDensity: VisualDensity.compact,
-      tooltip: tooltip,
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ReaderBloc, ReaderState>(
+      buildWhen: (prev, curr) =>
+          prev.currentPage != curr.currentPage ||
+          prev.pageCount != curr.pageCount ||
+          prev.hasDocument != curr.hasDocument ||
+          prev.ttsActive != curr.ttsActive,
+      builder: (context, state) {
+        if (!state.hasDocument) return const SizedBox.shrink();
+
+        final pageCount = state.pageCount;
+        final currentPage = state.currentPage;
+        final percent = pageCount > 0
+            ? ((currentPage / (pageCount - 1)) * 100).round()
+            : 0;
+        final maxSliderValue = (pageCount - 1)
+            .clamp(1, double.infinity)
+            .toDouble();
+        final currentSliderValue = currentPage.toDouble().clamp(
+          0.0,
+          maxSliderValue,
+        );
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 1. Top Section: Interactive TTS Mini Player stacked above
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, animation) {
+                return SizeTransition(
+                  sizeFactor: animation,
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                );
+              },
+              child: state.ttsActive
+                  ? Container(
+                      key: const ValueKey('tts_mini_player_key'),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(16),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHigh,
+                        clipBehavior: Clip.antiAlias,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _openFullPlayer(context),
+                          onHorizontalDragEnd: (details) =>
+                              _handleHorizontalDragEnd(context, details),
+                          child: ReaderTtsMiniPlayerBar(
+                            onClosePlayer: () => context.read<ReaderBloc>().add(
+                              const ReaderEvent.ttsClose(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('tts_empty_key')),
+            ),
+
+            // 2. Bottom Section: Permanent Reader Controls
+            Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0.85),
+                boxShadow: context.appColors.shadowMd,
+              ),
+              child: Row(
+                children: [
+                  AppIconButton(
+                    icon: LucideIcons.panelLeft,
+                    tooltip: 'Outline',
+                    onPressed: onOpenDrawer ?? onOutlineTap,
+                    size: AppIconButtonSize.small,
+                  ),
+                  AppIconButton(
+                    icon: LucideIcons.chevronLeft,
+                    tooltip: 'Previous page',
+                    onPressed: currentPage > 0 ? onPreviousPage : null,
+                    size: AppIconButtonSize.small,
+                  ),
+                  Expanded(
+                    child: AppSlider(
+                      value: currentSliderValue,
+                      min: 0,
+                      max: maxSliderValue,
+                      compact: true,
+                      onChanged: (v) => onSeekToPage(v.round()),
+                    ),
+                  ),
+                  AppIconButton(
+                    icon: LucideIcons.chevronRight,
+                    tooltip: 'Next page',
+                    onPressed: currentPage < pageCount - 1 ? onNextPage : null,
+                    size: AppIconButtonSize.small,
+                  ),
+                  const SizedBox(width: 8),
+                  AppCaption('${currentPage + 1} / $pageCount'),
+                  const SizedBox(width: 8),
+                  AppCaption('$percent%'),
+                  AppIconButton(
+                    icon: LucideIcons.audioLines,
+                    tooltip: 'Listen (TTS player)',
+                    onPressed: state.isReflowable
+                        ? () => context.read<ReaderBloc>().add(
+                            const ReaderEvent.ttsStart(),
+                          )
+                        : null,
+                    size: AppIconButtonSize.small,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
