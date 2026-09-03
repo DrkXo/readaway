@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:audio_service/audio_service.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -263,7 +264,16 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     if (text == null || text.trim().isEmpty) return;
 
     _ttsController.start();
-    await _ttsController.playText(text);
+    await _ttsController.playText(
+      text,
+      tag: MediaItem(
+        id: 'page-${pageIndex + 1}',
+        title: 'Page ${pageIndex + 1}',
+        album: state.bookTitle,
+        artist: state.author,
+        genre: 'Ebook',
+      ),
+    );
   }
 
   /// Called when [TtsControllerService] reports a genuine page-end (every

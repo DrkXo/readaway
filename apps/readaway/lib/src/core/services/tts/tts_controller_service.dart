@@ -8,12 +8,12 @@ part of '../services.dart';
 class TtsControllerService {
   TtsControllerService(
     this._sherpaTts,
-    this._audio,
+    this._justAudio,
     this._chunkingService,
   );
 
   final SherpaOnnxTtsService _sherpaTts;
-  final JustAudioService _audio;
+  final JustAudioService _justAudio;
   final TtsChunkingService _chunkingService;
 
   TtsVoiceOption? _voice;
@@ -82,7 +82,9 @@ class TtsControllerService {
     _pipelineStarted = true;
 
     // 1. Sync UI state with native audio player state
-    _playerStateSubscription = _audio.sessionStateStream.listen((playerState) {
+    _playerStateSubscription = _justAudio.sessionStateStream.listen((
+      playerState,
+    ) {
       if (playerState.processingState == ProcessingState.completed) {
         if (_pipelineDone) {
           // Genuine page-end: every chunk was enqueued and the queue finished.
@@ -104,7 +106,7 @@ class TtsControllerService {
     logger.d('TTS pipeline started');
     logger.d('TTS pipeline listeners starting');
     // 2. Track current active chunk natively as track indices change
-    _indexSubscription = _audio.currentIndexStream.listen((index) {
+    _indexSubscription = _justAudio.currentIndexStream.listen((index) {
       if (index != null && index >= 0 && index < _masterQueue.length) {
         _currentIndex = index;
         _chunkController.add(_masterQueue[index]);
@@ -121,7 +123,7 @@ class TtsControllerService {
   Future<void> stopPipeline() async {
     logger.d('Stopping TTS pipeline');
     _activeSessionId++;
-    await _audio.stopSession();
+    await _justAudio.stopSession();
     _indexSubscription?.cancel();
     _indexSubscription = null;
     _playerStateSubscription?.cancel();
@@ -137,6 +139,7 @@ class TtsControllerService {
     String text, {
     int startAtChunkIndex = 0,
     void Function()? onPlaybackStarted,
+    MediaItem? tag,
   }) async {
     if (_voice == null) {
       _stateController.add(
@@ -149,7 +152,7 @@ class TtsControllerService {
     }
 
     final sessionId = ++_activeSessionId;
-    await _audio.stopSession();
+    await _justAudio.stopSession();
 
     final chunks = await _chunkingService.chunkText(text);
     if (sessionId != _activeSessionId) return;
@@ -179,14 +182,15 @@ class TtsControllerService {
       });
     }
 
-    unawaited(_synthesizeAndEnqueuePipeline(sessionId, startIndex));
+    unawaited(_synthesizeAndEnqueuePipeline(sessionId, startIndex, tag));
   }
 
   /// Background pipeline that generates PCM frames and pushes them into JustAudioService
   Future<void> _synthesizeAndEnqueuePipeline(
     int sessionId,
-    int startIndex,
-  ) async {
+    int startIndex, [
+    MediaItem? tag,
+  ]) async {
     for (var i = startIndex; i < _masterQueue.length; i++) {
       if (sessionId != _activeSessionId) return;
 
@@ -202,7 +206,7 @@ class TtsControllerService {
         if (sessionId != _activeSessionId) return;
 
         // Dynamic enqueue into JustAudioService dynamic playlist queue
-        await _audio.enqueueChunk(audio);
+        await _justAudio.enqueueChunk(audio, tag);
       } catch (e) {
         if (sessionId != _activeSessionId) return;
         logger.d('TTS synthesis failed for chunk index $i', e);
@@ -222,22 +226,22 @@ class TtsControllerService {
   }
 
   Future<void> pause() async {
-    await _audio.pause();
+    await _justAudio.pause();
   }
 
   Future<void> resume() async {
-    await _audio.resume();
+    await _justAudio.resume();
   }
 
   Future<void> stop() async {
     _activeSessionId++;
-    await _audio.stopSession();
+    await _justAudio.stopSession();
     _resetPlaybackState();
   }
 
   Future<void> skipToNextSentence() async {
     if (_currentIndex + 1 < _masterQueue.length) {
-      await _audio.seekToChunk(_currentIndex + 1);
+      await _justAudio.seekToChunk(_currentIndex + 1);
     } else {
       await stop();
     }
@@ -245,14 +249,14 @@ class TtsControllerService {
 
   Future<void> skipToPreviousSentence() async {
     if (_currentIndex > 0) {
-      await _audio.seekToChunk(_currentIndex - 1);
+      await _justAudio.seekToChunk(_currentIndex - 1);
     }
   }
 
   /// Seeks playback to the sentence at [index] in the current queue.
   Future<void> seekToChunk(int index) async {
     if (index < 0 || index >= _masterQueue.length) return;
-    await _audio.seekToChunk(index);
+    await _justAudio.seekToChunk(index);
   }
 
   void _resetPlaybackState() {

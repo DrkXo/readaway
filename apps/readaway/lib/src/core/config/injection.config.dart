@@ -29,16 +29,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i264.HiveConfigService>(() => _i264.HiveConfigService());
     gh.singleton<_i494.AppRoutes>(() => _i494.AppRoutes());
     gh.singleton<_i264.AppLifecycleManager>(() => _i264.AppLifecycleManager());
-    await gh.singletonAsync<_i264.JustAudioService>(
-      () {
-        final i = _i264.JustAudioService();
-        return i.init().then((_) => i);
-      },
-      preResolve: true,
-      dispose: (i) => i.dispose(),
-    );
     await gh.singletonAsync<_i264.LoggingService>(() {
       final i = _i264.LoggingService();
+      return i.init().then((_) => i);
+    }, preResolve: true);
+    await gh.singletonAsync<_i264.PackageInfoService>(() {
+      final i = _i264.PackageInfoService();
       return i.init().then((_) => i);
     }, preResolve: true);
     gh.singleton<_i264.WakelockService>(() => _i264.WakelockService());
@@ -51,6 +47,14 @@ extension GetItInjectableX on _i174.GetIt {
       dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i264.TextChunker>(() => _i264.TextChunker());
+    await gh.singletonAsync<_i264.NotificationService>(
+      () {
+        final i = _i264.NotificationService(gh<_i264.PackageInfoService>());
+        return i.initialize().then((_) => i);
+      },
+      dependsOn: [_i264.PackageInfoService],
+      preResolve: true,
+    );
     await gh.lazySingletonAsync<_i264.HttpService>(() {
       final i = _i264.HttpService(logger: gh<_i264.LoggingService>());
       return i.initialize().then((_) => i);
@@ -70,6 +74,22 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i264.SherpaTtsModelCatalogService(
         httpService: gh<_i264.HttpService>(),
       ),
+    );
+    await gh.singletonAsync<_i264.JustAudioService>(
+      () {
+        final i = _i264.JustAudioService(
+          gh<_i264.PackageInfoService>(),
+          gh<_i264.NotificationService>(),
+        );
+        return i.init().then((_) => i);
+      },
+      dependsOn: [
+        _i264.LoggingService,
+        _i264.NotificationService,
+        _i264.PackageInfoService,
+      ],
+      preResolve: true,
+      dispose: (i) => i.dispose(),
     );
     gh.singleton<_i264.SherpaTtsModelDownloaderService>(
       () => _i264.SherpaTtsModelDownloaderService(
@@ -135,6 +155,13 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
+    gh.lazySingleton<_i228.SettingsBloc>(
+      () => _i228.SettingsBloc(
+        storage: gh<_i264.AppStorageService>(),
+        settingsService: gh<_i264.SettingsService>(),
+        ttsService: gh<_i264.SherpaOnnxTtsService>(),
+      ),
+    );
     await gh.singletonAsync<_i264.FontService>(() {
       final i = _i264.FontService(settings: gh<_i264.SettingsService>());
       return i.init().then((_) => i);
@@ -146,14 +173,6 @@ extension GetItInjectableX on _i174.GetIt {
       },
       preResolve: true,
       dispose: (i) => i.dispose(),
-    );
-    gh.factory<_i228.SettingsBloc>(
-      () => _i228.SettingsBloc(
-        storage: gh<_i264.AppStorageService>(),
-        settingsService: gh<_i264.SettingsService>(),
-        ttsService: gh<_i264.SherpaOnnxTtsService>(),
-        audio: gh<_i264.JustAudioService>(),
-      ),
     );
     gh.factory<_i523.ReaderBloc>(
       () => _i523.ReaderBloc(

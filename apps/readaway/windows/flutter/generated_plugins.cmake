@@ -3,12 +3,14 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  audio_service_win
   media_kit_libs_windows_audio
   screen_retriever_windows
   window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  flutter_local_notifications_windows
   jni
   sherpa_onnx_windows
 )

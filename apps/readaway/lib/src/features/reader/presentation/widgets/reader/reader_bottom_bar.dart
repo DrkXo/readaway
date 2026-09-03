@@ -6,7 +6,10 @@ import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../reader.dart';
 
-/// Bottom bar hosting reader controls and stacking the TTS mini-player above it when active.
+/// Fixed-height reader control bar (page navigation, outline, TTS toggle).
+///
+/// The TTS mini/full player itself now lives in [ReaderTtsPlayerOverlay],
+/// which floats above this bar so it can expand to fill the screen.
 class ReaderBottomBar extends StatelessWidget {
   const ReaderBottomBar({
     super.key,
@@ -23,48 +26,9 @@ class ReaderBottomBar extends StatelessWidget {
   final VoidCallback? onOutlineTap;
   final VoidCallback? onOpenDrawer;
 
-  void _openFullPlayer(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) {
-        final mediaQuery = MediaQuery.of(bottomSheetContext);
-        return Container(
-          height: mediaQuery.size.height * 0.9,
-          decoration: BoxDecoration(
-            color: Theme.of(bottomSheetContext).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: BlocProvider.value(
-            value: context.read<ReaderBloc>(),
-            child: ReaderTtsFullPlayerView(
-              onClose: () => Navigator.of(bottomSheetContext).pop(),
-              onClosePlayer: () {
-                Navigator.of(bottomSheetContext).pop();
-                context.read<ReaderBloc>().add(const ReaderEvent.ttsClose());
-              },
-              onDragUpdate: (DragUpdateDetails details) {},
-              onDragEnd: (DragEndDetails details) {},
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _handleHorizontalDragEnd(BuildContext context, DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
-    final tts = context.read<ReaderBloc>().ttsController;
-    if (velocity < -200) {
-      tts.skipToNextSentence();
-    } else if (velocity > 200) {
-      tts.skipToPreviousSentence();
-    }
-  }
+  /// Height of the fixed control row. Shared with [ReaderTtsPlayerOverlay]
+  /// so the collapsed mini player sits flush above these controls.
+  static const double height = 56;
 
   @override
   Widget build(BuildContext context) {
@@ -72,8 +36,7 @@ class ReaderBottomBar extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.currentPage != curr.currentPage ||
           prev.pageCount != curr.pageCount ||
-          prev.hasDocument != curr.hasDocument ||
-          prev.ttsActive != curr.ttsActive,
+          prev.hasDocument != curr.hasDocument,
       builder: (context, state) {
         if (!state.hasDocument) return const SizedBox.shrink();
 
@@ -90,108 +53,60 @@ class ReaderBottomBar extends StatelessWidget {
           maxSliderValue,
         );
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 1. Top Section: Interactive TTS Mini Player stacked above
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              transitionBuilder: (child, animation) {
-                return SizeTransition(
-                  sizeFactor: animation,
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  ),
-                );
-              },
-              child: state.ttsActive
-                  ? Container(
-                      key: const ValueKey('tts_mini_player_key'),
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: Material(
-                        elevation: 4,
-                        borderRadius: BorderRadius.circular(16),
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHigh,
-                        clipBehavior: Clip.antiAlias,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => _openFullPlayer(context),
-                          onHorizontalDragEnd: (details) =>
-                              _handleHorizontalDragEnd(context, details),
-                          child: ReaderTtsMiniPlayerBar(
-                            onClosePlayer: () => context.read<ReaderBloc>().add(
-                              const ReaderEvent.ttsClose(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(key: ValueKey('tts_empty_key')),
-            ),
-
-            // 2. Bottom Section: Permanent Reader Controls
-            Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.surface.withValues(alpha: 0.85),
-                boxShadow: context.appColors.shadowMd,
+        return Container(
+          height: height,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).colorScheme.surface.withValues(alpha: 0.85),
+            boxShadow: context.appColors.shadowMd,
+          ),
+          child: Row(
+            children: [
+              AppIconButton(
+                icon: LucideIcons.panelLeft,
+                tooltip: 'Outline',
+                onPressed: onOpenDrawer ?? onOutlineTap,
+                size: AppIconButtonSize.small,
               ),
-              child: Row(
-                children: [
-                  AppIconButton(
-                    icon: LucideIcons.panelLeft,
-                    tooltip: 'Outline',
-                    onPressed: onOpenDrawer ?? onOutlineTap,
-                    size: AppIconButtonSize.small,
-                  ),
-                  AppIconButton(
-                    icon: LucideIcons.chevronLeft,
-                    tooltip: 'Previous page',
-                    onPressed: currentPage > 0 ? onPreviousPage : null,
-                    size: AppIconButtonSize.small,
-                  ),
-                  Expanded(
-                    child: AppSlider(
-                      value: currentSliderValue,
-                      min: 0,
-                      max: maxSliderValue,
-                      compact: true,
-                      onChanged: (v) => onSeekToPage(v.round()),
-                    ),
-                  ),
-                  AppIconButton(
-                    icon: LucideIcons.chevronRight,
-                    tooltip: 'Next page',
-                    onPressed: currentPage < pageCount - 1 ? onNextPage : null,
-                    size: AppIconButtonSize.small,
-                  ),
-                  const SizedBox(width: 8),
-                  AppCaption('${currentPage + 1} / $pageCount'),
-                  const SizedBox(width: 8),
-                  AppCaption('$percent%'),
-                  AppIconButton(
-                    icon: LucideIcons.audioLines,
-                    tooltip: 'Listen (TTS player)',
-                    onPressed: state.isReflowable
-                        ? () => context.read<ReaderBloc>().add(
-                            const ReaderEvent.ttsStart(),
-                          )
-                        : null,
-                    size: AppIconButtonSize.small,
-                  ),
-                ],
+              AppIconButton(
+                icon: LucideIcons.chevronLeft,
+                tooltip: 'Previous page',
+                onPressed: currentPage > 0 ? onPreviousPage : null,
+                size: AppIconButtonSize.small,
               ),
-            ),
-          ],
+              Expanded(
+                child: AppSlider(
+                  value: currentSliderValue,
+                  min: 0,
+                  max: maxSliderValue,
+                  compact: true,
+                  onChanged: (v) => onSeekToPage(v.round()),
+                ),
+              ),
+              AppIconButton(
+                icon: LucideIcons.chevronRight,
+                tooltip: 'Next page',
+                onPressed: currentPage < pageCount - 1 ? onNextPage : null,
+                size: AppIconButtonSize.small,
+              ),
+              const SizedBox(width: 8),
+              AppCaption('${currentPage + 1} / $pageCount'),
+              const SizedBox(width: 8),
+              AppCaption('$percent%'),
+              AppIconButton(
+                icon: LucideIcons.audioLines,
+                tooltip: 'Listen (TTS player)',
+                onPressed: state.isReflowable
+                    ? () => context.read<ReaderBloc>().add(
+                        const ReaderEvent.ttsStart(),
+                      )
+                    : null,
+                size: AppIconButtonSize.small,
+              ),
+            ],
+          ),
         );
       },
     );

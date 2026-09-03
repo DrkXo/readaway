@@ -15,12 +15,12 @@ part 'settings_bloc.g.dart';
 part 'settings_event.dart';
 part 'settings_state.dart';
 
-@Injectable()
+@lazySingleton
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final AppStorageService _storage;
   final SettingsService _settingsService;
   final SherpaOnnxTtsService _ttsService;
-  final JustAudioService _audio;
+  // final JustAudioService _audio;
 
   final _ttsDownloadSubs =
       <String, StreamSubscription<ModelDownloadProgress>>{};
@@ -29,7 +29,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     required this._storage,
     required this._settingsService,
     required this._ttsService,
-    required this._audio,
+    // required this._audio,
   }) : super(
          SettingsState(
            globalReaderPrefs: ReaderPreferences(),
@@ -417,7 +417,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         speed: 1.0,
       );
 
-      await _audio.playPreview(pcmAudio);
+      await justAudioService.playPreview(pcmAudio);
 
       if (previousActive != null && previousActive != event.modelId) {
         await _ttsService.loadModel(previousActive);

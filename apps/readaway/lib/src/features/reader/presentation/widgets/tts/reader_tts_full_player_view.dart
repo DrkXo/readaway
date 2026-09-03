@@ -180,9 +180,12 @@ class ReaderTtsFullPlayerView extends StatelessWidget {
           ),
 
           // 3. Anchored Bottom Media Controls Section
-          _BottomPlayerControls(
-            onDragUpdate: onDragUpdate,
-            onDragEnd: onDragEnd,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _BottomPlayerControls(
+              onDragUpdate: onDragUpdate,
+              onDragEnd: onDragEnd,
+            ),
           ),
         ],
       ),
