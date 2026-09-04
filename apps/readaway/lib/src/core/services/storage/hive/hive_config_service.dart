@@ -2,6 +2,10 @@ part of '../../services.dart';
 
 @injectable
 class HiveConfigService {
+  final AppPathService _pathService;
+
+  HiveConfigService(this._pathService);
+
   static const String boxName = 'reader_prefs';
   static const String boxExtension = '.hive';
   static const String lockExtension = '.lock';
@@ -10,10 +14,8 @@ class HiveConfigService {
   String get lockFileName => '$boxName$lockExtension';
 
   Future<String> getHiveDirectory() async {
-    // final dir = await getApplicationDocumentsDirectory();
-    final dir = await getApplicationSupportDirectory();
-
-    return p.join(dir.path, 'config');
+    final dir = await _pathService.getHiveDirectory();
+    return dir.path;
   }
 
   Future<String> getBoxPath() async {

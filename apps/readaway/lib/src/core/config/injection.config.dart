@@ -12,13 +12,13 @@
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
-import '../services/html_document_parser.dart' as _i404;
 import '../../features/reader/domain/services/document_parser.dart' as _i428;
 import '../../features/reader/presentation/bloc/reader_bloc.dart' as _i523;
 import '../../features/settings/presentation/bloc/settings/settings_bloc.dart'
     as _i228;
 import '../../router/router.dart' as _i295;
 import '../routes/routes.dart' as _i494;
+import '../services/html_document_parser.dart' as _i865;
 import '../services/services.dart' as _i264;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -28,7 +28,6 @@ extension GetItInjectableX on _i174.GetIt {
     _i526.EnvironmentFilter? environmentFilter,
   }) async {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
-    gh.factory<_i264.HiveConfigService>(() => _i264.HiveConfigService());
     gh.singleton<_i494.AppRoutes>(() => _i494.AppRoutes());
     gh.singleton<_i264.AppLifecycleManager>(() => _i264.AppLifecycleManager());
     await gh.singletonAsync<_i264.LoggingService>(() {
@@ -48,9 +47,13 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
+    gh.lazySingleton<_i264.AppPathService>(() => _i264.AppPathService());
     gh.lazySingleton<_i264.TextChunker>(() => _i264.TextChunker());
+    gh.factory<_i264.HiveConfigService>(
+      () => _i264.HiveConfigService(gh<_i264.AppPathService>()),
+    );
     gh.lazySingleton<_i428.DocumentParser<String>>(
-      () => const _i404.HtmlDocumentParser(),
+      () => const _i865.HtmlDocumentParser(),
     );
     await gh.singletonAsync<_i264.NotificationService>(
       () {
@@ -61,7 +64,10 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
     );
     await gh.lazySingletonAsync<_i264.HttpService>(() {
-      final i = _i264.HttpService(logger: gh<_i264.LoggingService>());
+      final i = _i264.HttpService(
+        logger: gh<_i264.LoggingService>(),
+        pathService: gh<_i264.AppPathService>(),
+      );
       return i.initialize().then((_) => i);
     }, preResolve: true);
     gh.singleton<_i264.IsolateService>(
@@ -96,25 +102,6 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.singleton<_i264.SherpaTtsModelDownloaderService>(
-      () => _i264.SherpaTtsModelDownloaderService(
-        client: gh<_i264.HttpService>(),
-        catalog: gh<_i264.SherpaTtsModelCatalogService>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
-    await gh.singletonAsync<_i264.SherpaOnnxTtsService>(
-      () {
-        final i = _i264.SherpaOnnxTtsService(
-          downloader: gh<_i264.SherpaTtsModelDownloaderService>(),
-          sherpaTtsModelCatalog: gh<_i264.SherpaTtsModelCatalogService>(),
-          isolateService: gh<_i264.IsolateService>(),
-        );
-        return i.init().then((_) => i);
-      },
-      preResolve: true,
-      dispose: (i) => i.dispose(),
-    );
     gh.lazySingleton<_i264.LookupService>(
       () => _i264.LookupService(gh<_i264.HttpService>()),
     );
@@ -131,6 +118,27 @@ extension GetItInjectableX on _i174.GetIt {
         final i = _i264.AppStorageService(
           config: gh<_i264.HiveConfigService>(),
           isolateService: gh<_i264.IsolateService>(),
+        );
+        return i.init().then((_) => i);
+      },
+      preResolve: true,
+      dispose: (i) => i.dispose(),
+    );
+    gh.singleton<_i264.SherpaTtsModelDownloaderService>(
+      () => _i264.SherpaTtsModelDownloaderService(
+        client: gh<_i264.HttpService>(),
+        catalog: gh<_i264.SherpaTtsModelCatalogService>(),
+        pathService: gh<_i264.AppPathService>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
+    await gh.singletonAsync<_i264.SherpaOnnxTtsService>(
+      () {
+        final i = _i264.SherpaOnnxTtsService(
+          downloader: gh<_i264.SherpaTtsModelDownloaderService>(),
+          sherpaTtsModelCatalog: gh<_i264.SherpaTtsModelCatalogService>(),
+          isolateService: gh<_i264.IsolateService>(),
+          pathService: gh<_i264.AppPathService>(),
         );
         return i.init().then((_) => i);
       },
@@ -176,10 +184,6 @@ extension GetItInjectableX on _i174.GetIt {
         documentParser: gh<_i428.DocumentParser<String>>(),
       ),
     );
-    await gh.singletonAsync<_i264.FontService>(() {
-      final i = _i264.FontService(settings: gh<_i264.SettingsService>());
-      return i.init().then((_) => i);
-    }, preResolve: true);
     await gh.singletonAsync<_i264.ThemeService>(
       () {
         final i = _i264.ThemeService(settings: gh<_i264.SettingsService>());
@@ -188,6 +192,13 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
+    await gh.singletonAsync<_i264.FontService>(() {
+      final i = _i264.FontService(
+        settings: gh<_i264.SettingsService>(),
+        pathService: gh<_i264.AppPathService>(),
+      );
+      return i.init().then((_) => i);
+    }, preResolve: true);
     return this;
   }
 }

@@ -5,10 +5,12 @@ class SherpaTtsModelDownloaderService {
   SherpaTtsModelDownloaderService({
     required this._client,
     required this._catalog,
+    required this._pathService,
   });
 
   final HttpService _client;
   final SherpaTtsModelCatalogService _catalog;
+  final AppPathService _pathService;
 
   final _downloadControllers =
       <String, StreamController<ModelDownloadProgress>>{};
@@ -104,7 +106,7 @@ class SherpaTtsModelDownloaderService {
     required void Function(ModelDownloadStage stage, double fraction)
     onProgress,
   }) async {
-    final tmpDir = await getTemporaryDirectory();
+    final tmpDir = await _pathService.tempDirectory;
     final archivePath = p.join(tmpDir.path, url.split('/').last);
     final archiveFile = File(archivePath);
 
@@ -177,7 +179,7 @@ class SherpaTtsModelDownloaderService {
     final espeakDir = Directory(p.join(modelsRoot.path, 'espeak-ng-data'));
     if (await espeakDir.exists()) return;
 
-    final tmpDir = await getTemporaryDirectory();
+    final tmpDir = await _pathService.tempDirectory;
     final archivePath = p.join(tmpDir.path, 'espeak-ng-data.tar.bz2');
     final archiveFile = File(archivePath);
 

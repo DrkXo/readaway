@@ -6,11 +6,13 @@ class SherpaOnnxTtsService {
     required this._downloader,
     required this._sherpaTtsModelCatalog,
     required this._isolateService,
+    required this._pathService,
   });
 
   final SherpaTtsModelDownloaderService _downloader;
   final SherpaTtsModelCatalogService _sherpaTtsModelCatalog;
   final IsolateService _isolateService;
+  final AppPathService _pathService;
 
   SherpaTtsModelInfo? _activeModel;
   Directory? _modelsRootDir;
@@ -41,12 +43,7 @@ class SherpaOnnxTtsService {
   }
 
   Future<Directory> _resolveModelsRootDir() async {
-    final support = await getApplicationSupportDirectory();
-    final dir = Directory(p.join(support.path, 'tts_models'));
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-    return dir;
+    return _pathService.getTtsModelsDirectory();
   }
 
   @disposeMethod

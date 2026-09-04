@@ -4,6 +4,7 @@ part of '../services.dart';
 @Singleton()
 class HttpService {
   final LoggingService logger;
+  final AppPathService _pathService;
 
   final Dio _dio;
 
@@ -22,14 +23,15 @@ class HttpService {
 
   HttpService({
     required this.logger,
-  }) : _dio = Dio(
-         BaseOptions(
-           connectTimeout: _defaultTimeout,
-           receiveTimeout: _defaultTimeout,
-           sendTimeout: _defaultTimeout,
-           contentType: 'application/json',
-         ),
-       ) {
+    required this._pathService,
+  })  : _dio = Dio(
+          BaseOptions(
+            connectTimeout: _defaultTimeout,
+            receiveTimeout: _defaultTimeout,
+            sendTimeout: _defaultTimeout,
+            contentType: 'application/json',
+          ),
+        ) {
     _configureAdapter();
   }
 
@@ -76,9 +78,7 @@ class HttpService {
   /// downloads) are never cached — only callers that opt in via [getCached]
   /// get cached responses.
   Future<void> _initCache() async {
-    final support = await getApplicationSupportDirectory();
-    final dir = Directory(p.join(support.path, 'dio_cache'));
-    await dir.create(recursive: true);
+    final dir = await _pathService.getHttpCacheDirectory();
     _cacheStore = FileCacheStore(dir.path);
     _cacheInterceptor = DioCacheInterceptor(
       options: CacheOptions(

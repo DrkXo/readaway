@@ -50,6 +50,7 @@ part 'lookup/lookup_service.dart';
 part 'mupdf_service.dart';
 part 'notification_service.dart';
 part "package_info_service.dart";
+part 'path_service.dart';
 part 'settings_service.dart';
 part 'storage/hive/app_storage_service.dart';
 part 'storage/hive/hive_config_service.dart';

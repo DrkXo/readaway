@@ -8,9 +8,8 @@ part of 'services.dart';
 /// [TextStyle.fontFamily] resolution.
 @Singleton()
 class FontService {
-  static const String _fontsDirName = 'custom_fonts';
-
   final SettingsService _settings;
+  final AppPathService _pathService;
 
   /// Family names currently registered with the engine.
   final Set<String> _registered = <String>{};
@@ -18,7 +17,10 @@ class FontService {
   /// Directory where copied font files live.
   Directory? _fontsDir;
 
-  FontService({required this._settings});
+  FontService({
+    required this._settings,
+    required this._pathService,
+  });
 
   /// Family names of all custom fonts (registered or pending registration).
   List<String> get customFontFamilyNames =>
@@ -29,11 +31,7 @@ class FontService {
 
   @PostConstruct(preResolve: true)
   Future<void> init() async {
-    final docs = await getApplicationSupportDirectory();
-    _fontsDir = Directory(p.join(docs.path, F.name, _fontsDirName));
-    if (!await _fontsDir!.exists()) {
-      await _fontsDir!.create(recursive: true);
-    }
+    _fontsDir = await _pathService.getFontsDirectory();
     await _loadRegisteredFonts();
   }
 
