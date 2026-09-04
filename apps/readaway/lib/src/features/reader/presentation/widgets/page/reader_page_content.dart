@@ -112,16 +112,25 @@ class ReaderHtmlPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final html = state.htmlPages![index];
+    final doc = state.documentPages != null && index < state.documentPages!.length
+        ? state.documentPages![index]
+        : null;
 
-    if (html == null) {
-      context.read<ReaderBloc>().add(ReaderEvent.loadPage(index: index));
+    if (doc == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          final bloc = context.read<ReaderBloc>();
+          if (!bloc.isClosed) {
+            bloc.add(ReaderEvent.loadPage(index: index));
+          }
+        }
+      });
       return const Center(child: CircularProgressIndicator());
     }
 
     return AutoScrollableHtmlPage(
       index: index,
-      html: html,
+      document: doc,
       prefs: prefs,
       autoScrollController: autoScrollController,
       onTapUrl: (url) => _onTapUrl(context, url),
@@ -156,10 +165,19 @@ class ReaderImagePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final image = state.pageImages![index];
+    final image = state.pageImages != null && index < state.pageImages!.length
+        ? state.pageImages![index]
+        : null;
 
     if (image == null) {
-      context.read<ReaderBloc>().add(ReaderEvent.loadPage(index: index));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          final bloc = context.read<ReaderBloc>();
+          if (!bloc.isClosed) {
+            bloc.add(ReaderEvent.loadPage(index: index));
+          }
+        }
+      });
       return const Center(child: CircularProgressIndicator());
     }
 

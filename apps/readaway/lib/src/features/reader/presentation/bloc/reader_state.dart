@@ -9,7 +9,7 @@ abstract class ReaderState with _$ReaderState {
     @Default(false) bool isReflowable,
     @Default(0) int pageCount,
     @Default(0) int currentPage,
-    List<String?>? htmlPages,
+    List<ReaderDocument?>? documentPages,
     List<ui.Image?>? pageImages,
     @Default(<int>{}) Set<int> loadingPages,
     List<OutlineItem>? outline,
@@ -20,5 +20,5 @@ abstract class ReaderState with _$ReaderState {
 
   const ReaderState._();
 
-  bool get hasDocument => htmlPages != null || pageImages != null;
+  bool get hasDocument => documentPages != null || pageImages != null;
 }

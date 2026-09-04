@@ -118,13 +118,15 @@ class AppLifecycleManager with WidgetsBindingObserver {
     logger.d('[AppLifecycleManager] Initialized');
 
     // Emit initialization event
-    _lifecycleEventSubject.add(
-      LifecycleEvent(
-        type: LifecycleEventType.initialized,
-        currentState: currentState,
-        timestamp: DateTime.now(),
-      ),
-    );
+    if (!_lifecycleEventSubject.isClosed) {
+      _lifecycleEventSubject.add(
+        LifecycleEvent(
+          type: LifecycleEventType.initialized,
+          currentState: currentState,
+          timestamp: DateTime.now(),
+        ),
+      );
+    }
   }
 
   @override
@@ -137,11 +139,11 @@ class AppLifecycleManager with WidgetsBindingObserver {
     _previousState = state;
 
     // Update the state stream
-    _lifecycleStateSubject.add(state);
+    if (!_lifecycleStateSubject.isClosed) _lifecycleStateSubject.add(state);
 
     // Determine the event type and emit appropriate event
     final event = _createLifecycleEvent(state, previousState);
-    _lifecycleEventSubject.add(event);
+    if (!_lifecycleEventSubject.isClosed) _lifecycleEventSubject.add(event);
 
     // Track time stamps
     _updateTimestamps(state);

@@ -28,6 +28,9 @@ class MuPdfService {
     );
   }
 
+  int _nextId = 0;
+  int _generateId() => ++_nextId;
+
   Future<T> _sendCommand<T>(dynamic command) async {
     await _ensureIsolate();
     return _isolateService.sendCommand<T>(_isolateName, command);
@@ -35,7 +38,7 @@ class MuPdfService {
 
   Future<void> openDocument(String path) {
     return _sendCommand({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'open',
       'path': path,
     });
@@ -43,7 +46,7 @@ class MuPdfService {
 
   Future<String?> getMetaData(String key) {
     return _sendCommand<String?>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'getMetaData',
       'key': key,
     });
@@ -51,21 +54,21 @@ class MuPdfService {
 
   Future<int> getPageCount() {
     return _sendCommand<int>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'getPageCount',
     });
   }
 
   Future<int> getChapterCount() {
     return _sendCommand<int>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'getChapterCount',
     });
   }
 
   Future<int> getChapterPageCount(int chapter) {
     return _sendCommand<int>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'getChapterPageCount',
       'chapter': chapter,
     });
@@ -73,21 +76,21 @@ class MuPdfService {
 
   Future<List<OutlineItem>> getOutLine() async {
     return _sendCommand<List<OutlineItem>>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'getOutLine',
     });
   }
 
   Future<bool> isReflowable() {
     return _sendCommand<bool>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'isReflowable',
     });
   }
 
   Future<bool> hasPermission(int permission) {
     return _sendCommand<bool>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'hasPermission',
       'permission': permission,
     });
@@ -95,14 +98,14 @@ class MuPdfService {
 
   Future<bool> needsPassword() {
     return _sendCommand<bool>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'needsPassword',
     });
   }
 
   Future<bool> authenticatePassword(String pass) {
     return _sendCommand<bool>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'authenticatePassword',
       'pass': pass,
     });
@@ -110,7 +113,7 @@ class MuPdfService {
 
   Future<String?> extractPageHtml(int pageIndex) {
     return _sendCommand<String?>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'extractHtml',
       'index': pageIndex,
     });
@@ -118,7 +121,7 @@ class MuPdfService {
 
   Future<String?> extractPageText(int pageIndex) {
     return _sendCommand<String?>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'extractText',
       'index': pageIndex,
     });
@@ -126,7 +129,7 @@ class MuPdfService {
 
   Future<List<PageLink>> getPageLinks(int pageIndex) {
     return _sendCommand<List<PageLink>>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'extractLinks',
       'index': pageIndex,
     });
@@ -138,7 +141,7 @@ class MuPdfService {
     double scaleY = 2.0,
   }) {
     return _sendCommand<Map<String, dynamic>?>({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'renderPage',
       'pageIndex': pageIndex,
       'scaleX': scaleX,
@@ -148,7 +151,7 @@ class MuPdfService {
 
   Future<void> closeDocument() {
     return _sendCommand({
-      'id': DateTime.now().microsecondsSinceEpoch,
+      'id': _generateId(),
       'type': 'close',
     });
   }

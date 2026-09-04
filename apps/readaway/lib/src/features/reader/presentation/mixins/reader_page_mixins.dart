@@ -83,7 +83,9 @@ mixin ReaderControllerMixin on State<ReaderPage> implements TickerProvider {
   }
 
   void closeReader() {
-    readerBloc.add(const ReaderEvent.closeDocument());
+    if (!readerBloc.isClosed) {
+      readerBloc.add(const ReaderEvent.closeDocument());
+    }
     if (mounted) context.pop();
   }
 
@@ -94,7 +96,9 @@ mixin ReaderControllerMixin on State<ReaderPage> implements TickerProvider {
     isScrollingNotifier.dispose();
     autoScrollController.dispose();
     wakelockService.disable();
-    readerBloc.add(const ReaderEvent.closeDocument());
+    if (!readerBloc.isClosed) {
+      readerBloc.add(const ReaderEvent.closeDocument());
+    }
     pageViewController.dispose();
   }
 }

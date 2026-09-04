@@ -36,8 +36,6 @@ class JustAudioService {
   // Reused instance for one-off previews so we don't leak native players.
   AudioPlayer? _previewPlayer;
 
-  mk.Player? _desktopNativePlayer;
-
   // Auto-ends the session (and hides the notification) once the queue
   // finishes playing, instead of leaving a stale "completed" notification.
   StreamSubscription<ProcessingState>? _completionSubscription;
@@ -64,26 +62,15 @@ class JustAudioService {
     JustAudioMediaKit.ensureInitialized(
       linux: true,
       windows: true,
-      android: true,
-      iOS: true,
-      macOS: true,
     );
 
     JustAudioMediaKit.title = F.name;
 
-    if (!kReleaseMode) {
-      JustAudioMediaKit.mpvLogLevel = mk.MPVLogLevel.debug;
-    }
+    // JustAudioMediaKit.mpvLogLevel = mk.MPVLogLevel.info;
 
     _audioSessionInstance = await AudioSession.instance;
 
     _sessionPlayer = AudioPlayer();
-
-    // Only spin up the native mpv helper on desktop — it's only used
-    // there for output-device enumeration/selection.
-    if (isDesktop) {
-      _desktopNativePlayer = mk.Player();
-    }
 
     if (isDesktop && Platform.isLinux) {
       AudioServiceMpris.init(
@@ -150,32 +137,9 @@ class JustAudioService {
     await _audioSessionInstance.configure(config);
   }
 
-  Future<List<mk.AudioDevice>> getDesktopOutputDevices() async {
-    final desktopPlayer = _desktopNativePlayer;
-    if (desktopPlayer == null) return [];
+  Future<List<mk.AudioDevice>> getDesktopOutputDevices() async => const [];
 
-    if (desktopPlayer.state.audioDevices.isNotEmpty) {
-      return desktopPlayer.state.audioDevices;
-    }
-
-    try {
-      return await desktopPlayer.stream.audioDevices
-          .firstWhere((devices) => devices.isNotEmpty)
-          .timeout(const Duration(seconds: 2));
-    } catch (_) {
-      return desktopPlayer.state.audioDevices;
-    }
-  }
-
-  Future<void> setDesktopAudioDevice(mk.AudioDevice device) async {
-    // actually playing audio (owned internally by just_audio_media_kit via
-    // `_sessionPlayer`), so this currently changes the device on a player
-    // that plays nothing — it will NOT change what the user hears. This
-    // needs a supported way to reach the native player backing
-    // `_sessionPlayer` specifically; flagging rather than guessing at an
-    // unverified internal API.
-    await _desktopNativePlayer?.setAudioDevice(device);
-  }
+  Future<void> setDesktopAudioDevice(mk.AudioDevice device) async {}
 
   /// Returns the available output devices as a unified [OutputAudioDevice]
   /// list, regardless of platform.
@@ -423,7 +387,6 @@ class JustAudioService {
 
       await _sessionPlayer.stop();
 
-      await _desktopNativePlayer?.dispose();
       await _audioSessionInstance.setActive(false);
 
       // Real teardown of the handler's internal subscriptions — only do
@@ -435,7 +398,6 @@ class JustAudioService {
     } finally {
       await _sessionPlayer.dispose();
 
-      _desktopNativePlayer = null;
       _previewPlayer = null;
 
       _audioHandler = null;

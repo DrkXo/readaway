@@ -1,21 +1,19 @@
-import 'package:csslib/parser.dart' as css;
-import 'package:csslib/visitor.dart' as css;
-import 'package:flutter/material.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:mupdf/mupdf.dart';
 
+import '../../models/reader/reader_block.dart';
 import '../../models/reader/stext_line_geom.dart';
 
-/// Layout reconstruction for MuPDF's structured-text HTML output.
+/// Layout reconstruction and pure string/math utilities for MuPDF's
+/// structured-text HTML output.
 ///
 /// That extraction emits one `<p style="top;left;line-height">` per rendered
 /// visual line, with book typography preserved as inline spans
 /// (`<b>/<i>/<tt>/<sup>` plus `<span style="font-size:Npt;color">`). These
 /// helpers fuse consecutive lines back into logical paragraphs using their
 /// geometry, and map extracted font sizes onto the app's base size while
-/// keeping the book's relative hierarchy. Colors come from the app theme;
-/// [resolveFontSize] takes the place of the book's absolute sizes.
+/// keeping the book's relative hierarchy.
 
 /// Groups consecutive stext line-paragraphs into logical paragraphs.
 ///
@@ -26,11 +24,6 @@ import '../../models/reader/stext_line_geom.dart';
 ///
 /// Two consecutive link-wrapped lines ([mergePageLinks]) never fuse, so TOC
 /// entries render as separate tappable rows instead of one wall of text.
-///
-/// ponytail: geometric heuristic; centered/right-aligned blocks with tight
-/// leading can be split or fused incorrectly — revisit if a book hits it.
-/// ponytail: two adjacent link-bearing prose lines (multi-line hyperlink)
-/// split into two blocks — same line-granularity ceiling as mergePageLinks.
 List<List<dom.Element>> groupParagraphLines(List<dom.Element> lines) {
   final groups = <List<dom.Element>>[];
   var current = <dom.Element>[];
@@ -114,7 +107,7 @@ double? parseCssPt(String? raw) {
 
 Map<String, String> parseStyles(dom.Element element) {
   final style = element.attributes['style'];
-  if (style == null || style.isEmpty) return {};
+  if (style == null || style.isEmpty) return const {};
   return parseDeclarations(style);
 }
 
@@ -140,25 +133,25 @@ bool shouldDehyphenate(String prevLine, String nextLine) {
 /// "refined" instead of "refined- essences". Returns true once stripped.
 ///
 /// **Mutates [spans] in place** — caller must pass a mutable list.
-bool stripTrailingHyphen(List<InlineSpan> spans) {
+bool stripTrailingHyphen(List<ReaderSpan> spans) {
   for (var i = spans.length - 1; i >= 0; i--) {
     final span = spans[i];
-    if (span is WidgetSpan) continue;
-    final ts = span as TextSpan;
-    final text = ts.text;
-    if (text != null && text.isNotEmpty) {
+    if (span is! ReaderTextSpan) continue;
+    final text = span.text;
+    if (text.isNotEmpty) {
       if (!text.endsWith('-')) return false;
-      spans[i] = TextSpan(
+      spans[i] = span.copyWith(
         text: text.substring(0, text.length - 1),
-        style: ts.style,
-        children: ts.children,
-        recognizer: ts.recognizer,
       );
       return true;
     }
-    final children = ts.children;
-    if (children != null && children.isNotEmpty) {
-      return stripTrailingHyphen(children);
+    final children = span.children;
+    if (children.isNotEmpty) {
+      final mutableChildren = List<ReaderSpan>.from(children);
+      if (stripTrailingHyphen(mutableChildren)) {
+        spans[i] = span.copyWith(children: mutableChildren);
+        return true;
+      }
     }
   }
   return false;
@@ -171,10 +164,6 @@ bool _isCjkChar(String ch) => RegExp(
 /// Wraps stext line-paragraphs whose geometry intersects a link hot zone in
 /// an `<a href>` so taps reach the reader widget's `onTapUrl`. Internal links
 /// become `#page=N` (flat page index); external URIs are kept verbatim.
-///
-/// ponytail: line granularity — stext HTML lines carry no width, so two
-/// links overlapping one line collapse to the first; word-level rects need
-/// char quads from a custom extractor.
 void mergePageLinks(dom.Document document, List<PageLink> links) {
   if (links.isEmpty) return;
   for (final p in document.querySelectorAll('p')) {
@@ -245,50 +234,64 @@ List<int> precacheCandidates(int currentIndex, int pageCount) {
   ].where((idx) => idx >= 0 && idx < pageCount).toList();
 }
 
-/// Parses CSS declaration blocks (the content of a `style` attribute) into a
-/// property → value map.
+/// Fast single-pass scanner for CSS inline declaration blocks (`style="..."`).
 ///
-/// This is the single shared entry point for all CSS parsing in the app. It
-/// delegates to `package:csslib`'s real tokenizer/parser instead of the
-/// fragile `split(';')`/`split(':')` string splitting that used to live in
-/// [parseStyles] and `_stripHeight`. Because it returns the same
-/// `Map<String, String>` contract, existing consumers are unaffected.
-///
-/// csslib parses full stylesheets, so a bare declaration block is wrapped in
-/// a dummy selector (`x { ... }`) before parsing, then the first ruleset's
-/// declarations are extracted. Errors are collected and ignored (best-effort),
-/// so malformed CSS degrades to an empty/partial map rather than throwing.
-/// Parses [style] (a CSS declaration block, e.g. `color: red; font-size: 12pt`)
-/// into a map of lowercased property → trimmed value.
-///
-/// Returns an empty map for null/empty input or when nothing parses.
+/// Parses key-value pairs without AST overhead or `csslib` allocation bursts.
+/// Correctly respects quotes and parentheses so font families and URLs are safe.
 Map<String, String> parseDeclarations(String style) {
   final trimmed = style.trim();
   if (trimmed.isEmpty) return const {};
 
-  final errors = <css.Message>[];
-  // Wrap the declaration block in a dummy selector so csslib parses it as a
-  // ruleset's declaration group.
-  final sheet = css.parse('x { $trimmed }', errors: errors);
-
   final result = <String, String>{};
-  for (final top in sheet.topLevels) {
-    if (top is! css.RuleSet) continue;
-    for (final node in top.declarationGroup.declarations) {
-      if (node is! css.Declaration) continue;
-      final value = _serializeValue(node);
-      if (value.isEmpty) continue;
-      result[node.property.toLowerCase()] = value;
+  final len = trimmed.length;
+  var i = 0;
+
+  while (i < len) {
+    var colon = -1;
+    var semicolon = -1;
+    var inSingleQuote = false;
+    var inDoubleQuote = false;
+    var parenDepth = 0;
+
+    final start = i;
+    while (i < len) {
+      final c = trimmed.codeUnitAt(i);
+      if (c == 39 /* ' */ && !inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+      } else if (c == 34 /* " */ && !inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
+      } else if (!inSingleQuote && !inDoubleQuote) {
+        if (c == 40 /* ( */) {
+          parenDepth++;
+        } else if (c == 41 /* ) */) {
+          if (parenDepth > 0) parenDepth--;
+        } else if (c == 58 /* : */ && colon == -1 && parenDepth == 0) {
+          colon = i;
+        } else if (c == 59 /* ; */ && parenDepth == 0) {
+          semicolon = i;
+          break;
+        }
+      }
+      i++;
+    }
+
+    if (semicolon == -1) {
+      semicolon = i;
+    }
+
+    if (colon != -1 && colon > start && colon < semicolon) {
+      final key = trimmed.substring(start, colon).trim().toLowerCase();
+      final value = trimmed.substring(colon + 1, semicolon).trim();
+      if (key.isNotEmpty && value.isNotEmpty) {
+        result[key] = value;
+      }
+    }
+
+    i = semicolon + 1;
+    while (i < len && trimmed.codeUnitAt(i) <= 32) {
+      i++;
     }
   }
-  return result;
-}
 
-/// Serializes a declaration's expression back to its CSS value string.
-String _serializeValue(css.Declaration declaration) {
-  final expression = declaration.expression;
-  if (expression == null) return '';
-  final printer = css.CssPrinter();
-  expression.visit(printer);
-  return printer.toString().trim();
+  return result;
 }

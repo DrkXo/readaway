@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../../../core/models/reader/reader_document.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../../settings/domain/models/reader_preferences.dart';
 import '../../controllers/auto_scroll_controller.dart';
@@ -12,14 +13,14 @@ class AutoScrollableHtmlPage extends StatefulWidget {
   const AutoScrollableHtmlPage({
     super.key,
     required this.index,
-    required this.html,
+    required this.document,
     required this.prefs,
     required this.autoScrollController,
     required this.onTapUrl,
   });
 
   final int index;
-  final String html;
+  final ReaderDocument document;
   final ReaderPreferences prefs;
   final AutoScrollController? autoScrollController;
   final ValueChanged<String> onTapUrl;
@@ -76,7 +77,7 @@ class AutoScrollableHtmlPageState extends State<AutoScrollableHtmlPage> {
               width: double.infinity,
               child: ReaderSelectionArea(
                 child: ReaderHtmlWidget(
-                  html: widget.html,
+                  document: widget.document,
                   appColors: context.appColors,
                   baseFontSize: widget.prefs.fontSize,
                   lineHeight: widget.prefs.lineHeight,

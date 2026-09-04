@@ -1,9 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/reader/reader_block.dart';
-import '../widgets/widgets.dart';
+import '../widgets/page/reader_html_widget.dart';
 
 extension ReaderBlockListX on List<ReaderBlock> {
   List<Widget> mapBlocks(PaintContext ctx) {
@@ -30,7 +31,7 @@ Widget? _mapBlock(ReaderBlock block, PaintContext ctx) {
             text: '\u200B${' ' * ctx.textIndent.round()}',
             style: ctx.baseStyle,
           ),
-        ...spans,
+        for (final s in spans) _mapSpan(s, ctx, ctx.baseStyle),
       ];
       final rich = Text.rich(
         TextSpan(children: effectiveSpans, style: ctx.baseStyle),
@@ -59,10 +60,11 @@ Widget? _mapBlock(ReaderBlock block, PaintContext ctx) {
         ),
         _ => ctx.baseStyle.copyWith(fontWeight: FontWeight.bold),
       };
+      final mappedSpans = spans.map((s) => _mapSpan(s, ctx, style)).toList();
       return Padding(
         padding: EdgeInsets.only(top: level == 1 ? 24 : 16, bottom: 8),
         child: RepaintBoundary(
-          child: Text.rich(TextSpan(children: spans, style: style)),
+          child: Text.rich(TextSpan(children: mappedSpans, style: style)),
         ),
       );
     case SpacerBlock():
@@ -177,4 +179,131 @@ Widget? _mapBlock(ReaderBlock block, PaintContext ctx) {
         ),
       );
   }
+}
+
+InlineSpan _mapSpan(
+  ReaderSpan span,
+  PaintContext ctx,
+  TextStyle parentStyle, {
+  GestureRecognizer? inheritedRecognizer,
+}) {
+  if (span is ReaderInlineImageSpan) {
+    Widget? widget;
+    if (span.bytes != null) {
+      widget = Image.memory(span.bytes!, fit: BoxFit.contain);
+    } else if (span.file != null) {
+      widget = Image.file(File(span.file!), fit: BoxFit.contain);
+    } else if (span.url != null) {
+      widget = Image.network(span.url!, fit: BoxFit.contain);
+    }
+    if (widget == null) return const TextSpan(text: '');
+    if (inheritedRecognizer is TapGestureRecognizer &&
+        inheritedRecognizer.onTap != null) {
+      widget = GestureDetector(
+        onTap: inheritedRecognizer.onTap,
+        child: widget,
+      );
+    }
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: RepaintBoundary(child: widget),
+      ),
+    );
+  }
+
+  if (span is ReaderTextSpan) {
+    var style = parentStyle;
+
+    if (!ctx.overrideFont && span.fontFamily != null) {
+      final family = _resolveFontFamily(span.fontFamily!, ctx);
+      if (family != null) {
+        style = style.copyWith(fontFamily: family);
+      }
+    }
+
+    if (span.monospace) {
+      style = style.copyWith(fontFamily: ctx.monospaceFont);
+    }
+
+    if (span.bold) {
+      style = style.copyWith(fontWeight: FontWeight.bold);
+    }
+
+    if (span.italic) {
+      style = style.copyWith(fontStyle: FontStyle.italic);
+    }
+
+    final decorations = <TextDecoration>[];
+    if (span.underline || span.linkHref != null) {
+      decorations.add(TextDecoration.underline);
+    }
+    if (span.strikethrough) {
+      decorations.add(TextDecoration.lineThrough);
+    }
+    if (decorations.isNotEmpty) {
+      style = style.copyWith(decoration: TextDecoration.combine(decorations));
+    }
+
+    if (span.fontSizeRatio != null && span.fontSizeRatio! > 0) {
+      final baseSize = ctx.baseStyle.fontSize ?? 18.0;
+      final clampedRatio = span.fontSizeRatio!.clamp(0.5, 4.0);
+      style = style.copyWith(fontSize: baseSize * clampedRatio);
+    }
+
+    if (span.subscript || span.superscript) {
+      style = style.copyWith(
+        fontSize: (style.fontSize ?? 18.0) * 0.7,
+        height: 1,
+      );
+    }
+
+    GestureRecognizer? recognizer;
+    if (span.linkHref != null && ctx.recognizerFor != null) {
+      recognizer = ctx.recognizerFor!(span.linkHref!);
+    }
+
+    final effectiveRecognizer = recognizer ?? inheritedRecognizer;
+
+    final children = span.children
+        .map((c) => _mapSpan(
+              c,
+              ctx,
+              style,
+              inheritedRecognizer: effectiveRecognizer,
+            ))
+        .toList();
+
+    return TextSpan(
+      text: span.text.isNotEmpty ? span.text : null,
+      style: style,
+      recognizer: effectiveRecognizer,
+      children: children.isNotEmpty ? children : null,
+    );
+  }
+
+  return const TextSpan(text: '');
+}
+
+String? _resolveFontFamily(String raw, PaintContext ctx) {
+  for (final part in raw.split(',')) {
+    final name = part.trim().replaceAll(RegExp('^["\']+|["\']+\$'), '');
+    if (name.isEmpty) continue;
+    switch (name.toLowerCase()) {
+      case 'serif':
+        return ctx.serifFont;
+      case 'sans-serif':
+        return ctx.sansSerifFont;
+      case 'monospace':
+        return ctx.monospaceFont;
+      case 'cursive':
+      case 'fantasy':
+      case 'system-ui':
+        continue;
+      default:
+        return name;
+    }
+  }
+  return null;
 }

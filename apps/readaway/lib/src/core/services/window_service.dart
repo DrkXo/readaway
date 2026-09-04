@@ -92,6 +92,7 @@ class WindowService with WindowListener {
 
     await setDefaultTitle();
     _wm.addListener(this);
+    await _wm.setPreventClose(true);
   }
 
   Future<void> setDefaultTitle() async {
@@ -172,7 +173,7 @@ class WindowService with WindowListener {
 
   Future<void> close() async {
     if (!isDesktop) return;
-    await _wm.close();
+    await onWindowClose();
   }
 
   Future<void> destroy() async {
@@ -301,9 +302,25 @@ class WindowService with WindowListener {
     await _wm.setIcon(iconPath);
   }
 
+  bool _isShuttingDown = false;
+
   @override
-  void onWindowClose() {
-    _closeSubject.add(null);
+  Future<void> onWindowClose() async {
+    if (!isDesktop || _isShuttingDown) return;
+    _isShuttingDown = true;
+
+    if (!_closeSubject.isClosed) _closeSubject.add(null);
+
+    try {
+      appLifecycleManager.dispose();
+      await GetIt.I.reset();
+    } catch (e, st) {
+      Logger(
+        'WindowService',
+      ).severe('Error during graceful shutdown: $e', e, st);
+    } finally {
+      await _wm.destroy();
+    }
   }
 
   @override

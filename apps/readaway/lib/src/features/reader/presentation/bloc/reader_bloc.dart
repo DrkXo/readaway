@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_initializing_formals
+
 import 'dart:async';
 import 'dart:ui' as ui;
 
@@ -8,10 +10,12 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mupdf/mupdf.dart';
 
+import '../../../../core/models/reader/reader_document.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/utils/reader/reader_html_utils.dart';
 import '../../../../core/utils/reader/reader_image_utils.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
+import '../../domain/services/document_parser.dart';
 
 part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';
@@ -23,6 +27,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   final MuPdfService _muPdfService;
   final TtsControllerService _ttsController;
   final SettingsBloc _settingsBloc;
+  final DocumentParser<String> _documentParser;
 
   StreamSubscription<TtsPlaybackEvent>? _ttsStateSub;
 
@@ -31,14 +36,20 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   bool _autoAdvancing = false;
 
   ReaderBloc({
-    required this._windowService,
-    required this._muPdfService,
-    required this._ttsController,
-    required this._settingsBloc,
-  }) : super(const ReaderState()) {
+    required WindowService windowService,
+    required MuPdfService muPdfService,
+    required TtsControllerService ttsController,
+    required SettingsBloc settingsBloc,
+    required DocumentParser<String> documentParser,
+  })  : _windowService = windowService,
+        _muPdfService = muPdfService,
+        _ttsController = ttsController,
+        _settingsBloc = settingsBloc,
+        _documentParser = documentParser,
+        super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
     on<_PageChanged>(_onPageChanged);
-    on<_LoadPage>(_onLoadPage, transformer: droppable());
+    on<_LoadPage>(_onLoadPage, transformer: concurrent());
     on<_CloseDocument>(_onCloseDocument);
     on<_TtsStart>(_onTtsStart);
     on<_TtsClose>(_onTtsClose);
@@ -55,8 +66,18 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   /// Exposes the TTS playback controller to reader widgets.
   TtsControllerService get ttsController => _ttsController;
 
+  void _disposeImages() {
+    final images = state.pageImages;
+    if (images != null) {
+      for (final img in images) {
+        img?.dispose();
+      }
+    }
+  }
+
   @override
   Future<void> close() async {
+    _disposeImages();
     await _ttsStateSub?.cancel();
     await _ttsController.stopPipeline();
     await _muPdfService.closeDocument();
@@ -68,11 +89,12 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _OpenDocument event,
     Emitter<ReaderState> emit,
   ) async {
+    _disposeImages();
     emit(
       state.copyWith(
         loading: true,
         error: null,
-        htmlPages: null,
+        documentPages: null,
         pageImages: null,
       ),
     );
@@ -95,7 +117,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           fileName: fileName,
           pageCount: count,
           isReflowable: reflowable,
-          htmlPages: reflowable ? List<String?>.filled(count, null) : null,
+          documentPages:
+              reflowable ? List<ReaderDocument?>.filled(count, null) : null,
           pageImages: reflowable ? null : List<ui.Image?>.filled(count, null),
           currentPage: 0,
           outline: outline,
@@ -142,10 +165,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     }
 
     final index = event.index;
-    if (state.htmlPages == null || index < 0 || index >= state.pageCount) {
+    if (state.documentPages == null || index < 0 || index >= state.pageCount) {
       return;
     }
-    if (state.htmlPages![index] != null || state.loadingPages.contains(index)) {
+    if (state.documentPages![index] != null ||
+        state.loadingPages.contains(index)) {
       return;
     }
 
@@ -157,23 +181,21 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         service.extractPageHtml(index),
         service.getPageLinks(index),
       ).wait;
-      final html = sanitizeHtml(rawHtml, links) ?? '';
 
-      final pages = List<String?>.from(state.htmlPages!);
-      pages[index] = html;
+      final doc = _documentParser.parse(rawHtml ?? '', links: links);
+
+      final pages = List<ReaderDocument?>.from(state.documentPages!);
+      pages[index] = doc;
       emit(
         state.copyWith(
-          htmlPages: pages,
+          documentPages: pages,
           loadingPages: {...state.loadingPages}..remove(index),
         ),
       );
     } catch (e) {
-      logger.d('Failed to load page $index');
-      final pages = List<String?>.from(state.htmlPages!);
-      pages[index] = '<p>Error loading page: $e</p>';
+      logger.d('Failed to load page $index: $e');
       emit(
         state.copyWith(
-          htmlPages: pages,
           loadingPages: {...state.loadingPages}..remove(index),
         ),
       );
@@ -198,9 +220,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     try {
       final rendered = await _muPdfService.renderPage(index);
       final images = List<ui.Image?>.from(state.pageImages!);
-      images[index] = rendered == null
-          ? null
-          : await decodeRenderedPage(rendered);
+      images[index]?.dispose();
+      images[index] =
+          rendered == null ? null : await decodeRenderedPage(rendered);
       emit(
         state.copyWith(
           pageImages: images,
@@ -208,7 +230,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         ),
       );
     } catch (e) {
-      logger.d('Failed to render page $index');
+      logger.d('Failed to render page $index: $e');
       emit(
         state.copyWith(loadingPages: {...state.loadingPages}..remove(index)),
       );
@@ -219,6 +241,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _CloseDocument event,
     Emitter<ReaderState> emit,
   ) {
+    _disposeImages();
     _muPdfService.closeDocument();
     _windowService.setDefaultTitle();
     emit(const ReaderState());
@@ -324,7 +347,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   void _precachePages(int currentIndex) {
-    final pages = state.isReflowable ? state.htmlPages : state.pageImages;
+    final pages = state.isReflowable ? state.documentPages : state.pageImages;
     if (pages == null) return;
 
     for (final idx in precacheCandidates(currentIndex, state.pageCount)) {

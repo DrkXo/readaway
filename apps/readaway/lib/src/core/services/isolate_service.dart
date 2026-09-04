@@ -90,7 +90,9 @@ class IsolateService {
       if (message is SendPort) {
         if (!completer.isCompleted) completer.complete(message);
       } else {
-        instance.responseSubject.add(message);
+        if (!instance.responseSubject.isClosed) {
+          instance.responseSubject.add(message);
+        }
       }
     });
 

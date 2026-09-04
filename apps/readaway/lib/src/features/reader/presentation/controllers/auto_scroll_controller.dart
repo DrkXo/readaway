@@ -43,6 +43,7 @@ class AutoScrollController extends ChangeNotifier {
   bool _paused = false;
   bool _flipping = false;
   Duration _lastElapsed = Duration.zero;
+  double _shortPageDwellAccumulator = 0.0;
 
   /// Whether auto-scroll is currently active (running and not paused).
   bool get isActive => _running && !_paused;
@@ -75,6 +76,7 @@ class AutoScrollController extends ChangeNotifier {
   void setCurrentPage(int index) {
     _currentPage = index;
     _flipping = false;
+    _shortPageDwellAccumulator = 0.0;
     // Reset the elapsed baseline so the first tick after a page change
     // doesn't produce a large delta.
     _lastElapsed = Duration.zero;
@@ -146,9 +148,13 @@ class AutoScrollController extends ChangeNotifier {
     final current = position.pixels;
     final delta = pixelsPerSecond * dt;
 
-    // Content shorter than the viewport (or at the very end): flip now.
+    // Content shorter than the viewport: dwell before flipping.
     if (maxExtent <= 0) {
-      _flipToNextPage();
+      final targetDwell = (6.0 - _speed).clamp(1.5, 6.0);
+      _shortPageDwellAccumulator += dt;
+      if (_shortPageDwellAccumulator >= targetDwell) {
+        _flipToNextPage();
+      }
       return;
     }
 
@@ -173,6 +179,7 @@ class AutoScrollController extends ChangeNotifier {
 
   @override
   void dispose() {
+    stop();
     _ticker.dispose();
     _pageControllers.clear();
     super.dispose();

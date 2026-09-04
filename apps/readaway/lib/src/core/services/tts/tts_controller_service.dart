@@ -89,18 +89,24 @@ class TtsControllerService {
         if (_pipelineDone) {
           // Genuine page-end: every chunk was enqueued and the queue finished.
           _currentIndex = -1;
-          _chunkController.add(null);
-          _stateController.add(
-            const TtsPlaybackEvent(TtsPlaybackState.completed),
-          );
+          if (!_chunkController.isClosed) _chunkController.add(null);
+          if (!_stateController.isClosed) {
+            _stateController.add(
+              const TtsPlaybackEvent(TtsPlaybackState.completed),
+            );
+          }
         }
         // Otherwise this is a transient completion while synthesis is still
         // enqueuing; JustAudioService.enqueueChunk auto-resumes playback.
       } else if (playerState.playing) {
-        _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.playing));
+        if (!_stateController.isClosed) {
+          _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.playing));
+        }
       } else if (!playerState.playing &&
           playerState.processingState == ProcessingState.ready) {
-        _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.paused));
+        if (!_stateController.isClosed) {
+          _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.paused));
+        }
       }
     });
     logger.d('TTS pipeline started');
@@ -142,12 +148,14 @@ class TtsControllerService {
     MediaItem? tag,
   }) async {
     if (_voice == null) {
-      _stateController.add(
-        const TtsPlaybackEvent(
-          TtsPlaybackState.error,
-          message: 'No voice selected. Call setVoice() first.',
-        ),
-      );
+      if (!_stateController.isClosed) {
+        _stateController.add(
+          const TtsPlaybackEvent(
+            TtsPlaybackState.error,
+            message: 'No voice selected. Call setVoice() first.',
+          ),
+        );
+      }
       return;
     }
 
@@ -159,8 +167,10 @@ class TtsControllerService {
 
     _masterQueue = chunks;
     _currentIndex = -1;
-    _chunkController.add(null);
-    _queueController.add(_queueController.value + 1);
+    if (!_chunkController.isClosed) _chunkController.add(null);
+    if (!_queueController.isClosed) {
+      _queueController.add(_queueController.value + 1);
+    }
 
     if (_masterQueue.isEmpty) {
       _resetPlaybackState();
@@ -261,8 +271,10 @@ class TtsControllerService {
 
   void _resetPlaybackState() {
     _currentIndex = -1;
-    _chunkController.add(null);
-    _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.stopped));
+    if (!_chunkController.isClosed) _chunkController.add(null);
+    if (!_stateController.isClosed) {
+      _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.stopped));
+    }
   }
 
   Future<List<TtsVoiceOption>> getInstalledVoices() async {
@@ -291,7 +303,9 @@ class TtsControllerService {
 
   Future<void> setVoice(TtsVoiceOption voice) async {
     _voice = voice;
-    _voiceController.add(voice);
+    if (!_voiceController.isClosed) {
+      _voiceController.add(voice);
+    }
   }
 
   @disposeMethod

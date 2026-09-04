@@ -23,6 +23,12 @@ class _ReadAwayState extends State<ReadAway> {
   }
 
   @override
+  void dispose() {
+    appLifecycleManager.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final router = GetIt.I.get<AppRouter>().router;
     final themeService = GetIt.I.get<ThemeService>();

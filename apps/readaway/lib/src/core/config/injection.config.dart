@@ -12,6 +12,8 @@
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
+import '../services/html_document_parser.dart' as _i404;
+import '../../features/reader/domain/services/document_parser.dart' as _i428;
 import '../../features/reader/presentation/bloc/reader_bloc.dart' as _i523;
 import '../../features/settings/presentation/bloc/settings/settings_bloc.dart'
     as _i228;
@@ -47,6 +49,9 @@ extension GetItInjectableX on _i174.GetIt {
       dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i264.TextChunker>(() => _i264.TextChunker());
+    gh.lazySingleton<_i428.DocumentParser<String>>(
+      () => const _i404.HtmlDocumentParser(),
+    );
     await gh.singletonAsync<_i264.NotificationService>(
       () {
         final i = _i264.NotificationService(gh<_i264.PackageInfoService>());
@@ -132,14 +137,6 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i264.TtsControllerService>(
-      () => _i264.TtsControllerService(
-        gh<_i264.SherpaOnnxTtsService>(),
-        gh<_i264.JustAudioService>(),
-        gh<_i264.TtsChunkingService>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
     await gh.singletonAsync<_i264.SettingsService>(
       () {
         final i = _i264.SettingsService(storage: gh<_i264.AppStorageService>());
@@ -155,11 +152,28 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
+    gh.lazySingleton<_i264.TtsControllerService>(
+      () => _i264.TtsControllerService(
+        gh<_i264.SherpaOnnxTtsService>(),
+        gh<_i264.JustAudioService>(),
+        gh<_i264.TtsChunkingService>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
     gh.lazySingleton<_i228.SettingsBloc>(
       () => _i228.SettingsBloc(
         storage: gh<_i264.AppStorageService>(),
         settingsService: gh<_i264.SettingsService>(),
         ttsService: gh<_i264.SherpaOnnxTtsService>(),
+      ),
+    );
+    gh.factory<_i523.ReaderBloc>(
+      () => _i523.ReaderBloc(
+        windowService: gh<_i264.WindowService>(),
+        muPdfService: gh<_i264.MuPdfService>(),
+        ttsController: gh<_i264.TtsControllerService>(),
+        settingsBloc: gh<_i228.SettingsBloc>(),
+        documentParser: gh<_i428.DocumentParser<String>>(),
       ),
     );
     await gh.singletonAsync<_i264.FontService>(() {
@@ -173,14 +187,6 @@ extension GetItInjectableX on _i174.GetIt {
       },
       preResolve: true,
       dispose: (i) => i.dispose(),
-    );
-    gh.factory<_i523.ReaderBloc>(
-      () => _i523.ReaderBloc(
-        windowService: gh<_i264.WindowService>(),
-        muPdfService: gh<_i264.MuPdfService>(),
-        ttsController: gh<_i264.TtsControllerService>(),
-        settingsBloc: gh<_i228.SettingsBloc>(),
-      ),
     );
     return this;
   }
