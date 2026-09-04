@@ -36,7 +36,6 @@ dependencies:
   path_provider: ^2.1.3
   path: ^1.9.1
   wakelock_plus: ^1.2.10
-  flutter_shaders: ^0.1.3
   window_manager: ^0.5.2
   just_audio: ^0.10.6
   audio_session: ^0.2.4
@@ -73,5 +72,3 @@ flutter:
   uses-material-design: true
   assets:
     - assets/google_fonts/
-  shaders:
-    - assets/shaders/tactile_surface.frag

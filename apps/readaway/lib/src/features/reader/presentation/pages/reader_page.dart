@@ -114,10 +114,9 @@ class _ReaderPageState extends State<ReaderPage>
                         onNextPage: pageViewController.nextPage,
                         onSeekToPage: pageViewController.goToPage,
                       ),
-                      body: TactileReaderBackground(
-                        appColors: context.appColors,
-                        child: NestedScrollView(
-                          controller: scrollController,
+                      backgroundColor: context.appColors.readerBackground,
+                      body: NestedScrollView(
+                        controller: scrollController,
                           headerSliverBuilder: (context, innerBoxIsScrolled) =>
                               [
                               SliverAppBar(
@@ -188,7 +187,6 @@ class _ReaderPageState extends State<ReaderPage>
                           ),
                         ),
                       ),
-                    ),
 
                     const ReaderTtsPlayerOverlay(),
                   ],

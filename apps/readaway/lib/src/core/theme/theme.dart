@@ -1,10 +1,6 @@
 library;
 
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter_shaders/flutter_shaders.dart';
-import 'package:readaway/src/core/app_assets.dart';
 
 extension ThemeExtensions on BuildContext {
   AppColors get appColors => Theme.of(this).extension<AppColors>()!;
@@ -223,88 +219,6 @@ class AppColors extends ThemeExtension<AppColors> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// TactileReaderBackground — GPU shader paper/slate texture
-// ---------------------------------------------------------------------------
-
-class TactileReaderBackground extends StatelessWidget {
-  const TactileReaderBackground({
-    super.key,
-    required this.appColors,
-    required this.child,
-  });
-
-  final AppColors appColors;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ShaderBuilder(
-      (context, shader, child) {
-        return _TactileSurface(
-          shader: shader,
-          appColors: appColors,
-          child: child!,
-        );
-      },
-      assetKey: AppShaders.tactileSurface,
-      child: child,
-    );
-  }
-}
-
-class _TactileSurface extends StatelessWidget {
-  const _TactileSurface({
-    required this.shader,
-    required this.appColors,
-    required this.child,
-  });
-
-  final ui.FragmentShader shader;
-  final AppColors appColors;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _SurfacePainter(shader: shader, appColors: appColors),
-      child: child,
-    );
-  }
-}
-
-class _SurfacePainter extends CustomPainter {
-  _SurfacePainter({
-    required this.shader,
-    required this.appColors,
-  });
-
-  final ui.FragmentShader shader;
-  final AppColors appColors;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final baseColor = appColors.readerBackground;
-    final isDark = appColors.scheme.brightness == Brightness.dark;
-
-    shader.setFloat(0, size.width);
-    shader.setFloat(1, size.height);
-    shader.setFloat(2, isDark ? 1.0 : 0.0);
-    shader.setFloat(3, baseColor.r);
-    shader.setFloat(4, baseColor.g);
-    shader.setFloat(5, baseColor.b);
-    shader.setFloat(6, 1.0);
-
-    final paint = Paint()..shader = shader;
-    canvas.drawRect(Offset.zero & size, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SurfacePainter oldDelegate) {
-    return oldDelegate.appColors.scheme.brightness !=
-        appColors.scheme.brightness;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Reader typography
