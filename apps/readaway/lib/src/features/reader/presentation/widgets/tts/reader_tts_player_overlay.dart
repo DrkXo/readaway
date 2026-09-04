@@ -17,10 +17,7 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
     with SingleTickerProviderStateMixin {
   static const _presenceDuration = Duration(milliseconds: 220);
 
-  late final AnimationController _presence = AnimationController(
-    vsync: this,
-    duration: _presenceDuration,
-  );
+  late final AnimationController _presence;
 
   bool _sheetMounted = false;
   bool _active = false;
@@ -28,6 +25,10 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
   @override
   void initState() {
     super.initState();
+    _presence = AnimationController(
+      vsync: this,
+      duration: _presenceDuration,
+    );
     final active = context.read<ReaderBloc>().state.ttsActive;
     _active = active;
     _sheetMounted = active;
@@ -99,11 +100,17 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
   static const _fadeOutEnd = 0.45;
   static const _fadeInStart = 0.3;
 
-  late final _motion = SingleMotionController(
-    motion: MaterialSpringMotion.expressiveSpatialDefault(),
-    vsync: this,
-    initialValue: 0.0,
-  );
+  late final SingleMotionController _motion;
+
+  @override
+  void initState() {
+    super.initState();
+    _motion = SingleMotionController(
+      motion: MaterialSpringMotion.expressiveSpatialDefault(),
+      vsync: this,
+      initialValue: 0.0,
+    );
+  }
 
   @override
   void dispose() {

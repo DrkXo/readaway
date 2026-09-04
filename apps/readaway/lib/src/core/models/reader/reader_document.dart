@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -111,6 +112,19 @@ class ReaderDocument {
 
     for (final node in nodes) {
       if (node is dom.Element && node.localName?.toLowerCase() == 'p') {
+        final imgChild = node.children.length == 1 &&
+                node.children.first.localName?.toLowerCase() == 'img' &&
+                node.text.trim().isEmpty
+            ? node.children.first
+            : null;
+        if (imgChild != null) {
+          flushRun();
+          final imgBlock = _image(imgChild);
+          if (imgBlock != null) {
+            blocks.add(imgBlock);
+            continue;
+          }
+        }
         run.add(node);
         continue;
       }
@@ -214,9 +228,16 @@ class ReaderDocument {
     if (src == null || src.isEmpty) return null;
 
     if (src.startsWith('data:image')) {
-      final base64Data = src.replaceFirst(_dataUriRegex, '');
+      final commaIndex = src.indexOf(',');
+      if (commaIndex == -1) return null;
+      final rawBase64 = src.substring(commaIndex + 1);
+      final cleanBase64 = rawBase64.contains('\n') ||
+              rawBase64.contains('\r') ||
+              rawBase64.contains(' ')
+          ? rawBase64.replaceAll(RegExp(r'\s+'), '')
+          : rawBase64;
       try {
-        return ImageBlock(bytes: base64Decode(base64Data));
+        return ImageBlock(bytes: base64Decode(cleanBase64));
       } catch (_) {
         return null;
       }
@@ -316,8 +337,6 @@ class _BuildContext {
   /// `font-family` declarations.
   final bool overrideFont;
 }
-
-final RegExp _dataUriRegex = RegExp(r'data:image/[^;]+;base64,');
 
 /// Builds the inline span tree for [nodes], threading [baseStyle] down and
 /// applying tag semantics (`b/i/u/s/sub/sup/code/a/...`) plus inline
@@ -419,6 +438,25 @@ InlineSpan? _inlineSpan(
       return TextSpan(
         style: style.copyWith(fontFamily: ctx.monospaceFont),
         children: children,
+      );
+    case 'img':
+      final imgBlock = ReaderDocument._image(node);
+      if (imgBlock == null) return null;
+      Widget? widget;
+      if (imgBlock.bytes != null) {
+        widget = Image.memory(imgBlock.bytes!, fit: BoxFit.contain);
+      } else if (imgBlock.file != null) {
+        widget = Image.file(File(imgBlock.file!), fit: BoxFit.contain);
+      } else if (imgBlock.url != null) {
+        widget = Image.network(imgBlock.url!, fit: BoxFit.contain);
+      }
+      if (widget == null) return null;
+      return WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: RepaintBoundary(child: widget),
+        ),
       );
     default:
       final text = node.text.trim();

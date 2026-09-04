@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:typed_data';
 
@@ -152,6 +153,56 @@ typedef FzPageNumberFromLocationDart =
 typedef FzIsExternalLinkNative = Int32 Function(mupdf_context, Pointer<Utf8>);
 typedef FzIsExternalLinkDart = int Function(mupdf_context, Pointer<Utf8>);
 
+final class FzMatrix extends Struct {
+  @Float()
+  external double a;
+  @Float()
+  external double b;
+  @Float()
+  external double c;
+  @Float()
+  external double d;
+  @Float()
+  external double e;
+  @Float()
+  external double f;
+}
+
+typedef FzNewBufferFromPageWithFormatNative =
+    Pointer<Void> Function(
+      Pointer<Void>,
+      Pointer<Void>,
+      Pointer<Utf8>,
+      Pointer<Utf8>,
+      FzMatrix,
+      Pointer<Void>,
+    );
+typedef FzNewBufferFromPageWithFormatDart =
+    Pointer<Void> Function(
+      Pointer<Void>,
+      Pointer<Void>,
+      Pointer<Utf8>,
+      Pointer<Utf8>,
+      FzMatrix,
+      Pointer<Void>,
+    );
+
+typedef FzBufferStorageNative =
+    Size Function(
+      Pointer<Void>,
+      Pointer<Void>,
+      Pointer<Pointer<Uint8>>,
+    );
+typedef FzBufferStorageDart =
+    int Function(
+      Pointer<Void>,
+      Pointer<Void>,
+      Pointer<Pointer<Uint8>>,
+    );
+
+typedef FzDropBufferNative = Void Function(Pointer<Void>, Pointer<Void>);
+typedef FzDropBufferDart = void Function(Pointer<Void>, Pointer<Void>);
+
 /// The wrapper hands out handles to
 /// `struct mupdf_context_s { fz_context* ctx; char last_error[256]; }`;
 /// direct fz_* calls need the inner fz_context*, not the handle.
@@ -239,13 +290,59 @@ class MuPdfPage {
   }
 
   /// Extract HTML from the page.
-  String? extractHtml() {
-    final ptr = _lib.mupdf_extract_html(_ctx, _page);
-    if (ptr == nullptr) return null;
+  ///
+  /// If [preserveImages] is true (default), images on the page are serialized as
+  /// base64 data URIs within the extracted HTML.
+  String? extractHtml({bool preserveImages = true}) {
+    if (!preserveImages) {
+      final ptr = _lib.mupdf_extract_html(_ctx, _page);
+      if (ptr == nullptr) return null;
+      try {
+        return ptr.cast<Utf8>().toDartString();
+      } finally {
+        _lib.mupdf_free_string(_ctx, ptr);
+      }
+    }
+
+    final ctxInner = _ctx.cast<MupdfContextHandle>().ref.inner;
+    final formatPtr = 'html'.toNativeUtf8();
+    final optionsPtr = 'preserve-images'.toNativeUtf8();
+    final matrix = calloc<FzMatrix>();
+    matrix.ref.a = 1.0;
+    matrix.ref.b = 0.0;
+    matrix.ref.c = 0.0;
+    matrix.ref.d = 1.0;
+    matrix.ref.e = 0.0;
+    matrix.ref.f = 0.0;
+
+    final dataPtr = calloc<Pointer<Uint8>>();
+    Pointer<Void>? buf;
     try {
-      return ptr.cast<Utf8>().toDartString();
+      buf = fzNewBufferFromPageWithFormat(
+        ctxInner.cast<Void>(),
+        _page.cast<Void>(),
+        formatPtr,
+        optionsPtr,
+        matrix.ref,
+        nullptr,
+      );
+      if (buf == nullptr) return null;
+
+      final len = fzBufferStorage(ctxInner.cast<Void>(), buf, dataPtr);
+      if (len <= 0 || dataPtr.value == nullptr) return null;
+
+      final bytes = dataPtr.value.asTypedList(len);
+      return utf8.decode(bytes, allowMalformed: true);
+    } catch (_) {
+      return null;
     } finally {
-      _lib.mupdf_free_string(_ctx, ptr);
+      if (buf != null && buf != nullptr) {
+        fzDropBuffer(ctxInner.cast<Void>(), buf);
+      }
+      calloc.free(dataPtr);
+      calloc.free(matrix);
+      calloc.free(formatPtr);
+      calloc.free(optionsPtr);
     }
   }
 
@@ -616,3 +713,15 @@ final FzIsExternalLinkDart fzIsExternalLink = _dylib
     .lookupFunction<FzIsExternalLinkNative, FzIsExternalLinkDart>(
       'fz_is_external_link',
     );
+final FzNewBufferFromPageWithFormatDart fzNewBufferFromPageWithFormat = _dylib
+    .lookupFunction<
+      FzNewBufferFromPageWithFormatNative,
+      FzNewBufferFromPageWithFormatDart
+    >('fz_new_buffer_from_page_with_format');
+final FzBufferStorageDart fzBufferStorage = _dylib
+    .lookupFunction<FzBufferStorageNative, FzBufferStorageDart>(
+      'fz_buffer_storage',
+    );
+final FzDropBufferDart fzDropBuffer = _dylib
+    .lookupFunction<FzDropBufferNative, FzDropBufferDart>('fz_drop_buffer');
+
