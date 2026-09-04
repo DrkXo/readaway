@@ -1,4 +1,19 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Network permissions for Dio, Cronet, font downloads, and Sherpa-ONNX model fetching -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Audio and Wakelock permissions for background playback and reading screen control -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!-- Legacy storage permission for Android <= 12 file imports -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
     <!-- flutter_local_notifications: required to show notifications on
          Android 13+ and to schedule notifications across reboots. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -7,7 +22,9 @@
     <application
         android:label="readaway"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true"
+        android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -35,6 +52,26 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- audio_service: background audio service and media button receiver -->
+        <service
+            android:name="com.ryanheise.audioservice.AudioService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
 
         <!-- flutter_local_notifications: receivers required to show scheduled
              notifications and to reschedule them after a reboot. -->

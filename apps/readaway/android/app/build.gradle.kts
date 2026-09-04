@@ -7,7 +7,8 @@ plugins {
 android {
     namespace = "dev.readaway"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // NDK r28+ enables 16 KB ELF segment alignment by default for all native toolchains.
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -26,6 +27,27 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Enable 16 KB flexible page size support for any native NDK builds
+        externalNativeBuild {
+            cmake {
+                arguments += listOf("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON")
+            }
+            ndkBuild {
+                arguments += listOf("APP_SUPPORT_FLEXIBLE_PAGE_SIZES=true")
+            }
+        }
+
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // Keep native libraries uncompressed and aligned to 16 KB page boundaries in the APK
+            useLegacyPackaging = false
+        }
     }
 
     buildTypes {
@@ -39,6 +61,11 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    constraints {
+        implementation("org.chromium.net:cronet-api:143.7445.0")
+        implementation("org.chromium.net:cronet-shared:143.7445.0")
+        implementation("org.chromium.net:cronet-embedded:143.7445.0")
+    }
 }
 
 kotlin {

@@ -36,6 +36,7 @@ void main(List<String> args) async {
     final result = await Process.run('gcc', [
       '-shared',
       '-fPIC',
+      '-Wl,-z,max-page-size=16384',
       '-o',
       outputPath,
       '$wrapperDir/mupdf_wrapper.c',
