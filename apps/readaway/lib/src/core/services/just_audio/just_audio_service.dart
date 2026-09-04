@@ -91,7 +91,8 @@ class JustAudioService {
       config: AudioServiceConfig(
         androidNotificationChannelId: _notificationService.defaultChannelId,
         androidNotificationChannelName: _notificationService.defaultChannelName,
-        androidNotificationIcon: _notificationService.defaultIcon,
+        androidNotificationIcon:
+            _notificationService.audioServiceNotificationIcon,
         androidNotificationOngoing: false,
         androidStopForegroundOnPause: false,
       ),

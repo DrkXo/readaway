@@ -41,9 +41,14 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  final String _defaultIcon = '@mipmap/ic_launcher';  
-  
-  String get defaultIcon => _defaultIcon;  
+  final String _defaultIcon = '@mipmap/ic_launcher';
+
+  String get defaultIcon => _defaultIcon;
+
+  /// Android resource path without the '@' prefix, e.g. 'mipmap/ic_launcher',
+  /// as required by [AudioServiceConfig.androidNotificationIcon].
+  String get audioServiceNotificationIcon =>
+      _defaultIcon.startsWith('@') ? _defaultIcon.substring(1) : _defaultIcon;
 
   bool _initialized = false;
 

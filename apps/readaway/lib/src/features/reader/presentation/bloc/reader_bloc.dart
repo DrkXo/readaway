@@ -28,6 +28,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   final TtsControllerService _ttsController;
   final SettingsBloc _settingsBloc;
   final DocumentParser<String> _documentParser;
+  final NotificationService _notificationService;
 
   StreamSubscription<TtsPlaybackEvent>? _ttsStateSub;
 
@@ -41,11 +42,13 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     required TtsControllerService ttsController,
     required SettingsBloc settingsBloc,
     required DocumentParser<String> documentParser,
+    required NotificationService notificationService,
   })  : _windowService = windowService,
         _muPdfService = muPdfService,
         _ttsController = ttsController,
         _settingsBloc = settingsBloc,
         _documentParser = documentParser,
+        _notificationService = notificationService,
         super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
     on<_PageChanged>(_onPageChanged);
@@ -254,6 +257,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     Emitter<ReaderState> emit,
   ) async {
     if (!state.isReflowable) return;
+
+    final hasPermission = await _notificationService.requestPermissions();
+    if (!hasPermission) return;
 
     emit(state.copyWith(ttsActive: true));
     await _beginPageTts(state.currentPage);

@@ -175,15 +175,6 @@ extension GetItInjectableX on _i174.GetIt {
         ttsService: gh<_i264.SherpaOnnxTtsService>(),
       ),
     );
-    gh.factory<_i523.ReaderBloc>(
-      () => _i523.ReaderBloc(
-        windowService: gh<_i264.WindowService>(),
-        muPdfService: gh<_i264.MuPdfService>(),
-        ttsController: gh<_i264.TtsControllerService>(),
-        settingsBloc: gh<_i228.SettingsBloc>(),
-        documentParser: gh<_i428.DocumentParser<String>>(),
-      ),
-    );
     await gh.singletonAsync<_i264.ThemeService>(
       () {
         final i = _i264.ThemeService(settings: gh<_i264.SettingsService>());
@@ -191,6 +182,16 @@ extension GetItInjectableX on _i174.GetIt {
       },
       preResolve: true,
       dispose: (i) => i.dispose(),
+    );
+    gh.factory<_i523.ReaderBloc>(
+      () => _i523.ReaderBloc(
+        windowService: gh<_i264.WindowService>(),
+        muPdfService: gh<_i264.MuPdfService>(),
+        ttsController: gh<_i264.TtsControllerService>(),
+        settingsBloc: gh<_i228.SettingsBloc>(),
+        documentParser: gh<_i428.DocumentParser<String>>(),
+        notificationService: gh<_i264.NotificationService>(),
+      ),
     );
     await gh.singletonAsync<_i264.FontService>(() {
       final i = _i264.FontService(
