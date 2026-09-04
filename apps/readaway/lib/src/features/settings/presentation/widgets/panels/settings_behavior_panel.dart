@@ -41,19 +41,6 @@ class SettingsBehaviorPanel extends StatelessWidget {
           );
         }
 
-        void resetAutoScroll() {
-          context.read<SettingsBloc>().add(
-            SettingsEvent.updateAppSettings(
-              settings.copyWith(
-                globalViewSettings: settings.globalViewSettings.copyWith(
-                  autoScrollRunning: false,
-                  autoScrollSpeed: 1,
-                ),
-              ),
-            ),
-          );
-        }
-
         void resetSystem() {
           context.read<SettingsBloc>().add(
             SettingsEvent.updateAppSettings(
@@ -87,12 +74,6 @@ class SettingsBehaviorPanel extends StatelessWidget {
                 _VolumeKeysToFlipRow(),
                 _PageTurnStyleRow(),
               ],
-            ),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'Auto scroll',
-              onReset: resetAutoScroll,
-              rows: const [_AutoScrollRow()],
             ),
             const SizedBox(height: 24),
             SettingsSection(
@@ -211,60 +192,6 @@ class _PageSnapRow extends StatelessWidget {
   }
 }
 
-class _AutoScrollRow extends StatelessWidget {
-  const _AutoScrollRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.appSettings.globalViewSettings.autoScrollRunning !=
-              curr.appSettings.globalViewSettings.autoScrollRunning ||
-          prev.appSettings.globalViewSettings.autoScrollSpeed !=
-              curr.appSettings.globalViewSettings.autoScrollSpeed,
-      builder: (context, state) {
-        final view = state.appSettings.globalViewSettings;
-        final enabled = view.autoScrollRunning;
-        final speed = view.autoScrollSpeed;
-
-        void update({bool? running, int? speedValue}) {
-          final settings = state.appSettings;
-          context.read<SettingsBloc>().add(
-            SettingsEvent.updateAppSettings(
-              settings.copyWith(
-                globalViewSettings: settings.globalViewSettings.copyWith(
-                  autoScrollRunning: running ?? view.autoScrollRunning,
-                  autoScrollSpeed: speedValue ?? view.autoScrollSpeed,
-                ),
-              ),
-            ),
-          );
-        }
-
-        return Column(
-          children: [
-            SettingsSwitchRow(
-              label: 'Enable auto scroll',
-              description: 'Automatically scroll through the page',
-              value: enabled,
-              onChanged: (v) => update(running: v),
-            ),
-            SettingsSliderRow(
-              label: 'Speed',
-              value: speed.toDouble(),
-              min: 1,
-              max: 5,
-              divisions: 4,
-              enabled: enabled,
-              format: (v) => '${v.round()}×',
-              onChanged: (v) => update(speedValue: v.round()),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
 
 class _KeepScreenOnRow extends StatelessWidget {
   const _KeepScreenOnRow();

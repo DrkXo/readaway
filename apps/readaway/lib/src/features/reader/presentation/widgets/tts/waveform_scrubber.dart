@@ -95,58 +95,81 @@ class _WaveformScrubberState extends State<WaveformScrubber> {
         ? Duration(milliseconds: (_dragFraction! * durationMs).round())
         : widget.position;
 
+    final increasedPos = displayPos + const Duration(seconds: 2);
+    final clampedIncreased =
+        increasedPos > widget.duration ? widget.duration : increasedPos;
+    final decreasedPos = displayPos - const Duration(seconds: 2);
+    final clampedDecreased =
+        decreasedPos < Duration.zero ? Duration.zero : decreasedPos;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 1. Interactive Waveform Bars Canvas
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.hasBoundedWidth
-                ? constraints.maxWidth
-                : 300.0;
+        // 1. Interactive Waveform Bars Canvas with Semantics
+        Semantics(
+          label: 'Playback position',
+          value:
+              '${_formatDuration(displayPos)} of ${_formatDuration(widget.duration)}',
+          increasedValue:
+              '${_formatDuration(clampedIncreased)} of ${_formatDuration(widget.duration)}',
+          decreasedValue:
+              '${_formatDuration(clampedDecreased)} of ${_formatDuration(widget.duration)}',
+          slider: true,
+          onIncrease: () {
+            widget.onSeek?.call(clampedIncreased);
+          },
+          onDecrease: () {
+            widget.onSeek?.call(clampedDecreased);
+          },
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.hasBoundedWidth
+                  ? constraints.maxWidth
+                  : 300.0;
 
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: (details) {
-                _handleSeek(details.localPosition.dx, width);
-              },
-              onHorizontalDragStart: (details) {
-                setState(() => _isDragging = true);
-                _handleSeek(details.localPosition.dx, width);
-              },
-              onHorizontalDragUpdate: (details) {
-                _handleSeek(details.localPosition.dx, width);
-              },
-              onHorizontalDragEnd: (details) {
-                setState(() {
-                  _isDragging = false;
-                  _dragFraction = null;
-                });
-              },
-              onHorizontalDragCancel: () {
-                setState(() {
-                  _isDragging = false;
-                  _dragFraction = null;
-                });
-              },
-              child: SizedBox(
-                height: widget.height,
-                width: width,
-                child: CustomPaint(
-                  painter: _WaveformPainter(
-                    waveform: widget.waveform,
-                    progressFraction: progressFraction,
-                    playedColor: playedColor,
-                    unplayedColor: unplayedColor,
-                    handleColor: handleColor,
-                    barSpacing: widget.barSpacing,
-                    barRadius: widget.barRadius,
-                    isDragging: _isDragging,
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: (details) {
+                  _handleSeek(details.localPosition.dx, width);
+                },
+                onHorizontalDragStart: (details) {
+                  setState(() => _isDragging = true);
+                  _handleSeek(details.localPosition.dx, width);
+                },
+                onHorizontalDragUpdate: (details) {
+                  _handleSeek(details.localPosition.dx, width);
+                },
+                onHorizontalDragEnd: (details) {
+                  setState(() {
+                    _isDragging = false;
+                    _dragFraction = null;
+                  });
+                },
+                onHorizontalDragCancel: () {
+                  setState(() {
+                    _isDragging = false;
+                    _dragFraction = null;
+                  });
+                },
+                child: SizedBox(
+                  height: widget.height,
+                  width: width,
+                  child: CustomPaint(
+                    painter: _WaveformPainter(
+                      waveform: widget.waveform,
+                      progressFraction: progressFraction,
+                      playedColor: playedColor,
+                      unplayedColor: unplayedColor,
+                      handleColor: handleColor,
+                      barSpacing: widget.barSpacing,
+                      barRadius: widget.barRadius,
+                      isDragging: _isDragging,
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
 
         const SizedBox(height: 6),

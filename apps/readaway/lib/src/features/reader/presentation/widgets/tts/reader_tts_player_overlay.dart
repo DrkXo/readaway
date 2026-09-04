@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:motor/motor.dart';
 
-import '../../../reader.dart';
+import '../../bloc/reader_bloc.dart';
+import '../navigation/reader_bottom_bar.dart';
+import 'reader_tts_full_player_view.dart';
+import 'reader_tts_mini_player_bar.dart';
 
 class ReaderTtsPlayerOverlay extends StatefulWidget {
   const ReaderTtsPlayerOverlay({super.key});
@@ -228,59 +231,59 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
                             .surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(radius),
                         clipBehavior: Clip.antiAlias,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Mini Player View
-                        IgnorePointer(
-                          ignoring: t > _fadeOutEnd,
-                          child: Opacity(
-                            opacity: miniOpacity,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: _expand,
-                              onVerticalDragUpdate: (d) =>
-                                  _handleDragUpdate(d, dragExtent),
-                              onVerticalDragEnd: (d) =>
-                                  _handleDragEnd(d, dragExtent),
-                              onHorizontalDragEnd: _handleSkipDrag,
-                              child: ReaderTtsMiniPlayerBar(
-                                onClosePlayer: _close,
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Full Player View
-                        IgnorePointer(
-                          ignoring: t < _fadeInStart,
-                          child: Opacity(
-                            opacity: fullOpacity,
-                            child: OverflowBox(
-                              alignment: Alignment.topCenter,
-                              minHeight: 0,
-                              maxHeight: double.infinity,
-                              child: SizedBox(
-                                height: overlayHeight,
-                                child: ReaderTtsFullPlayerView(
-                                  onClose: _collapse,
-                                  onClosePlayer: _close,
-                                  onDragUpdate: (d) =>
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // Mini Player View
+                            IgnorePointer(
+                              ignoring: t > _fadeOutEnd,
+                              child: Opacity(
+                                opacity: miniOpacity,
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: _expand,
+                                  onVerticalDragUpdate: (d) =>
                                       _handleDragUpdate(d, dragExtent),
-                                  onDragEnd: (d) =>
+                                  onVerticalDragEnd: (d) =>
                                       _handleDragEnd(d, dragExtent),
+                                  onHorizontalDragEnd: _handleSkipDrag,
+                                  child: ReaderTtsMiniPlayerBar(
+                                    onClosePlayer: _close,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                            // Full Player View
+                            IgnorePointer(
+                              ignoring: t < _fadeInStart,
+                              child: Opacity(
+                                opacity: fullOpacity,
+                                child: OverflowBox(
+                                  alignment: Alignment.topCenter,
+                                  minHeight: 0,
+                                  maxHeight: double.infinity,
+                                  child: SizedBox(
+                                    height: overlayHeight,
+                                    child: ReaderTtsFullPlayerView(
+                                      onClose: _collapse,
+                                      onClosePlayer: _close,
+                                      onDragUpdate: (d) =>
+                                          _handleDragUpdate(d, dragExtent),
+                                      onDragEnd: (d) =>
+                                          _handleDragEnd(d, dragExtent),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
-        );
+              ],
+            );
           },
         );
       },

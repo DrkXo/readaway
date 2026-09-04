@@ -6,8 +6,9 @@ import '../../../../../core/models/reader/reader_document.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../extensions/reader_block_list_extension.dart';
 
-class ReaderHtmlWidget extends StatefulWidget {
-  const ReaderHtmlWidget({
+/// Renders a [ReaderDocument] structure as a list of styled, laid-out block widgets.
+class ReaderDocumentView extends StatefulWidget {
+  const ReaderDocumentView({
     super.key,
     required this.document,
     required this.appColors,
@@ -58,7 +59,7 @@ class ReaderHtmlWidget extends StatefulWidget {
   final void Function(String url)? onTapUrl;
 
   @override
-  State<ReaderHtmlWidget> createState() => _ReaderHtmlWidgetState();
+  State<ReaderDocumentView> createState() => _ReaderDocumentViewState();
 
   /// Maps a parsed block list onto widgets. Exposed for tests.
   static List<Widget> buildBlocks(
@@ -91,7 +92,7 @@ class ReaderHtmlWidget extends StatefulWidget {
   }
 }
 
-class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
+class _ReaderDocumentViewState extends State<ReaderDocumentView> {
   final ReaderLinkHandlers _linkHandlers = ReaderLinkHandlers();
 
   @override
@@ -101,7 +102,7 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
   }
 
   @override
-  void didUpdateWidget(ReaderHtmlWidget oldWidget) {
+  void didUpdateWidget(ReaderDocumentView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.document != widget.document) {
       _linkHandlers.dispose();
@@ -116,7 +117,7 @@ class _ReaderHtmlWidgetState extends State<ReaderHtmlWidget> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: ReaderHtmlWidget.buildBlocks(
+      children: ReaderDocumentView.buildBlocks(
         widget.document.blocks,
         baseStyle: readerTextStyle(
           appColors: widget.appColors,

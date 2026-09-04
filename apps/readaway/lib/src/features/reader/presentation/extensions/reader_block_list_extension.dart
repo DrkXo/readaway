@@ -4,7 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/reader/reader_block.dart';
-import '../widgets/page/reader_html_widget.dart';
+import '../widgets/viewport/reader_document_view.dart';
 
 extension ReaderBlockListX on List<ReaderBlock> {
   List<Widget> mapBlocks(PaintContext ctx) {
@@ -37,10 +37,10 @@ Widget? _mapBlock(ReaderBlock block, PaintContext ctx) {
         TextSpan(children: effectiveSpans, style: ctx.baseStyle),
         textAlign: textAlign,
       );
-      if (!padded) return RepaintBoundary(child: rich);
+      if (!padded) return rich;
       return Padding(
         padding: EdgeInsets.symmetric(vertical: ctx.paragraphMargin),
-        child: RepaintBoundary(child: rich),
+        child: rich,
       );
     case LooseTextBlock(:final text):
       return Text(text, style: ctx.baseStyle);
@@ -63,9 +63,7 @@ Widget? _mapBlock(ReaderBlock block, PaintContext ctx) {
       final mappedSpans = spans.map((s) => _mapSpan(s, ctx, style)).toList();
       return Padding(
         padding: EdgeInsets.only(top: level == 1 ? 24 : 16, bottom: 8),
-        child: RepaintBoundary(
-          child: Text.rich(TextSpan(children: mappedSpans, style: style)),
-        ),
+        child: Text.rich(TextSpan(children: mappedSpans, style: style)),
       );
     case SpacerBlock():
       return const SizedBox(height: 16);
@@ -208,7 +206,7 @@ InlineSpan _mapSpan(
       alignment: PlaceholderAlignment.middle,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: RepaintBoundary(child: widget),
+        child: widget,
       ),
     );
   }

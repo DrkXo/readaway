@@ -29,8 +29,8 @@ class ReaderTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => Size.fromHeight(
-        _isDesktop ? AppTopBar.desktopHeight : AppTopBar.mobileHeight,
-      );
+    _isDesktop ? AppTopBar.desktopHeight : AppTopBar.mobileHeight,
+  );
 
   void _handleClose(BuildContext context) {
     if (onCloseDocument != null) {
@@ -75,35 +75,7 @@ class ReaderTopBar extends StatelessWidget implements PreferredSizeWidget {
           titleText: title,
           subtitleText: progress,
           settingsTooltip: 'Reader options',
-          actions: [
-            if (onOpenDrawer != null)
-              AppIconButton(
-                icon: LucideIcons.panelLeft,
-                tooltip: 'Outline',
-                size: AppIconButtonSize.small,
-                onPressed: onOpenDrawer,
-              ),
-            if (state.isReflowable)
-              AppIconButton(
-                icon: LucideIcons.audioLines,
-                tooltip: state.ttsActive
-                    ? 'Close TTS player'
-                    : 'Listen (TTS player)',
-                selected: state.ttsActive,
-                size: AppIconButtonSize.small,
-                onPressed: () {
-                  if (state.ttsActive) {
-                    context
-                        .read<ReaderBloc>()
-                        .add(const ReaderEvent.ttsClose());
-                  } else {
-                    context
-                        .read<ReaderBloc>()
-                        .add(const ReaderEvent.ttsStart());
-                  }
-                },
-              ),
-          ],
+          actions: [],
         );
       },
     );

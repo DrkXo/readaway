@@ -1,13 +1,10 @@
 part of "../pages/reader_page.dart";
 
 /// Handles lifecycle logic, controller setups, and BLoC synchronization
-mixin ReaderControllerMixin on State<ReaderPage> implements TickerProvider {
+mixin ReaderControllerMixin on State<ReaderPage> {
   late final ReaderPageViewController pageViewController;
-  late final AutoScrollController autoScrollController;
   late final ScrollController scrollController;
   late final ValueNotifier<bool> isScrollingNotifier;
-
-  StreamSubscription<AppLifecycleState>? _lifecycleSub;
 
   late final ReaderBloc readerBloc;
   late final SettingsBloc settingsBloc;
@@ -30,19 +27,6 @@ mixin ReaderControllerMixin on State<ReaderPage> implements TickerProvider {
         readerBloc.add(ReaderEvent.pageChanged(index: clamped));
       }
     };
-
-    autoScrollController = AutoScrollController(
-      vsync: this,
-      goToNextPage: pageViewController.nextPage,
-    );
-
-    _lifecycleSub = appLifecycleManager.lifecycleState.listen((state) {
-      if (state == AppLifecycleState.resumed) {
-        autoScrollController.resume();
-      } else {
-        autoScrollController.pause();
-      }
-    });
 
     settingsBloc.loadPrefs();
     syncSettings(settingsBloc.state);
@@ -72,14 +56,6 @@ mixin ReaderControllerMixin on State<ReaderPage> implements TickerProvider {
 
   void syncSettings(SettingsState state) {
     wakelockService.setEnabled(state.appSettings.screenWakeLock);
-
-    final view = state.appSettings.globalViewSettings;
-    autoScrollController.setSpeed(view.autoScrollSpeed);
-    if (view.autoScrollRunning) {
-      autoScrollController.start();
-    } else {
-      autoScrollController.stop();
-    }
   }
 
   void closeReader() {
@@ -90,11 +66,9 @@ mixin ReaderControllerMixin on State<ReaderPage> implements TickerProvider {
   }
 
   void disposeReaderState() {
-    _lifecycleSub?.cancel();
     scrollController.removeListener(_onScrollChanged);
     scrollController.dispose();
     isScrollingNotifier.dispose();
-    autoScrollController.dispose();
     wakelockService.disable();
     if (!readerBloc.isClosed) {
       readerBloc.add(const ReaderEvent.closeDocument());

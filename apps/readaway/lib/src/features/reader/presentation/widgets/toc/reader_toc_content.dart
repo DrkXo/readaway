@@ -34,6 +34,7 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
   static const double _itemExtent = 56;
 
   final _scrollController = ScrollController();
+  int _lastScrolledIndex = -1;
 
   /// Index of the outline item covering [currentPage], -1 if none.
   static int _indexOfCurrent(List<OutlineItem> outline, int currentPage) {
@@ -73,6 +74,11 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
     ];
 
     return BlocBuilder<ReaderBloc, ReaderState>(
+      buildWhen: (prev, curr) =>
+          prev.outline != curr.outline ||
+          prev.bookTitle != curr.bookTitle ||
+          prev.author != curr.author ||
+          prev.currentPage != curr.currentPage,
       builder: (context, state) {
         final outline = state.outline;
         final bookTitle = state.bookTitle;
@@ -81,9 +87,10 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
             ? -1
             : _indexOfCurrent(outline, state.currentPage);
 
-        // Keep the current chapter in view so it is visible whenever the
-        // TOC is opened (drawer, peek or pinned panel).
-        if (currentIndex >= 0) {
+        // Keep the current chapter in view on initial load or when chapter changes,
+        // without overriding user manual scrolling on unrelated rebuilds.
+        if (currentIndex >= 0 && currentIndex != _lastScrolledIndex) {
+          _lastScrolledIndex = currentIndex;
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => _reveal(currentIndex),
           );

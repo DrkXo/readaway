@@ -1,20 +1,15 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader/reader_brightness_overlay_widget.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/reader/reader_contrast_overlay_widget.dart';
-
 import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../bloc/reader_bloc.dart';
-import '../controllers/auto_scroll_controller.dart';
 import '../controllers/reader_page_view_controller.dart';
-import '../widgets/tts/reader_tts_player_overlay.dart';
 import '../widgets/widgets.dart';
 
 part '../mixins/reader_page_mixins.dart';
@@ -40,8 +35,7 @@ class ReaderPage extends StatefulWidget {
   State<ReaderPage> createState() => _ReaderPageState();
 }
 
-class _ReaderPageState extends State<ReaderPage>
-    with SingleTickerProviderStateMixin, ReaderControllerMixin {
+class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey _contentKey = GlobalKey(debugLabel: 'reader_content_key');
 
@@ -75,11 +69,7 @@ class _ReaderPageState extends State<ReaderPage>
         BlocListener<SettingsBloc, SettingsState>(
           listenWhen: (prev, curr) =>
               prev.appSettings.screenWakeLock !=
-                  curr.appSettings.screenWakeLock ||
-              prev.appSettings.globalViewSettings.autoScrollRunning !=
-                  curr.appSettings.globalViewSettings.autoScrollRunning ||
-              prev.appSettings.globalViewSettings.autoScrollSpeed !=
-                  curr.appSettings.globalViewSettings.autoScrollSpeed,
+              curr.appSettings.screenWakeLock,
           listener: (context, state) => syncSettings(state),
         ),
       ],
@@ -100,96 +90,111 @@ class _ReaderPageState extends State<ReaderPage>
                 onPopInvokedWithResult: (didPop, _) {
                   if (!didPop) closeReader();
                 },
-                child: Stack(
-                  children: [
-                    Scaffold(
-                      key: _scaffoldKey,
-                      drawer: ReaderDrawer(
-                        onJumpToPage: pageViewController.goToPage,
-                      ),
-                      bottomNavigationBar: ReaderBottomBar(
-                        onOpenDrawer: () =>
-                            _scaffoldKey.currentState?.openDrawer(),
-                        onPreviousPage: pageViewController.previousPage,
-                        onNextPage: pageViewController.nextPage,
-                        onSeekToPage: pageViewController.goToPage,
-                      ),
-                      backgroundColor: context.appColors.readerBackground,
-                      body: NestedScrollView(
-                        controller: scrollController,
-                          headerSliverBuilder: (context, innerBoxIsScrolled) =>
-                              [
-                              SliverAppBar(
-                                floating: !isDesktop,
-                                snap: !isDesktop,
-                                pinned: isDesktop,
-                                automaticallyImplyLeading: false,
-                                backgroundColor: Colors.transparent,
-                                elevation: 0,
-                                titleSpacing: 0,
-                                toolbarHeight: isDesktop
-                                    ? AppTopBar.desktopHeight
-                                    : AppTopBar.mobileHeight,
-                                title: ReaderTopBar(
-                                  onOpenDrawer: () =>
-                                      _scaffoldKey.currentState?.openDrawer(),
-                                  onCloseDocument: closeReader,
-                                ),
-                              ),
-                              ],
-                          body: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final isWide = constraints.maxWidth >= 900;
-                              final bodyContent = KeyedSubtree(
-                                key: _contentKey,
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    Positioned.fill(
-                                      child: ReaderPageContent(
-                                        pageViewController: pageViewController,
-                                        prefs: prefs,
-                                        autoScrollController:
-                                            autoScrollController,
+                child: CallbackShortcuts(
+                  bindings: {
+                    const SingleActivator(LogicalKeyboardKey.arrowLeft):
+                        pageViewController.previousPage,
+                    const SingleActivator(LogicalKeyboardKey.arrowRight):
+                        pageViewController.nextPage,
+                    const SingleActivator(LogicalKeyboardKey.pageUp):
+                        pageViewController.previousPage,
+                    const SingleActivator(LogicalKeyboardKey.pageDown):
+                        pageViewController.nextPage,
+                  },
+                  child: Focus(
+                    autofocus: true,
+                    child: Stack(
+                      children: [
+                        Scaffold(
+                          key: _scaffoldKey,
+                          drawer: ReaderDrawer(
+                            onJumpToPage: pageViewController.goToPage,
+                          ),
+                          bottomNavigationBar: ReaderBottomBar(
+                            onOpenDrawer: () =>
+                                _scaffoldKey.currentState?.openDrawer(),
+                            onPreviousPage: pageViewController.previousPage,
+                            onNextPage: pageViewController.nextPage,
+                            onSeekToPage: pageViewController.goToPage,
+                          ),
+                          backgroundColor: context.appColors.readerBackground,
+                          body: NestedScrollView(
+                            controller: scrollController,
+                            headerSliverBuilder:
+                                (context, innerBoxIsScrolled) => [
+                                  SliverAppBar(
+                                    floating: !isDesktop,
+                                    snap: !isDesktop,
+                                    pinned: isDesktop,
+                                    automaticallyImplyLeading: false,
+                                    backgroundColor: Colors.transparent,
+                                    elevation: 0,
+                                    titleSpacing: 0,
+                                    toolbarHeight: isDesktop
+                                        ? AppTopBar.desktopHeight
+                                        : AppTopBar.mobileHeight,
+                                    title: ReaderTopBar(
+                                      onOpenDrawer: () => _scaffoldKey
+                                          .currentState
+                                          ?.openDrawer(),
+                                      onCloseDocument: closeReader,
+                                    ),
+                                  ),
+                                ],
+                            body: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isWide = constraints.maxWidth >= 900;
+                                final bodyContent = KeyedSubtree(
+                                  key: _contentKey,
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Positioned.fill(
+                                        child: ReaderViewport(
+                                          pageViewController:
+                                              pageViewController,
+                                          prefs: prefs,
+                                        ),
                                       ),
-                                    ),
-                                    ReaderBrightnessOverlayWidget(
-                                      opacity: prefs.brightnessOverlay,
-                                    ),
-                                    ReaderContrastOverlayWidget(
-                                      intensity: prefs.contrastOverlay,
-                                    ),
-                                    if (isWide && !_tocPinned)
-                                      ReaderTocPeek(
-                                        onPin: () =>
-                                            setState(() => _tocPinned = true),
+                                      ReaderBrightnessOverlay(
+                                        opacity: prefs.brightnessOverlay,
+                                      ),
+                                      ReaderContrastOverlay(
+                                        intensity: prefs.contrastOverlay,
+                                      ),
+                                      if (isWide && !_tocPinned)
+                                        ReaderTocPeek(
+                                          onPin: () =>
+                                              setState(() => _tocPinned = true),
+                                          onJumpToPage:
+                                              pageViewController.goToPage,
+                                        ),
+                                    ],
+                                  ),
+                                );
+
+                                if (!isWide) return bodyContent;
+
+                                return Row(
+                                  children: [
+                                    if (_tocPinned)
+                                      ReaderTocSidePanel(
+                                        onUnpin: () =>
+                                            setState(() => _tocPinned = false),
                                         onJumpToPage:
                                             pageViewController.goToPage,
                                       ),
+                                    Expanded(child: bodyContent),
                                   ],
-                                ),
-                              );
-
-                              if (!isWide) return bodyContent;
-
-                              return Row(
-                                children: [
-                                  if (_tocPinned)
-                                    ReaderTocSidePanel(
-                                      onUnpin: () =>
-                                          setState(() => _tocPinned = false),
-                                      onJumpToPage: pageViewController.goToPage,
-                                    ),
-                                  Expanded(child: bodyContent),
-                                ],
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
-
-                    const ReaderTtsPlayerOverlay(),
-                  ],
+                        const ReaderTtsPlayerOverlay(),
+                      ],
+                    ),
+                  ),
                 ),
               );
             },

@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/routes/routes.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../domain/models/reader_lookup.dart';
-import 'selection_menu.dart';
+import 'reader_selection_toolbar.dart';
 
 /// Contextual (non-modal) text-selection menu for reflowable reader pages.
 ///
@@ -20,10 +20,10 @@ import 'selection_menu.dart';
 /// band (flipping below when there is no room). It is a plain [OverlayEntry] —
 /// no route push — dismissed by any tap outside it.
 ///
-/// ponytail: built by hand instead of SelectionArea.contextMenuBuilder
-/// because Flutter never shows that toolbar after a desktop mouse-drag
-/// selection and offers no public API to force it (selectable_region.dart
-/// skips _showToolbar on macOS/linux/windows drag end).
+/// Built by hand instead of SelectionArea.contextMenuBuilder because Flutter
+/// never shows that toolbar after a desktop mouse-drag selection and offers
+/// no public API to force it (selectable_region.dart skips _showToolbar on
+/// macOS/Linux/Windows drag end).
 class ReaderSelectionArea extends StatefulWidget {
   const ReaderSelectionArea({super.key, required this.child});
 
@@ -45,14 +45,14 @@ class _ReaderSelectionAreaState extends State<ReaderSelectionArea> {
   void _onPointerUp(PointerUpEvent event) {
     final text = _selectedText.trim();
     if (_menu != null || text.isEmpty || !mounted) return;
-    // ponytail: approximate the selection band with press->release pointers;
+    // Approximate the selection band with press->release pointers;
     // SelectionArea exposes no public selection-rect API.
     final band = Rect.fromPoints(
       _pointerDownPos ?? event.position,
       event.position,
     );
     _menu = OverlayEntry(
-      builder: (_) => SelectionMenu(
+      builder: (_) => ReaderSelectionToolbar(
         band: band,
         text: text,
         onDismiss: _closeMenu,

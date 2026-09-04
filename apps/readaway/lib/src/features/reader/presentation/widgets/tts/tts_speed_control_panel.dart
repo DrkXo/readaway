@@ -67,14 +67,14 @@ class TtsSpeedControlPanel extends StatelessWidget {
             children: [
               Icon(
                 LucideIcons.gauge,
-                size: 15,
+                size: 16,
                 color: scheme.primary,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  'Speed',
-                  style: theme.textTheme.labelMedium?.copyWith(
+                  'Playback Speed',
+                  style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: scheme.onSurface,
                   ),
@@ -85,8 +85,8 @@ class TtsSpeedControlPanel extends StatelessWidget {
               // Current Speed Tag
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2,
+                  horizontal: 10,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: scheme.primaryContainer.withValues(alpha: 0.6),
@@ -95,67 +95,67 @@ class TtsSpeedControlPanel extends StatelessWidget {
                 child: Text(
                   formatRate(rate),
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: scheme.primary,
                   ),
                 ),
               ),
               if (!isDefaultRate) ...[
-                const SizedBox(width: 6),
-                InkWell(
-                  onTap: () => onRateChanged(1.0),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    child: Text(
-                      'Reset',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Reset to 1.0×',
+                  visualDensity: VisualDensity.compact,
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(44, 44),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                  onPressed: () => onRateChanged(1.0),
+                  icon: Text(
+                    'Reset',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ],
               if (onClose != null) ...[
                 const SizedBox(width: 4),
-                InkWell(
-                  onTap: onClose,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      LucideIcons.x,
-                      size: 16,
-                      color: scheme.onSurfaceVariant,
-                    ),
+                IconButton(
+                  tooltip: 'Close speed settings',
+                  visualDensity: VisualDensity.compact,
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(44, 44),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                  onPressed: onClose,
+                  icon: Icon(
+                    LucideIcons.x,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ],
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
           // 2. Stepper & Slider Row
           Row(
             children: [
-              // Decrease Stepper Button
+              // Decrease Stepper Button (>=44pt touch target)
               IconButton(
-                icon: const Icon(LucideIcons.minus, size: 16),
+                icon: const Icon(LucideIcons.minus, size: 18),
                 tooltip: 'Decrease speed (-0.05×)',
-                visualDensity: VisualDensity.compact,
                 style: IconButton.styleFrom(
                   backgroundColor:
                       scheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   foregroundColor: scheme.onSurface,
-                  padding: const EdgeInsets.all(6),
-                  minimumSize: const Size(32, 32),
+                  padding: const EdgeInsets.all(10),
+                  minimumSize: const Size(44, 44),
                 ),
                 onPressed: rate > minRate ? () => _stepRate(-step) : null,
               ),
@@ -166,9 +166,9 @@ class TtsSpeedControlPanel extends StatelessWidget {
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 4,
                     thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 7),
+                        const RoundSliderThumbShape(enabledThumbRadius: 8),
                     overlayShape:
-                        const RoundSliderOverlayShape(overlayRadius: 14),
+                        const RoundSliderOverlayShape(overlayRadius: 18),
                     activeTrackColor: scheme.primary,
                     inactiveTrackColor: scheme.surfaceContainerHighest,
                     thumbColor: scheme.primary,
@@ -195,26 +195,25 @@ class TtsSpeedControlPanel extends StatelessWidget {
                 ),
               ),
 
-              // Increase Stepper Button
+              // Increase Stepper Button (>=44pt touch target)
               IconButton(
-                icon: const Icon(LucideIcons.plus, size: 16),
+                icon: const Icon(LucideIcons.plus, size: 18),
                 tooltip: 'Increase speed (+0.05×)',
-                visualDensity: VisualDensity.compact,
                 style: IconButton.styleFrom(
                   backgroundColor:
                       scheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   foregroundColor: scheme.onSurface,
-                  padding: const EdgeInsets.all(6),
-                  minimumSize: const Size(32, 32),
+                  padding: const EdgeInsets.all(10),
+                  minimumSize: const Size(44, 44),
                 ),
                 onPressed: rate < maxRate ? () => _stepRate(step) : null,
               ),
             ],
           ),
 
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
 
-          // 3. One-Tap Preset Chips Row
+          // 3. One-Tap Preset Chips Row with comfortable touch targets
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -223,22 +222,23 @@ class TtsSpeedControlPanel extends StatelessWidget {
                 final isSelected = (rate - preset).abs() < 0.02;
 
                 return Padding(
-                  padding: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.only(right: 8),
                   child: InkWell(
                     onTap: () => onRateChanged(preset),
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 38, minWidth: 44),
+                      alignment: Alignment.center,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
+                        horizontal: 14,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? scheme.primary
                             : scheme.surfaceContainerHighest
                                 .withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: isSelected
                               ? scheme.primary
@@ -249,7 +249,7 @@ class TtsSpeedControlPanel extends StatelessWidget {
                       child: Text(
                         formatRate(preset),
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.w500,
                           color: isSelected

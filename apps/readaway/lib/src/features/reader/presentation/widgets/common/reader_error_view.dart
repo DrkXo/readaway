@@ -12,6 +12,7 @@ class ReaderErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ReaderBloc, ReaderState>(
+      buildWhen: (prev, curr) => prev.error != curr.error,
       builder: (context, state) {
         return AppErrorView(
           title: 'Something went wrong',

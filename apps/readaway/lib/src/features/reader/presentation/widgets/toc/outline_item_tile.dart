@@ -24,63 +24,68 @@ class OutlineItemTile extends StatelessWidget {
     final color = threadColors[item.level % threadColors.length];
     final isTopLevel = item.level == 0;
 
-    return Material(
-      color: isCurrent
-          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35)
-          : Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(width: 20),
-              for (var l = 0; l < item.level; l++)
-                Container(
-                  width: 2,
-                  margin: const EdgeInsets.only(right: 10),
-                  color: threadColors[l % threadColors.length].withValues(
-                    alpha: 0.35,
+    return Semantics(
+      button: true,
+      selected: isCurrent,
+      label: '$title, Chapter level ${item.level + 1}',
+      child: Material(
+        color: isCurrent
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35)
+            : Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(width: 20),
+                for (var l = 0; l < item.level; l++)
+                  Container(
+                    width: 2,
+                    margin: const EdgeInsets.only(right: 10),
+                    color: threadColors[l % threadColors.length].withValues(
+                      alpha: 0.35,
+                    ),
+                  ),
+                if (isTopLevel)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4, right: 12),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 20),
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          (isTopLevel
+                                  ? theme.textTheme.bodyMedium
+                                  : theme.textTheme.bodySmall)
+                              ?.copyWith(
+                                fontWeight: isCurrent
+                                    ? FontWeight.w700
+                                    : isTopLevel
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                color: isCurrent
+                                    ? theme.colorScheme.primary
+                                    : isTopLevel
+                                    ? theme.textTheme.bodyMedium?.color
+                                    : theme.colorScheme.onSurfaceVariant,
+                              ),
+                    ),
                   ),
                 ),
-              if (isTopLevel)
-                Container(
-                  margin: const EdgeInsets.only(top: 4, right: 12),
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 20),
-                  child: Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        (isTopLevel
-                                ? theme.textTheme.bodyMedium
-                                : theme.textTheme.bodySmall)
-                            ?.copyWith(
-                              fontWeight: isCurrent
-                                  ? FontWeight.w700
-                                  : isTopLevel
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                              color: isCurrent
-                                  ? theme.colorScheme.primary
-                                  : isTopLevel
-                                  ? theme.textTheme.bodyMedium?.color
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

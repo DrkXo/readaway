@@ -63,6 +63,7 @@ class _ReaderPageViewState extends State<ReaderPageView>
   late int _currentPage;
   int? _previousPage;
   bool _animating = false;
+  bool _goingForward = true;
 
   @override
   void initState() {
@@ -82,15 +83,12 @@ class _ReaderPageViewState extends State<ReaderPageView>
       _previousPage = _currentPage;
       _currentPage = widget.currentPage;
       _animating = true;
+      _goingForward = goingForward;
       _controller
         ..value = 0
         ..forward();
-      // Store direction for the transition builders.
-      _goingForward = goingForward;
     }
   }
-
-  bool _goingForward = true;
 
   void _onStatus(AnimationStatus status) {
     if (status == AnimationStatus.completed) {
@@ -108,7 +106,7 @@ class _ReaderPageViewState extends State<ReaderPageView>
   }
 
   void _onSwipe(double velocity) {
-    final threshold = 200.0;
+    const threshold = 200.0;
     if (velocity < -threshold) {
       widget.onPageChangeRequested(_currentPage + 1);
     } else if (velocity > threshold) {
@@ -119,22 +117,25 @@ class _ReaderPageViewState extends State<ReaderPageView>
   @override
   Widget build(BuildContext context) {
     final horizontal = widget.direction == ReaderScrollDirection.horizontal;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onHorizontalDragEnd: horizontal
-          ? (d) => _onSwipe(d.primaryVelocity ?? 0)
-          : null,
-      onVerticalDragEnd: horizontal
-          ? null
-          : (d) => _onSwipe(d.primaryVelocity ?? 0),
-      child: ClipRect(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (_animating && _previousPage != null)
-              _buildPage(_previousPage!, outgoing: true),
-            _buildPage(_currentPage, outgoing: false),
-          ],
+    return Semantics(
+      label: 'Page ${_currentPage + 1} of ${widget.pageCount}',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragEnd: horizontal
+            ? (d) => _onSwipe(d.primaryVelocity ?? 0)
+            : null,
+        onVerticalDragEnd: horizontal
+            ? null
+            : (d) => _onSwipe(d.primaryVelocity ?? 0),
+        child: ClipRect(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (_animating && _previousPage != null)
+                _buildPage(_previousPage!, outgoing: true),
+              _buildPage(_currentPage, outgoing: false),
+            ],
+          ),
         ),
       ),
     );
