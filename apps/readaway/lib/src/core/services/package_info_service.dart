@@ -1,13 +1,14 @@
-part of "services.dart";
+import 'package:get_it/get_it.dart';
+import 'package:injectable/injectable.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import 'logging_service.dart';
 
 PackageInfoService get packageInfoService => GetIt.I<PackageInfoService>();
 
 @singleton
 class PackageInfoService {
   PackageInfo? _packageInfo;
-
-  /// Parsed semantic version
-  // late final Version semVersion;
 
   bool get isInitialized => _packageInfo != null;
 
@@ -21,16 +22,11 @@ class PackageInfoService {
   }
 
   String get appName => packageInfo.appName;
-
   String get packageName => packageInfo.packageName;
-
   String get version => packageInfo.version;
-
   String get buildNumber => packageInfo.buildNumber;
-
   String get buildSignature => packageInfo.buildSignature;
 
-  /// Example: 1.2.3+45
   String get fullVersion => '$version+$buildNumber';
 
   @PostConstruct(preResolve: true)
@@ -38,7 +34,6 @@ class PackageInfoService {
     if (isInitialized) return;
 
     _packageInfo = await PackageInfo.fromPlatform();
-
     logger.d('PackageInfo => ${_packageInfo.toString()}');
   }
 

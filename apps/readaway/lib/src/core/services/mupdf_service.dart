@@ -1,4 +1,12 @@
-part of 'services.dart';
+import 'dart:isolate';
+
+import 'package:injectable/injectable.dart';
+import 'package:mupdf/mupdf.dart';
+
+import 'isolate_service.dart';
+import 'logging_service.dart';
+
+export 'package:mupdf/mupdf.dart';
 
 @singleton
 class MuPdfService {
@@ -16,16 +24,12 @@ class MuPdfService {
   Future<void> _ensureIsolate() async {
     if (_isolateService.isSpawned(_isolateName)) return;
 
-    _log.info(
-      'Spawning MuPdfService background isolate...',
-    );
+    _log.info('Spawning MuPdfService background isolate...');
     await _isolateService.spawn(
       name: _isolateName,
       entryPoint: _isolateEntryPoint,
     );
-    _log.info(
-      '[MuPdfService] background isolate ready.',
-    );
+    _log.info('[MuPdfService] background isolate ready.');
   }
 
   int _nextId = 0;
@@ -156,9 +160,6 @@ class MuPdfService {
     });
   }
 
-  /// Kills the background isolate, releasing the native MuPDF context and
-  /// any document still held inside it. Called by the DI container on
-  /// shutdown so the isolate doesn't leak across app restarts.
   @disposeMethod
   Future<void> dispose() async {
     await _isolateService.disposeIsolate(_isolateName);

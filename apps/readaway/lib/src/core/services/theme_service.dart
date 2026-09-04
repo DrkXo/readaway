@@ -1,4 +1,11 @@
-part of 'services.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:injectable/injectable.dart';
+
+import '../models/models.dart';
+import '../theme/theme.dart';
+import 'settings_service.dart';
 
 @Singleton()
 class ThemeService {
@@ -56,7 +63,6 @@ class ThemeService {
     );
   }
 
-  /// Selection highlight + drag handles follow the brand primary.
   TextSelectionThemeData _selectionTheme(ColorScheme scheme) {
     return TextSelectionThemeData(
       cursorColor: scheme.primary,

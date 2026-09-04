@@ -1,20 +1,22 @@
-part of 'services.dart';
+import 'dart:io';
+
+import 'package:flutter/services.dart';
+import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as p;
+
+import '../error/errors.dart';
+import '../models/models.dart';
+import 'logging_service.dart';
+import 'path_service.dart';
+import 'settings_service.dart';
 
 /// Loads and registers user-added font files so Flutter can render them.
-///
-/// Custom fonts are picked from disk, copied into the app documents
-/// directory, and registered at runtime via [FontLoader]. The registered
-/// family names are then available to the reader's font pickers and to
-/// [TextStyle.fontFamily] resolution.
 @Singleton()
 class FontService {
   final SettingsService _settings;
   final AppPathService _pathService;
 
-  /// Family names currently registered with the engine.
   final Set<String> _registered = <String>{};
-
-  /// Directory where copied font files live.
   Directory? _fontsDir;
 
   FontService({
@@ -22,11 +24,9 @@ class FontService {
     required this._pathService,
   });
 
-  /// Family names of all custom fonts (registered or pending registration).
   List<String> get customFontFamilyNames =>
       _settings.settings.customFonts.map((f) => f.name).toList();
 
-  /// Whether [familyName] is a registered custom font.
   bool isRegistered(String familyName) => _registered.contains(familyName);
 
   @PostConstruct(preResolve: true)
@@ -45,9 +45,6 @@ class FontService {
     }
   }
 
-  /// Copies [sourcePath] into app storage and registers it, returning the
-  /// persisted [CustomFont]. The caller is responsible for persisting the
-  /// returned entry into `Settings.customFonts`.
   Future<CustomFont> addFont(String sourcePath) async {
     final source = File(sourcePath);
     if (!await source.exists()) {
@@ -62,7 +59,6 @@ class FontService {
     }
     await source.copy(destPath);
 
-    // Derive a stable family name from the file name (strip extension).
     final familyName = p.basenameWithoutExtension(fileName);
 
     await _registerFont(familyName, destPath);
@@ -74,7 +70,6 @@ class FontService {
     );
   }
 
-  /// Removes a custom font: unregisters it and deletes its file.
   Future<void> removeFont(CustomFont font) async {
     _registered.remove(font.name);
     try {
@@ -101,7 +96,6 @@ class FontService {
   }
 
   String _newId() {
-    // Simple unique id; collisions are unlikely for a handful of fonts.
     return DateTime.now().microsecondsSinceEpoch.toString();
   }
 }

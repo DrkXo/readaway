@@ -1,4 +1,9 @@
-part of '../../services.dart';
+import 'dart:io';
+
+import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as p;
+
+import '../../path_service.dart';
 
 @injectable
 class HiveConfigService {

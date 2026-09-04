@@ -1,4 +1,16 @@
-part of '../../services.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:archive/archive_io.dart';
+import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
+import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as p;
+
+import '../../http/http_service.dart';
+import '../../logging_service.dart';
+import '../../path_service.dart';
+import '../tts_models.dart';
+import 'sherpa_model_catalog.dart';
 
 @singleton
 class SherpaTtsModelDownloaderService {

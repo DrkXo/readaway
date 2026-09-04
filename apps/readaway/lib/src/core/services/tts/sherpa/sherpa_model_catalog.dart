@@ -1,4 +1,8 @@
-part of '../../services.dart';
+import 'package:injectable/injectable.dart';
+
+import '../../http/http_service.dart';
+import '../../logging_service.dart';
+import '../tts_models.dart';
 
 @lazySingleton
 class SherpaTtsModelCatalogService {
@@ -87,10 +91,6 @@ class SherpaTtsModelCatalogService {
       for (final line in text.split('\n')) {
         final trimmed = line.trim();
         if (trimmed.isEmpty) continue;
-        // checksum.txt is standard `sha256sum` output: "<hash>  <name>"
-        // (hash first, name last — historically this was parsed backwards
-        // here, which silently disabled checksum verification for every
-        // download since no 64-char hash was ever found in `parts.last`).
         final parts = trimmed.split(RegExp(r'\s+'));
         if (parts.length < 2) continue;
         final hash = parts.first.toLowerCase();
@@ -100,15 +100,12 @@ class SherpaTtsModelCatalogService {
       }
       _checksums = map;
       if (_checksums.isEmpty) {
-        // Defensive: if parsing produced nothing, surface it loudly rather
-        // than silently downloading everything unverified.
         logger.w(
           'Parsed 0 TTS checksums from $_checksumUrl — '
           'unexpected format? Downloads will proceed unverified.',
         );
       }
     } catch (e) {
-      // Checksums are best-effort: downloads proceed without verification.
       logger.w('Failed to load TTS checksums; skipping verification');
       _checksums = const {};
     }
@@ -121,14 +118,6 @@ class SherpaTtsModelCatalogService {
     return null;
   }
 
-  // -------------------------------------------------------------------------
-  // Manifest -> SherpaTtsModelInfo derivation
-  // -------------------------------------------------------------------------
-
-  /// Engine families whose archive layout doesn't map onto one of our three
-  /// supported config shapes yet.
-  // ponytail: denylist of newer engines; move them to supported when a
-  // config shape exists, or flip to an allowlist if junk starts slipping in.
   final Set<String> _unsupportedEngines = {
     'inflect',
     'kitten',
@@ -137,8 +126,6 @@ class SherpaTtsModelCatalogService {
     'zipvoice',
   };
 
-  /// Family words sitting between the type prefix and the language code,
-  /// e.g. `vits-piper-en_US-…`, `matcha-icefall-zh-…`.
   final List<String> _families = [
     'piper-',
     'coqui-',
@@ -149,7 +136,6 @@ class SherpaTtsModelCatalogService {
     'melo-',
   ];
 
-  /// Quality suffixes used by piper-style archives.
   final Set<String> _qualities = {'x-low', 'low', 'medium', 'high'};
 
   final RegExp _langRe = RegExp(
@@ -222,7 +208,6 @@ class SherpaTtsModelCatalogService {
   ) {
     if (!name.endsWith('.tar.bz2')) return null;
     final id = name.substring(0, name.length - '.tar.bz2'.length);
-    // Quantized variants duplicate the base voice; keep only the base pack.
     if (id.contains('-int8') || id.contains('-fp16') || id.contains('-fp32')) {
       return null;
     }
@@ -263,7 +248,6 @@ class SherpaTtsModelCatalogService {
         langToken = m.group(1)!;
         remainder = m.group(2) ?? '';
       } else {
-        // Single-corpus packs like `vits-ljs` / `vits-vctk`.
         if (!RegExp(r'^[a-z0-9]+$').hasMatch(rest)) return null;
         langToken = 'en';
         remainder = rest;
@@ -312,9 +296,6 @@ class SherpaTtsModelCatalogService {
     );
   }
 
-  /// Whether this model needs the shared espeak-ng phonemization data.
-  /// Piper-family engines (piper/mimic3/mms/melo) plus kokoro and matcha all
-  /// require it; coqui and icefall VITS packs are self-contained.
   bool _needsEspeakData(String id, SherpaTtsModelType type) {
     if (type == SherpaTtsModelType.kokoro ||
         type == SherpaTtsModelType.matcha) {

@@ -1,4 +1,8 @@
-part of '../services.dart';
+import 'dart:typed_data';
+
+import '../../error/exceptions/tts_exceptions.dart';
+
+export '../../error/exceptions/tts_exceptions.dart';
 
 enum TtsEngineKind { sherpaOnnx }
 
@@ -12,12 +16,9 @@ class TtsVoiceOption {
   });
 
   final TtsEngineKind engine;
-
   final String id;
-
   final String label;
   final String? languageCode;
-
   final int? sherpaSpeakerId;
 }
 
@@ -57,24 +58,17 @@ class SherpaTtsModelInfo {
   });
 
   final String id;
-
   final String displayName;
-
   final String languageCode;
   final String languageLabel;
-
   final SherpaTtsModelType type;
-
   final String downloadUrl;
-
   final double approxSizeMb;
   final bool isMultiSpeaker;
   final int speakerCount;
   final String description;
   final int sampleRateHint;
-
   final String? vocoderUrl;
-
   final bool needsEspeakData;
 
   String get archiveFileName => downloadUrl.split('/').last;
@@ -93,7 +87,6 @@ class ModelDownloadProgress {
 
   final String modelId;
   final ModelDownloadStage stage;
-
   final double fraction;
 }
 
@@ -119,9 +112,7 @@ class SherpaTtsSpeaker {
   final String label;
 }
 
-class SherpaTtsException implements Exception {
-  SherpaTtsException(this.message);
-  final String message;
-  @override
-  String toString() => 'SherpaTtsException: $message';
+/// Kept for backward compatibility, extends [TtsException].
+class SherpaTtsException extends TtsException {
+  const SherpaTtsException(super.message, [super.cause]);
 }

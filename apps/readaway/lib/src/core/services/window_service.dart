@@ -1,4 +1,16 @@
-part of 'services.dart';
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:injectable/injectable.dart';
+import 'package:logging/logging.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:window_manager/window_manager.dart';
+
+import '../../../flavors.dart';
+import 'app_lyfecycle_manager.dart';
 
 @Singleton()
 class WindowService with WindowListener {

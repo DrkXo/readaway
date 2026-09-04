@@ -1,4 +1,10 @@
-part of 'services.dart';
+import 'dart:async';
+import 'dart:isolate';
+
+import 'package:injectable/injectable.dart';
+import 'package:rxdart/rxdart.dart';
+
+import 'logging_service.dart';
 
 class IsolateCommandException implements Exception {
   IsolateCommandException(this.message);
@@ -15,7 +21,6 @@ class _IsolateInstance {
   ReceivePort? errorPort;
   ReceivePort? exitPort;
 
-  /// RxDart PublishSubject acts as a broadcast controller with Rx operators built-in.
   final responseSubject = PublishSubject<dynamic>();
 
   Future<void> dispose() async {
@@ -101,7 +106,6 @@ class IsolateService {
     return instance.sendPort!;
   }
 
-  /// Sends [command] and awaits the corresponding response matching `id`.
   Future<T> sendCommand<T>(String name, Map<String, dynamic> command) async {
     final instance = _instances[name];
     if (instance == null || instance.sendPort == null) {
@@ -110,10 +114,8 @@ class IsolateService {
 
     final id = command['id'];
 
-    // 1. Send the command first
     instance.sendPort!.send(command);
 
-    // 2. Filter stream to map responses matching this ID
     final response = await instance.responseSubject.stream
         .whereType<Map<String, dynamic>>()
         .firstWhere(
@@ -129,7 +131,6 @@ class IsolateService {
     return response['result'] as T;
   }
 
-  /// Streams partial results back for commands with ongoing chunks.
   Stream<T> sendStreamCommand<T>(String name, Map<String, dynamic> command) {
     final instance = _instances[name];
     if (instance == null || instance.sendPort == null) {
@@ -138,14 +139,10 @@ class IsolateService {
 
     final id = command['id'];
 
-    // RxDart StreamTransformer setup via operators
     final stream = instance.responseSubject.stream
-        // Filter only maps matching target command ID
         .whereType<Map<String, dynamic>>()
         .where((msg) => msg['id'] == id)
-        // Auto-terminate the stream when 'done' flag or 'error' key is emitted
         .takeWhile((msg) => msg['done'] != true)
-        // Transform the map response into the yield payload or throw
         .map<T>((msg) {
           if (msg.containsKey('error')) {
             throw IsolateCommandException(msg['error'].toString());
@@ -157,7 +154,6 @@ class IsolateService {
             'Malformed isolate message for id: $id',
           );
         })
-        // Dispatch command lazily when a consumer listens to the stream
         .doOnListen(() {
           instance.sendPort!.send(command);
         });

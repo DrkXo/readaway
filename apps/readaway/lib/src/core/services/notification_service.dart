@@ -1,21 +1,16 @@
-part of 'services.dart';
+import 'dart:async';
+
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get_it/get_it.dart';
+import 'package:injectable/injectable.dart';
+
+import '../../../flavors.dart';
+import 'logging_service.dart';
+import 'package_info_service.dart';
 
 NotificationService get notificationService =>
     GetIt.I.get<NotificationService>();
 
-/// Thin wrapper around `flutter_local_notifications` that isolates the plugin
-/// behind a small, testable API so the rest of the app never depends on the
-/// plugin directly.
-///
-/// The service is responsible for:
-///  * Initialising the plugin once at startup (see [initialize]).
-///  * Requesting the platform notification permission.
-///  * Showing simple local notifications.
-///  * Scheduling notifications at a future date/time.
-///  * Cancelling pending/active notifications.
-///
-/// It intentionally does NOT decide *when* notifications should be shown —
-/// callers (blocs, services) decide that.
 @Singleton(
   dependsOn: [
     PackageInfoService,
@@ -27,32 +22,24 @@ class NotificationService {
   NotificationService(this._packageInfoService);
 
   late final String _defaultChannelId;
-
   String get defaultChannelId => _defaultChannelId;
 
   late final String _defaultChannelName;
-
   String get defaultChannelName => _defaultChannelName;
 
   late final String _defaultChannelDescription;
-
   String get defaultChannelDescription => _defaultChannelDescription;
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
   final String _defaultIcon = '@mipmap/ic_launcher';
-
   String get defaultIcon => _defaultIcon;
 
-  /// Android resource path without the '@' prefix, e.g. 'mipmap/ic_launcher',
-  /// as required by [AudioServiceConfig.androidNotificationIcon].
   String get audioServiceNotificationIcon =>
       _defaultIcon.startsWith('@') ? _defaultIcon.substring(1) : _defaultIcon;
 
   bool _initialized = false;
-
-  /// Whether the plugin has been initialised.
   bool get isInitialized => _initialized;
 
   @PostConstruct(preResolve: true)
@@ -62,9 +49,7 @@ class NotificationService {
     if (_initialized) return;
 
     _defaultChannelId = '${_packageInfoService.packageName}.general';
-
     _defaultChannelName = F.name;
-
     _defaultChannelDescription = 'General';
 
     final android = AndroidInitializationSettings(_defaultIcon);
@@ -97,11 +82,6 @@ class NotificationService {
     logger.d('NotificationService initialised');
   }
 
-  /// Requests the notification permission on the current platform.
-  ///
-  /// On Android 13+ this shows the system permission dialog. On iOS/macOS it
-  /// requests alert/badge/sound permissions. On other platforms it's a no-op.
-  /// Returns `true` if permission was granted (or isn't required).
   Future<bool> requestPermissions() async {
     if (!_initialized) return false;
 
@@ -139,11 +119,9 @@ class NotificationService {
           false;
     }
 
-    // Linux/Windows/Web don't require an explicit permission request.
     return true;
   }
 
-  /// Whether notifications are currently enabled on the platform.
   Future<bool> areNotificationsEnabled() async {
     if (!_initialized) return false;
     final androidImpl = _plugin
@@ -156,7 +134,6 @@ class NotificationService {
     return true;
   }
 
-  /// Shows a simple notification immediately.
   Future<void> show({
     required int id,
     required String title,
@@ -181,25 +158,21 @@ class NotificationService {
     );
   }
 
-  /// Cancels the notification with [id].
   Future<void> cancel(int id) async {
     if (!_initialized) return;
     await _plugin.cancel(id: id);
   }
 
-  /// Cancels all notifications shown/scheduled by this plugin.
   Future<void> cancelAll() async {
     if (!_initialized) return;
     await _plugin.cancelAll();
   }
 
-  /// Returns the list of pending (scheduled) notification requests.
   Future<List<PendingNotificationRequest>> pendingNotifications() async {
     if (!_initialized) return const [];
     return _plugin.pendingNotificationRequests();
   }
 
-  /// Details on whether the app was launched by tapping a notification.
   Future<NotificationAppLaunchDetails?>
   getNotificationAppLaunchDetails() async {
     if (!_initialized) return null;

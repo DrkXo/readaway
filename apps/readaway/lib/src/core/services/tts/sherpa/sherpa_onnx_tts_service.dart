@@ -1,4 +1,18 @@
-part of '../../services.dart';
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as p;
+import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
+
+import '../../isolate_service.dart';
+import '../../logging_service.dart';
+import '../../path_service.dart';
+import '../tts_models.dart';
+import 'sherpa_isolate_worker_service.dart';
+import 'sherpa_model_catalog.dart';
+import 'sherpa_tts_model_downloader.dart';
 
 @singleton
 class SherpaOnnxTtsService {
@@ -341,6 +355,43 @@ class SherpaOnnxTtsService {
       samples: result['samples'] as Float32List,
       sampleRate: result['sampleRate'] as int,
     );
+  }
+
+  /// Synthesizes text directly to a WAV file inside the worker isolate.
+  Future<({File file, double duration, List<double> waveform})> generateToFile({
+    required String text,
+    required String outputPath,
+    int speakerId = 0,
+    double speed = 1.0,
+  }) async {
+    if (!hasLoadedModel) {
+      throw const TtsModelNotLoadedException();
+    }
+    try {
+      final result = await _isolateService.sendCommand<Map>(
+        sherpaTtsIsolateName,
+        {
+          'id': _nextId(),
+          'type': 'generateToFile',
+          'text': text,
+          'outputPath': outputPath,
+          'speakerId': speakerId,
+          'speed': speed,
+        },
+      );
+      final rawWaveform = result['waveform'] as List<dynamic>?;
+      final waveform = rawWaveform?.map((e) => (e as num).toDouble()).toList(growable: false) ?? const <double>[];
+
+      return (
+        file: File(result['outputPath'] as String),
+        duration: (result['duration'] as num).toDouble(),
+        waveform: waveform,
+      );
+    } catch (e, st) {
+      logger.e('Failed to generate WAV file with Sherpa ONNX', e, st);
+      if (e is TtsException) rethrow;
+      throw TtsSynthesisException('Synthesis to file failed: $e', e);
+    }
   }
 
   Stream<Float32List> generateStreaming({

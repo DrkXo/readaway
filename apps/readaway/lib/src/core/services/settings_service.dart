@@ -1,4 +1,12 @@
-part of 'services.dart';
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:get_it/get_it.dart';
+import 'package:injectable/injectable.dart';
+
+import '../models/models.dart';
+import 'logging_service.dart';
+import 'storage/hive/app_storage_service.dart';
 
 SettingsService get settingsService => GetIt.I.get<SettingsService>();
 
@@ -54,8 +62,6 @@ class SettingsService {
     _settings = settings;
     _flushTimer?.cancel();
     _flushTimer = Timer(_flushDelay, () => save(settings));
-    // Notify listeners right away so UI (e.g. ThemeService) reacts instantly;
-    // only the storage write is debounced.
     _changesController.add(settings);
   }
 

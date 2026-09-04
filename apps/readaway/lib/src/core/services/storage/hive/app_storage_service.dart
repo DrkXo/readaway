@@ -1,9 +1,18 @@
-part of '../../services.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:isolate';
+
+import 'package:get_it/get_it.dart';
+import 'package:hive_ce/hive.dart';
+import 'package:injectable/injectable.dart';
+
+import '../../../../features/settings/domain/models/reader_preferences.dart';
+import '../../isolate_service.dart';
+import '../../logging_service.dart';
+import 'hive_config_service.dart';
 
 AppStorageService get appStorageService => GetIt.I.get<AppStorageService>();
 
-/// Standalone entry point function required by [Isolate.spawn].
-/// Must be a top-level or static function.
 void _appStorageIsolateEntryPoint(SendPort mainSendPort) {
   final receivePort = ReceivePort();
   mainSendPort.send(receivePort.sendPort);
@@ -77,7 +86,6 @@ class AppStorageService {
 
     _box = await Hive.openBox<String>(HiveConfigService.boxName);
 
-    // Spawn the worker isolate during initialization
     await _isolateService.spawn(
       name: _isolateName,
       entryPoint: _appStorageIsolateEntryPoint,

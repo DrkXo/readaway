@@ -1,5 +1,4 @@
 // ignore_for_file: prefer_initializing_formals
-
 import 'dart:async';
 import 'dart:ui' as ui;
 
@@ -8,7 +7,6 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
-import 'package:mupdf/mupdf.dart';
 
 import '../../../../core/models/reader/reader_document.dart';
 import '../../../../core/services/services.dart';
@@ -29,6 +27,10 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   final SettingsBloc _settingsBloc;
   final DocumentParser<String> _documentParser;
   final NotificationService _notificationService;
+  final DocumentCoverService _coverService;
+
+  Uri? _coverUri;
+  Uri? get coverUri => _coverUri;
 
   StreamSubscription<TtsPlaybackEvent>? _ttsStateSub;
 
@@ -43,12 +45,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     required SettingsBloc settingsBloc,
     required DocumentParser<String> documentParser,
     required NotificationService notificationService,
+    required DocumentCoverService coverService,
   })  : _windowService = windowService,
         _muPdfService = muPdfService,
         _ttsController = ttsController,
         _settingsBloc = settingsBloc,
         _documentParser = documentParser,
         _notificationService = notificationService,
+        _coverService = coverService,
         super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
     on<_PageChanged>(_onPageChanged);
@@ -147,6 +151,13 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
         await _windowService.setTitle(bookTitle);
       }
+
+      // Pre-extract or load cached document cover thumbnail via DocumentCoverService
+      _coverUri = await _coverService.getCoverArtUri(
+        filePath: event.path,
+        fileName: fileName,
+        pageCount: count,
+      );
       // ignore: unused_catch_stack
     } catch (e, st) {
       logger.d(
@@ -245,6 +256,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     Emitter<ReaderState> emit,
   ) {
     _disposeImages();
+    _coverUri = null;
     _muPdfService.closeDocument();
     _windowService.setDefaultTitle();
     emit(const ReaderState());
@@ -292,6 +304,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     final text = await _muPdfService.extractPageText(pageIndex);
     if (text == null || text.trim().isEmpty) return;
 
+    if (_coverUri == null && state.pageCount > 0) {
+      _coverUri = await _coverService.getCoverArtUri(
+        filePath: state.fileName ?? 'doc',
+        fileName: state.fileName ?? 'doc',
+        pageCount: state.pageCount,
+      );
+    }
+
     _ttsController.start();
     await _ttsController.playText(
       text,
@@ -301,6 +321,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         album: state.bookTitle,
         artist: state.author,
         genre: 'Ebook',
+        artUri: _coverUri,
       ),
     );
   }

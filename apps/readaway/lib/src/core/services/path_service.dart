@@ -1,4 +1,10 @@
-part of 'services.dart';
+import 'dart:io';
+
+import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+
+import '../../../flavors.dart';
 
 @lazySingleton
 class AppPathService {
@@ -52,6 +58,16 @@ class AppPathService {
   Future<Directory> getTtsModelsDirectory() async {
     final support = await supportDirectory;
     final dir = Directory(p.join(support.path, 'tts_models'));
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Directory where temporary TTS synthesized audio chunks live: `<temp>/tts_cache`.
+  Future<Directory> getTtsAudioCacheDirectory() async {
+    final temp = await tempDirectory;
+    final dir = Directory(p.join(temp.path, 'tts_cache'));
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

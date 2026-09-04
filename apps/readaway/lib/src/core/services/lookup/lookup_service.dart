@@ -1,6 +1,10 @@
-part of '../services.dart';
+import 'dart:convert';
 
-/// A word sense listed under one part of speech.
+import 'package:injectable/injectable.dart';
+
+import '../../error/errors.dart';
+import '../http/http_service.dart';
+
 class LookupSense {
   const LookupSense({required this.definition, this.example});
 
@@ -8,7 +12,6 @@ class LookupSense {
   final String? example;
 }
 
-/// All senses sharing one part of speech.
 class LookupMeaning {
   const LookupMeaning({required this.partOfSpeech, required this.senses});
 
@@ -16,7 +19,6 @@ class LookupMeaning {
   final List<LookupSense> senses;
 }
 
-/// Dictionary lookup result.
 class LookupDefinition {
   const LookupDefinition({
     required this.word,
@@ -29,7 +31,6 @@ class LookupDefinition {
   final List<LookupMeaning> meanings;
 }
 
-/// Translation result.
 class LookupTranslation {
   const LookupTranslation({required this.text, this.sourceLanguage});
 
@@ -43,7 +44,6 @@ class LookupService {
 
   final HttpService _client;
 
-  /// Defines [word] using Google's unofficial keyless dictionary endpoint.
   Future<LookupDefinition> defineWithGoogle(
     String word, {
     String language = 'en',
@@ -53,15 +53,13 @@ class LookupService {
       'sl': language,
       'tl': language,
       'hl': language,
-      'dt': 'md', // Requests dictionary/meaning definitions
+      'dt': 'md',
       'q': word,
     });
 
     final data = asList(await getJson(uri));
     if (data.isEmpty) throw LookupNotFound('No definition found.');
 
-    // Google returns definition objects in the 12th element (index 11 or 12 depending on parameters)
-    // Structure: [null, null, null, ..., [ [ "partOfSpeech", [ [ "definition", ... ] ] ] ]]
     final definitionsBlock = data.length > 12 ? asList(data[12]) : const [];
     if (definitionsBlock.isEmpty) throw LookupNotFound('No definition found.');
 
@@ -82,7 +80,6 @@ class LookupService {
         final definition = senseList[0] as String? ?? '';
         if (definition.isEmpty) continue;
 
-        // Example sentence is usually at index 2 if present
         final example = senseList.length > 2 ? senseList[2] as String? : null;
 
         senses.add(LookupSense(definition: definition, example: example));
@@ -101,7 +98,6 @@ class LookupService {
     );
   }
 
-  /// Defines [word] via the keyless Free Dictionary API (English).
   Future<LookupDefinition> define(String word) async {
     final uri = Uri(
       scheme: 'https',
@@ -146,10 +142,6 @@ class LookupService {
     );
   }
 
-  /// Translates [text] with auto-detected source language.
-  ///
-  /// ponytail: uses Google's keyless `gdt` web endpoint — unofficial and
-  /// unversioned; swap for a proper translation API if it starts failing.
   Future<LookupTranslation> translate(
     String text, {
     required String targetLanguage,
@@ -189,19 +181,14 @@ class LookupService {
     return null;
   }
 
-  /// GETs [uri] and returns the decoded JSON body, mapping network/status
-  /// errors onto [LookupException]s. Static so tests exercise the same
-  /// mapping without subclassing [LookupService].
   Future<Object?> getJson(Uri uri) async {
-    late final Response<Object?> response;
     try {
-      response = await _client.get<Object?>(
+      final response = await _client.get<Object?>(
         path: uri.toString(),
       );
 
       final data = response.data;
       if (data is String) {
-        // Endpoint replied without a JSON content type.
         try {
           return jsonDecode(data);
         } on FormatException {

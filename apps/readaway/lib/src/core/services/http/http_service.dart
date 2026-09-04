@@ -1,4 +1,16 @@
-part of '../services.dart';
+import 'dart:async';
+
+import 'package:dio/dio.dart';
+import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
+import 'package:dio_cache_interceptor_file_store/dio_cache_interceptor_file_store.dart';
+import 'package:injectable/injectable.dart';
+import 'package:native_dio_adapter/native_dio_adapter.dart';
+
+import '../../error/errors.dart';
+import '../logging_service.dart';
+import '../path_service.dart';
+
+export 'package:dio/dio.dart';
 
 @lazySingleton
 @Singleton()
@@ -11,7 +23,6 @@ class HttpService {
   bool _isInitialized = false;
   Completer<void>? _initCompleter;
 
-  /// On-disk cache used by [getCached]. Null until [initialize] runs.
   CacheStore? _cacheStore;
   DioCacheInterceptor? _cacheInterceptor;
 
@@ -73,10 +84,6 @@ class HttpService {
     }
   }
 
-  /// Sets up the on-disk HTTP cache used by [getCached]. The default policy
-  /// is [CachePolicy.noCache], so ordinary requests (and large model
-  /// downloads) are never cached — only callers that opt in via [getCached]
-  /// get cached responses.
   Future<void> _initCache() async {
     final dir = await _pathService.getHttpCacheDirectory();
     _cacheStore = FileCacheStore(dir.path);
@@ -101,25 +108,12 @@ class HttpService {
     if (!_isInitialized) await initialize();
   }
 
-  // Interceptor Callbacks
-
   Future<void> _onError(
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (err.response?.statusCode == 401) {
-      try {
-        /// TODO: Implement actual token refresh logic here
-        // final newOptions = await _retryRequest(err.requestOptions);
-        // return handler.resolve(await _dio.fetch(newOptions));
-      } catch (refreshError) {
-        return handler.reject(_mapDioErrorToApiException(err));
-      }
-    }
     return handler.reject(_mapDioErrorToApiException(err));
   }
-
-  // Error Mapping
 
   DioException _mapDioErrorToApiException(
     DioException err, [
@@ -181,8 +175,6 @@ class HttpService {
     return errorType.message;
   }
 
-  // Optimized HTTP Methods
-
   Future<Response<T>> get<T>({
     required String path,
     Map<String, dynamic>? queryParameters,
@@ -200,10 +192,6 @@ class HttpService {
     );
   }
 
-  /// Like [get], but serves a cached response for [maxStale] and falls back
-  /// to the last-known-good cached copy (even if stale) when the network is
-  /// unreachable. Intended for slowly-changing remote data such as the TTS
-  /// model manifest.
   Future<Response<T>> getCached<T>({
     required String path,
     Map<String, dynamic>? queryParameters,
@@ -214,10 +202,6 @@ class HttpService {
     ProgressCallback? onReceiveProgress,
   }) async {
     await _ensureInitialized();
-    // Tell the cache interceptor (and any upstream proxy) that we're happy
-    // to serve a response up to [maxStale] old. Without this, the freshness
-    // of a cached entry is governed solely by the server's Cache-Control
-    // (e.g. GitHub's `max-age=60`), which would revalidate far too often.
     final cacheControl = 'max-stale=${maxStale.inSeconds}';
     final mergedHeaders = <String, String>{
       ...?headers,
@@ -245,7 +229,6 @@ class HttpService {
             store: store,
             policy: CachePolicy.request,
             maxStale: maxStale,
-            // Serve the last-known-good copy when offline instead of failing.
             hitCacheOnErrorExcept: const [401, 403],
           ).toOptions().copyWith(
             headers: mergedHeaders,
@@ -335,8 +318,6 @@ class HttpService {
       cancelToken: cancelToken,
     );
   }
-
-  // Forms / Payload Operations
 
   Future<Response<T>> postFormData<T>({
     required String path,

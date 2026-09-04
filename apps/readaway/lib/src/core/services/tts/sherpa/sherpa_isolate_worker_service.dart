@@ -1,4 +1,9 @@
-part of '../../services.dart';
+import 'dart:isolate';
+import 'dart:typed_data';
+
+import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
+
+import '../tts_models.dart';
 
 const sherpaTtsIsolateName = 'sherpa-tts';
 
@@ -31,7 +36,6 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
           final modelConfig = _sherpaConfigFromMessage(message);
           final config = sherpa.OfflineTtsConfig(
             model: modelConfig,
-
             maxNumSenetences: 1,
           );
           final newTts = sherpa.OfflineTts(config);
@@ -75,6 +79,55 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             result: {
               'samples': audio.samples,
               'sampleRate': audio.sampleRate,
+            },
+          );
+          break;
+
+        case 'generateToFile':
+          final engine = tts;
+          if (engine == null) {
+            reply(id, error: 'No model loaded in TTS isolate.');
+            break;
+          }
+          final text = message['text'] as String;
+          final outputPath = message['outputPath'] as String;
+          final speakerId = message['speakerId'] as int? ?? 0;
+          final speed = (message['speed'] as num?)?.toDouble() ?? 1.0;
+
+          if (text.trim().isEmpty) {
+            reply(
+              id,
+              result: {
+                'outputPath': outputPath,
+                'duration': 0.0,
+                'sampleRate': engine.sampleRate,
+              },
+            );
+            break;
+          }
+          final audio = engine.generate(
+            text: text,
+            sid: speakerId,
+            speed: speed,
+          );
+          final ok = sherpa.writeWave(
+            filename: outputPath,
+            samples: audio.samples,
+            sampleRate: audio.sampleRate,
+          );
+          if (!ok) {
+            reply(id, error: 'Failed to write WAV to $outputPath');
+            break;
+          }
+          final duration = audio.samples.length / audio.sampleRate;
+          final peaks = _extractPeaks(audio.samples, targetBars: 64);
+          reply(
+            id,
+            result: {
+              'outputPath': outputPath,
+              'duration': duration,
+              'sampleRate': audio.sampleRate,
+              'waveform': peaks,
             },
           );
           break;
@@ -174,4 +227,34 @@ sherpa.OfflineTtsModelConfig _sherpaConfigFromMessage(Map message) {
     default:
       throw SherpaTtsException('Unknown model type "$type"');
   }
+}
+
+/// Computes normalized waveform amplitude peaks (0.12 to 1.0) from raw PCM samples.
+List<double> _extractPeaks(Float32List samples, {int targetBars = 64}) {
+  if (samples.isEmpty) return List.filled(targetBars, 0.2);
+  final peaks = List<double>.filled(targetBars, 0.0);
+  final samplesPerBar = (samples.length / targetBars).ceil();
+  if (samplesPerBar <= 0) return List.filled(targetBars, 0.2);
+
+  var maxGlobal = 0.0;
+  for (var i = 0; i < targetBars; i++) {
+    final start = i * samplesPerBar;
+    final end = (start + samplesPerBar).clamp(0, samples.length);
+    var peak = 0.0;
+    for (var j = start; j < end; j++) {
+      final abs = samples[j].abs();
+      if (abs > peak) peak = abs;
+    }
+    peaks[i] = peak;
+    if (peak > maxGlobal) maxGlobal = peak;
+  }
+
+  if (maxGlobal > 0.0) {
+    for (var i = 0; i < targetBars; i++) {
+      peaks[i] = (peaks[i] / maxGlobal).clamp(0.12, 1.0);
+    }
+  } else {
+    peaks.fillRange(0, targetBars, 0.2);
+  }
+  return peaks;
 }

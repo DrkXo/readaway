@@ -6,6 +6,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:path/path.dart' as p;
+
 import '../../../../../core/models/models.dart';
 import '../../../../../core/services/services.dart';
 import '../../../domain/models/reader_preferences.dart';
@@ -20,7 +22,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final AppStorageService _storage;
   final SettingsService _settingsService;
   final SherpaOnnxTtsService _ttsService;
-  // final JustAudioService _audio;
+  final AudioPlayerService _audioPlayer;
+  final AppPathService _pathService;
 
   final _ttsDownloadSubs =
       <String, StreamSubscription<ModelDownloadProgress>>{};
@@ -29,7 +32,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     required this._storage,
     required this._settingsService,
     required this._ttsService,
-    // required this._audio,
+    required this._audioPlayer,
+    required this._pathService,
   }) : super(
          SettingsState(
            globalReaderPrefs: ReaderPreferences(),
@@ -411,13 +415,17 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         await _ttsService.loadModel(event.modelId);
       }
 
-      final pcmAudio = await _ttsService.generate(
+      final cacheDir = await _pathService.getTtsAudioCacheDirectory();
+      final previewPath = p.join(cacheDir.path, 'preview_${event.modelId}.wav');
+
+      final result = await _ttsService.generateToFile(
         text: 'Hello. This is what this voice sounds like while reading.',
+        outputPath: previewPath,
         speakerId: 0,
         speed: 1.0,
       );
 
-      await justAudioService.playPreview(pcmAudio);
+      await _audioPlayer.playPreviewFile(result.file.path);
 
       if (previousActive != null && previousActive != event.modelId) {
         await _ttsService.loadModel(previousActive);

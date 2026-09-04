@@ -18,8 +18,30 @@ import '../../features/settings/presentation/bloc/settings/settings_bloc.dart'
     as _i228;
 import '../../router/router.dart' as _i295;
 import '../routes/routes.dart' as _i494;
+import '../services/app_lyfecycle_manager.dart' as _i313;
+import '../services/audio/audio_player_service.dart' as _i370;
+import '../services/font_service.dart' as _i662;
 import '../services/html_document_parser.dart' as _i865;
+import '../services/http/http_service.dart' as _i920;
+import '../services/isolate_service.dart' as _i548;
+import '../services/logging_service.dart' as _i520;
+import '../services/lookup/lookup_service.dart' as _i456;
+import '../services/mupdf_service.dart' as _i16;
+import '../services/notification_service.dart' as _i941;
+import '../services/package_info_service.dart' as _i314;
+import '../services/path_service.dart' as _i145;
 import '../services/services.dart' as _i264;
+import '../services/settings_service.dart' as _i114;
+import '../services/storage/hive/app_storage_service.dart' as _i1024;
+import '../services/storage/hive/hive_config_service.dart' as _i155;
+import '../services/theme_service.dart' as _i982;
+import '../services/tts/sherpa/sherpa_model_catalog.dart' as _i468;
+import '../services/tts/sherpa/sherpa_onnx_tts_service.dart' as _i572;
+import '../services/tts/sherpa/sherpa_tts_model_downloader.dart' as _i590;
+import '../services/tts/tts_chunker_service.dart' as _i864;
+import '../services/tts/tts_controller_service.dart' as _i573;
+import '../services/wakelock_service.dart' as _i669;
+import '../services/window_service.dart' as _i516;
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
@@ -29,81 +51,102 @@ extension GetItInjectableX on _i174.GetIt {
   }) async {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     gh.singleton<_i494.AppRoutes>(() => _i494.AppRoutes());
-    gh.singleton<_i264.AppLifecycleManager>(() => _i264.AppLifecycleManager());
-    await gh.singletonAsync<_i264.LoggingService>(() {
-      final i = _i264.LoggingService();
+    gh.singleton<_i313.AppLifecycleManager>(() => _i313.AppLifecycleManager());
+    await gh.singletonAsync<_i520.LoggingService>(() {
+      final i = _i520.LoggingService();
       return i.init().then((_) => i);
     }, preResolve: true);
-    await gh.singletonAsync<_i264.PackageInfoService>(() {
-      final i = _i264.PackageInfoService();
+    await gh.singletonAsync<_i314.PackageInfoService>(() {
+      final i = _i314.PackageInfoService();
       return i.init().then((_) => i);
     }, preResolve: true);
-    gh.singleton<_i264.WakelockService>(() => _i264.WakelockService());
-    await gh.singletonAsync<_i264.WindowService>(
+    gh.singleton<_i669.WakelockService>(() => _i669.WakelockService());
+    await gh.singletonAsync<_i516.WindowService>(
       () {
-        final i = _i264.WindowService();
+        final i = _i516.WindowService();
         return i.initialize().then((_) => i);
       },
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i264.AppPathService>(() => _i264.AppPathService());
-    gh.lazySingleton<_i264.TextChunker>(() => _i264.TextChunker());
-    gh.factory<_i264.HiveConfigService>(
-      () => _i264.HiveConfigService(gh<_i264.AppPathService>()),
-    );
-    gh.lazySingleton<_i428.DocumentParser<String>>(
-      () => const _i865.HtmlDocumentParser(),
-    );
-    await gh.singletonAsync<_i264.NotificationService>(
+    gh.lazySingleton<_i145.AppPathService>(() => _i145.AppPathService());
+    gh.lazySingleton<_i864.TextChunker>(() => _i864.TextChunker());
+    await gh.singletonAsync<_i941.NotificationService>(
       () {
-        final i = _i264.NotificationService(gh<_i264.PackageInfoService>());
+        final i = _i941.NotificationService(gh<_i314.PackageInfoService>());
         return i.initialize().then((_) => i);
       },
-      dependsOn: [_i264.PackageInfoService],
+      dependsOn: [_i314.PackageInfoService],
       preResolve: true,
     );
-    await gh.lazySingletonAsync<_i264.HttpService>(() {
-      final i = _i264.HttpService(
-        logger: gh<_i264.LoggingService>(),
-        pathService: gh<_i264.AppPathService>(),
-      );
-      return i.initialize().then((_) => i);
-    }, preResolve: true);
-    gh.singleton<_i264.IsolateService>(
-      () => _i264.IsolateService(loggingService: gh<_i264.LoggingService>()),
-      dispose: (i) => i.dispose(),
-    );
-    gh.lazySingleton<_i295.AppRoutesGuards>(
-      () => _i295.AppRoutesGuards(appRoutes: gh<_i494.AppRoutes>()),
-    );
-    gh.lazySingleton<_i264.TtsChunkingService>(
-      () => _i264.TtsChunkingService(gh<_i264.IsolateService>()),
-      dispose: (i) => i.dispose(),
-    );
-    gh.lazySingleton<_i264.SherpaTtsModelCatalogService>(
-      () => _i264.SherpaTtsModelCatalogService(
-        httpService: gh<_i264.HttpService>(),
-      ),
-    );
-    await gh.singletonAsync<_i264.JustAudioService>(
+    await gh.singletonAsync<_i370.AudioPlayerService>(
       () {
-        final i = _i264.JustAudioService(
-          gh<_i264.PackageInfoService>(),
-          gh<_i264.NotificationService>(),
+        final i = _i370.AudioPlayerService(
+          gh<_i314.PackageInfoService>(),
+          gh<_i941.NotificationService>(),
         );
         return i.init().then((_) => i);
       },
       dependsOn: [
-        _i264.LoggingService,
-        _i264.NotificationService,
-        _i264.PackageInfoService,
+        _i520.LoggingService,
+        _i941.NotificationService,
+        _i314.PackageInfoService,
       ],
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i264.LookupService>(
-      () => _i264.LookupService(gh<_i264.HttpService>()),
+    gh.lazySingleton<_i428.DocumentParser<String>>(
+      () => const _i865.HtmlDocumentParser(),
+    );
+    gh.factory<_i155.HiveConfigService>(
+      () => _i155.HiveConfigService(gh<_i145.AppPathService>()),
+    );
+    gh.singleton<_i548.IsolateService>(
+      () => _i548.IsolateService(loggingService: gh<_i520.LoggingService>()),
+      dispose: (i) => i.dispose(),
+    );
+    await gh.lazySingletonAsync<_i920.HttpService>(() {
+      final i = _i920.HttpService(
+        logger: gh<_i520.LoggingService>(),
+        pathService: gh<_i145.AppPathService>(),
+      );
+      return i.initialize().then((_) => i);
+    }, preResolve: true);
+    gh.lazySingleton<_i468.SherpaTtsModelCatalogService>(
+      () => _i468.SherpaTtsModelCatalogService(
+        httpService: gh<_i920.HttpService>(),
+      ),
+    );
+    gh.lazySingleton<_i456.LookupService>(
+      () => _i456.LookupService(gh<_i920.HttpService>()),
+    );
+    gh.lazySingleton<_i295.AppRoutesGuards>(
+      () => _i295.AppRoutesGuards(appRoutes: gh<_i494.AppRoutes>()),
+    );
+    gh.singleton<_i590.SherpaTtsModelDownloaderService>(
+      () => _i590.SherpaTtsModelDownloaderService(
+        client: gh<_i920.HttpService>(),
+        catalog: gh<_i468.SherpaTtsModelCatalogService>(),
+        pathService: gh<_i145.AppPathService>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
+    await gh.singletonAsync<_i572.SherpaOnnxTtsService>(
+      () {
+        final i = _i572.SherpaOnnxTtsService(
+          downloader: gh<_i590.SherpaTtsModelDownloaderService>(),
+          sherpaTtsModelCatalog: gh<_i468.SherpaTtsModelCatalogService>(),
+          isolateService: gh<_i548.IsolateService>(),
+          pathService: gh<_i145.AppPathService>(),
+        );
+        return i.init().then((_) => i);
+      },
+      preResolve: true,
+      dispose: (i) => i.dispose(),
+    );
+    gh.lazySingleton<_i864.TtsChunkingService>(
+      () => _i864.TtsChunkingService(gh<_i548.IsolateService>()),
+      dispose: (i) => i.dispose(),
     );
     gh.singleton<_i295.AppRouter>(
       () => _i295.AppRouter(
@@ -113,59 +156,40 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
-    await gh.singletonAsync<_i264.AppStorageService>(
+    await gh.singletonAsync<_i1024.AppStorageService>(
       () {
-        final i = _i264.AppStorageService(
-          config: gh<_i264.HiveConfigService>(),
-          isolateService: gh<_i264.IsolateService>(),
+        final i = _i1024.AppStorageService(
+          config: gh<_i155.HiveConfigService>(),
+          isolateService: gh<_i548.IsolateService>(),
         );
         return i.init().then((_) => i);
       },
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.singleton<_i264.SherpaTtsModelDownloaderService>(
-      () => _i264.SherpaTtsModelDownloaderService(
-        client: gh<_i264.HttpService>(),
-        catalog: gh<_i264.SherpaTtsModelCatalogService>(),
-        pathService: gh<_i264.AppPathService>(),
+    gh.singleton<_i16.MuPdfService>(
+      () => _i16.MuPdfService(
+        isolateService: gh<_i548.IsolateService>(),
+        loggingService: gh<_i520.LoggingService>(),
       ),
       dispose: (i) => i.dispose(),
     );
-    await gh.singletonAsync<_i264.SherpaOnnxTtsService>(
+    await gh.singletonAsync<_i114.SettingsService>(
       () {
-        final i = _i264.SherpaOnnxTtsService(
-          downloader: gh<_i264.SherpaTtsModelDownloaderService>(),
-          sherpaTtsModelCatalog: gh<_i264.SherpaTtsModelCatalogService>(),
-          isolateService: gh<_i264.IsolateService>(),
-          pathService: gh<_i264.AppPathService>(),
+        final i = _i114.SettingsService(
+          storage: gh<_i1024.AppStorageService>(),
         );
         return i.init().then((_) => i);
       },
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    await gh.singletonAsync<_i264.SettingsService>(
+    await gh.singletonAsync<_i982.ThemeService>(
       () {
-        final i = _i264.SettingsService(storage: gh<_i264.AppStorageService>());
+        final i = _i982.ThemeService(settings: gh<_i114.SettingsService>());
         return i.init().then((_) => i);
       },
       preResolve: true,
-      dispose: (i) => i.dispose(),
-    );
-    gh.singleton<_i264.MuPdfService>(
-      () => _i264.MuPdfService(
-        isolateService: gh<_i264.IsolateService>(),
-        loggingService: gh<_i264.LoggingService>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
-    gh.lazySingleton<_i264.TtsControllerService>(
-      () => _i264.TtsControllerService(
-        gh<_i264.SherpaOnnxTtsService>(),
-        gh<_i264.JustAudioService>(),
-        gh<_i264.TtsChunkingService>(),
-      ),
       dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i228.SettingsBloc>(
@@ -173,15 +197,31 @@ extension GetItInjectableX on _i174.GetIt {
         storage: gh<_i264.AppStorageService>(),
         settingsService: gh<_i264.SettingsService>(),
         ttsService: gh<_i264.SherpaOnnxTtsService>(),
+        audioPlayer: gh<_i264.AudioPlayerService>(),
+        pathService: gh<_i264.AppPathService>(),
       ),
     );
-    await gh.singletonAsync<_i264.ThemeService>(
-      () {
-        final i = _i264.ThemeService(settings: gh<_i264.SettingsService>());
-        return i.init().then((_) => i);
-      },
-      preResolve: true,
+    gh.lazySingleton<_i573.TtsControllerService>(
+      () => _i573.TtsControllerService(
+        gh<_i572.SherpaOnnxTtsService>(),
+        gh<_i370.AudioPlayerService>(),
+        gh<_i864.TtsChunkingService>(),
+        gh<_i145.AppPathService>(),
+      ),
       dispose: (i) => i.dispose(),
+    );
+    await gh.singletonAsync<_i662.FontService>(() {
+      final i = _i662.FontService(
+        settings: gh<_i114.SettingsService>(),
+        pathService: gh<_i145.AppPathService>(),
+      );
+      return i.init().then((_) => i);
+    }, preResolve: true);
+    gh.lazySingleton<_i264.DocumentCoverService>(
+      () => _i264.DocumentCoverService(
+        gh<_i264.MuPdfService>(),
+        gh<_i145.AppPathService>(),
+      ),
     );
     gh.factory<_i523.ReaderBloc>(
       () => _i523.ReaderBloc(
@@ -191,15 +231,9 @@ extension GetItInjectableX on _i174.GetIt {
         settingsBloc: gh<_i228.SettingsBloc>(),
         documentParser: gh<_i428.DocumentParser<String>>(),
         notificationService: gh<_i264.NotificationService>(),
+        coverService: gh<_i264.DocumentCoverService>(),
       ),
     );
-    await gh.singletonAsync<_i264.FontService>(() {
-      final i = _i264.FontService(
-        settings: gh<_i264.SettingsService>(),
-        pathService: gh<_i264.AppPathService>(),
-      );
-      return i.init().then((_) => i);
-    }, preResolve: true);
     return this;
   }
 }

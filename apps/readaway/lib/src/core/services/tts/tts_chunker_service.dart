@@ -1,4 +1,10 @@
-part of '../services.dart';
+import 'dart:async';
+import 'dart:isolate';
+
+import 'package:injectable/injectable.dart';
+
+import '../isolate_service.dart';
+import '../logging_service.dart';
 
 /// Top-level entry point executed inside the worker isolate.
 void _textChunkerIsolateEntryPoint(SendPort mainSendPort) {
@@ -42,9 +48,6 @@ void _textChunkerIsolateEntryPoint(SendPort mainSendPort) {
 }
 
 /// Facade service managing background isolate text chunking for TTS.
-///
-/// Scoped to the ReaderBloc lifecycle: [start] is called when a reader
-/// session begins and [stop] is called when it ends.
 @lazySingleton
 class TtsChunkingService {
   final IsolateService _isolateService;
@@ -54,8 +57,7 @@ class TtsChunkingService {
 
   TtsChunkingService(this._isolateService);
 
-  /// Spawns the worker isolate on demand. Idempotent — safe to call multiple
-  /// times across reader open/close cycles.
+  /// Spawns the worker isolate on demand. Idempotent.
   Future<void> start() async {
     if (_isolateService.isSpawned(_isolateName)) return;
 
@@ -65,12 +67,10 @@ class TtsChunkingService {
     );
   }
 
-  /// Kills the worker isolate. Safe to call when the isolate is already dead
-  /// (the underlying [IsolateService] is null-guarded).
+  /// Kills the worker isolate.
   Future<void> stop() => dispose();
 
-  /// Fully tears down the isolate. Called both by the ReaderBloc lifecycle
-  /// (via [stop]) and by the DI container on app shutdown.
+  /// Fully tears down the isolate.
   @disposeMethod
   Future<void> dispose() async {
     await _isolateService.disposeIsolate(_isolateName);
@@ -83,30 +83,39 @@ class TtsChunkingService {
   }) async {
     if (text.trim().isEmpty) return const [];
 
-    await start();
+    try {
+      await start();
 
-    final commandId = _nextCommandId++;
-    final response = await _isolateService.sendCommand<List<dynamic>>(
-      _isolateName,
-      {
-        'id': commandId,
-        'text': text,
-        'maxChunkChars': maxChunkChars,
-      },
-    );
+      final commandId = _nextCommandId++;
+      final response = await _isolateService.sendCommand<List<dynamic>>(
+        _isolateName,
+        {
+          'id': commandId,
+          'text': text,
+          'maxChunkChars': maxChunkChars,
+        },
+      );
 
-    return response
-        .map(
-          (dynamic item) {
-            final map = item as Map<String, dynamic>;
-            return TtsChunk(
-              text: map['text'] as String,
-              startOffset: map['startOffset'] as int,
-              endOffset: map['endOffset'] as int,
-            );
-          },
-        )
-        .toList(growable: false);
+      return response
+          .map(
+            (dynamic item) {
+              final map = item as Map<String, dynamic>;
+              return TtsChunk(
+                text: map['text'] as String,
+                startOffset: map['startOffset'] as int,
+                endOffset: map['endOffset'] as int,
+              );
+            },
+          )
+          .toList(growable: false);
+    } catch (e, st) {
+      logger.w('Worker isolate chunking failed, falling back to sync chunker', e, st);
+      final fallbackChunker = TextChunker();
+      return fallbackChunker.chunkSentences(
+        text,
+        maxChunkChars: maxChunkChars,
+      );
+    }
   }
 }
 
@@ -240,8 +249,4 @@ class _RawSpan {
   const _RawSpan(this.start, this.end);
   final int start;
   final int end;
-}
-
-extension<T> on List<T> {
-  T? get lastOrNull => isEmpty ? null : last;
 }

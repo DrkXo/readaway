@@ -1,6 +1,11 @@
-part of "services.dart";
+import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
+import 'package:get_it/get_it.dart';
+import 'package:injectable/injectable.dart';
+import 'package:rxdart/rxdart.dart';
 
-/// Represents a lifecycle event with additional context
+import 'logging_service.dart';
+
 class LifecycleEvent extends Equatable {
   final LifecycleEventType type;
   final AppLifecycleState currentState;
@@ -34,7 +39,6 @@ class LifecycleEvent extends Equatable {
   ];
 }
 
-/// Types of lifecycle events
 enum LifecycleEventType {
   initialized,
   foreground,
@@ -42,7 +46,6 @@ enum LifecycleEventType {
   stateChange,
 }
 
-/// Extension to add lifecycle state helpers
 extension AppLifecycleStateX on AppLifecycleState {
   bool get isResumed => this == AppLifecycleState.resumed;
   bool get isPaused => this == AppLifecycleState.paused;
@@ -53,63 +56,42 @@ extension AppLifecycleStateX on AppLifecycleState {
 
 AppLifecycleManager get appLifecycleManager => GetIt.I.get();
 
-/// Service that manages and broadcasts app lifecycle state changes
 @singleton
 class AppLifecycleManager with WidgetsBindingObserver {
   static AppLifecycleManager? _instance;
 
-  // Private constructor for singleton
   AppLifecycleManager._();
 
-  // Singleton instance
   factory AppLifecycleManager() {
     _instance ??= AppLifecycleManager._();
     return _instance!;
   }
 
-  // Stream controller for lifecycle state
   final BehaviorSubject<AppLifecycleState> _lifecycleStateSubject =
       BehaviorSubject<AppLifecycleState>.seeded(AppLifecycleState.resumed);
 
-  // Stream controller for lifecycle events
   final PublishSubject<LifecycleEvent> _lifecycleEventSubject =
       PublishSubject<LifecycleEvent>();
 
-  // Track if the manager is initialized
   bool _isInitialized = false;
-
-  // Track previous state for transition detection
   AppLifecycleState? _previousState;
 
-  // Track time stamps for analytics
   DateTime? _backgroundTime;
   DateTime? _foregroundTime;
 
-  /// Current lifecycle state
   AppLifecycleState get currentState => _lifecycleStateSubject.value;
-
-  /// Stream of lifecycle state changes
   Stream<AppLifecycleState> get lifecycleState => _lifecycleStateSubject.stream;
-
-  /// Stream of lifecycle events (with context about transitions)
   Stream<LifecycleEvent> get lifecycleEvents => _lifecycleEventSubject.stream;
 
-  /// Check if app is currently in foreground
   bool get isInForeground => currentState == AppLifecycleState.resumed;
-
-  /// Check if app is currently in background
   bool get isInBackground =>
       currentState == AppLifecycleState.paused ||
       currentState == AppLifecycleState.inactive ||
       currentState == AppLifecycleState.hidden ||
       currentState == AppLifecycleState.detached;
 
-  /// Initialize the lifecycle manager
   void initialize() {
-    if (_isInitialized) {
-      // logger.d('[AppLifecycleManager] Already initialized');
-      return;
-    }
+    if (_isInitialized) return;
 
     WidgetsBinding.instance.addObserver(this);
     _isInitialized = true;
@@ -117,7 +99,6 @@ class AppLifecycleManager with WidgetsBindingObserver {
 
     logger.d('[AppLifecycleManager] Initialized');
 
-    // Emit initialization event
     if (!_lifecycleEventSubject.isClosed) {
       _lifecycleEventSubject.add(
         LifecycleEvent(
@@ -138,18 +119,14 @@ class AppLifecycleManager with WidgetsBindingObserver {
     final previousState = _previousState;
     _previousState = state;
 
-    // Update the state stream
     if (!_lifecycleStateSubject.isClosed) _lifecycleStateSubject.add(state);
 
-    // Determine the event type and emit appropriate event
     final event = _createLifecycleEvent(state, previousState);
     if (!_lifecycleEventSubject.isClosed) _lifecycleEventSubject.add(event);
 
-    // Track time stamps
     _updateTimestamps(state);
   }
 
-  /// Create a lifecycle event based on state transition
   LifecycleEvent _createLifecycleEvent(
     AppLifecycleState currentState,
     AppLifecycleState? previousState,
@@ -157,7 +134,6 @@ class AppLifecycleManager with WidgetsBindingObserver {
     LifecycleEventType eventType;
     Duration? duration;
 
-    // Determine event type based on transition
     if (_isTransitionToForeground(previousState, currentState)) {
       eventType = LifecycleEventType.foreground;
       if (_backgroundTime != null) {
@@ -181,7 +157,6 @@ class AppLifecycleManager with WidgetsBindingObserver {
     );
   }
 
-  /// Check if transitioning to foreground
   bool _isTransitionToForeground(
     AppLifecycleState? previous,
     AppLifecycleState current,
@@ -199,7 +174,6 @@ class AppLifecycleManager with WidgetsBindingObserver {
     return wasInBackground && isNowInForeground;
   }
 
-  /// Check if transitioning to background
   bool _isTransitionToBackground(
     AppLifecycleState? previous,
     AppLifecycleState current,
@@ -217,7 +191,6 @@ class AppLifecycleManager with WidgetsBindingObserver {
     return wasInForeground && isNowInBackground;
   }
 
-  /// Update timestamps for analytics
   void _updateTimestamps(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _foregroundTime = DateTime.now();
@@ -226,7 +199,6 @@ class AppLifecycleManager with WidgetsBindingObserver {
     }
   }
 
-  /// Get duration app has been in current state
   Duration? get currentStateDuration {
     if (_previousState == AppLifecycleState.resumed &&
         _foregroundTime != null) {
@@ -238,24 +210,18 @@ class AppLifecycleManager with WidgetsBindingObserver {
     return null;
   }
 
-  /// Listen to specific lifecycle event types
   Stream<LifecycleEvent> listenToEventType(LifecycleEventType type) {
     return _lifecycleEventSubject.stream.where((event) => event.type == type);
   }
 
-  /// Listen to foreground events only
   Stream<LifecycleEvent> get onForeground =>
       listenToEventType(LifecycleEventType.foreground);
 
-  /// Listen to background events only
   Stream<LifecycleEvent> get onBackground =>
       listenToEventType(LifecycleEventType.background);
 
-  /// Dispose the lifecycle manager
   void dispose() {
     if (!_isInitialized) return;
-
-    // logger.d('[AppLifecycleManager] Disposing');
 
     WidgetsBinding.instance.removeObserver(this);
     _lifecycleStateSubject.close();
@@ -264,6 +230,5 @@ class AppLifecycleManager with WidgetsBindingObserver {
     _instance = null;
   }
 
-  /// Check if manager is initialized
   bool get isInitialized => _isInitialized;
 }

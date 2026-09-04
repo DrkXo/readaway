@@ -15,7 +15,7 @@ class ReaderTtsPlayerOverlay extends StatefulWidget {
 
 class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
     with SingleTickerProviderStateMixin {
-  static const _presenceDuration = Duration(milliseconds: 220);
+  static const _presenceDuration = Duration(milliseconds: 320);
 
   late final AnimationController _presence;
 
@@ -68,11 +68,9 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
           : Positioned.fill(
               child: IgnorePointer(
                 ignoring: !_active,
-                child: FadeTransition(
-                  opacity: _presence,
-                  child: const _ReaderTtsExpandableSheet(
-                    key: ValueKey('tts_sheet'),
-                  ),
+                child: _ReaderTtsExpandableSheet(
+                  key: const ValueKey('tts_sheet'),
+                  presence: _presence,
                 ),
               ),
             ),
@@ -86,7 +84,12 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
 /// Re-created each time TTS (re)activates (see the [ValueKey] above), so it
 /// always starts collapsed rather than remembering the last expand state.
 class _ReaderTtsExpandableSheet extends StatefulWidget {
-  const _ReaderTtsExpandableSheet({super.key});
+  const _ReaderTtsExpandableSheet({
+    required this.presence,
+    super.key,
+  });
+
+  final Animation<double> presence;
 
   @override
   State<_ReaderTtsExpandableSheet> createState() =>
@@ -167,10 +170,26 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
         final dragExtent = _calculateDragExtent(overlayHeight);
 
         return AnimatedBuilder(
-          animation: _motion,
+          animation: Listenable.merge([_motion, widget.presence]),
           builder: (context, child) {
             // Clamp t to handle physics overshoots gracefully in geometry lerps
             final t = _motion.value.clamp(0.0, 1.0);
+
+            // Curved presence interpolation:
+            // Entering: easeOutCubic (rises smoothly from bottom and settles)
+            // Dismissing: easeInCubic (accelerates downwards off the bottom of the screen)
+            final curvedPresence = CurvedAnimation(
+              parent: widget.presence,
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeInCubic,
+            ).value;
+
+            // Distance to slide down off-screen:
+            // In mini player mode (t=0): 160px places the card completely offscreen below the bottom bar.
+            // In full player mode (t=1): overlayHeight places the entire sheet off the screen.
+            final slideDistance = lerpDouble(160.0, overlayHeight, t)!;
+            final dy = (1.0 - curvedPresence) * slideDistance;
+            final presenceOpacity = curvedPresence.clamp(0.0, 1.0);
 
             final top = lerpDouble(
               overlayHeight -
@@ -198,11 +217,17 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
                   bottom: bottom,
                   left: horizontalMargin,
                   right: horizontalMargin,
-                  child: Material(
-                    elevation: elevation,
-                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(radius),
-                    clipBehavior: Clip.antiAlias,
+                  child: Transform.translate(
+                    offset: Offset(0, dy),
+                    child: Opacity(
+                      opacity: presenceOpacity,
+                      child: Material(
+                        elevation: elevation,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(radius),
+                        clipBehavior: Clip.antiAlias,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -252,8 +277,10 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
                     ),
                   ),
                 ),
-              ],
-            );
+              ),
+            ),
+          ],
+        );
           },
         );
       },
