@@ -4,7 +4,6 @@ import 'package:get_it/get_it.dart';
 
 import '../flavors.dart';
 import 'core/services/services.dart';
-import 'core/widgets/core_widgets.dart';
 import 'features/settings/presentation/bloc/settings/settings_bloc.dart';
 import 'router/router.dart';
 
@@ -55,24 +54,7 @@ class _ReadAwayState extends State<ReadAway> {
                 darkTheme: themeService.getDarkTheme(),
                 routerConfig: router,
                 builder: (context, child) {
-                  final content = child ?? const SizedBox.shrink();
-                  if (!GetIt.I<WindowService>().isDesktop) return content;
-                  // Overlay above the Navigator so widgets in the caption
-                  // (tooltips, popovers) have an ancestor to render into.
-                  return Overlay(
-                    initialEntries: [
-                      OverlayEntry(
-                        builder: (_) => Column(
-                          children: [
-                            AppWindowCaption(
-                              service: GetIt.I<WindowService>(),
-                            ),
-                            Expanded(child: content),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
+                  return child ?? const SizedBox.shrink();
                 },
               );
             },

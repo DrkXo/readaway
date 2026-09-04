@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/routes/routes.dart';
+import '../../../../core/widgets/core_widgets.dart';
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -29,7 +30,9 @@ class LibraryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: const AppTopBar(
+        titleText: 'ReadAway',
+      ),
       floatingActionButton: FloatingActionButton.small(
         child: Icon(LucideIcons.folderOpen),
         onPressed: () => _pickAndOpen(context),

@@ -6,13 +6,14 @@ import 'package:go_router/go_router.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader/reader_brightness_overlay_widget.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/reader/reader_contrast_overlay_widget.dart';
 
+import 'package:get_it/get_it.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/core_widgets.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../bloc/reader_bloc.dart';
 import '../controllers/auto_scroll_controller.dart';
 import '../controllers/reader_page_view_controller.dart';
-import '../widgets/reader/reader_top_bar.dart';
 import '../widgets/tts/reader_tts_player_overlay.dart';
 import '../widgets/widgets.dart';
 
@@ -45,6 +46,7 @@ class _ReaderPageState extends State<ReaderPage>
   final GlobalKey _contentKey = GlobalKey(debugLabel: 'reader_content_key');
 
   bool _tocPinned = false;
+  bool get isDesktop => GetIt.I<WindowService>().isDesktop;
 
   @override
   void initState() {
@@ -118,15 +120,23 @@ class _ReaderPageState extends State<ReaderPage>
                           controller: scrollController,
                           headerSliverBuilder: (context, innerBoxIsScrolled) =>
                               [
-                                const SliverAppBar(
-                                  floating: true,
-                                  snap: true,
-                                  automaticallyImplyLeading: false,
-                                  backgroundColor: Colors.transparent,
-                                  elevation: 0,
-                                  titleSpacing: 0,
-                                  title: ReaderTopBar(),
+                              SliverAppBar(
+                                floating: !isDesktop,
+                                snap: !isDesktop,
+                                pinned: isDesktop,
+                                automaticallyImplyLeading: false,
+                                backgroundColor: Colors.transparent,
+                                elevation: 0,
+                                titleSpacing: 0,
+                                toolbarHeight: isDesktop
+                                    ? AppTopBar.desktopHeight
+                                    : AppTopBar.mobileHeight,
+                                title: ReaderTopBar(
+                                  onOpenDrawer: () =>
+                                      _scaffoldKey.currentState?.openDrawer(),
+                                  onCloseDocument: closeReader,
                                 ),
+                              ),
                               ],
                           body: LayoutBuilder(
                             builder: (context, constraints) {

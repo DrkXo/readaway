@@ -66,24 +66,8 @@ class AppWindowCaption extends StatelessWidget {
                       ),
                     ),
                     ?actions,
-                    SettingsButton(),
-                    IconButton(
-                      icon: const Icon(LucideIcons.minus),
-                      tooltip: 'Minimize',
-                      iconSize: 18,
-                      splashRadius: 16,
-                      visualDensity: VisualDensity.compact,
-                      onPressed: service.minimize,
-                    ),
-                    _MaximizeCaptionButton(service: service),
-                    IconButton(
-                      icon: const Icon(LucideIcons.x),
-                      tooltip: 'Close',
-                      iconSize: 18,
-                      splashRadius: 16,
-                      visualDensity: VisualDensity.compact,
-                      onPressed: service.close,
-                    ),
+                    const SettingsButton(),
+                    WindowCaptionControls(service: service),
                   ],
                 ),
               ),
@@ -94,47 +78,6 @@ class AppWindowCaption extends StatelessWidget {
             duration: 400.ms,
             curve: Curves.easeOutCubic,
           ),
-    );
-  }
-}
-
-class _MaximizeCaptionButton extends StatefulWidget {
-  const _MaximizeCaptionButton({required this.service});
-
-  final WindowService service;
-
-  @override
-  State<_MaximizeCaptionButton> createState() => _MaximizeCaptionButtonState();
-}
-
-class _MaximizeCaptionButtonState extends State<_MaximizeCaptionButton> {
-  @override
-  void initState() {
-    super.initState();
-    // Seed the stream with the actual current state.
-    widget.service.isMaximized();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
-      stream: widget.service.windowMaximizeChanges,
-      initialData: false,
-      builder: (context, snapshot) {
-        final isMaximized = snapshot.data ?? false;
-        return IconButton(
-          icon: Icon(
-            isMaximized ? LucideIcons.copy : LucideIcons.square,
-          ),
-          tooltip: isMaximized ? 'Restore' : 'Maximize',
-          iconSize: 16,
-          splashRadius: 16,
-          visualDensity: VisualDensity.compact,
-          onPressed: () => isMaximized
-              ? widget.service.unmaximize()
-              : widget.service.maximize(),
-        );
-      },
     );
   }
 }

@@ -9,6 +9,7 @@ export 'page/selection_menu.dart';
 export 'reader/reader_bottom_bar.dart';
 export 'reader/reader_caption_actions.dart';
 export 'reader/reader_error_view.dart';
+export 'reader/reader_top_bar.dart';
 export 'toc/outline_item_tile.dart';
 export 'toc/reader_drawer.dart';
 export 'toc/reader_toc_content.dart';

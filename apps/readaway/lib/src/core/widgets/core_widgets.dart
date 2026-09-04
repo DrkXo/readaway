@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:get_it/get_it.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../flavors.dart';
@@ -12,6 +13,8 @@ import '../theme/theme.dart';
 part 'adaptive/adaptive_value.dart';
 part 'adaptive/breakpoints.dart';
 part 'app_window_caption.dart';
+part 'top_bar/app_top_bar.dart';
+part 'top_bar/window_caption_controls.dart';
 part 'buttons/app_icon_button.dart';
 part 'buttons/buttons.dart';
 part 'chrome/page_progress.dart';

@@ -171,6 +171,15 @@ class WindowService with WindowListener {
     await _wm.restore();
   }
 
+  Future<void> toggleMaximize() async {
+    if (!isDesktop) return;
+    if (await isMaximized()) {
+      await unmaximize();
+    } else {
+      await maximize();
+    }
+  }
+
   Future<void> close() async {
     if (!isDesktop) return;
     await onWindowClose();
