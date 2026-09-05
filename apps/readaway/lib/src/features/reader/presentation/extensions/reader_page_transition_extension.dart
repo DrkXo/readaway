@@ -46,6 +46,26 @@ extension ReaderPageTransitionX on ReaderPageTransition {
             ),
           ),
         );
+
+      case ReaderPageTransition.cover:
+        final offset = outgoing
+            ? Offset(-sign * t * 0.2, 0)
+            : Offset(sign * (1 - t), 0);
+        final slideOffset = horizontal ? offset : Offset(offset.dy, offset.dx);
+        return FractionalTranslation(
+          translation: slideOffset,
+          child: child,
+        );
+
+      case ReaderPageTransition.curl:
+        final offset = outgoing
+            ? Offset(-sign * t, 0)
+            : Offset(sign * (1 - t), 0);
+        final slideOffset = horizontal ? offset : Offset(offset.dy, offset.dx);
+        return FractionalTranslation(
+          translation: slideOffset,
+          child: child,
+        );
     }
   }
 }

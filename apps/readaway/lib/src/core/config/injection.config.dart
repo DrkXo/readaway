@@ -20,6 +20,7 @@ import '../../router/router.dart' as _i295;
 import '../routes/routes.dart' as _i494;
 import '../services/app_lyfecycle_manager.dart' as _i313;
 import '../services/audio/audio_player_service.dart' as _i370;
+import '../services/document_cover_service.dart' as _i69;
 import '../services/font_service.dart' as _i662;
 import '../services/html_document_parser.dart' as _i865;
 import '../services/http/http_service.dart' as _i920;
@@ -192,6 +193,12 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
+    gh.lazySingleton<_i69.DocumentCoverService>(
+      () => _i69.DocumentCoverService(
+        gh<_i16.MuPdfService>(),
+        gh<_i145.AppPathService>(),
+      ),
+    );
     gh.lazySingleton<_i228.SettingsBloc>(
       () => _i228.SettingsBloc(
         storage: gh<_i264.AppStorageService>(),
@@ -217,12 +224,6 @@ extension GetItInjectableX on _i174.GetIt {
       );
       return i.init().then((_) => i);
     }, preResolve: true);
-    gh.lazySingleton<_i264.DocumentCoverService>(
-      () => _i264.DocumentCoverService(
-        gh<_i264.MuPdfService>(),
-        gh<_i145.AppPathService>(),
-      ),
-    );
     gh.factory<_i523.ReaderBloc>(
       () => _i523.ReaderBloc(
         windowService: gh<_i264.WindowService>(),

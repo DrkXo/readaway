@@ -8,6 +8,8 @@ enum ReaderPageTransition {
   fade,
   slide,
   sharedAxis,
+  cover,
+  curl,
 }
 
 enum ReaderScrollDirection {

@@ -5,7 +5,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../../core/widgets/core_widgets.dart';
 import '../../../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../../../../settings/presentation/widgets/settings_bloc_x.dart';
-import '../../../bloc/reader_bloc.dart';
 
 /// Font size quick view with steppers, slider, and preset scale chips.
 class ReaderFontSizeQuickView extends StatelessWidget {
@@ -19,15 +18,10 @@ class ReaderFontSizeQuickView extends StatelessWidget {
 
   void _updateFontSize(
     BuildContext context,
-    SettingsState settingsState,
-    String? fileName,
     double newSize,
   ) {
     context.read<SettingsBloc>().updateReaderPrefs(
-      state: settingsState,
-      activePath: fileName,
-      isGlobalMode: false,
-      update: (p) => p.copyWith(fontSize: newSize),
+      (p) => p.copyWith(fontSize: newSize),
     );
   }
 
@@ -35,14 +29,13 @@ class ReaderFontSizeQuickView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final readerState = context.read<ReaderBloc>().state;
 
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(readerState.fileName).fontSize !=
-          curr.resolvedReaderPrefs(readerState.fileName).fontSize,
+          prev.globalReaderPrefs.fontSize !=
+          curr.globalReaderPrefs.fontSize,
       builder: (context, settingsState) {
-        final prefs = settingsState.resolvedReaderPrefs(readerState.fileName);
+        final prefs = settingsState.globalReaderPrefs;
         final fontSize = prefs.fontSize;
 
         return Padding(
@@ -75,8 +68,6 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                       ),
                       onPressed: () => _updateFontSize(
                         context,
-                        settingsState,
-                        readerState.fileName,
                         defaultFontSize,
                       ),
                       child: const Text('Reset'),
@@ -109,8 +100,6 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                     onPressed: fontSize > 10
                         ? () => _updateFontSize(
                             context,
-                            settingsState,
-                            readerState.fileName,
                             fontSize - 1,
                           )
                         : null,
@@ -124,8 +113,6 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                       compact: true,
                       onChanged: (v) => _updateFontSize(
                         context,
-                        settingsState,
-                        readerState.fileName,
                         v,
                       ),
                     ),
@@ -137,8 +124,6 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                     onPressed: fontSize < 32
                         ? () => _updateFontSize(
                             context,
-                            settingsState,
-                            readerState.fileName,
                             fontSize + 1,
                           )
                         : null,
@@ -158,8 +143,6 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                     visualDensity: VisualDensity.compact,
                     onSelected: (_) => _updateFontSize(
                       context,
-                      settingsState,
-                      readerState.fileName,
                       size,
                     ),
                   );

@@ -11,6 +11,7 @@ export 'navigation/navigation.dart';
 // Viewport
 export 'viewport/items/fixed_image_page_item.dart';
 export 'viewport/items/reflowable_page_item.dart';
+export 'viewport/reader_continuous_view.dart';
 export 'viewport/reader_document_view.dart';
 export 'viewport/reader_page_view.dart';
 export 'viewport/reader_selection_area.dart';

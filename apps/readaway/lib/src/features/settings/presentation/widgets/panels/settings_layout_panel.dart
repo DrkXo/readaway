@@ -4,129 +4,68 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../settings_bloc_x.dart';
 import '../widgets.dart';
-import 'settings_panel_state.dart';
 
-class SettingsLayoutPanel extends StatefulWidget {
-  const SettingsLayoutPanel({super.key, this.showScopeToggle = false});
+class SettingsLayoutPanel extends StatelessWidget {
+  const SettingsLayoutPanel({super.key});
 
-  final bool showScopeToggle;
-
-  @override
-  State<SettingsLayoutPanel> createState() => _SettingsLayoutPanelState();
-}
-
-class _SettingsLayoutPanelState extends State<SettingsLayoutPanel>
-    with SettingsPanelState {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.activeDocumentPath != curr.activeDocumentPath,
-      builder: (context, state) {
-        final activePath = state.activeDocumentPath;
-        final showScope = widget.showScopeToggle && activePath != null;
-        final scope = showScope
-            ? (isGlobalMode ? SettingsScope.global : SettingsScope.perBook)
-            : null;
-
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          children: [
-            if (showScope) ...[
-              SettingsScopeToggle(
-                isGlobalMode: isGlobalMode,
-                onChanged: (v) => setState(() => isGlobalMode = v),
-              ),
-              const SizedBox(height: 16),
-            ],
-            SettingsSection(
-              title: 'Page margins',
-              scope: scope,
-              onReset: () => resetSection(
-                (p) => p.copyWith(
-                  marginHorizontal: 16,
-                  marginTop: 16,
-                  marginBottom: 16,
-                ),
-              ),
-              rows: [
-                _MarginPresetRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-                _MarginSliderRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-              ],
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        SettingsSection(
+          title: 'Page margins',
+          onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(
+              marginHorizontal: 16,
+              marginTop: 16,
+              marginBottom: 16,
             ),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'Paragraph',
-              scope: scope,
-              onReset: () => resetSection(
-                (p) => p.copyWith(
-                  paragraphMargin: 0.5,
-                  textIndent: 0,
-                  fullJustification: true,
-                ),
-              ),
-              rows: [
-                _ParagraphSpacingRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-                _TextIndentRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-                _FullJustificationRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'Text',
-              scope: scope,
-              onReset: () => resetSection(
-                (p) => p.copyWith(
-                  lineHeight: 1.5,
-                  letterSpacing: 0,
-                  wordSpacing: 0,
-                ),
-              ),
-              rows: [
-                _LineHeightRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-                _LetterSpacingRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-                _WordSpacingRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-              ],
-            ),
+          ),
+          rows: const [
+            _MarginPresetRow(),
+            _MarginSliderRow(),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 24),
+        SettingsSection(
+          title: 'Paragraph',
+          onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(
+              paragraphMargin: 0.5,
+              textIndent: 0,
+              fullJustification: true,
+            ),
+          ),
+          rows: const [
+            _ParagraphSpacingRow(),
+            _TextIndentRow(),
+            _FullJustificationRow(),
+          ],
+        ),
+        const SizedBox(height: 24),
+        SettingsSection(
+          title: 'Text',
+          onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(
+              lineHeight: 1.5,
+              letterSpacing: 0,
+              wordSpacing: 0,
+            ),
+          ),
+          rows: const [
+            _LineHeightRow(),
+            _LetterSpacingRow(),
+            _WordSpacingRow(),
+          ],
+        ),
+      ],
     );
   }
 }
 
 class _MarginPresetRow extends StatelessWidget {
-  const _MarginPresetRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _MarginPresetRow();
 
   static const _presets = [
     (value: 8.0, label: 'Compact'),
@@ -138,10 +77,10 @@ class _MarginPresetRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).marginHorizontal !=
-          curr.resolvedReaderPrefs(activePath).marginHorizontal,
+          prev.globalReaderPrefs.marginHorizontal !=
+          curr.globalReaderPrefs.marginHorizontal,
       builder: (context, state) {
-        final current = state.resolvedReaderPrefs(activePath).marginHorizontal;
+        final current = state.globalReaderPrefs.marginHorizontal;
         final selected = _presets
             .where((p) => p.value == current)
             .map((p) => p.value)
@@ -158,10 +97,7 @@ class _MarginPresetRow extends StatelessWidget {
             onSelectionChanged: (s) {
               if (s.isEmpty) return;
               context.read<SettingsBloc>().updateReaderPrefs(
-                state: state,
-                activePath: activePath,
-                isGlobalMode: isGlobalMode,
-                update: (p) => p.copyWith(
+                (p) => p.copyWith(
                   marginHorizontal: s.first,
                   marginTop: s.first,
                   marginBottom: s.first,
@@ -176,26 +112,20 @@ class _MarginPresetRow extends StatelessWidget {
 }
 
 class _MarginSliderRow extends StatelessWidget {
-  const _MarginSliderRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _MarginSliderRow();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).marginHorizontal !=
-              curr.resolvedReaderPrefs(activePath).marginHorizontal ||
-          prev.resolvedReaderPrefs(activePath).marginTop !=
-              curr.resolvedReaderPrefs(activePath).marginTop ||
-          prev.resolvedReaderPrefs(activePath).marginBottom !=
-              curr.resolvedReaderPrefs(activePath).marginBottom,
+          prev.globalReaderPrefs.marginHorizontal !=
+              curr.globalReaderPrefs.marginHorizontal ||
+          prev.globalReaderPrefs.marginTop !=
+              curr.globalReaderPrefs.marginTop ||
+          prev.globalReaderPrefs.marginBottom !=
+              curr.globalReaderPrefs.marginBottom,
       builder: (context, state) {
-        final prefs = state.resolvedReaderPrefs(activePath);
+        final prefs = state.globalReaderPrefs;
         return SettingsSliderRow(
           label: 'Page margin',
           value: prefs.marginHorizontal,
@@ -204,10 +134,7 @@ class _MarginSliderRow extends StatelessWidget {
           divisions: 16,
           format: (v) => '${v.round()} px',
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(
+            (p) => p.copyWith(
               marginHorizontal: v,
               marginTop: v,
               marginBottom: v,
@@ -220,22 +147,16 @@ class _MarginSliderRow extends StatelessWidget {
 }
 
 class _ParagraphSpacingRow extends StatelessWidget {
-  const _ParagraphSpacingRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _ParagraphSpacingRow();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).paragraphMargin !=
-          curr.resolvedReaderPrefs(activePath).paragraphMargin,
+          prev.globalReaderPrefs.paragraphMargin !=
+          curr.globalReaderPrefs.paragraphMargin,
       builder: (context, state) {
-        final margin = state.resolvedReaderPrefs(activePath).paragraphMargin;
+        final margin = state.globalReaderPrefs.paragraphMargin;
         return SettingsSliderRow(
           label: 'Paragraph spacing',
           value: margin,
@@ -244,10 +165,7 @@ class _ParagraphSpacingRow extends StatelessWidget {
           divisions: 20,
           format: (v) => v.toStringAsFixed(1),
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(paragraphMargin: v),
+            (p) => p.copyWith(paragraphMargin: v),
           ),
         );
       },
@@ -256,22 +174,16 @@ class _ParagraphSpacingRow extends StatelessWidget {
 }
 
 class _TextIndentRow extends StatelessWidget {
-  const _TextIndentRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _TextIndentRow();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).textIndent !=
-          curr.resolvedReaderPrefs(activePath).textIndent,
+          prev.globalReaderPrefs.textIndent !=
+          curr.globalReaderPrefs.textIndent,
       builder: (context, state) {
-        final indent = state.resolvedReaderPrefs(activePath).textIndent;
+        final indent = state.globalReaderPrefs.textIndent;
         return SettingsSliderRow(
           label: 'Text indent',
           value: indent,
@@ -280,10 +192,7 @@ class _TextIndentRow extends StatelessWidget {
           divisions: 8,
           format: (v) => '${v.toStringAsFixed(1)} em',
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(textIndent: v),
+            (p) => p.copyWith(textIndent: v),
           ),
         );
       },
@@ -292,30 +201,21 @@ class _TextIndentRow extends StatelessWidget {
 }
 
 class _FullJustificationRow extends StatelessWidget {
-  const _FullJustificationRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _FullJustificationRow();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).fullJustification !=
-          curr.resolvedReaderPrefs(activePath).fullJustification,
+          prev.globalReaderPrefs.fullJustification !=
+          curr.globalReaderPrefs.fullJustification,
       builder: (context, state) {
-        final enabled = state.resolvedReaderPrefs(activePath).fullJustification;
+        final enabled = state.globalReaderPrefs.fullJustification;
         return SettingsSwitchRow(
           label: 'Full justification',
           value: enabled,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(fullJustification: v),
+            (p) => p.copyWith(fullJustification: v),
           ),
         );
       },
@@ -324,22 +224,16 @@ class _FullJustificationRow extends StatelessWidget {
 }
 
 class _LineHeightRow extends StatelessWidget {
-  const _LineHeightRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _LineHeightRow();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).lineHeight !=
-          curr.resolvedReaderPrefs(activePath).lineHeight,
+          prev.globalReaderPrefs.lineHeight !=
+          curr.globalReaderPrefs.lineHeight,
       builder: (context, state) {
-        final lineHeight = state.resolvedReaderPrefs(activePath).lineHeight;
+        final lineHeight = state.globalReaderPrefs.lineHeight;
         return SettingsSliderRow(
           label: 'Line height',
           value: lineHeight,
@@ -348,10 +242,7 @@ class _LineHeightRow extends StatelessWidget {
           divisions: 44,
           format: (v) => v.toStringAsFixed(2),
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(lineHeight: v),
+            (p) => p.copyWith(lineHeight: v),
           ),
         );
       },
@@ -360,22 +251,16 @@ class _LineHeightRow extends StatelessWidget {
 }
 
 class _LetterSpacingRow extends StatelessWidget {
-  const _LetterSpacingRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _LetterSpacingRow();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).letterSpacing !=
-          curr.resolvedReaderPrefs(activePath).letterSpacing,
+          prev.globalReaderPrefs.letterSpacing !=
+          curr.globalReaderPrefs.letterSpacing,
       builder: (context, state) {
-        final spacing = state.resolvedReaderPrefs(activePath).letterSpacing;
+        final spacing = state.globalReaderPrefs.letterSpacing;
         return SettingsSliderRow(
           label: 'Letter spacing',
           value: spacing,
@@ -384,10 +269,7 @@ class _LetterSpacingRow extends StatelessWidget {
           divisions: 40,
           format: (v) => v.toStringAsFixed(2),
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(letterSpacing: v),
+            (p) => p.copyWith(letterSpacing: v),
           ),
         );
       },
@@ -396,22 +278,16 @@ class _LetterSpacingRow extends StatelessWidget {
 }
 
 class _WordSpacingRow extends StatelessWidget {
-  const _WordSpacingRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _WordSpacingRow();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).wordSpacing !=
-          curr.resolvedReaderPrefs(activePath).wordSpacing,
+          prev.globalReaderPrefs.wordSpacing !=
+          curr.globalReaderPrefs.wordSpacing,
       builder: (context, state) {
-        final spacing = state.resolvedReaderPrefs(activePath).wordSpacing;
+        final spacing = state.globalReaderPrefs.wordSpacing;
         return SettingsSliderRow(
           label: 'Word spacing',
           value: spacing,
@@ -420,10 +296,7 @@ class _WordSpacingRow extends StatelessWidget {
           divisions: 10,
           format: (v) => '${v.round()} px',
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(wordSpacing: v),
+            (p) => p.copyWith(wordSpacing: v),
           ),
         );
       },

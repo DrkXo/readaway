@@ -4,6 +4,7 @@ import '../../../../../core/widgets/core_widgets.dart';
 import '../../../domain/models/reader_preferences.dart';
 
 import '../../bloc/settings/settings_bloc.dart';
+import '../settings_bloc_x.dart';
 import '../widgets.dart';
 
 class SettingsBehaviorPanel extends StatelessWidget {
@@ -12,18 +13,18 @@ class SettingsBehaviorPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.globalReaderPrefs != curr.globalReaderPrefs ||
+          prev.appSettings != curr.appSettings,
       builder: (context, state) {
-        final prefs = state.globalReaderPrefs;
         final settings = state.appSettings;
 
         void resetPageTurning() {
-          context.read<SettingsBloc>().add(
-            SettingsEvent.setGlobalReaderPref(
-              prefs.copyWith(
-                scrollDirection: ReaderScrollDirection.horizontal,
-                pageTransition: ReaderPageTransition.slide,
-                pageSnap: true,
-              ),
+          context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(
+              scrollDirection: ReaderScrollDirection.horizontal,
+              pageTransition: ReaderPageTransition.slide,
+              pageSnap: true,
             ),
           );
         }
@@ -47,10 +48,8 @@ class SettingsBehaviorPanel extends StatelessWidget {
               settings.copyWith(screenWakeLock: false),
             ),
           );
-          context.read<SettingsBloc>().add(
-            SettingsEvent.setGlobalReaderPref(
-              prefs.copyWith(showStatusBar: true),
-            ),
+          context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(showStatusBar: true),
           );
         }
 
@@ -72,7 +71,6 @@ class SettingsBehaviorPanel extends StatelessWidget {
               onReset: resetNavigation,
               rows: const [
                 _VolumeKeysToFlipRow(),
-                _PageTurnStyleRow(),
               ],
             ),
             const SizedBox(height: 24),
@@ -115,10 +113,8 @@ class _ScrollDirectionRow extends StatelessWidget {
               label: 'Vertical',
             ),
           ],
-          onChanged: (direction) => context.read<SettingsBloc>().add(
-            SettingsEvent.setGlobalReaderPref(
-              prefs.copyWith(scrollDirection: direction),
-            ),
+          onChanged: (direction) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(scrollDirection: direction),
           ),
         );
       },
@@ -157,11 +153,17 @@ class _PageTransitionRow extends StatelessWidget {
               value: ReaderPageTransition.sharedAxis,
               label: 'Shared axis',
             ),
-          ],
-          onChanged: (transition) => context.read<SettingsBloc>().add(
-            SettingsEvent.setGlobalReaderPref(
-              prefs.copyWith(pageTransition: transition),
+            SettingsSelectEntry(
+              value: ReaderPageTransition.cover,
+              label: 'Cover',
             ),
+            SettingsSelectEntry(
+              value: ReaderPageTransition.curl,
+              label: 'Curl / Flip',
+            ),
+          ],
+          onChanged: (transition) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(pageTransition: transition),
           ),
         );
       },
@@ -176,22 +178,22 @@ class _PageSnapRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.pageSnap != curr.globalReaderPrefs.pageSnap,
+          prev.globalReaderPrefs.pageSnap !=
+          curr.globalReaderPrefs.pageSnap,
       builder: (context, state) {
         final prefs = state.globalReaderPrefs;
         return SettingsSwitchRow(
           label: 'Snap to page',
           description: 'Settle on page boundaries while scrolling',
           value: prefs.pageSnap,
-          onChanged: (v) => context.read<SettingsBloc>().add(
-            SettingsEvent.setGlobalReaderPref(prefs.copyWith(pageSnap: v)),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(pageSnap: v),
           ),
         );
       },
     );
   }
 }
-
 
 class _KeepScreenOnRow extends StatelessWidget {
   const _KeepScreenOnRow();
@@ -236,10 +238,8 @@ class _ShowStatusBarRow extends StatelessWidget {
           label: 'Show status bar',
           description: 'Progress indicator at the top of the reader',
           value: prefs.showStatusBar,
-          onChanged: (v) => context.read<SettingsBloc>().add(
-            SettingsEvent.setGlobalReaderPref(
-              prefs.copyWith(showStatusBar: v),
-            ),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(showStatusBar: v),
           ),
         );
       },
@@ -268,45 +268,6 @@ class _VolumeKeysToFlipRow extends StatelessWidget {
                 settings.copyWith(
                   globalViewSettings: settings.globalViewSettings.copyWith(
                     volumeKeysToFlip: v,
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _PageTurnStyleRow extends StatelessWidget {
-  const _PageTurnStyleRow();
-
-  static const _entries = [
-    SettingsSelectEntry(value: 'slide', label: 'Slide'),
-    SettingsSelectEntry(value: 'fade', label: 'Fade'),
-    SettingsSelectEntry(value: 'none', label: 'None'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.appSettings.globalViewSettings.pageTurnStyle !=
-          curr.appSettings.globalViewSettings.pageTurnStyle,
-      builder: (context, state) {
-        final value = state.appSettings.globalViewSettings.pageTurnStyle;
-        return SettingsSelectRow<String>(
-          label: 'Page turn animation',
-          value: value,
-          entries: _entries,
-          onChanged: (v) {
-            final settings = state.appSettings;
-            context.read<SettingsBloc>().add(
-              SettingsEvent.updateAppSettings(
-                settings.copyWith(
-                  globalViewSettings: settings.globalViewSettings.copyWith(
-                    pageTurnStyle: v,
                   ),
                 ),
               ),

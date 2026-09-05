@@ -7,105 +7,53 @@ import '../../../../../core/models/models.dart';
 import '../../../../../core/routes/routes.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/settings/settings_bloc.dart';
-import '../primitives/reader_prefs_builder.dart';
 import '../settings_bloc_x.dart';
 import '../widgets.dart';
-import 'settings_panel_state.dart';
 
-class SettingsFontPanel extends StatefulWidget {
-  const SettingsFontPanel({super.key, this.showScopeToggle = false});
+class SettingsFontPanel extends StatelessWidget {
+  const SettingsFontPanel({super.key});
 
-  final bool showScopeToggle;
-
-  @override
-  State<SettingsFontPanel> createState() => _SettingsFontPanelState();
-}
-
-class _SettingsFontPanelState extends State<SettingsFontPanel>
-    with SettingsPanelState {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.activeDocumentPath != curr.activeDocumentPath,
-      builder: (context, state) {
-        final activePath = state.activeDocumentPath;
-        final showScope = widget.showScopeToggle && activePath != null;
-        final scope = showScope
-            ? (isGlobalMode ? SettingsScope.global : SettingsScope.perBook)
-            : null;
-
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          children: [
-            if (showScope) ...[
-              SettingsScopeToggle(
-                isGlobalMode: isGlobalMode,
-                onChanged: (v) => setState(() => isGlobalMode = v),
-              ),
-              const SizedBox(height: 16),
-            ],
-            SettingsSection(
-              title: 'Typeface',
-              scope: scope,
-              onReset: () => resetSection(
-                (p) => p.copyWith(fontFamily: null, fontSize: 16.0),
-              ),
-              rows: [
-                _FontFamilyRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-                _FontSizeRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'Typography',
-              scope: scope,
-              onReset: () => resetSection(
-                (p) => p.copyWith(
-                  serifFont: 'Noto Serif',
-                  sansSerifFont: 'Noto Sans',
-                  monospaceFont: 'Fira Code',
-                  fontWeight: 'normal',
-                  overrideFont: false,
-                ),
-              ),
-              rows: [
-                _SerifFontRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-                _SansSerifFontRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-                _MonospaceFontRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-                _FontWeightRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-                _OverrideFontRow(
-                  isGlobalMode: isGlobalMode,
-                  activePath: activePath,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const SettingsSection(
-              title: 'Custom fonts',
-              rows: [_ManageCustomFontsRow()],
-            ),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        SettingsSection(
+          title: 'Typeface',
+          onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(fontFamily: null, fontSize: 16.0),
+          ),
+          rows: const [
+            _FontFamilyRow(),
+            _FontSizeRow(),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 24),
+        SettingsSection(
+          title: 'Typography',
+          onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(
+              serifFont: 'Noto Serif',
+              sansSerifFont: 'Noto Sans',
+              monospaceFont: 'Fira Code',
+              fontWeight: 'normal',
+              overrideFont: false,
+            ),
+          ),
+          rows: const [
+            _SerifFontRow(),
+            _SansSerifFontRow(),
+            _MonospaceFontRow(),
+            _FontWeightRow(),
+            _OverrideFontRow(),
+          ],
+        ),
+        const SizedBox(height: 24),
+        const SettingsSection(
+          title: 'Custom fonts',
+          rows: [_ManageCustomFontsRow()],
+        ),
+      ],
     );
   }
 }
@@ -134,13 +82,7 @@ class _ManageCustomFontsRow extends StatelessWidget {
 }
 
 class _FontFamilyRow extends StatelessWidget {
-  const _FontFamilyRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _FontFamilyRow();
 
   /// Sentinel for the "System" (platform default) choice. A non-null value is
   /// required because `PopupMenuButton` treats a `PopupMenuItem` with a null
@@ -158,13 +100,12 @@ class _FontFamilyRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).fontFamily !=
-              curr.resolvedReaderPrefs(activePath).fontFamily ||
+          prev.globalReaderPrefs.fontFamily !=
+              curr.globalReaderPrefs.fontFamily ||
           prev.appSettings.customFonts != curr.appSettings.customFonts,
       builder: (context, state) {
         // `null` in the model means "System" (platform default).
-        final current =
-            state.resolvedReaderPrefs(activePath).fontFamily ?? _system;
+        final current = state.globalReaderPrefs.fontFamily ?? _system;
         final entries = [
           ..._builtin,
           ..._customFontEntries(state.appSettings.customFonts),
@@ -174,10 +115,7 @@ class _FontFamilyRow extends StatelessWidget {
           value: current,
           entries: entries,
           onChanged: (family) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(
+            (p) => p.copyWith(
               fontFamily: family == _system ? null : family,
             ),
           ),
@@ -188,19 +126,15 @@ class _FontFamilyRow extends StatelessWidget {
 }
 
 class _FontSizeRow extends StatelessWidget {
-  const _FontSizeRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _FontSizeRow();
 
   @override
   Widget build(BuildContext context) {
-    return ReaderPrefsBuilder(
-      activePath: activePath,
-      builder: (context, prefs) {
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.globalReaderPrefs.fontSize != curr.globalReaderPrefs.fontSize,
+      builder: (context, state) {
+        final prefs = state.globalReaderPrefs;
         return SettingsSliderRow(
           label: 'Font size',
           value: prefs.fontSize,
@@ -209,10 +143,7 @@ class _FontSizeRow extends StatelessWidget {
           divisions: 22,
           format: (v) => '${v.round()} px',
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: context.read<SettingsBloc>().state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(fontSize: v),
+            (p) => p.copyWith(fontSize: v),
           ),
         );
       },
@@ -231,13 +162,7 @@ List<SettingsSelectEntry<String>> _customFontEntries(
 }
 
 class _SerifFontRow extends StatelessWidget {
-  const _SerifFontRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _SerifFontRow();
 
   static const _builtin = [
     SettingsSelectEntry(value: 'Noto Serif', label: 'Noto Serif'),
@@ -247,11 +172,11 @@ class _SerifFontRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).serifFont !=
-              curr.resolvedReaderPrefs(activePath).serifFont ||
+          prev.globalReaderPrefs.serifFont !=
+              curr.globalReaderPrefs.serifFont ||
           prev.appSettings.customFonts != curr.appSettings.customFonts,
       builder: (context, state) {
-        final font = state.resolvedReaderPrefs(activePath).serifFont;
+        final font = state.globalReaderPrefs.serifFont;
         final entries = [
           ..._builtin,
           ..._customFontEntries(state.appSettings.customFonts),
@@ -261,10 +186,7 @@ class _SerifFontRow extends StatelessWidget {
           value: font,
           entries: entries,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(serifFont: v),
+            (p) => p.copyWith(serifFont: v),
           ),
         );
       },
@@ -273,13 +195,7 @@ class _SerifFontRow extends StatelessWidget {
 }
 
 class _SansSerifFontRow extends StatelessWidget {
-  const _SansSerifFontRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _SansSerifFontRow();
 
   static const _builtin = [
     SettingsSelectEntry(value: 'Noto Sans', label: 'Noto Sans'),
@@ -289,11 +205,11 @@ class _SansSerifFontRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).sansSerifFont !=
-              curr.resolvedReaderPrefs(activePath).sansSerifFont ||
+          prev.globalReaderPrefs.sansSerifFont !=
+              curr.globalReaderPrefs.sansSerifFont ||
           prev.appSettings.customFonts != curr.appSettings.customFonts,
       builder: (context, state) {
-        final font = state.resolvedReaderPrefs(activePath).sansSerifFont;
+        final font = state.globalReaderPrefs.sansSerifFont;
         final entries = [
           ..._builtin,
           ..._customFontEntries(state.appSettings.customFonts),
@@ -303,10 +219,7 @@ class _SansSerifFontRow extends StatelessWidget {
           value: font,
           entries: entries,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(sansSerifFont: v),
+            (p) => p.copyWith(sansSerifFont: v),
           ),
         );
       },
@@ -315,13 +228,7 @@ class _SansSerifFontRow extends StatelessWidget {
 }
 
 class _MonospaceFontRow extends StatelessWidget {
-  const _MonospaceFontRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _MonospaceFontRow();
 
   static const _builtin = [
     SettingsSelectEntry(value: 'Fira Code', label: 'Fira Code'),
@@ -335,11 +242,11 @@ class _MonospaceFontRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).monospaceFont !=
-              curr.resolvedReaderPrefs(activePath).monospaceFont ||
+          prev.globalReaderPrefs.monospaceFont !=
+              curr.globalReaderPrefs.monospaceFont ||
           prev.appSettings.customFonts != curr.appSettings.customFonts,
       builder: (context, state) {
-        final font = state.resolvedReaderPrefs(activePath).monospaceFont;
+        final font = state.globalReaderPrefs.monospaceFont;
         final entries = [
           ..._builtin,
           ..._customFontEntries(state.appSettings.customFonts),
@@ -349,10 +256,7 @@ class _MonospaceFontRow extends StatelessWidget {
           value: font,
           entries: entries,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(monospaceFont: v),
+            (p) => p.copyWith(monospaceFont: v),
           ),
         );
       },
@@ -361,13 +265,7 @@ class _MonospaceFontRow extends StatelessWidget {
 }
 
 class _FontWeightRow extends StatelessWidget {
-  const _FontWeightRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _FontWeightRow();
 
   static const _entries = [
     SettingsSelectEntry(value: 'lighter', label: 'Light'),
@@ -379,19 +277,16 @@ class _FontWeightRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).fontWeight !=
-          curr.resolvedReaderPrefs(activePath).fontWeight,
+          prev.globalReaderPrefs.fontWeight !=
+          curr.globalReaderPrefs.fontWeight,
       builder: (context, state) {
-        final weight = state.resolvedReaderPrefs(activePath).fontWeight;
+        final weight = state.globalReaderPrefs.fontWeight;
         return SettingsSelectRow<String>(
           label: 'Font weight',
           value: weight,
           entries: _entries,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(fontWeight: v),
+            (p) => p.copyWith(fontWeight: v),
           ),
         );
       },
@@ -400,31 +295,22 @@ class _FontWeightRow extends StatelessWidget {
 }
 
 class _OverrideFontRow extends StatelessWidget {
-  const _OverrideFontRow({
-    required this.isGlobalMode,
-    required this.activePath,
-  });
-
-  final bool isGlobalMode;
-  final String? activePath;
+  const _OverrideFontRow();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(activePath).overrideFont !=
-          curr.resolvedReaderPrefs(activePath).overrideFont,
+          prev.globalReaderPrefs.overrideFont !=
+          curr.globalReaderPrefs.overrideFont,
       builder: (context, state) {
-        final enabled = state.resolvedReaderPrefs(activePath).overrideFont;
+        final enabled = state.globalReaderPrefs.overrideFont;
         return SettingsSwitchRow(
           label: 'Override book fonts',
           description: 'Force your font choices on all books',
           value: enabled,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            state: state,
-            activePath: activePath,
-            isGlobalMode: isGlobalMode,
-            update: (p) => p.copyWith(overrideFont: v),
+            (p) => p.copyWith(overrideFont: v),
           ),
         );
       },

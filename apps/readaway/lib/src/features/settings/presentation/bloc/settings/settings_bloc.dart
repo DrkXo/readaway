@@ -37,7 +37,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   }) : super(
          SettingsState(
            globalReaderPrefs: ReaderPreferences(),
-           documentReaderPrefs: {},
            appSettings: _settingsService.settings,
          ),
        ) {
@@ -46,14 +45,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_SetGlobalReaderPref>(
       _onSetGlobalReaderPref,
       transformer: restartable(),
-    );
-    on<_SetDocumentReaderPref>(
-      _onSetDocumentReaderPref,
-      transformer: restartable(),
-    );
-    on<_ResetDocumentReaderPref>(
-      _onResetDocumentReaderPref,
-      transformer: droppable(),
     );
     on<_ResetAllReaderPrefs>(_onResetAllReaderPrefs, transformer: droppable());
     on<_ImportReaderPrefs>(_onImportReaderPrefs, transformer: droppable());
@@ -86,40 +77,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     }
   }
 
-  void _onSetDocumentReaderPref(
-    _SetDocumentReaderPref event,
-    Emitter<SettingsState> emit,
-  ) async {
-    try {
-      await _storage.writeReaderDocumentPrefs(event.path, event.prefs);
-      final docs = Map<String, ReaderPreferences>.from(
-        state.documentReaderPrefs,
-      );
-      docs[event.path] = event.prefs;
-      emit(state.copyWith(documentReaderPrefs: docs));
-      logger.d('Document prefs updated for ${event.path}');
-    } catch (e) {
-      logger.e('Failed to set document prefs: $e');
-    }
-  }
-
-  void _onResetDocumentReaderPref(
-    _ResetDocumentReaderPref event,
-    Emitter<SettingsState> emit,
-  ) async {
-    try {
-      await _storage.deleteReaderDocumentPrefs(event.path);
-      final docs = Map<String, ReaderPreferences>.from(
-        state.documentReaderPrefs,
-      );
-      docs.remove(event.path);
-      emit(state.copyWith(documentReaderPrefs: docs));
-      logger.d('Document prefs reset for ${event.path}');
-    } catch (e) {
-      logger.e('Failed to reset document prefs: $e');
-    }
-  }
-
   void _onResetAllReaderPrefs(
     _ResetAllReaderPrefs event,
     Emitter<SettingsState> emit,
@@ -130,7 +87,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       emit(
         const SettingsState(
           globalReaderPrefs: ReaderPreferences(),
-          documentReaderPrefs: {},
         ),
       );
       logger.d('All reader prefs reset');
@@ -153,20 +109,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) async {
     try {
-      await _storage.writeReaderGlobalPrefs(
-        event.all['global'] ?? const ReaderPreferences(),
-      );
-      final docs = Map<String, ReaderPreferences>.from(event.all);
-      docs.remove('global');
-      for (final entry in docs.entries) {
-        await _storage.writeReaderDocumentPrefs(entry.key, entry.value);
-      }
-      emit(
-        state.copyWith(
-          globalReaderPrefs: event.all['global'] ?? const ReaderPreferences(),
-          documentReaderPrefs: docs,
-        ),
-      );
+      final global = event.all['global'] ?? const ReaderPreferences();
+      await _storage.writeReaderGlobalPrefs(global);
+      emit(state.copyWith(globalReaderPrefs: global));
       logger.d('Reader prefs imported');
     } catch (e) {
       logger.e('Failed to import prefs: $e');
@@ -176,21 +121,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   Future<void> loadPrefs() async {
     try {
       final global = await _storage.readReaderGlobalPrefs();
-      final docs = await _storage.readAllReaderDocumentPrefs();
       // ignore: invalid_use_of_visible_for_testing_member
-      emit(
-        state.copyWith(globalReaderPrefs: global, documentReaderPrefs: docs),
-      );
+      emit(state.copyWith(globalReaderPrefs: global));
       logger.d('Reader prefs loaded');
     } catch (e) {
       logger.e('Failed to load prefs: $e');
-    }
-  }
-
-  void updateActiveDocumentPath(String? path) {
-    if (state.activeDocumentPath != path) {
-      // ignore: invalid_use_of_visible_for_testing_member
-      emit(state.copyWith(activeDocumentPath: path));
     }
   }
 

@@ -4,9 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../widgets/widgets.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key, this.showScopeToggle = true});
-
-  final bool showScopeToggle;
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -100,13 +98,13 @@ class SettingsPage extends StatelessWidget {
                   ],
                 ),
 
-                Flexible(
+                const Flexible(
                   child: TabBarView(
                     children: [
-                      SettingsFontPanel(showScopeToggle: showScopeToggle),
-                      SettingsLayoutPanel(showScopeToggle: showScopeToggle),
-                      const SettingsBehaviorPanel(),
-                      const SettingsAppearancePanel(),
+                      SettingsFontPanel(),
+                      SettingsLayoutPanel(),
+                      SettingsBehaviorPanel(),
+                      SettingsAppearancePanel(),
                       SettingsTtsPanel(),
                     ],
                   ),

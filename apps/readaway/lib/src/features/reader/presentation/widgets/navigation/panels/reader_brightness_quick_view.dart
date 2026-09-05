@@ -5,7 +5,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../../core/widgets/core_widgets.dart';
 import '../../../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../../../../settings/presentation/widgets/settings_bloc_x.dart';
-import '../../../bloc/reader_bloc.dart';
 
 /// Brightness quick view with overlay dimming slider and theme switcher.
 class ReaderBrightnessQuickView extends StatelessWidget {
@@ -18,15 +17,10 @@ class ReaderBrightnessQuickView extends StatelessWidget {
 
   void _updateBrightness(
     BuildContext context,
-    SettingsState settingsState,
-    String? fileName,
     double newBrightness,
   ) {
     context.read<SettingsBloc>().updateReaderPrefs(
-      state: settingsState,
-      activePath: fileName,
-      isGlobalMode: false,
-      update: (p) => p.copyWith(brightnessOverlay: newBrightness),
+      (p) => p.copyWith(brightnessOverlay: newBrightness),
     );
   }
 
@@ -51,19 +45,16 @@ class ReaderBrightnessQuickView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final readerState = context.read<ReaderBloc>().state;
 
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.resolvedReaderPrefs(readerState.fileName).brightnessOverlay !=
-              curr
-                  .resolvedReaderPrefs(readerState.fileName)
-                  .brightnessOverlay ||
+          prev.globalReaderPrefs.brightnessOverlay !=
+              curr.globalReaderPrefs.brightnessOverlay ||
           prev.appSettings.globalViewSettings.theme !=
               curr.appSettings.globalViewSettings.theme,
       builder: (context, settingsState) {
         final currentTheme = settingsState.appSettings.globalViewSettings.theme;
-        final prefs = settingsState.resolvedReaderPrefs(readerState.fileName);
+        final prefs = settingsState.globalReaderPrefs;
         final brightnessOverlay = prefs.brightnessOverlay;
 
         return Padding(
@@ -94,12 +85,7 @@ class ReaderBrightnessQuickView extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                       ),
-                      onPressed: () => _updateBrightness(
-                        context,
-                        settingsState,
-                        readerState.fileName,
-                        0.0,
-                      ),
+                      onPressed: () => _updateBrightness(context, 0.0),
                       child: const Text('Reset'),
                     ),
                   Text(
@@ -138,12 +124,7 @@ class ReaderBrightnessQuickView extends StatelessWidget {
                       max: 0.8,
                       divisions: 80,
                       compact: true,
-                      onChanged: (v) => _updateBrightness(
-                        context,
-                        settingsState,
-                        readerState.fileName,
-                        v,
-                      ),
+                      onChanged: (v) => _updateBrightness(context, v),
                     ),
                   ),
                   const SizedBox(width: 4),

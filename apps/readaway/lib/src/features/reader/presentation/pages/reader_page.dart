@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
+import '../../../settings/domain/models/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../bloc/reader_bloc.dart';
 import '../controllers/reader_page_view_controller.dart';
@@ -56,34 +57,16 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<ReaderBloc, ReaderState>(
-          listenWhen: (prev, curr) => prev.fileName != curr.fileName,
-          listener: (context, state) {
-            if (state.fileName != null) {
-              settingsBloc.updateActiveDocumentPath(state.fileName);
-            }
-          },
-        ),
-        BlocListener<SettingsBloc, SettingsState>(
-          listenWhen: (prev, curr) =>
-              prev.appSettings.screenWakeLock !=
-              curr.appSettings.screenWakeLock,
-          listener: (context, state) => syncSettings(state),
-        ),
-      ],
-      child: BlocBuilder<ReaderBloc, ReaderState>(
-        buildWhen: (prev, curr) => prev.fileName != curr.fileName,
-        builder: (context, readerState) {
-          return BlocBuilder<SettingsBloc, SettingsState>(
-            buildWhen: (prev, curr) =>
-                prev.resolvedReaderPrefs(readerState.fileName) !=
-                curr.resolvedReaderPrefs(readerState.fileName),
-            builder: (context, settingsState) {
-              final prefs = settingsState.resolvedReaderPrefs(
-                readerState.fileName,
-              );
+    return BlocListener<SettingsBloc, SettingsState>(
+      listenWhen: (prev, curr) =>
+          prev.appSettings.screenWakeLock !=
+          curr.appSettings.screenWakeLock,
+      listener: (context, state) => syncSettings(state),
+      child: BlocBuilder<SettingsBloc, SettingsState>(
+        buildWhen: (prev, curr) =>
+            prev.globalReaderPrefs != curr.globalReaderPrefs,
+        builder: (context, settingsState) {
+          final prefs = settingsState.globalReaderPrefs;
 
               return PopScope(
                 canPop: false,
@@ -95,6 +78,10 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                     const SingleActivator(LogicalKeyboardKey.arrowLeft):
                         pageViewController.previousPage,
                     const SingleActivator(LogicalKeyboardKey.arrowRight):
+                        pageViewController.nextPage,
+                    const SingleActivator(LogicalKeyboardKey.arrowUp):
+                        pageViewController.previousPage,
+                    const SingleActivator(LogicalKeyboardKey.arrowDown):
                         pageViewController.nextPage,
                     const SingleActivator(LogicalKeyboardKey.pageUp):
                         pageViewController.previousPage,
@@ -120,6 +107,11 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                           backgroundColor: context.appColors.readerBackground,
                           body: NestedScrollView(
                             controller: scrollController,
+                            physics: (prefs.scrollDirection ==
+                                        ReaderScrollDirection.vertical &&
+                                    !prefs.pageSnap)
+                                ? const BouncingScrollPhysics()
+                                : const NeverScrollableScrollPhysics(),
                             headerSliverBuilder:
                                 (context, innerBoxIsScrolled) => [
                                   SliverAppBar(
@@ -198,9 +190,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                 ),
               );
             },
-          );
-        },
-      ),
-    );
+          ),
+        );
   }
 }
