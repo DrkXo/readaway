@@ -25,6 +25,7 @@ mixin ReaderControllerMixin on State<ReaderPage> {
       final clamped = index.clamp(0, count - 1);
       if (clamped != readerBloc.state.currentPage) {
         readerBloc.add(ReaderEvent.pageChanged(index: clamped));
+        _syncProgressToLibrary(clamped, count);
       }
     };
 
@@ -58,7 +59,35 @@ mixin ReaderControllerMixin on State<ReaderPage> {
     wakelockService.setEnabled(state.appSettings.screenWakeLock);
   }
 
+  void _syncProgressToLibrary(int currentPage, int pageCount) {
+    final path = widget.initialPath;
+    if (path == null) return;
+    try {
+      final repo = GetIt.I<LibraryRepository>();
+      repo.getRecentDocuments().run().then((res) {
+        res.fold((_) {}, (docs) {
+          final doc = docs.where((d) => d.path == path).firstOrNull;
+          if (doc != null) {
+            final isFinished = pageCount > 0 && currentPage >= pageCount - 1;
+            final updated = doc.copyWith(
+              lastReadPage: currentPage,
+              pageCount: pageCount,
+              lastOpened: DateTime.now(),
+              readingStatus:
+                  isFinished ? ReadingStatus.finished : ReadingStatus.reading,
+            );
+            repo.saveRecentDocument(updated).run();
+          }
+        });
+      });
+    } catch (_) {}
+  }
+
   void closeReader() {
+    _syncProgressToLibrary(
+      readerBloc.state.currentPage,
+      readerBloc.state.pageCount,
+    );
     if (!readerBloc.isClosed) {
       readerBloc.add(const ReaderEvent.closeDocument());
     }
@@ -66,6 +95,10 @@ mixin ReaderControllerMixin on State<ReaderPage> {
   }
 
   void disposeReaderState() {
+    _syncProgressToLibrary(
+      readerBloc.state.currentPage,
+      readerBloc.state.pageCount,
+    );
     scrollController.removeListener(_onScrollChanged);
     scrollController.dispose();
     isScrollingNotifier.dispose();

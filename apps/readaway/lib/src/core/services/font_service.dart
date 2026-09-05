@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 
-import '../error/errors.dart';
 import '../models/models.dart';
 import 'logging_service.dart';
 import 'path_service.dart';
@@ -48,7 +47,7 @@ class FontService {
   Future<CustomFont> addFont(String sourcePath) async {
     final source = File(sourcePath);
     if (!await source.exists()) {
-      throw FilePickerException('Font file not found: $sourcePath');
+      throw FileSystemException('Font file not found', sourcePath);
     }
 
     final fileName = p.basename(sourcePath);
@@ -85,7 +84,7 @@ class FontService {
   Future<void> _registerFont(String familyName, String path) async {
     final file = File(path);
     if (!await file.exists()) {
-      throw FilePickerException('Font file not found: $path');
+      throw FileSystemException('Font file not found', path);
     }
     final bytes = await file.readAsBytes();
     final loader = FontLoader(familyName)

@@ -25,7 +25,7 @@ class ReaderTtsFullPlayerView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tts = context.read<ReaderBloc>().ttsController;
+    final tts = context.read<ReaderBloc>().ttsRepository;
     final scheme = Theme.of(context).colorScheme;
 
     return SafeArea(

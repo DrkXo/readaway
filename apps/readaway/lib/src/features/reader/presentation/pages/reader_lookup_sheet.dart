@@ -5,7 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
-import '../../domain/models/reader_lookup.dart';
+import '../../domain/entity/reader_lookup.dart';
 
 /// In-app results sheet for dictionary / translate lookups, opened from the
 /// reader selection popup as its own route (`/reader/lookup`).

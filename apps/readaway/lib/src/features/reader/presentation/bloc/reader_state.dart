@@ -4,6 +4,7 @@ part of 'reader_bloc.dart';
 abstract class ReaderState with _$ReaderState {
   const factory ReaderState({
     @Default(false) bool loading,
+    Failure? failure,
     String? error,
     String? fileName,
     @Default(false) bool isReflowable,

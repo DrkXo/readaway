@@ -153,6 +153,22 @@ class MuPdfService {
     });
   }
 
+  Future<Map<String, dynamic>?> renderPageFromFile(
+    String filePath,
+    int pageIndex, {
+    double scaleX = 1.0,
+    double scaleY = 1.0,
+  }) {
+    return _sendCommand<Map<String, dynamic>?>({
+      'id': _generateId(),
+      'type': 'renderPageFromFile',
+      'path': filePath,
+      'pageIndex': pageIndex,
+      'scaleX': scaleX,
+      'scaleY': scaleY,
+    });
+  }
+
   Future<void> closeDocument() {
     return _sendCommand({
       'id': _generateId(),
@@ -262,6 +278,36 @@ class MuPdfService {
               });
             } finally {
               page.dispose();
+            }
+          } else if (type == 'renderPageFromFile') {
+            final filePath = message['path'] as String;
+            final pageIndex = message['pageIndex'] as int;
+            final scaleX = (message['scaleX'] as num?)?.toDouble() ?? 1.0;
+            final scaleY = (message['scaleY'] as num?)?.toDouble() ?? 1.0;
+            final tempDoc = MuPdfDocument.openFile(filePath);
+            try {
+              if (tempDoc.pageCount <= pageIndex) {
+                mainSendPort.send({'id': id, 'result': null});
+              } else {
+                final page = tempDoc.loadPage(pageIndex);
+                try {
+                  final rendered = page.render(scaleX: scaleX, scaleY: scaleY);
+                  mainSendPort.send({
+                    'id': id,
+                    'result': {
+                      'width': rendered.width,
+                      'height': rendered.height,
+                      'stride': rendered.stride,
+                      'components': rendered.components,
+                      'pixels': rendered.pixels,
+                    },
+                  });
+                } finally {
+                  page.dispose();
+                }
+              }
+            } finally {
+              tempDoc.dispose();
             }
           } else if (type == 'close') {
             doc?.dispose();

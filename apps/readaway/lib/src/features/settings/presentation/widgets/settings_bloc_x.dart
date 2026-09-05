@@ -1,4 +1,4 @@
-import '../../domain/models/reader_preferences.dart';
+import '../../domain/entity/reader_preferences.dart';
 import '../bloc/settings/settings_bloc.dart';
 
 /// Extension on [SettingsBloc] for reader-preference updates.

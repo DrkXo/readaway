@@ -117,7 +117,7 @@ Future<T?> showAppSheet<T>({
     isScrollControlled: isScrollControlled,
     useSafeArea: useSafeArea,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.4),
+    barrierColor: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.4),
     builder: (context) => AppSheet(
       title: title,
       maxWidth: maxWidth,

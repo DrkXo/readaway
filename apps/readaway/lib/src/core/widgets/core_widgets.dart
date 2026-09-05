@@ -10,6 +10,8 @@ import '../routes/routes.dart';
 import '../services/services.dart';
 import '../theme/theme.dart';
 
+export 'error/error_widgets.dart';
+
 part 'adaptive/adaptive_value.dart';
 part 'adaptive/breakpoints.dart';
 part 'app_window_caption.dart';

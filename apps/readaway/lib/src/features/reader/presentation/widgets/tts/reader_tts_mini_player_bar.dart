@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../../../core/services/services.dart';
+import '../../../../../core/services/tts/tts_chunk_model.dart';
+import '../../../../../core/services/tts/tts_models.dart';
+import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/reader_bloc.dart';
+import '../../../domain/repositories/reader_tts_repository.dart';
 import 'live_speech_waveform.dart';
 
 class ReaderTtsMiniPlayerBar extends StatelessWidget {
@@ -21,7 +24,7 @@ class ReaderTtsMiniPlayerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tts = context.read<ReaderBloc>().ttsController;
+    final tts = context.read<ReaderBloc>().ttsRepository;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -54,11 +57,13 @@ class ReaderTtsMiniPlayerBar extends StatelessWidget {
 class _MiniPlayerCover extends StatelessWidget {
   const _MiniPlayerCover({required this.tts});
 
-  final TtsControllerService tts;
+  final ReaderTtsRepository tts;
+
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final appColors = context.appColors;
+    final scheme = appColors.scheme;
 
     return StreamBuilder<TtsPlaybackEvent>(
       stream: tts.playbackState,
@@ -78,13 +83,7 @@ class _MiniPlayerCover extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: scheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.16),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1.5),
-                    ),
-                  ],
+                  boxShadow: appColors.shadowSm,
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(5),
@@ -165,7 +164,7 @@ class _MiniPlayerCover extends StatelessWidget {
 class _MiniPlayerText extends StatelessWidget {
   const _MiniPlayerText({required this.tts});
 
-  final TtsControllerService tts;
+  final ReaderTtsRepository tts;
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +198,7 @@ class _MiniPlayerText extends StatelessWidget {
 class _MiniPlayerPlayButton extends StatelessWidget {
   const _MiniPlayerPlayButton({required this.tts});
 
-  final TtsControllerService tts;
+  final ReaderTtsRepository tts;
 
   @override
   Widget build(BuildContext context) {

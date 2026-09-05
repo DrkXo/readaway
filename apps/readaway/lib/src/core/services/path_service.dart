@@ -73,4 +73,14 @@ class AppPathService {
     }
     return dir;
   }
+
+  /// Directory where cached document covers live: `<support>/covers`.
+  Future<Directory> getCoversDirectory() async {
+    final support = await supportDirectory;
+    final dir = Directory(p.join(support.path, 'covers'));
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
 }

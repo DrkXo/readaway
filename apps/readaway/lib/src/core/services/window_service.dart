@@ -10,7 +10,6 @@ import 'package:rxdart/rxdart.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../../../flavors.dart';
-import 'app_lyfecycle_manager.dart';
 
 @Singleton()
 class WindowService with WindowListener {
@@ -333,7 +332,6 @@ class WindowService with WindowListener {
     if (!_closeSubject.isClosed) _closeSubject.add(null);
 
     try {
-      appLifecycleManager.dispose();
       await GetIt.I.reset();
     } catch (e, st) {
       Logger(

@@ -19,6 +19,10 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.shadowSm,
     required this.shadowMd,
     required this.shadowLg,
+    required this.success,
+    required this.onSuccess,
+    required this.warning,
+    required this.onWarning,
   });
 
   final ColorScheme scheme;
@@ -27,6 +31,10 @@ class AppColors extends ThemeExtension<AppColors> {
   final List<BoxShadow> shadowSm;
   final List<BoxShadow> shadowMd;
   final List<BoxShadow> shadowLg;
+  final Color success;
+  final Color onSuccess;
+  final Color warning;
+  final Color onWarning;
 
   // Light ------------------------------------------------------------------
 
@@ -100,6 +108,10 @@ class AppColors extends ThemeExtension<AppColors> {
         offset: Offset(0, 8),
       ),
     ],
+    success: Color(0xFF2E6C38),
+    onSuccess: Color(0xFFFAF9F5),
+    warning: Color(0xFF8B5A00),
+    onWarning: Color(0xFFFAF9F5),
   );
 
   // Dark -------------------------------------------------------------------
@@ -174,6 +186,10 @@ class AppColors extends ThemeExtension<AppColors> {
         offset: Offset(0, 8),
       ),
     ],
+    success: Color(0xFF7CD98A),
+    onSuccess: Color(0xFF191918),
+    warning: Color(0xFFFFBA38),
+    onWarning: Color(0xFF191918),
   );
 
   // ThemeExtension ---------------------------------------------------------
@@ -186,6 +202,10 @@ class AppColors extends ThemeExtension<AppColors> {
     List<BoxShadow>? shadowSm,
     List<BoxShadow>? shadowMd,
     List<BoxShadow>? shadowLg,
+    Color? success,
+    Color? onSuccess,
+    Color? warning,
+    Color? onWarning,
   }) {
     return AppColors(
       scheme: scheme ?? this.scheme,
@@ -194,6 +214,10 @@ class AppColors extends ThemeExtension<AppColors> {
       shadowSm: shadowSm ?? this.shadowSm,
       shadowMd: shadowMd ?? this.shadowMd,
       shadowLg: shadowLg ?? this.shadowLg,
+      success: success ?? this.success,
+      onSuccess: onSuccess ?? this.onSuccess,
+      warning: warning ?? this.warning,
+      onWarning: onWarning ?? this.onWarning,
     );
   }
 
@@ -215,6 +239,10 @@ class AppColors extends ThemeExtension<AppColors> {
       shadowSm: BoxShadow.lerpList(shadowSm, other.shadowSm, t)!,
       shadowMd: BoxShadow.lerpList(shadowMd, other.shadowMd, t)!,
       shadowLg: BoxShadow.lerpList(shadowLg, other.shadowLg, t)!,
+      success: Color.lerp(success, other.success, t)!,
+      onSuccess: Color.lerp(onSuccess, other.onSuccess, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      onWarning: Color.lerp(onWarning, other.onWarning, t)!,
     );
   }
 }

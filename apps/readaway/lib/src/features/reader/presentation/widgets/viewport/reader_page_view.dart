@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-import 'package:readaway/src/features/settings/domain/models/reader_preferences.dart';
+import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 import '../../controllers/reader_page_view_controller.dart';
 import '../../transitions/transitions.dart';
 

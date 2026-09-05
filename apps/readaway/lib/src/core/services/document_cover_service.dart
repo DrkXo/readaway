@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
@@ -35,21 +37,24 @@ class DocumentCoverService {
     if (pageCount <= 0) return null;
 
     try {
-      final cacheDir = await _pathService.getTtsAudioCacheDirectory();
-      final coverDir = Directory(p.join(cacheDir.path, 'covers'));
-      if (!await coverDir.exists()) {
-        await coverDir.create(recursive: true);
-      }
+      final coverDir = await _pathService.getCoversDirectory();
 
       final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
-      final coverFile = File(p.join(coverDir.path, 'cover_$safeName.png'));
+      final fileHash =
+          md5.convert(utf8.encode(filePath)).toString().substring(0, 8);
+      final coverFile =
+          File(p.join(coverDir.path, 'cover_${safeName}_$fileHash.png'));
       if (await coverFile.exists()) {
         return coverFile.uri;
       }
 
-      // Render page 0 at 1.0x scale
-      final rendered =
-          await _muPdfService.renderPage(0, scaleX: 1.0, scaleY: 1.0);
+      // Render page 0 at 1.0x scale directly from file
+      final rendered = await _muPdfService.renderPageFromFile(
+        filePath,
+        0,
+        scaleX: 1.0,
+        scaleY: 1.0,
+      );
       if (rendered == null) return null;
 
       // Automatically crop white paper borders around the cover illustration

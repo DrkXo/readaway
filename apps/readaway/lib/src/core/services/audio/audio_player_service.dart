@@ -90,6 +90,8 @@ class AudioPlayerService {
       );
 
   AudioPlayer get player => _sessionPlayer;
+  Duration get position => _sessionPlayer.position;
+  Duration? get duration => _sessionPlayer.duration;
   bool get isPlaying => _sessionPlayer.playing;
   int get playlistLength => _sessionPlayer.sequence.length;
 

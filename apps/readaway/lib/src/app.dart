@@ -15,15 +15,17 @@ class ReadAway extends StatefulWidget {
 }
 
 class _ReadAwayState extends State<ReadAway> {
+  late final AppLifecycleListener _lifecycleListener;
+
   @override
   void initState() {
-    appLifecycleManager.initialize();
     super.initState();
+    _lifecycleListener = AppLifecycleListener();
   }
 
   @override
   void dispose() {
-    appLifecycleManager.dispose();
+    _lifecycleListener.dispose();
     super.dispose();
   }
 

@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../../core/routes/routes.dart';
 import '../../../../../core/theme/theme.dart';
-import '../../../domain/models/reader_lookup.dart';
+import '../../../domain/entity/reader_lookup.dart';
 import 'reader_selection_toolbar.dart';
 
 /// Contextual (non-modal) text-selection menu for reflowable reader pages.

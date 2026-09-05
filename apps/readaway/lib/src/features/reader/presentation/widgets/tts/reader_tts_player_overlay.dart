@@ -152,11 +152,11 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
 
   void _handleSkipDrag(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
-    final tts = context.read<ReaderBloc>().ttsController;
+    final tts = context.read<ReaderBloc>().ttsRepository;
     if (velocity < -200) {
-      tts.skipToNextSentence();
+      tts.skipToNextSentence().run();
     } else if (velocity > 200) {
-      tts.skipToPreviousSentence();
+      tts.skipToPreviousSentence().run();
     }
   }
 

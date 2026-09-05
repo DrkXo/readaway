@@ -161,6 +161,7 @@ class _WaveformScrubberState extends State<WaveformScrubber> {
                       playedColor: playedColor,
                       unplayedColor: unplayedColor,
                       handleColor: handleColor,
+                      surfaceColor: scheme.surface,
                       barSpacing: widget.barSpacing,
                       barRadius: widget.barRadius,
                       isDragging: _isDragging,
@@ -209,6 +210,7 @@ class _WaveformPainter extends CustomPainter {
     required this.playedColor,
     required this.unplayedColor,
     required this.handleColor,
+    required this.surfaceColor,
     required this.barSpacing,
     required this.barRadius,
     required this.isDragging,
@@ -219,6 +221,7 @@ class _WaveformPainter extends CustomPainter {
   final Color playedColor;
   final Color unplayedColor;
   final Color handleColor;
+  final Color surfaceColor;
   final double barSpacing;
   final double barRadius;
   final bool isDragging;
@@ -283,7 +286,7 @@ class _WaveformPainter extends CustomPainter {
       canvas.drawCircle(Offset(playheadX, centerY), 6.0, pipPaint);
 
       final pipBorder = Paint()
-        ..color = Colors.white
+        ..color = surfaceColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
       canvas.drawCircle(Offset(playheadX, centerY), 6.0, pipBorder);
@@ -306,6 +309,7 @@ class _WaveformPainter extends CustomPainter {
         oldDelegate.playedColor != playedColor ||
         oldDelegate.unplayedColor != unplayedColor ||
         oldDelegate.handleColor != handleColor ||
+        oldDelegate.surfaceColor != surfaceColor ||
         oldDelegate.isDragging != isDragging;
   }
 }

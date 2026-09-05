@@ -11,7 +11,7 @@ import 'package:injectable/injectable.dart';
 import '../core/routes/routes.dart';
 import '../core/services/services.dart';
 import '../features/library/presentation/pages/library_page.dart';
-import '../features/reader/domain/models/reader_lookup.dart';
+import '../features/reader/domain/entity/reader_lookup.dart';
 import '../features/reader/presentation/bloc/reader_bloc.dart';
 import '../features/reader/presentation/pages/reader_lookup_sheet.dart';
 import '../features/reader/presentation/pages/reader_page.dart';
@@ -19,7 +19,6 @@ import '../features/settings/presentation/pages/settings_custom_fonts_page.dart'
 import '../features/settings/presentation/pages/settings_page.dart';
 
 part 'custom_routes.dart';
-part 'guards.dart';
 
 // =================================
 // ==== Listenable for GoRouter ====
@@ -75,9 +74,6 @@ class AppRouter {
 
   GoRouter get router => _router;
 
-  // ignore: unused_field
-  final AppRoutesGuards _appRoutesGuards;
-  // ignore: unused_field
   final LoggingService _logger;
   final AppRoutes _appRoutes;
   final FileOpenService _fileOpenService;
@@ -85,12 +81,10 @@ class AppRouter {
   StreamSubscription<IncomingDocument>? _fileOpenSubscription;
 
   AppRouter({
-    required AppRoutesGuards appRoutesGuards,
     required LoggingService logger,
     required AppRoutes appRoutes,
     required FileOpenService fileOpenService,
-  })  : _appRoutesGuards = appRoutesGuards,
-        _logger = logger,
+  })  : _logger = logger,
         _appRoutes = appRoutes,
         _fileOpenService = fileOpenService {
     _fileOpenSubscription = _fileOpenService.incomingDocuments.listen((doc) {
