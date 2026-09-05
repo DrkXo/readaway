@@ -90,6 +90,19 @@ class TtsControllerService {
   List<SherpaTtsModelInfo> get availableSherpaModels =>
       _sherpaTts.availableModels;
 
+  /// Currently active [TtsChunk], if any.
+  TtsChunk? get activeChunk => (currentChunkIndex != null &&
+          currentChunkIndex! >= 0 &&
+          currentChunkIndex! < _masterQueue.length)
+      ? _masterQueue[currentChunkIndex!]
+      : null;
+
+  /// Whether the currently active chunk is the end of a paragraph.
+  bool get isCurrentChunkParagraphEnd => activeChunk?.isParagraphEnd ?? false;
+
+  /// Paragraph index of the currently active chunk.
+  int? get currentParagraphIndex => activeChunk?.paragraphIndex;
+
   /// Initializes stream listeners connecting the audio player to the TTS UI state.
   void start() {
     if (_pipelineStarted) return;
@@ -266,121 +279,142 @@ class TtsControllerService {
 
       final initialSources = <IndexedAudioSource>[];
 
-    for (var i = startIndex; i < initialEnd; i++) {
-      if (sessionId != _activeSessionId) return;
-      final chunk = _masterQueue[i];
-      final filePath = p.join(
-        cacheDir.path,
-        'chunk_${sessionId}_$i.wav',
-      );
+      var consecutiveErrors = 0;
+      const maxConsecutiveErrors = 3;
 
-      try {
-        final result = await _sherpaTts.generateToFile(
-          text: chunk.text,
-          outputPath: filePath,
-          speakerId: _voice?.sherpaSpeakerId ?? 0,
-          speed: _rate <= 0 ? 1.0 : _rate,
-        );
-        if (sessionId != _activeSessionId) {
-          await _deleteFileSafe(result.file);
-          return;
-        }
-        _sessionTempFiles.add(result.file);
-        _chunkWaveforms[i] = result.waveform;
-        if (i == startIndex && !_waveformController.isClosed) {
-          _waveformController.add(result.waveform);
-        }
-
-        final mediaItem = MediaItem(
-          id: '${baseTag?.id ?? 'chunk'}-$i',
-          title: chunk.text.length > 50
-              ? '${chunk.text.substring(0, 50)}…'
-              : chunk.text,
-          album: baseTag?.album ?? 'Audiobook',
-          artist: baseTag?.artist ?? 'ReadAway',
-          genre: baseTag?.genre ?? 'Ebook',
-          artUri: baseTag?.artUri,
-          duration: Duration(milliseconds: (result.duration * 1000).round()),
-        );
-
-        initialSources.add(AudioSource.file(result.file.path, tag: mediaItem));
-      } catch (e) {
+      for (var i = startIndex; i < initialEnd; i++) {
         if (sessionId != _activeSessionId) return;
-        logger.e('TTS pre-buffering failed at chunk $i', e);
-        _stateController.add(
-          TtsPlaybackEvent(TtsPlaybackState.error, message: e.toString()),
+        final chunk = _masterQueue[i];
+        final textToSpeak = chunk.speechContent;
+        if (textToSpeak.trim().isEmpty) continue;
+
+        final filePath = p.join(
+          cacheDir.path,
+          'chunk_${sessionId}_$i.wav',
         );
+
+        try {
+          final result = await _sherpaTts.generateToFile(
+            text: textToSpeak,
+            outputPath: filePath,
+            speakerId: _voice?.sherpaSpeakerId ?? 0,
+            speed: _rate <= 0 ? 1.0 : _rate,
+          );
+          consecutiveErrors = 0;
+          if (sessionId != _activeSessionId) {
+            await _deleteFileSafe(result.file);
+            return;
+          }
+          _sessionTempFiles.add(result.file);
+          _chunkWaveforms[i] = result.waveform;
+          if (i == startIndex && !_waveformController.isClosed) {
+            _waveformController.add(result.waveform);
+          }
+
+          final mediaItem = MediaItem(
+            id: '${baseTag?.id ?? 'chunk'}-$i',
+            title: chunk.text.length > 50
+                ? '${chunk.text.substring(0, 50)}…'
+                : chunk.text,
+            album: baseTag?.album ?? 'Audiobook',
+            artist: baseTag?.artist ?? 'ReadAway',
+            genre: baseTag?.genre ?? 'Ebook',
+            artUri: baseTag?.artUri,
+            duration: Duration(milliseconds: (result.duration * 1000).round()),
+          );
+
+          initialSources.add(AudioSource.file(result.file.path, tag: mediaItem));
+        } catch (e) {
+          if (sessionId != _activeSessionId) return;
+          consecutiveErrors++;
+          logger.w('TTS pre-buffering skipped problematic chunk $i ($consecutiveErrors/$maxConsecutiveErrors)', e);
+          if (consecutiveErrors >= maxConsecutiveErrors) {
+            _stateController.add(
+              TtsPlaybackEvent(TtsPlaybackState.error, message: e.toString()),
+            );
+            return;
+          }
+        }
+      }
+
+      if (sessionId != _activeSessionId) return;
+
+      if (initialSources.isEmpty && initialEnd < _masterQueue.length) {
+        // In case initial chunks were skipped, proceed to synthesize further
+      } else if (initialSources.isNotEmpty) {
+        // Start playlist playback with the pre-buffered items
+        await _audioPlayer.setPlaylist(
+          initialSources,
+          initialIndex: 0,
+          autoPlay: true,
+        );
+      }
+
+      if (initialEnd >= _masterQueue.length) {
+        // Entire text was small enough to fit into initial buffer
+        _pipelineDone = true;
         return;
       }
-    }
 
-    if (sessionId != _activeSessionId) return;
-
-    // Start playlist playback with the pre-buffered items
-    await _audioPlayer.setPlaylist(
-      initialSources,
-      initialIndex: 0,
-      autoPlay: true,
-    );
-
-    if (initialEnd >= _masterQueue.length) {
-      // Entire text was small enough to fit into initial buffer
-      _pipelineDone = true;
-      return;
-    }
-
-    // 2. Continue background synthesis for the rest of the chunks
-    for (var i = initialEnd; i < _masterQueue.length; i++) {
-      if (sessionId != _activeSessionId) return;
-      final chunk = _masterQueue[i];
-      final filePath = p.join(
-        cacheDir.path,
-        'chunk_${sessionId}_$i.wav',
-      );
-
-      try {
-        final result = await _sherpaTts.generateToFile(
-          text: chunk.text,
-          outputPath: filePath,
-          speakerId: _voice?.sherpaSpeakerId ?? 0,
-          speed: _rate <= 0 ? 1.0 : _rate,
-        );
-        if (sessionId != _activeSessionId) {
-          await _deleteFileSafe(result.file);
-          return;
-        }
-        _sessionTempFiles.add(result.file);
-        _chunkWaveforms[i] = result.waveform;
-
-        final mediaItem = MediaItem(
-          id: '${baseTag?.id ?? 'chunk'}-$i',
-          title: chunk.text.length > 50
-              ? '${chunk.text.substring(0, 50)}…'
-              : chunk.text,
-          album: baseTag?.album ?? 'Audiobook',
-          artist: baseTag?.artist ?? 'ReadAway',
-          genre: baseTag?.genre ?? 'Ebook',
-          artUri: baseTag?.artUri,
-          duration: Duration(milliseconds: (result.duration * 1000).round()),
-        );
-
-        await _audioPlayer.appendSource(
-          AudioSource.file(result.file.path, tag: mediaItem),
-          playIfIdle: true,
-        );
-      } catch (e) {
+      // 2. Continue background synthesis for the rest of the chunks
+      for (var i = initialEnd; i < _masterQueue.length; i++) {
         if (sessionId != _activeSessionId) return;
-        logger.e('TTS synthesis failed at chunk $i', e);
-        _stateController.add(
-          TtsPlaybackEvent(TtsPlaybackState.error, message: e.toString()),
-        );
-        return;
-      }
-    }
+        final chunk = _masterQueue[i];
+        final textToSpeak = chunk.speechContent;
+        if (textToSpeak.trim().isEmpty) continue;
 
-    if (sessionId == _activeSessionId) {
-      _pipelineDone = true;
-    }
+        final filePath = p.join(
+          cacheDir.path,
+          'chunk_${sessionId}_$i.wav',
+        );
+
+        try {
+          final result = await _sherpaTts.generateToFile(
+            text: textToSpeak,
+            outputPath: filePath,
+            speakerId: _voice?.sherpaSpeakerId ?? 0,
+            speed: _rate <= 0 ? 1.0 : _rate,
+          );
+          consecutiveErrors = 0;
+          if (sessionId != _activeSessionId) {
+            await _deleteFileSafe(result.file);
+            return;
+          }
+          _sessionTempFiles.add(result.file);
+          _chunkWaveforms[i] = result.waveform;
+
+          final mediaItem = MediaItem(
+            id: '${baseTag?.id ?? 'chunk'}-$i',
+            title: chunk.text.length > 50
+                ? '${chunk.text.substring(0, 50)}…'
+                : chunk.text,
+            album: baseTag?.album ?? 'Audiobook',
+            artist: baseTag?.artist ?? 'ReadAway',
+            genre: baseTag?.genre ?? 'Ebook',
+            artUri: baseTag?.artUri,
+            duration: Duration(milliseconds: (result.duration * 1000).round()),
+          );
+
+          await _audioPlayer.appendSource(
+            AudioSource.file(result.file.path, tag: mediaItem),
+            playIfIdle: true,
+          );
+        } catch (e) {
+          if (sessionId != _activeSessionId) return;
+          consecutiveErrors++;
+          logger.w('TTS synthesis skipped problematic chunk $i ($consecutiveErrors/$maxConsecutiveErrors)', e);
+          if (consecutiveErrors >= maxConsecutiveErrors) {
+            _stateController.add(
+              TtsPlaybackEvent(TtsPlaybackState.error, message: e.toString()),
+            );
+            return;
+          }
+        }
+      }
+
+      if (sessionId == _activeSessionId) {
+        _pipelineDone = true;
+      }
   } catch (e, st) {
     if (sessionId != _activeSessionId) return;
     logger.e('TTS playback pipeline crashed', e, st);

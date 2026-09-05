@@ -190,8 +190,14 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             fontWeight: FontWeight.bold,
                           ),
                           const SizedBox(height: 2),
-                          AppCaption(
-                            'Sentence $index of $total',
+                          Builder(
+                            builder: (context) {
+                              final pIdx = snapshot.data?.paragraphIndex;
+                              final pText = pIdx != null ? ' • ¶ ${pIdx + 1}' : '';
+                              return AppCaption(
+                                'Sentence $index of $total$pText',
+                              );
+                            },
                           ),
                         ],
                       ),

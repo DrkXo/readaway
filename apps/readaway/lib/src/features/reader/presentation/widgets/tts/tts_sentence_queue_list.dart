@@ -101,62 +101,104 @@ class _TtsSentenceQueueListState extends State<TtsSentenceQueueList> {
           itemBuilder: (context, index) {
             final chunk = queue[index];
             final isCurrent = index == currentIndex;
+            final isParagraphEnd =
+                chunk.isParagraphEnd && index < queue.length - 1;
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                clipBehavior: Clip.antiAlias,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
-                    border: isCurrent
-                        ? Border.all(
-                            color: scheme.primary.withValues(alpha: 0.4),
-                            width: 1.5,
-                          )
-                        : Border.all(color: Colors.transparent),
-                  ),
-                  child: ListTile(
-                    tileColor: isCurrent
-                        ? scheme.primaryContainer.withValues(alpha: 0.35)
-                        : Colors.transparent,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
+                    clipBehavior: Clip.antiAlias,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: isCurrent
+                            ? Border.all(
+                                color: scheme.primary.withValues(alpha: 0.4),
+                                width: 1.5,
+                              )
+                            : Border.all(color: Colors.transparent),
+                      ),
+                      child: ListTile(
+                        tileColor: isCurrent
+                            ? scheme.primaryContainer.withValues(alpha: 0.35)
+                            : Colors.transparent,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        leading: isCurrent
+                            ? LiveSpeechWaveform(
+                                isPlaying: isPlaying,
+                                barCount: 3,
+                                height: 16,
+                                width: 16,
+                                color: scheme.primary,
+                              )
+                            : Icon(
+                                LucideIcons.dot,
+                                color: scheme.onSurfaceVariant
+                                    .withValues(alpha: 0.5),
+                                size: 16,
+                              ),
+                        title: AppText(
+                          chunk.text,
+                          variant: AppTextVariant.body,
+                          fontWeight:
+                              isCurrent ? FontWeight.w600 : FontWeight.normal,
+                          color: isCurrent
+                              ? scheme.onSurface
+                              : scheme.onSurface.withValues(alpha: 0.8),
+                        ),
+                        onTap: () => widget.tts.seekToChunk(index),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    leading: isCurrent
-                        ? LiveSpeechWaveform(
-                            isPlaying: isPlaying,
-                            barCount: 3,
-                            height: 16,
-                            width: 16,
-                            color: scheme.primary,
-                          )
-                        : Icon(
-                            LucideIcons.dot,
-                            color: scheme.onSurfaceVariant
-                                .withValues(alpha: 0.5),
-                            size: 16,
-                          ),
-                    title: AppText(
-                      chunk.text,
-                      variant: AppTextVariant.body,
-                      fontWeight:
-                          isCurrent ? FontWeight.w600 : FontWeight.normal,
-                      color: isCurrent
-                          ? scheme.onSurface
-                          : scheme.onSurface.withValues(alpha: 0.8),
-                    ),
-                    onTap: () => widget.tts.seekToChunk(index),
                   ),
                 ),
-              ),
+                if (isParagraphEnd)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: scheme.outlineVariant.withValues(alpha: 0.25),
+                            height: 1,
+                            thickness: 0.8,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            '¶',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurfaceVariant
+                                  .withValues(alpha: 0.35),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: scheme.outlineVariant.withValues(alpha: 0.25),
+                            height: 1,
+                            thickness: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             );
           },
         );
