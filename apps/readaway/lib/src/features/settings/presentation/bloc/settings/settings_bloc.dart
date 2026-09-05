@@ -3,14 +3,15 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:path/path.dart' as p;
-
 import '../../../../../core/models/models.dart';
-import '../../../../../core/services/services.dart';
-import '../../../domain/models/reader_preferences.dart';
+import '../../../../../core/services/logging_service.dart';
+import '../../../../../core/services/tts/tts_models.dart';
+import '../../../../reader/domain/repositories/reader_preferences_repository.dart';
+import '../../../domain/entity/reader_preferences.dart';
+import '../../../domain/repositories/settings_repository.dart';
+import '../../../domain/repositories/tts_model_repository.dart';
 
 part 'settings_bloc.freezed.dart';
 part 'settings_bloc.g.dart';
@@ -19,27 +20,23 @@ part 'settings_state.dart';
 
 @lazySingleton
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
-  final AppStorageService _storage;
-  final SettingsService _settingsService;
-  final SherpaOnnxTtsService _ttsService;
-  final AudioPlayerService _audioPlayer;
-  final AppPathService _pathService;
+  final ReaderPreferencesRepository preferencesRepository;
+  final SettingsRepository settingsRepository;
+  final TtsModelRepository ttsModelRepository;
 
   final _ttsDownloadSubs =
       <String, StreamSubscription<ModelDownloadProgress>>{};
 
   SettingsBloc({
-    required this._storage,
-    required this._settingsService,
-    required this._ttsService,
-    required this._audioPlayer,
-    required this._pathService,
+    required this.preferencesRepository,
+    required this.settingsRepository,
+    required this.ttsModelRepository,
   }) : super(
-         SettingsState(
-           globalReaderPrefs: ReaderPreferences(),
-           appSettings: _settingsService.settings,
-         ),
-       ) {
+          const SettingsState(
+            globalReaderPrefs: ReaderPreferences(),
+            appSettings: Settings(),
+          ),
+        ) {
     // `restartable` (not `droppable`) so rapid slider drags always land on the
     // final value: each new event cancels the previous in-flight handler.
     on<_SetGlobalReaderPref>(
@@ -62,44 +59,41 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     add(const _RefreshTts());
   }
 
-  static SettingsBloc get settingsBloc => GetIt.I.get<SettingsBloc>();
-
   void _onSetGlobalReaderPref(
     _SetGlobalReaderPref event,
     Emitter<SettingsState> emit,
   ) async {
-    try {
-      await _storage.writeReaderGlobalPrefs(event.prefs);
-      emit(state.copyWith(globalReaderPrefs: event.prefs));
-      logger.d('Global reader prefs updated');
-    } catch (e) {
-      logger.e('Failed to set global prefs: $e');
-    }
+    final result =
+        await preferencesRepository.saveGlobalPreferences(event.prefs).run();
+    result.fold(
+      (failure) => logger.e('Failed to set global prefs: $failure'),
+      (_) {
+        emit(state.copyWith(globalReaderPrefs: event.prefs));
+        logger.d('Global reader prefs updated');
+      },
+    );
   }
 
   void _onResetAllReaderPrefs(
     _ResetAllReaderPrefs event,
     Emitter<SettingsState> emit,
   ) async {
-    try {
-      await _storage.resetStorage();
-      await _settingsService.save(const Settings());
-      emit(
-        const SettingsState(
-          globalReaderPrefs: ReaderPreferences(),
-        ),
-      );
-      logger.d('All reader prefs reset');
-    } catch (e) {
-      logger.e('Failed to reset all prefs: $e');
-    }
+    await preferencesRepository.resetAllPreferences().run();
+    await settingsRepository.resetSettings().run();
+    emit(
+      const SettingsState(
+        globalReaderPrefs: ReaderPreferences(),
+        appSettings: Settings(),
+      ),
+    );
+    logger.d('All reader prefs reset');
   }
 
   void _onUpdateAppSettings(
     _UpdateAppSettings event,
     Emitter<SettingsState> emit,
-  ) {
-    _settingsService.scheduleSave(event.settings);
+  ) async {
+    await settingsRepository.saveSettings(event.settings).run();
     emit(state.copyWith(appSettings: event.settings));
     logger.d('App settings updated');
   }
@@ -108,62 +102,72 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _ImportReaderPrefs event,
     Emitter<SettingsState> emit,
   ) async {
-    try {
-      final global = event.all['global'] ?? const ReaderPreferences();
-      await _storage.writeReaderGlobalPrefs(global);
-      emit(state.copyWith(globalReaderPrefs: global));
-      logger.d('Reader prefs imported');
-    } catch (e) {
-      logger.e('Failed to import prefs: $e');
-    }
+    final global = event.all['global'] ?? const ReaderPreferences();
+    final result =
+        await preferencesRepository.importGlobalPreferences(global).run();
+    result.fold(
+      (failure) => logger.e('Failed to import prefs: $failure'),
+      (_) {
+        emit(state.copyWith(globalReaderPrefs: global));
+        logger.d('Reader prefs imported');
+      },
+    );
   }
 
   Future<void> loadPrefs() async {
-    try {
-      final global = await _storage.readReaderGlobalPrefs();
-      // ignore: invalid_use_of_visible_for_testing_member
-      emit(state.copyWith(globalReaderPrefs: global));
-      logger.d('Reader prefs loaded');
-    } catch (e) {
-      logger.e('Failed to load prefs: $e');
-    }
+    final prefsResult =
+        await preferencesRepository.getGlobalPreferences().run();
+    final settingsResult = await settingsRepository.getSettings().run();
+
+    final prefs = prefsResult.getOrElse((_) => state.globalReaderPrefs);
+    final settings = settingsResult.getOrElse((_) => state.appSettings);
+
+    // ignore: invalid_use_of_visible_for_testing_member
+    emit(state.copyWith(globalReaderPrefs: prefs, appSettings: settings));
+    logger.d('Settings loaded');
   }
 
   SherpaTtsModelInfo? _ttsModelById(String id) {
-    for (final m in _ttsService.availableModels) {
+    for (final m in ttsModelRepository.availableModels) {
       if (m.id == id) return m;
     }
     return null;
   }
 
   void _onRefreshTts(_RefreshTts event, Emitter<SettingsState> emit) async {
-    try {
-      final downloaded = await _ttsService.getDownloadedModels();
-      final downloadedIds = downloaded.map((m) => m.id).toSet();
+    final downloadedResult =
+        await ttsModelRepository.getDownloadedModelIds().run();
 
-      var activeModelId = _ttsService.activeModel?.id;
-      if (activeModelId == null) {
-        final persisted = _settingsService.settings.globalViewSettings.ttsVoice;
-        if (persisted != null && downloadedIds.contains(persisted)) {
-          try {
-            await _ttsService.loadModel(persisted);
-            activeModelId = persisted;
-          } on SherpaTtsException {
-            // Model files present but failed to load — fall through
+    await downloadedResult.fold(
+      (failure) async {
+        emit(state.copyWith(ttsError: 'Failed to load voice catalog'));
+      },
+      (downloadedIds) async {
+        var activeModelId = ttsModelRepository.activeModelId;
+        if (activeModelId == null) {
+          final settingsResult = await settingsRepository.getSettings().run();
+          final persisted = settingsResult
+              .getOrElse((_) => const Settings())
+              .globalViewSettings
+              .ttsVoice;
+          if (persisted != null && downloadedIds.contains(persisted)) {
+            final loadResult =
+                await ttsModelRepository.activateModel(persisted).run();
+            if (loadResult.isRight()) {
+              activeModelId = persisted;
+            }
           }
         }
-      }
 
-      emit(
-        state.copyWith(
-          ttsAvailableModels: _ttsService.availableModels,
-          ttsDownloadedIds: downloadedIds,
-          ttsActiveModelId: activeModelId,
-        ),
-      );
-    } catch (e) {
-      emit(state.copyWith(ttsError: 'Failed to load voice catalog'));
-    }
+        emit(
+          state.copyWith(
+            ttsAvailableModels: ttsModelRepository.availableModels,
+            ttsDownloadedIds: downloadedIds,
+            ttsActiveModelId: activeModelId,
+          ),
+        );
+      },
+    );
   }
 
   void _onStartTtsDownload(
@@ -185,7 +189,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       ),
     );
 
-    _ttsDownloadSubs[id] = _ttsService
+    _ttsDownloadSubs[id] = ttsModelRepository
         .downloadModel(event.model)
         .listen(
           (progress) => add(
@@ -275,108 +279,99 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) async {
     final id = event.model.id;
-    try {
-      await _ttsService.deleteModel(id);
-      final wasActive = state.ttsActiveModelId == id;
-      if (wasActive) {
-        final current = _settingsService.settings;
-        if (current.globalViewSettings.ttsVoice == id) {
-          _settingsService.scheduleSave(
-            current.copyWith(
-              globalViewSettings: current.globalViewSettings.copyWith(
-                ttsVoice: null,
-              ),
-            ),
-          );
+    final result = await ttsModelRepository.deleteModel(id).run();
+    await result.fold(
+      (failure) async {
+        emit(
+          state.copyWith(
+            ttsError: 'Failed to delete ${event.model.displayName}',
+          ),
+        );
+      },
+      (_) async {
+        final wasActive = state.ttsActiveModelId == id;
+        if (wasActive) {
+          final settingsResult = await settingsRepository.getSettings().run();
+          final current = settingsResult.getOrElse((_) => const Settings());
+          if (current.globalViewSettings.ttsVoice == id) {
+            await settingsRepository
+                .saveSettings(
+                  current.copyWith(
+                    globalViewSettings: current.globalViewSettings.copyWith(
+                      ttsVoice: null,
+                    ),
+                  ),
+                )
+                .run();
+          }
         }
-      }
-      emit(
-        state.copyWith(
-          ttsDownloadedIds: state.ttsDownloadedIds
-              .where((e) => e != id)
-              .toSet(),
-          ttsActiveModelId: wasActive ? null : state.ttsActiveModelId,
-        ),
-      );
-    } catch (e) {
-      emit(
-        state.copyWith(ttsError: 'Failed to delete ${event.model.displayName}'),
-      );
-    }
+        emit(
+          state.copyWith(
+            ttsDownloadedIds:
+                state.ttsDownloadedIds.where((e) => e != id).toSet(),
+            ttsActiveModelId: wasActive ? null : state.ttsActiveModelId,
+          ),
+        );
+      },
+    );
   }
 
   void _onActivateTts(_ActivateTts event, Emitter<SettingsState> emit) async {
     if (state.ttsBusyModelId != null) return;
     emit(state.copyWith(ttsBusyModelId: event.modelId, ttsError: null));
-    try {
-      if (_ttsService.activeModel?.id != event.modelId) {
-        await _ttsService.loadModel(event.modelId);
-      }
-      _persistActiveVoice(event.modelId);
-      emit(
-        state.copyWith(ttsActiveModelId: event.modelId, ttsBusyModelId: null),
-      );
-    } on SherpaTtsException catch (e) {
-      emit(state.copyWith(ttsError: e.message, ttsBusyModelId: null));
-    } catch (_) {
-      emit(
-        state.copyWith(
-          ttsError: 'Failed to activate voice',
-          ttsBusyModelId: null,
-        ),
-      );
-    }
+
+    final result = await ttsModelRepository.activateModel(event.modelId).run();
+    await result.fold(
+      (failure) async {
+        emit(
+          state.copyWith(
+            ttsError: failure.message,
+            ttsBusyModelId: null,
+          ),
+        );
+      },
+      (_) async {
+        await _persistActiveVoice(event.modelId);
+        emit(
+          state.copyWith(ttsActiveModelId: event.modelId, ttsBusyModelId: null),
+        );
+      },
+    );
   }
 
-  void _persistActiveVoice(String modelId) {
-    final current = _settingsService.settings;
+  Future<void> _persistActiveVoice(String modelId) async {
+    final settingsResult = await settingsRepository.getSettings().run();
+    final current = settingsResult.getOrElse((_) => const Settings());
     if (current.globalViewSettings.ttsVoice == modelId) return;
-    _settingsService.scheduleSave(
-      current.copyWith(
-        globalViewSettings: current.globalViewSettings.copyWith(
-          ttsVoice: modelId,
-        ),
-      ),
-    );
+    await settingsRepository
+        .saveSettings(
+          current.copyWith(
+            globalViewSettings: current.globalViewSettings.copyWith(
+              ttsVoice: modelId,
+            ),
+          ),
+        )
+        .run();
   }
 
   void _onPreviewTts(_PreviewTts event, Emitter<SettingsState> emit) async {
     if (state.ttsBusyModelId != null) return;
-    final previousActive = state.ttsActiveModelId;
     emit(state.copyWith(ttsBusyModelId: event.modelId, ttsError: null));
 
-    try {
-      if (_ttsService.activeModel?.id != event.modelId) {
-        await _ttsService.loadModel(event.modelId);
-      }
-
-      final cacheDir = await _pathService.getTtsAudioCacheDirectory();
-      final previewPath = p.join(cacheDir.path, 'preview_${event.modelId}.wav');
-
-      final result = await _ttsService.generateToFile(
-        text: 'Hello. This is what this voice sounds like while reading.',
-        outputPath: previewPath,
-        speakerId: 0,
-        speed: 1.0,
-      );
-
-      await _audioPlayer.playPreviewFile(result.file.path);
-
-      if (previousActive != null && previousActive != event.modelId) {
-        await _ttsService.loadModel(previousActive);
-      }
-
-      emit(state.copyWith(ttsBusyModelId: null));
-    } on SherpaTtsException catch (e) {
-      emit(state.copyWith(ttsError: e.message, ttsBusyModelId: null));
-    } catch (_) {
-      emit(
-        state.copyWith(
-          ttsError: 'Failed to preview voice',
-          ttsBusyModelId: null,
-        ),
-      );
-    }
+    final result = await ttsModelRepository.playPreview(event.modelId).run();
+    result.fold(
+      (failure) {
+        emit(
+          state.copyWith(
+            ttsError: failure.message,
+            ttsBusyModelId: null,
+          ),
+        );
+      },
+      (_) {
+        emit(state.copyWith(ttsBusyModelId: null));
+      },
+    );
   }
 
   @override

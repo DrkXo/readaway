@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/widgets/core_widgets.dart';
-import '../../../domain/models/reader_preferences.dart';
+import '../../../domain/entity/reader_preferences.dart';
 
 import '../../bloc/settings/settings_bloc.dart';
 import '../settings_bloc_x.dart';

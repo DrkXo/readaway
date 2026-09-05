@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:rxdart/rxdart.dart';
 
-import '../../../../../core/services/services.dart';
+import '../../../../../core/services/audio/audio_player_service.dart';
+import '../../../../../core/services/tts/tts_chunk_model.dart';
+import '../../../../../core/services/tts/tts_models.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
+import '../../../domain/repositories/reader_tts_repository.dart';
 import 'live_speech_waveform.dart';
 import 'tts_speed_control_panel.dart';
 import 'waveform_scrubber.dart';
@@ -20,7 +23,7 @@ class TtsBottomPlayerControls extends StatefulWidget {
     super.key,
   });
 
-  final TtsControllerService tts;
+  final ReaderTtsRepository tts;
   final GestureDragUpdateCallback? onDragUpdate;
   final GestureDragEndCallback? onDragEnd;
 
@@ -268,7 +271,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     position: pos,
                     duration: dur,
                     waveform: waveform,
-                    onSeek: (target) => tts.seek(target),
+                    onSeek: (target) => tts.seek(target).run(),
                   ),
                 );
               },
@@ -289,7 +292,8 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                         final rate = rateSnap.data ?? 1.0;
                         return TtsSpeedControlPanel(
                           rate: rate,
-                          onRateChanged: (newRate) => tts.setRate(newRate),
+                          onRateChanged: (newRate) =>
+                              tts.setRate(newRate).run(),
                           onClose: () {
                             setState(() => _showSpeedPanel = false);
                           },
@@ -326,7 +330,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             });
                           },
                           onLongPress: () {
-                            tts.setRate(1.0);
+                            tts.setRate(1.0).run();
                           },
                           borderRadius: BorderRadius.circular(16),
                           child: AnimatedContainer(
@@ -390,7 +394,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     AppIconButton(
                       icon: LucideIcons.skipBack,
                       tooltip: 'Previous sentence',
-                      onPressed: tts.skipToPreviousSentence,
+                      onPressed: () => tts.skipToPreviousSentence().run(),
                       size: AppIconButtonSize.large,
                     ),
 
@@ -408,9 +412,9 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                       tooltip: isPlaying ? 'Pause' : 'Play',
                       onPressed: () {
                         if (isPlaying) {
-                          tts.pause();
+                          tts.pause().run();
                         } else {
-                          tts.resume();
+                          tts.resume().run();
                         }
                       },
                     ),
@@ -419,7 +423,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     AppIconButton(
                       icon: LucideIcons.skipForward,
                       tooltip: 'Next sentence',
-                      onPressed: tts.skipToNextSentence,
+                      onPressed: () => tts.skipToNextSentence().run(),
                       size: AppIconButtonSize.large,
                     ),
 
@@ -427,7 +431,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     AppIconButton(
                       icon: LucideIcons.square,
                       tooltip: 'Stop',
-                      onPressed: tts.stop,
+                      onPressed: () => tts.stop().run(),
                       size: AppIconButtonSize.medium,
                     ),
                   ],

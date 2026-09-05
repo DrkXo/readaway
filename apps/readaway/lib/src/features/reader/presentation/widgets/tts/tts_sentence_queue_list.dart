@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:rxdart/rxdart.dart';
 
-import '../../../../../core/services/services.dart';
+import '../../../../../core/services/tts/tts_chunk_model.dart';
+import '../../../../../core/services/tts/tts_models.dart';
 import '../../../../../core/widgets/core_widgets.dart';
+import '../../../domain/repositories/reader_tts_repository.dart';
 import 'live_speech_waveform.dart';
 
 /// Scrollable sentence queue list that smoothly centers on the active reading sentence.
@@ -15,7 +17,7 @@ class TtsSentenceQueueList extends StatefulWidget {
     super.key,
   });
 
-  final TtsControllerService tts;
+  final ReaderTtsRepository tts;
 
   @override
   State<TtsSentenceQueueList> createState() => _TtsSentenceQueueListState();
@@ -159,7 +161,7 @@ class _TtsSentenceQueueListState extends State<TtsSentenceQueueList> {
                               ? scheme.onSurface
                               : scheme.onSurface.withValues(alpha: 0.8),
                         ),
-                        onTap: () => widget.tts.seekToChunk(index),
+                        onTap: () => widget.tts.seekToChunk(index).run(),
                       ),
                     ),
                   ),

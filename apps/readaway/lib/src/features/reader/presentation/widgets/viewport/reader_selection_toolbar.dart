@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/theme/theme.dart';
-import '../../../domain/models/reader_lookup.dart';
+import '../../../domain/entity/reader_lookup.dart';
 
 /// Floating contextual toolbar displayed on text selection in the reader viewport.
 class ReaderSelectionToolbar extends StatelessWidget {

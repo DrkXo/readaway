@@ -1,82 +1,26 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:isolate';
 
-import 'package:get_it/get_it.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../features/settings/domain/models/reader_preferences.dart';
-import '../../isolate_service.dart';
+import '../../../../features/settings/domain/entity/reader_preferences.dart';
 import '../../logging_service.dart';
 import 'hive_config_service.dart';
-
-AppStorageService get appStorageService => GetIt.I.get<AppStorageService>();
-
-void _appStorageIsolateEntryPoint(SendPort mainSendPort) {
-  final receivePort = ReceivePort();
-  mainSendPort.send(receivePort.sendPort);
-
-  receivePort.listen((message) {
-    if (message is! Map) return;
-
-    final id = message['id'];
-    final action = message['action'] as String?;
-
-    try {
-      switch (action) {
-        case 'decodeJson':
-          final rawJson = message['rawJson'] as String;
-          final decoded = jsonDecode(rawJson);
-          mainSendPort.send({'id': id, 'result': decoded});
-          break;
-
-        case 'encodeJson':
-          final data = message['data'];
-          final encoded = jsonEncode(data);
-          mainSendPort.send({'id': id, 'result': encoded});
-          break;
-
-        case 'encodeExport':
-          final schemaVersion = message['schemaVersion'] as int;
-          final global = message['global'] as Map<String, dynamic>?;
-          final docs = message['docs'] as Map<String, dynamic>;
-
-          final exportMap = <String, dynamic>{
-            'schemaVersion': schemaVersion,
-            'global': global,
-            for (final entry in docs.entries) entry.key: entry.value,
-          };
-
-          final encoded = jsonEncode(exportMap);
-          mainSendPort.send({'id': id, 'result': encoded});
-          break;
-
-        default:
-          mainSendPort.send({'id': id, 'error': 'Unknown action: $action'});
-      }
-    } catch (e) {
-      mainSendPort.send({'id': id, 'error': e.toString()});
-    }
-  });
-}
 
 @Singleton()
 class AppStorageService {
   final HiveConfigService _config;
-  final IsolateService _isolateService;
 
   late final Box<String> _box;
 
   Box<String> get box => _box;
 
-  static const String _isolateName = 'app_storage_worker';
   static const String _schemaVersionKey = 'schema_version';
   static const int _schemaVersion = 1;
 
   AppStorageService({
     required this._config,
-    required this._isolateService,
   });
 
   @PostConstruct(preResolve: true)
@@ -85,40 +29,31 @@ class AppStorageService {
     Hive.init(hiveDir);
 
     _box = await Hive.openBox<String>(HiveConfigService.boxName);
-
-    await _isolateService.spawn(
-      name: _isolateName,
-      entryPoint: _appStorageIsolateEntryPoint,
-    );
-
-    await _handleStaleData();
+    await _handleSchemaInitialization();
   }
 
-  Future<void> _handleStaleData() async {
+  Future<void> _handleSchemaInitialization() async {
     try {
       final storedVersion = readAsInt(_schemaVersionKey);
-
-      if (storedVersion != _schemaVersion) {
-        logger.d(
-          'Detected schema update or fresh install, clearing stale Hive data',
+      if (storedVersion == null) {
+        logger.i(
+          '[AppStorageService] Fresh install - writing initial schema version $_schemaVersion',
         );
-        await deleteAll();
+        await writeAsInt(_schemaVersionKey, _schemaVersion);
+      } else if (storedVersion != _schemaVersion) {
+        logger.w(
+          '[AppStorageService] Schema mismatch: stored=$storedVersion, current=$_schemaVersion',
+        );
         await writeAsInt(_schemaVersionKey, _schemaVersion);
       }
     } catch (e) {
-      logger.e('Error handling stale data: $e');
-      try {
-        await deleteAll();
-      } catch (clearError) {
-        logger.e('Error clearing Hive storage: $clearError');
-      }
+      logger.e('[AppStorageService] Error verifying schema version: $e');
     }
   }
 
   Future<void> resetStorage() async {
     try {
       await _box.close();
-
       final files = await _config.getAllBoxFiles();
       for (final file in files) {
         if (await file.exists()) await file.delete();
@@ -130,7 +65,6 @@ class AppStorageService {
 
   @disposeMethod
   Future<void> dispose() async {
-    await _isolateService.disposeIsolate(_isolateName);
     await _box.close();
   }
 
@@ -192,14 +126,7 @@ class AppStorageService {
     final value = readAsString('reader_global');
     if (value == null) return const ReaderPreferences();
     try {
-      final decoded = await _isolateService.sendCommand<Map<String, dynamic>>(
-        _isolateName,
-        {
-          'id': DateTime.now().microsecondsSinceEpoch.toString(),
-          'action': 'decodeJson',
-          'rawJson': value,
-        },
-      );
+      final decoded = jsonDecode(value) as Map<String, dynamic>;
       return ReaderPreferences.fromJson(decoded);
     } catch (e) {
       logger.e('Failed to parse reader global prefs: $e');
@@ -209,14 +136,7 @@ class AppStorageService {
 
   Future<void> writeReaderGlobalPrefs(ReaderPreferences prefs) async {
     try {
-      final jsonString = await _isolateService.sendCommand<String>(
-        _isolateName,
-        {
-          'id': DateTime.now().microsecondsSinceEpoch.toString(),
-          'action': 'encodeJson',
-          'data': prefs.toJson(),
-        },
-      );
+      final jsonString = jsonEncode(prefs.toJson());
       await writeAsString('reader_global', jsonString);
     } catch (e) {
       logger.e('Failed to write reader global prefs: $e');
@@ -228,14 +148,7 @@ class AppStorageService {
     final value = readAsString('reader_doc_$path');
     if (value == null) return null;
     try {
-      final decoded = await _isolateService.sendCommand<Map<String, dynamic>>(
-        _isolateName,
-        {
-          'id': DateTime.now().microsecondsSinceEpoch.toString(),
-          'action': 'decodeJson',
-          'rawJson': value,
-        },
-      );
+      final decoded = jsonDecode(value) as Map<String, dynamic>;
       return ReaderPreferences.fromJson(decoded);
     } catch (e) {
       logger.e('Failed to parse reader doc prefs for $path: $e');
@@ -248,14 +161,7 @@ class AppStorageService {
     ReaderPreferences prefs,
   ) async {
     try {
-      final jsonString = await _isolateService.sendCommand<String>(
-        _isolateName,
-        {
-          'id': DateTime.now().microsecondsSinceEpoch.toString(),
-          'action': 'encodeJson',
-          'data': prefs.toJson(),
-        },
-      );
+      final jsonString = jsonEncode(prefs.toJson());
       await writeAsString('reader_doc_$path', jsonString);
     } catch (e) {
       logger.e('Failed to write reader document prefs for $path: $e');
@@ -289,16 +195,13 @@ class AppStorageService {
       for (final entry in docs.entries) entry.key: entry.value.toJson(),
     };
 
-    return await _isolateService.sendCommand<String>(
-      _isolateName,
-      {
-        'id': DateTime.now().microsecondsSinceEpoch.toString(),
-        'action': 'encodeExport',
-        'schemaVersion': _schemaVersion,
-        'global': global.toJson(),
-        'docs': docsJson,
-      },
-    );
+    final exportMap = <String, dynamic>{
+      'schemaVersion': _schemaVersion,
+      'global': global.toJson(),
+      for (final entry in docsJson.entries) entry.key: entry.value,
+    };
+
+    return jsonEncode(exportMap);
   }
 }
 

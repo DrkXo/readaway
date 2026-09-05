@@ -1,4 +1,3 @@
-export 'app_lyfecycle_manager.dart';
 export 'audio/audio_device.dart';
 export 'audio/audio_handler.dart';
 export 'audio/audio_player_service.dart';

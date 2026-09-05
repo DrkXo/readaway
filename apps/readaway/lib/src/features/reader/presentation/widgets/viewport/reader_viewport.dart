@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:readaway/src/features/settings/domain/models/reader_preferences.dart';
+import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 import '../../bloc/reader_bloc.dart';
 import '../../controllers/reader_page_view_controller.dart';
 import '../common/reader_error_view.dart';

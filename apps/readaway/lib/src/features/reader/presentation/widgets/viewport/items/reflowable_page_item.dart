@@ -6,7 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../../core/services/services.dart';
 import '../../../../../../core/theme/theme.dart';
-import '../../../../../settings/domain/models/reader_preferences.dart';
+import '../../../../../settings/domain/entity/reader_preferences.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../reader_document_view.dart';
 import '../reader_selection_area.dart';

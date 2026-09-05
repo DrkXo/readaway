@@ -14,10 +14,10 @@ class ThemeService {
   final _themeController = StreamController<ThemeMode>.broadcast();
 
   ThemeMode _currentThemeMode = ThemeMode.system;
+  StreamSubscription<Settings>? _settingsSub;
 
   ThemeMode get currentThemeMode => _currentThemeMode;
-  Stream<ThemeMode> get themeChanges =>
-      _themeController.stream.asBroadcastStream();
+  Stream<ThemeMode> get themeChanges => _themeController.stream;
 
   ThemeService({required this._settings});
 
@@ -25,7 +25,7 @@ class ThemeService {
   Future<void> init() async {
     _currentThemeMode = _modeFrom(_settings.settings);
     _themeController.add(_currentThemeMode);
-    _settings.changes.listen(_onSettingsChanged);
+    _settingsSub = _settings.changes.listen(_onSettingsChanged);
   }
 
   ThemeMode _modeFrom(Settings settings) =>
@@ -86,6 +86,7 @@ class ThemeService {
 
   @disposeMethod
   void dispose() {
+    _settingsSub?.cancel();
     _themeController.close();
   }
 }

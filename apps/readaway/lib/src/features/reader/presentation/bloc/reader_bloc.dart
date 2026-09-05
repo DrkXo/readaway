@@ -1,4 +1,3 @@
-// ignore_for_file: prefer_initializing_formals
 import 'dart:async';
 import 'dart:ui' as ui;
 
@@ -7,13 +6,16 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mupdf/mupdf.dart';
 
+import '../../../../core/error/failures.dart';
 import '../../../../core/models/reader/reader_document.dart';
-import '../../../../core/services/services.dart';
+import '../../../../core/services/logging_service.dart';
+import '../../../../core/services/tts/tts_models.dart';
 import '../../../../core/utils/reader/reader_html_utils.dart';
 import '../../../../core/utils/reader/reader_image_utils.dart';
-import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
-import '../../domain/services/document_parser.dart';
+import '../../domain/repositories/reader_repository.dart';
+import '../../domain/repositories/reader_tts_repository.dart';
 
 part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';
@@ -21,13 +23,8 @@ part 'reader_state.dart';
 
 @Injectable()
 class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
-  final WindowService _windowService;
-  final MuPdfService _muPdfService;
-  final TtsControllerService _ttsController;
-  final SettingsBloc _settingsBloc;
-  final DocumentParser<String> _documentParser;
-  final NotificationService _notificationService;
-  final DocumentCoverService _coverService;
+  final ReaderRepository readerRepository;
+  final ReaderTtsRepository ttsRepository;
 
   Uri? _coverUri;
   Uri? get coverUri => _coverUri;
@@ -39,21 +36,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   bool _autoAdvancing = false;
 
   ReaderBloc({
-    required WindowService windowService,
-    required MuPdfService muPdfService,
-    required TtsControllerService ttsController,
-    required SettingsBloc settingsBloc,
-    required DocumentParser<String> documentParser,
-    required NotificationService notificationService,
-    required DocumentCoverService coverService,
-  })  : _windowService = windowService,
-        _muPdfService = muPdfService,
-        _ttsController = ttsController,
-        _settingsBloc = settingsBloc,
-        _documentParser = documentParser,
-        _notificationService = notificationService,
-        _coverService = coverService,
-        super(const ReaderState()) {
+    required this.readerRepository,
+    required this.ttsRepository,
+  }) : super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
     on<_PageChanged>(_onPageChanged);
     on<_LoadPage>(_onLoadPage, transformer: concurrent());
@@ -61,17 +46,13 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_TtsStart>(_onTtsStart);
     on<_TtsClose>(_onTtsClose);
 
-    // Auto-advance to the next page when TTS genuinely finishes the current
-    // page's queue.
-    _ttsStateSub = _ttsController.playbackState.listen((event) {
+    // Auto-advance to the next page when TTS genuinely finishes the current page's queue.
+    _ttsStateSub = ttsRepository.playbackState.listen((event) {
       if (event.state == TtsPlaybackState.completed) {
         _onPageTtsCompleted();
       }
     });
   }
-
-  /// Exposes the TTS playback controller to reader widgets.
-  TtsControllerService get ttsController => _ttsController;
 
   void _disposeImages() {
     final images = state.pageImages;
@@ -86,9 +67,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   Future<void> close() async {
     _disposeImages();
     await _ttsStateSub?.cancel();
-    await _ttsController.stopPipeline();
-    await _muPdfService.closeDocument();
-    await _windowService.setDefaultTitle();
+    await ttsRepository.stopPipeline().run();
+    await readerRepository.closeDocument().run();
+    await readerRepository.updateWindowTitle(null).run();
     return super.close();
   }
 
@@ -100,71 +81,66 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     emit(
       state.copyWith(
         loading: true,
+        failure: null,
         error: null,
         documentPages: null,
         pageImages: null,
       ),
     );
 
-    try {
-      final service = _muPdfService;
-      await service.closeDocument();
-      await service.openDocument(event.path);
+    final openResult = await readerRepository
+        .openDocument(event.path, defaultTitle: event.fileName)
+        .run();
 
-      final count = await service.getPageCount();
-      logger.d('Loaded: $count pages');
-
-      final reflowable = await service.isReflowable();
-      final outline = await service.getOutLine();
-
-      final fileName = event.fileName ?? event.path.split('/').last;
-
-      emit(
-        state.copyWith(
-          fileName: fileName,
-          pageCount: count,
-          isReflowable: reflowable,
-          documentPages:
-              reflowable ? List<ReaderDocument?>.filled(count, null) : null,
-          pageImages: reflowable ? null : List<ui.Image?>.filled(count, null),
-          currentPage: 0,
-          outline: outline,
-          loading: false,
-        ),
-      );
-      add(const ReaderEvent.loadPage(index: 0));
-      _precachePages(0);
-
-      final metaTitle = await service.getMetaData('title');
-      final metaAuthor = await service.getMetaData('author');
-      final bookTitle = (metaTitle == null || metaTitle.isEmpty)
-          ? fileName
-          : metaTitle;
-
-      if (!isClosed) {
+    await openResult.fold(
+      (failure) async {
+        logger.e('[ReaderBloc] Failed to open document: $failure');
         emit(
           state.copyWith(
-            bookTitle: bookTitle,
-            author: metaAuthor,
+            loading: false,
+            failure: failure,
+            error: failure.message,
+          ),
+        );
+      },
+      (info) async {
+        final count = info.pageCount;
+        final reflowable = info.isReflowable;
+        final fileName = event.fileName ?? event.path.split('/').last;
+
+        emit(
+          state.copyWith(
+            fileName: fileName,
+            pageCount: count,
+            isReflowable: reflowable,
+            documentPages: reflowable
+                ? List<ReaderDocument?>.filled(count, null)
+                : null,
+            pageImages: reflowable ? null : List<ui.Image?>.filled(count, null),
+            currentPage: 0,
+            outline: info.outline,
+            bookTitle: info.title,
+            loading: false,
+            failure: null,
+            error: null,
           ),
         );
 
-        await _windowService.setTitle(bookTitle);
-      }
+        add(const ReaderEvent.loadPage(index: 0));
+        _precachePages(0);
 
-      // Pre-extract or load cached document cover thumbnail via DocumentCoverService
-      _coverUri = await _coverService.getCoverArtUri(
-        filePath: event.path,
-        fileName: fileName,
-        pageCount: count,
-      );
-      // ignore: unused_catch_stack
-    } catch (e, st) {
-      logger.d(
-        'Failed to open document',
-      );
-      emit(state.copyWith(error: '$e', loading: false));
-    }
+        await readerRepository.updateWindowTitle(info.title).run();
+
+        final coverResult = await readerRepository
+            .getCoverArtUri(
+              filePath: event.path,
+              fileName: fileName,
+              pageCount: count,
+            )
+            .run();
+        _coverUri = coverResult.getRight().toNullable();
+      },
+    );
   }
 
   void _onPageChanged(_PageChanged event, Emitter<ReaderState> emit) {
@@ -173,82 +149,64 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   Future<void> _onLoadPage(_LoadPage event, Emitter<ReaderState> emit) async {
-    if (!state.isReflowable) {
-      await _onRenderPage(event, emit);
-      return;
-    }
-
     final index = event.index;
-    if (state.documentPages == null || index < 0 || index >= state.pageCount) {
-      return;
-    }
-    if (state.documentPages![index] != null ||
-        state.loadingPages.contains(index)) {
-      return;
+    if (index < 0 || index >= state.pageCount) return;
+
+    if (state.isReflowable) {
+      if (state.documentPages == null ||
+          state.documentPages![index] != null ||
+          state.loadingPages.contains(index)) {
+        return;
+      }
+    } else {
+      if (state.pageImages == null ||
+          state.pageImages![index] != null ||
+          state.loadingPages.contains(index)) {
+        return;
+      }
     }
 
     emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
 
-    try {
-      final service = _muPdfService;
-      final (rawHtml, links) = await (
-        service.extractPageHtml(index),
-        service.getPageLinks(index),
-      ).wait;
+    final result = await readerRepository
+        .loadPage(index, isReflowable: state.isReflowable)
+        .run();
 
-      final doc = _documentParser.parse(rawHtml ?? '', links: links);
-
-      final pages = List<ReaderDocument?>.from(state.documentPages!);
-      pages[index] = doc;
-      emit(
-        state.copyWith(
-          documentPages: pages,
-          loadingPages: {...state.loadingPages}..remove(index),
-        ),
-      );
-    } catch (e) {
-      logger.d('Failed to load page $index: $e');
-      emit(
-        state.copyWith(
-          loadingPages: {...state.loadingPages}..remove(index),
-        ),
-      );
-    }
-  }
-
-  Future<void> _onRenderPage(
-    _LoadPage event,
-    Emitter<ReaderState> emit,
-  ) async {
-    final index = event.index;
-    if (state.pageImages == null || index < 0 || index >= state.pageCount) {
-      return;
-    }
-    if (state.pageImages![index] != null ||
-        state.loadingPages.contains(index)) {
-      return;
-    }
-
-    emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
-
-    try {
-      final rendered = await _muPdfService.renderPage(index);
-      final images = List<ui.Image?>.from(state.pageImages!);
-      images[index]?.dispose();
-      images[index] =
-          rendered == null ? null : await decodeRenderedPage(rendered);
-      emit(
-        state.copyWith(
-          pageImages: images,
-          loadingPages: {...state.loadingPages}..remove(index),
-        ),
-      );
-    } catch (e) {
-      logger.d('Failed to render page $index: $e');
-      emit(
-        state.copyWith(loadingPages: {...state.loadingPages}..remove(index)),
-      );
-    }
+    await result.fold(
+      (failure) async {
+        logger.d('Failed to load page $index: $failure');
+        emit(
+          state.copyWith(
+            loadingPages: {...state.loadingPages}..remove(index),
+          ),
+        );
+      },
+      (pageData) async {
+        if (state.isReflowable) {
+          final pages = List<ReaderDocument?>.from(state.documentPages!);
+          pages[index] = pageData.document;
+          emit(
+            state.copyWith(
+              documentPages: pages,
+              loadingPages: {...state.loadingPages}..remove(index),
+            ),
+          );
+        } else {
+          final rendered = pageData.renderedData;
+          final images = List<ui.Image?>.from(state.pageImages!);
+          images[index]?.dispose();
+          images[index] = rendered == null
+              ? null
+              : await decodeRenderedPage(rendered);
+          emit(
+            state.copyWith(
+              pageImages: images,
+              loadingPages: {...state.loadingPages}..remove(index),
+            ),
+          );
+        }
+      },
+    );
   }
 
   void _onCloseDocument(
@@ -257,20 +215,22 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   ) {
     _disposeImages();
     _coverUri = null;
-    _muPdfService.closeDocument();
-    _windowService.setDefaultTitle();
+    readerRepository.closeDocument().run();
+    readerRepository.updateWindowTitle(null).run();
     emit(const ReaderState());
   }
 
-  /// Starts TTS playback for the current page. The pipeline is only spun up
-  /// here (on user tap), never on document load.
+  /// Starts TTS playback for the current page.
   Future<void> _onTtsStart(
     _TtsStart event,
     Emitter<ReaderState> emit,
   ) async {
     if (!state.isReflowable) return;
 
-    final hasPermission = await _notificationService.requestPermissions();
+    final permissionResult = await readerRepository
+        .requestAudioPermissions()
+        .run();
+    final hasPermission = permissionResult.getOrElse((_) => false);
     if (!hasPermission) return;
 
     emit(state.copyWith(ttsActive: true));
@@ -278,58 +238,56 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   /// Starts TTS playback for the page at [pageIndex]: sets the active voice
-  /// from settings, spins up the pipeline, and plays the page's text. Shared
-  /// by the initial Listen action and the auto-advance path.
+  /// from settings, spins up the pipeline, and plays the page's text.
   Future<void> _beginPageTts(int pageIndex) async {
-    // Set the active voice from settings
-    final activeModelId = _settingsBloc.state.ttsActiveModelId;
-    if (activeModelId != null) {
-      final models = _settingsBloc.state.ttsAvailableModels;
-      for (final m in models) {
-        if (m.id == activeModelId) {
-          _ttsController.setVoice(
-            TtsVoiceOption(
-              engine: TtsEngineKind.sherpaOnnx,
-              id: m.id,
-              label: m.displayName,
-              languageCode: m.languageCode,
-              sherpaSpeakerId: m.speakerCount > 0 ? 0 : null,
-            ),
-          );
-          break;
-        }
+    if (ttsRepository.currentVoice == null) {
+      final models = ttsRepository.availableVoices;
+      if (models.isNotEmpty) {
+        final m = models.first;
+        ttsRepository.setVoice(
+          TtsVoiceOption(
+            engine: TtsEngineKind.sherpaOnnx,
+            id: m.id,
+            label: m.displayName,
+            languageCode: m.languageCode,
+            sherpaSpeakerId: m.speakerCount > 0 ? 0 : null,
+          ),
+        );
       }
     }
 
-    final text = await _muPdfService.extractPageText(pageIndex);
-    if (text == null || text.trim().isEmpty) return;
+    final textResult = await readerRepository.extractPageText(pageIndex).run();
+    final text = textResult.getOrElse((_) => '');
+    if (text.trim().isEmpty) return;
 
     if (_coverUri == null && state.pageCount > 0) {
-      _coverUri = await _coverService.getCoverArtUri(
-        filePath: state.fileName ?? 'doc',
-        fileName: state.fileName ?? 'doc',
-        pageCount: state.pageCount,
-      );
+      final coverResult = await readerRepository
+          .getCoverArtUri(
+            filePath: state.fileName ?? 'doc',
+            fileName: state.fileName ?? 'doc',
+            pageCount: state.pageCount,
+          )
+          .run();
+      _coverUri = coverResult.getRight().toNullable();
     }
 
-    _ttsController.start();
-    await _ttsController.playText(
-      text,
-      tag: MediaItem(
-        id: 'page-${pageIndex + 1}',
-        title: 'Page ${pageIndex + 1}',
-        album: state.bookTitle,
-        artist: state.author,
-        genre: 'Ebook',
-        artUri: _coverUri,
-      ),
-    );
+    ttsRepository.start();
+    await ttsRepository
+        .playText(
+          text,
+          tag: MediaItem(
+            id: 'page-${pageIndex + 1}',
+            title: 'Page ${pageIndex + 1}',
+            album: state.bookTitle,
+            artist: state.author,
+            genre: 'Ebook',
+            artUri: _coverUri,
+          ),
+        )
+        .run();
   }
 
-  /// Called when [TtsControllerService] reports a genuine page-end (every
-  /// chunk of the current page was enqueued and played). If a next page with
-  /// readable text exists, navigates to it and continues TTS playback;
-  /// otherwise playback stops at book end.
+  /// Called when [ReaderTtsRepository] reports a genuine page-end.
   Future<void> _onPageTtsCompleted() async {
     if (_autoAdvancing) return;
     if (!state.isReflowable || !state.ttsActive) return;
@@ -337,28 +295,19 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
     _autoAdvancing = true;
     try {
-      // Skip forward to the next page that has readable text.
       int? next;
       for (var i = state.currentPage + 1; i < state.pageCount; i++) {
-        String? text;
-        try {
-          text = await _muPdfService.extractPageText(i);
-        } catch (e) {
-          logger.d('TTS auto-advance: failed to extract text for page $i', e);
-        }
-        if (text != null && text.trim().isNotEmpty) {
+        final textResult = await readerRepository.extractPageText(i).run();
+        final text = textResult.getOrElse((_) => '');
+        if (text.isNotEmpty) {
           next = i;
           break;
         }
       }
-      if (next == null) return; // No readable page remains — stop at book end.
+      if (next == null) return;
 
       add(ReaderEvent.pageChanged(index: next));
-      try {
-        await _beginPageTts(next);
-      } catch (e) {
-        logger.d('TTS auto-advance failed for page $next', e);
-      }
+      await _beginPageTts(next);
     } finally {
       _autoAdvancing = false;
     }
@@ -369,7 +318,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _TtsClose event,
     Emitter<ReaderState> emit,
   ) async {
-    await _ttsController.stop();
+    await ttsRepository.stop().run();
     emit(state.copyWith(ttsActive: false));
   }
 

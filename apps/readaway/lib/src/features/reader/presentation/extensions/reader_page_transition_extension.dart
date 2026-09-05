@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../settings/domain/models/reader_preferences.dart';
+import '../../../settings/domain/entity/reader_preferences.dart';
 
 /// Extension on [ReaderPageTransition] to apply page transitions.
 extension ReaderPageTransitionX on ReaderPageTransition {

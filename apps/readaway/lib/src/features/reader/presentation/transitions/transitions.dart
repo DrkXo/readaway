@@ -1,4 +1,4 @@
-import 'package:readaway/src/features/settings/domain/models/reader_preferences.dart';
+import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 import 'cover_page_transition.dart';
 import 'curl_page_transition.dart';
 import 'fade_page_transition.dart';
