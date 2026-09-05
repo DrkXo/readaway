@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/models/reader/supported_document_formats.dart';
 import '../../../../core/routes/routes.dart';
 import '../../../../core/widgets/core_widgets.dart';
 
@@ -12,7 +13,7 @@ class LibraryPage extends StatelessWidget {
   Future<void> _pickAndOpen(BuildContext context) async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'xps', 'epub'],
+      allowedExtensions: SupportedDocumentFormats.pickerExtensions,
     );
 
     if (result.isEmpty || result.first.path == null) return;

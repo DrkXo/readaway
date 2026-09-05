@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=ReadAway
+Comment=Modern eBook, PDF, and Document Reader powered by MuPDF
+Exec=Readaway %U
+Icon=readaway
+Terminal=false
+Type=Application
+Categories=Office;Viewer;
+MimeType=application/pdf;application/epub+zip;application/x-mobipocket-ebook;application/x-fictionbook;application/x-fictionbook+xml;application/vnd.comicbook+zip;application/vnd.comicbook-rar;application/x-cbz;application/x-cbr;application/x-cbt;application/xps;application/oxps;application/vnd.ms-xpsdocument;text/plain;text/markdown;text/html;application/xhtml+xml;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.openxmlformats-officedocument.presentationml.presentation;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;image/svg+xml;image/png;image/jpeg;image/webp;image/tiff;image/bmp;image/gif;

@@ -21,6 +21,7 @@ import '../routes/routes.dart' as _i494;
 import '../services/app_lyfecycle_manager.dart' as _i313;
 import '../services/audio/audio_player_service.dart' as _i370;
 import '../services/document_cover_service.dart' as _i69;
+import '../services/file_open_service.dart' as _i156;
 import '../services/font_service.dart' as _i662;
 import '../services/html_document_parser.dart' as _i865;
 import '../services/http/http_service.dart' as _i920;
@@ -102,6 +103,16 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i155.HiveConfigService>(
       () => _i155.HiveConfigService(gh<_i145.AppPathService>()),
     );
+    await gh.singletonAsync<_i156.FileOpenService>(
+      () {
+        final i = _i156.FileOpenService(
+          loggingService: gh<_i520.LoggingService>(),
+        );
+        return i.init().then((_) => i);
+      },
+      preResolve: true,
+      dispose: (i) => i.dispose(),
+    );
     gh.singleton<_i548.IsolateService>(
       () => _i548.IsolateService(loggingService: gh<_i520.LoggingService>()),
       dispose: (i) => i.dispose(),
@@ -154,6 +165,7 @@ extension GetItInjectableX on _i174.GetIt {
         appRoutesGuards: gh<_i295.AppRoutesGuards>(),
         logger: gh<_i264.LoggingService>(),
         appRoutes: gh<_i494.AppRoutes>(),
+        fileOpenService: gh<_i264.FileOpenService>(),
       ),
       dispose: (i) => i.dispose(),
     );

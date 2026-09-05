@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_initializing_formals
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -79,20 +80,46 @@ class AppRouter {
   // ignore: unused_field
   final LoggingService _logger;
   final AppRoutes _appRoutes;
+  final FileOpenService _fileOpenService;
+
+  StreamSubscription<IncomingDocument>? _fileOpenSubscription;
 
   AppRouter({
-    required this._appRoutesGuards,
-    required this._logger,
-    required this._appRoutes,
-  });
+    required AppRoutesGuards appRoutesGuards,
+    required LoggingService logger,
+    required AppRoutes appRoutes,
+    required FileOpenService fileOpenService,
+  })  : _appRoutesGuards = appRoutesGuards,
+        _logger = logger,
+        _appRoutes = appRoutes,
+        _fileOpenService = fileOpenService {
+    _fileOpenSubscription = _fileOpenService.incomingDocuments.listen((doc) {
+      final route =
+          '${_appRoutes.reader.path}?path=${Uri.encodeComponent(doc.path)}&fileName=${Uri.encodeComponent(doc.fileName)}';
+      _logger.logger.info('[AppRouter] Pushing runtime opened document: $route');
+      _router.push(route);
+    });
+  }
+
+  String _determineInitialLocation() {
+    final pending = _fileOpenService.consumePendingDocument();
+    if (pending != null) {
+      final route =
+          '${_appRoutes.reader.path}?path=${Uri.encodeComponent(pending.path)}&fileName=${Uri.encodeComponent(pending.fileName)}';
+      _logger.logger.info('[AppRouter] Direct cold-start into reader: $route');
+      return route;
+    }
+    return _appRoutes.library.path;
+  }
 
   @disposeMethod
   void dispose() {
+    _fileOpenSubscription?.cancel();
     _router.dispose();
   }
 
   late final _router = GoRouter(
-    initialLocation: _appRoutes.library.path,
+    initialLocation: _determineInitialLocation(),
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: kDebugMode,
     routes: [
