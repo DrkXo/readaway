@@ -20,33 +20,51 @@ class LibraryLocalDataSource {
 
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
-      return decoded
-          .map((item) => RecentDocument.fromJson(item as Map<String, dynamic>))
-          .toList();
+      final list = <RecentDocument>[];
+      for (final item in decoded) {
+        try {
+          list.add(RecentDocument.fromJson(item as Map<String, dynamic>));
+        } catch (e) {
+          logger.w('[LibraryLocalDataSource] Skipped invalid entry: $e');
+        }
+      }
+      return list;
     } catch (e) {
-      logger.e('[LibraryLocalDataSource] Failed to parse recent documents: $e');
+      logger.e('[LibraryLocalDataSource] Failed to parse library documents: $e');
       return const [];
     }
   }
 
   Future<void> saveRecentDocument(RecentDocument document) async {
     final docs = (await getRecentDocuments()).toList();
-    // Remove if already exists so we bump to front
-    docs.removeWhere((doc) => doc.path == document.path);
-    docs.insert(0, document);
-
-    // Keep at most 50 recent items
-    if (docs.length > 50) {
-      docs.removeRange(50, docs.length);
+    final index = docs.indexWhere((doc) => doc.path == document.path);
+    if (index != -1) {
+      docs[index] = document;
+    } else {
+      docs.insert(0, document);
     }
 
     final jsonString = jsonEncode(docs.map((d) => d.toJson()).toList());
     await _storage.writeAsString(_recentDocsKey, jsonString);
   }
 
+  Future<void> saveAllDocuments(List<RecentDocument> documents) async {
+    final jsonString = jsonEncode(documents.map((d) => d.toJson()).toList());
+    await _storage.writeAsString(_recentDocsKey, jsonString);
+  }
+
   Future<void> removeRecentDocument(String path) async {
     final docs = (await getRecentDocuments()).toList();
     docs.removeWhere((doc) => doc.path == path);
+
+    final jsonString = jsonEncode(docs.map((d) => d.toJson()).toList());
+    await _storage.writeAsString(_recentDocsKey, jsonString);
+  }
+
+  Future<void> removeMultipleDocuments(List<String> paths) async {
+    final docs = (await getRecentDocuments()).toList();
+    final pathSet = paths.toSet();
+    docs.removeWhere((doc) => pathSet.contains(doc.path));
 
     final jsonString = jsonEncode(docs.map((d) => d.toJson()).toList());
     await _storage.writeAsString(_recentDocsKey, jsonString);

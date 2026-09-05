@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
+import '../../../library/domain/entity/reading_status.dart';
+import '../../../library/domain/repositories/library_repository.dart';
 import '../../../settings/domain/entity/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../bloc/reader_bloc.dart';

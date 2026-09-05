@@ -269,13 +269,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i433.LibraryLocalDataSource>(
       () => _i433.LibraryLocalDataSource(gh<_i1024.AppStorageService>()),
     );
-    gh.lazySingleton<_i810.LibraryRepository>(
-      () => _i912.LibraryRepositoryImpl(
-        gh<_i433.LibraryLocalDataSource>(),
-        gh<_i502.FilePickerDataSource>(),
-        gh<_i69.DocumentCoverService>(),
-      ),
-    );
     gh.lazySingleton<_i820.ReaderRepository>(
       () => _i788.ReaderRepositoryImpl(
         gh<_i16.MuPdfService>(),
@@ -287,6 +280,14 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i779.ReaderTtsRepository>(
       () => _i22.ReaderTtsRepositoryImpl(gh<_i573.TtsControllerService>()),
+    );
+    gh.lazySingleton<_i810.LibraryRepository>(
+      () => _i912.LibraryRepositoryImpl(
+        gh<_i433.LibraryLocalDataSource>(),
+        gh<_i502.FilePickerDataSource>(),
+        gh<_i69.DocumentCoverService>(),
+        gh<_i16.MuPdfService>(),
+      ),
     );
     gh.lazySingleton<_i228.SettingsBloc>(
       () => _i228.SettingsBloc(
