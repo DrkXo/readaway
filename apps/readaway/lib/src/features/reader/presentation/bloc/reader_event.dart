@@ -11,4 +11,6 @@ abstract class ReaderEvent with _$ReaderEvent {
   const factory ReaderEvent.closeDocument() = _CloseDocument;
   const factory ReaderEvent.ttsStart() = _TtsStart;
   const factory ReaderEvent.ttsClose() = _TtsClose;
+  const factory ReaderEvent.consumeFeedback() = _ConsumeFeedback;
+  const factory ReaderEvent.ttsErrorOccurred(String message) = _TtsErrorOccurred;
 }

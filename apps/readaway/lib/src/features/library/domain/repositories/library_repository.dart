@@ -18,9 +18,18 @@ abstract interface class LibraryRepository {
   /// Removes multiple documents in batch.
   TaskEither<Failure, Unit> removeMultipleDocuments(List<String> paths);
 
+  /// Prompts the user to pick one or more document files from device storage
+  /// and saves them into the library.
+  /// Returns an empty list if the user cancelled the dialog.
+  TaskEither<Failure, List<RecentDocument>> pickAndAddDocuments();
+
   /// Prompts the user to pick a document file from the device storage.
   /// Returns `None` if the user cancelled the dialog.
   TaskEither<Failure, Option<RecentDocument>> pickDocument();
+
+  /// Prompts the user to pick a document file from storage without saving to the library.
+  /// Returns `None` if the user cancelled the dialog.
+  TaskEither<Failure, Option<RecentDocument>> pickDocumentWithoutSaving();
 
   /// Retrieves a cached cover thumbnail path or parses page 0 and caches it.
   TaskEither<Failure, Option<String>> getCoverArtPath(RecentDocument document);

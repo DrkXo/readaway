@@ -16,6 +16,8 @@ abstract class ReaderState with _$ReaderState {
     List<OutlineItem>? outline,
     String? bookTitle,
     String? author,
+    String? documentPath,
+    UiFeedback? transientFeedback,
     @Default(false) bool ttsActive,
   }) = _ReaderState;
 

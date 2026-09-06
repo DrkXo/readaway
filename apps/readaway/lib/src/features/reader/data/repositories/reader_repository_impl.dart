@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/models/reader/supported_document_formats.dart';
 import '../../../../core/services/document_cover_service.dart';
 import '../../../../core/services/mupdf_service.dart';
 import '../../../../core/services/notification_service.dart';
@@ -38,6 +40,11 @@ class ReaderRepositoryImpl implements ReaderRepository {
         final file = File(path);
         if (!await file.exists()) {
           throw DocumentNotFoundFailure(path);
+        }
+
+        if (!SupportedDocumentFormats.isSupported(path)) {
+          final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
+          throw UnsupportedDocumentFormatFailure(ext.isEmpty ? 'unknown' : ext);
         }
 
         await _muPdfService.openDocument(path);

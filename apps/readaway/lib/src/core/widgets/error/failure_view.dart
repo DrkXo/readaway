@@ -102,6 +102,13 @@ class _FailureViewState extends State<FailureView> {
             'The remote service returned an error. Please try again later.',
         suggestedSecondaryLabel: null,
       ),
+      TtsNoVoiceSelectedFailure() => (
+        icon: LucideIcons.micOff,
+        title: 'No Voice Selected',
+        description:
+            'A text-to-speech voice model has not been selected or downloaded. Please configure a voice in Settings.',
+        suggestedSecondaryLabel: 'TTS Settings',
+      ),
       TtsModelNotFoundFailure(:final modelId) => (
         icon: LucideIcons.botOff,
         title: 'Voice Model Missing',

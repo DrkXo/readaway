@@ -22,20 +22,35 @@ extension FailureSnackBarExtension on BuildContext {
       SnackBar(
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        backgroundColor: scheme.errorContainer,
+        backgroundColor: scheme.surfaceContainerHigh,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.6),
+            width: 1,
+          ),
+        ),
         content: Row(
           children: [
-            Icon(
-              LucideIcons.alertCircle,
-              color: scheme.onErrorContainer,
-              size: 20,
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: scheme.error.withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                LucideIcons.alertCircle,
+                color: scheme.error,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 failure.message,
                 style: TextStyle(
-                  color: scheme.onErrorContainer,
+                  color: scheme.onSurface,
                   fontWeight: FontWeight.w500,
                   fontSize: 13,
                 ),
@@ -48,7 +63,7 @@ extension FailureSnackBarExtension on BuildContext {
         action: onRetry != null
             ? SnackBarAction(
                 label: retryLabel,
-                textColor: scheme.onErrorContainer,
+                textColor: scheme.error,
                 onPressed: onRetry,
               )
             : null,

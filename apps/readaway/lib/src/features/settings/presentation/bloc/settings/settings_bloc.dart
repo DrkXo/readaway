@@ -37,6 +37,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
             appSettings: Settings(),
           ),
         ) {
+    on<_LoadPrefs>(_onLoadPrefs, transformer: droppable());
     // `restartable` (not `droppable`) so rapid slider drags always land on the
     // final value: each new event cancels the previous in-flight handler.
     on<_SetGlobalReaderPref>(
@@ -56,6 +57,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_TtsDownloadProgress>(_onTtsDownloadProgress);
     on<_TtsDownloadFailed>(_onTtsDownloadFailed);
 
+    add(const SettingsEvent.loadPrefs());
     add(const _RefreshTts());
   }
 
@@ -114,7 +116,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     );
   }
 
-  Future<void> loadPrefs() async {
+  void _onLoadPrefs(
+    _LoadPrefs event,
+    Emitter<SettingsState> emit,
+  ) async {
     final prefsResult =
         await preferencesRepository.getGlobalPreferences().run();
     final settingsResult = await settingsRepository.getSettings().run();
@@ -122,10 +127,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     final prefs = prefsResult.getOrElse((_) => state.globalReaderPrefs);
     final settings = settingsResult.getOrElse((_) => state.appSettings);
 
-    // ignore: invalid_use_of_visible_for_testing_member
     emit(state.copyWith(globalReaderPrefs: prefs, appSettings: settings));
-    logger.d('Settings loaded');
+    logger.d('Settings loaded via event');
   }
+
+  /// Dispatches [SettingsEvent.loadPrefs] to reload preferences.
+  void loadPrefs() => add(const SettingsEvent.loadPrefs());
 
   SherpaTtsModelInfo? _ttsModelById(String id) {
     for (final m in ttsModelRepository.availableModels) {

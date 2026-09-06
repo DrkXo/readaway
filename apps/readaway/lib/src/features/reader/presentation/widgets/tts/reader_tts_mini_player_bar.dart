@@ -211,9 +211,9 @@ class _MiniPlayerPlayButton extends StatelessWidget {
           tooltip: isPlaying ? 'Pause' : 'Play',
           onPressed: () {
             if (isPlaying) {
-              tts.pause();
+              tts.pause().run();
             } else {
-              tts.resume();
+              tts.resume().run();
             }
           },
           size: AppIconButtonSize.medium,

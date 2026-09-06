@@ -10,6 +10,8 @@ import 'package:mupdf/mupdf.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/reader/reader_document.dart';
+import '../../../../core/models/ui_feedback.dart';
+import '../../../../core/routes/routes.dart';
 import '../../../../core/services/logging_service.dart';
 import '../../../../core/services/tts/tts_models.dart';
 import '../../../../core/utils/reader/reader_html_utils.dart';
@@ -45,11 +47,17 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_CloseDocument>(_onCloseDocument);
     on<_TtsStart>(_onTtsStart);
     on<_TtsClose>(_onTtsClose);
+    on<_ConsumeFeedback>(_onConsumeFeedback);
+    on<_TtsErrorOccurred>(_onTtsErrorOccurred);
 
-    // Auto-advance to the next page when TTS genuinely finishes the current page's queue.
+    // Auto-advance or report errors when TTS reports state updates
     _ttsStateSub = ttsRepository.playbackState.listen((event) {
       if (event.state == TtsPlaybackState.completed) {
         _onPageTtsCompleted();
+      } else if (event.state == TtsPlaybackState.error) {
+        add(ReaderEvent.ttsErrorOccurred(
+          event.message ?? 'Speech synthesis error',
+        ));
       }
     });
   }
@@ -79,11 +87,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     Emitter<ReaderState> emit,
   ) async {
     _disposeImages();
+    final initialFileName = event.fileName ?? event.path.split('/').last;
     emit(
       state.copyWith(
         loading: true,
         failure: null,
         error: null,
+        documentPath: event.path,
+        fileName: initialFileName,
         documentPages: null,
         pageImages: null,
       ),
@@ -101,17 +112,19 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
             loading: false,
             failure: failure,
             error: failure.message,
+            documentPath: event.path,
+            fileName: initialFileName,
           ),
         );
       },
       (info) async {
         final count = info.pageCount;
         final reflowable = info.isReflowable;
-        final fileName = event.fileName ?? event.path.split('/').last;
 
         emit(
           state.copyWith(
-            fileName: fileName,
+            documentPath: event.path,
+            fileName: initialFileName,
             pageCount: count,
             isReflowable: reflowable,
             documentPages: reflowable
@@ -135,7 +148,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         final coverResult = await readerRepository
             .getCoverArtUri(
               filePath: event.path,
-              fileName: fileName,
+              fileName: initialFileName,
               pageCount: count,
             )
             .run();
@@ -232,16 +245,64 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         .requestAudioPermissions()
         .run();
     final hasPermission = permissionResult.getOrElse((_) => false);
-    if (!hasPermission) return;
+    if (!hasPermission) {
+      emit(
+        state.copyWith(
+          ttsActive: false,
+          transientFeedback: UiFeedback(
+            failure: const NotificationPermissionDeniedFailure(
+              message:
+                  'Audio notification permissions are required for background read-aloud.',
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final prepResult = await ttsRepository.prepareForPlayback().run();
+    final prepFailure = prepResult.getLeft().toNullable();
+    if (prepFailure != null) {
+      logger.w('[ReaderBloc] TTS preparation failed: $prepFailure');
+      emit(
+        state.copyWith(
+          ttsActive: false,
+          transientFeedback: UiFeedback(
+            failure: prepFailure,
+            actionLabel: 'TTS Settings',
+            actionRoute: '${appRoutes.settings.path}?tab=tts',
+          ),
+        ),
+      );
+      return;
+    }
 
     emit(state.copyWith(ttsActive: true));
-    await _beginPageTts(state.currentPage);
+    await _beginPageTts(state.currentPage, emit);
   }
 
   /// Starts TTS playback for the page at [pageIndex]: sets the active voice
   /// from settings, spins up the pipeline, and plays the page's text.
-  Future<void> _beginPageTts(int pageIndex) async {
-    await ttsRepository.prepareForPlayback().run();
+  Future<void> _beginPageTts(int pageIndex, [Emitter<ReaderState>? emit]) async {
+    final prepResult = await ttsRepository.prepareForPlayback().run();
+    final prepFailure = prepResult.getLeft().toNullable();
+    if (prepFailure != null) {
+      if (emit != null) {
+        emit(
+          state.copyWith(
+            ttsActive: false,
+            transientFeedback: UiFeedback(
+              failure: prepFailure,
+              actionLabel: 'TTS Settings',
+              actionRoute: '${appRoutes.settings.path}?tab=tts',
+            ),
+          ),
+        );
+      } else {
+        add(ReaderEvent.ttsErrorOccurred(prepFailure.message));
+      }
+      return;
+    }
 
     if (ttsRepository.currentVoice == null) {
       final voices = ttsRepository.availableVoices;
@@ -257,7 +318,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     if (_coverUri == null && state.pageCount > 0) {
       final coverResult = await readerRepository
           .getCoverArtUri(
-            filePath: state.fileName ?? 'doc',
+            filePath: state.documentPath ?? state.fileName ?? 'doc',
             fileName: state.fileName ?? 'doc',
             pageCount: state.pageCount,
           )
@@ -266,7 +327,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     }
 
     ttsRepository.start();
-    await ttsRepository
+    final playResult = await ttsRepository
         .playText(
           text,
           tag: MediaItem(
@@ -279,6 +340,29 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           ),
         )
         .run();
+
+    final playFailure = playResult.getLeft().toNullable();
+    if (playFailure != null) {
+      logger.e('[ReaderBloc] TTS playText failed: $playFailure');
+      if (emit != null) {
+        emit(
+          state.copyWith(
+            ttsActive: false,
+            transientFeedback: UiFeedback(
+              failure: playFailure,
+              actionLabel: playFailure is TtsNoVoiceSelectedFailure
+                  ? 'TTS Settings'
+                  : null,
+              actionRoute: playFailure is TtsNoVoiceSelectedFailure
+                  ? '${appRoutes.settings.path}?tab=tts'
+                  : null,
+            ),
+          ),
+        );
+      } else {
+        add(ReaderEvent.ttsErrorOccurred(playFailure.message));
+      }
+    }
   }
 
   /// Called when [ReaderTtsRepository] reports a genuine page-end.
@@ -314,6 +398,29 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   ) async {
     await ttsRepository.stop().run();
     emit(state.copyWith(ttsActive: false));
+  }
+
+  void _onConsumeFeedback(
+    _ConsumeFeedback event,
+    Emitter<ReaderState> emit,
+  ) {
+    emit(state.copyWith(transientFeedback: null));
+  }
+
+  void _onTtsErrorOccurred(
+    _TtsErrorOccurred event,
+    Emitter<ReaderState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        ttsActive: false,
+        transientFeedback: UiFeedback(
+          failure: TtsSynthesisFailure(event.message),
+          actionLabel: 'TTS Settings',
+          actionRoute: '${appRoutes.settings.path}?tab=tts',
+        ),
+      ),
+    );
   }
 
   void _precachePages(int currentIndex) {

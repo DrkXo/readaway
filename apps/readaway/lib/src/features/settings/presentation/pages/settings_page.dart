@@ -3,8 +3,15 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../widgets/widgets.dart';
 
+enum SettingsTab { font, layout, behavior, appearance, tts }
+
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+  final SettingsTab initialTab;
+
+  const SettingsPage({
+    super.key,
+    this.initialTab = SettingsTab.font,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +31,7 @@ class SettingsPage extends StatelessWidget {
           ),
           child: DefaultTabController(
             length: 5,
+            initialIndex: initialTab.index,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

@@ -140,11 +140,20 @@ class AppRouter {
         name: _appRoutes.settings.name,
         path: _appRoutes.settings.path,
         pageBuilder: (context, state) {
+          final tabParam = state.uri.queryParameters['tab'];
+          final initialTab = switch (tabParam) {
+            'layout' => SettingsTab.layout,
+            'behavior' => SettingsTab.behavior,
+            'appearance' => SettingsTab.appearance,
+            'tts' => SettingsTab.tts,
+            _ => SettingsTab.font,
+          };
+
           return ModalPage(
             key: state.pageKey,
             isScrollControlled: true,
             showDragHandle: false,
-            builder: (context) => const SettingsPage(),
+            builder: (context) => SettingsPage(initialTab: initialTab),
           );
         },
         routes: [

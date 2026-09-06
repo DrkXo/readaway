@@ -29,7 +29,7 @@ mixin ReaderControllerMixin on State<ReaderPage> {
       }
     };
 
-    settingsBloc.loadPrefs();
+    settingsBloc.add(const SettingsEvent.loadPrefs());
     syncSettings(settingsBloc.state);
     initDocument();
   }

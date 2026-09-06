@@ -36,77 +36,19 @@ class ToastWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final appColors = Theme.of(context).extension<AppColors>();
     final scheme = Theme.of(context).colorScheme;
 
-    final (
-      Color bg,
-      Color border,
-      Color accent,
-      Color text,
-      Color subtleText
-    ) = switch (type) {
-      ToastType.success => isDark
-          ? (
-              const Color(0xFF1B2C20),
-              const Color(0xFF2E4D35),
-              appColors?.success ?? const Color(0xFF7CD98A),
-              const Color(0xFFE2F3E5),
-              const Color(0xFFB5DCC0),
-            )
-          : (
-              const Color(0xFFEEF7F0),
-              const Color(0xFFC3E3C9),
-              appColors?.success ?? const Color(0xFF2E6C38),
-              const Color(0xFF193B20),
-              const Color(0xFF335C3B),
-            ),
-      ToastType.error => isDark
-          ? (
-              const Color(0xFF321B1D),
-              const Color(0xFF5A2C30),
-              scheme.error,
-              const Color(0xFFFFD7D9),
-              const Color(0xFFE8ADB2),
-            )
-          : (
-              const Color(0xFFFDF1F2),
-              const Color(0xFFF6C7CC),
-              scheme.error,
-              const Color(0xFF5C1B20),
-              const Color(0xFF8A2E36),
-            ),
-      ToastType.warning => isDark
-          ? (
-              const Color(0xFF2F2414),
-              const Color(0xFF5A4321),
-              appColors?.warning ?? const Color(0xFFFFBA38),
-              const Color(0xFFFFECC7),
-              const Color(0xFFE0C495),
-            )
-          : (
-              const Color(0xFFFFF9EE),
-              const Color(0xFFF4DDB0),
-              appColors?.warning ?? const Color(0xFF8B5A00),
-              const Color(0xFF4C3000),
-              const Color(0xFF754B00),
-            ),
-      ToastType.info => isDark
-          ? (
-              const Color(0xFF1E242C),
-              const Color(0xFF324050),
-              scheme.tertiary,
-              const Color(0xFFDCE6F2),
-              const Color(0xFFB0C4D8),
-            )
-          : (
-              const Color(0xFFF0F5FA),
-              const Color(0xFFC8DAEC),
-              scheme.tertiary,
-              const Color(0xFF1B354C),
-              const Color(0xFF3B5B78),
-            ),
+    final bg = scheme.surfaceContainerHigh;
+    final border = scheme.outlineVariant.withValues(alpha: 0.6);
+    final text = scheme.onSurface;
+    final subtleText = scheme.onSurfaceVariant;
+
+    final Color accent = switch (type) {
+      ToastType.success => appColors?.success ?? const Color(0xFF2E6C38),
+      ToastType.error => scheme.error,
+      ToastType.warning => appColors?.warning ?? const Color(0xFFD97706),
+      ToastType.info => scheme.primary,
     };
 
     final effectiveIcon = icon ?? _defaultIcon(type);

@@ -5,11 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/routes/routes.dart';
+import '../../../../core/services/toast/toast_service.dart';
 import '../../../../core/widgets/core_widgets.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
-import '../cubit/library_cubit.dart';
-import '../cubit/library_state.dart';
+import '../bloc/library_bloc.dart';
 import '../widgets/book_details_sheet.dart';
 import '../widgets/book_grid_card.dart';
 import '../widgets/book_list_tile.dart';
@@ -22,7 +22,8 @@ class LibraryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => GetIt.I<LibraryCubit>()..loadRecentDocuments(),
+      create: (context) =>
+          GetIt.I<LibraryBloc>()..add(const LibraryEvent.loadRequested()),
       child: const _LibraryView(),
     );
   }
@@ -52,14 +53,15 @@ class _LibraryViewState extends State<_LibraryView> {
   }
 
   void _openDetailsSheet(BuildContext context, RecentDocument doc) {
-    final cubit = context.read<LibraryCubit>();
+    final bloc = context.read<LibraryBloc>();
     BookDetailsSheet.show(
       context,
       document: doc,
       onOpenReader: () => _navigateToReader(context, doc.path, doc.fileName),
-      onToggleFavorite: () => cubit.toggleFavorite(doc.path),
-      onUpdateStatus: (status) => cubit.updateReadingStatus(doc.path, status),
-      onRemove: () => cubit.removeRecent(doc.path),
+      onToggleFavorite: () => bloc.add(LibraryEvent.toggleFavorite(doc.path)),
+      onUpdateStatus: (status) =>
+          bloc.add(LibraryEvent.updateReadingStatus(doc.path, status)),
+      onRemove: () => bloc.add(LibraryEvent.removeDocument(doc.path)),
     );
   }
 
@@ -67,19 +69,35 @@ class _LibraryViewState extends State<_LibraryView> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return BlocConsumer<LibraryCubit, LibraryState>(
+    return BlocConsumer<LibraryBloc, LibraryState>(
       listenWhen: (prev, curr) =>
-          curr.openedDocument != null &&
-          prev.openedDocument != curr.openedDocument,
+          (curr.openedDocument != null &&
+              prev.openedDocument != curr.openedDocument) ||
+          (curr.directOpenDocument != null &&
+              prev.directOpenDocument != curr.directOpenDocument) ||
+          (curr.noticeMessage != null &&
+              prev.noticeMessage != curr.noticeMessage),
       listener: (context, state) {
         final doc = state.openedDocument;
         if (doc != null) {
-          context.read<LibraryCubit>().clearOpened();
+          context.read<LibraryBloc>().add(const LibraryEvent.clearOpened());
           _navigateToReader(context, doc.path, doc.fileName);
+        }
+
+        final directDoc = state.directOpenDocument;
+        if (directDoc != null) {
+          context.read<LibraryBloc>().add(const LibraryEvent.clearDirectOpen());
+          _navigateToReader(context, directDoc.path, directDoc.fileName);
+        }
+
+        final notice = state.noticeMessage;
+        if (notice != null) {
+          context.showSuccessToast(notice);
+          context.read<LibraryBloc>().add(const LibraryEvent.clearNotice());
         }
       },
       builder: (context, state) {
-        final cubit = context.read<LibraryCubit>();
+        final bloc = context.read<LibraryBloc>();
         final documents = state.filteredDocuments;
 
         return Scaffold(
@@ -91,15 +109,16 @@ class _LibraryViewState extends State<_LibraryView> {
                 ? IconButton(
                     icon: const Icon(LucideIcons.x),
                     tooltip: 'Cancel selection',
-                    onPressed: () => cubit.toggleSelectMode(),
+                    onPressed: () =>
+                        bloc.add(const LibraryEvent.selectModeToggled()),
                   )
                 : null,
             actions: [
               if (state.isSelectMode) ...[
                 TextButton(
                   onPressed: state.selectedPaths.length == documents.length
-                      ? () => cubit.deselectAll()
-                      : () => cubit.selectAll(),
+                      ? () => bloc.add(const LibraryEvent.deselectAll())
+                      : () => bloc.add(const LibraryEvent.selectAll()),
                   child: Text(
                     state.selectedPaths.length == documents.length
                         ? 'Deselect All'
@@ -119,7 +138,7 @@ class _LibraryViewState extends State<_LibraryView> {
                       _isSearchVisible = !_isSearchVisible;
                       if (!_isSearchVisible) {
                         _searchController.clear();
-                        cubit.setSearchQuery('');
+                        bloc.add(const LibraryEvent.searchQueryChanged(''));
                       }
                     });
                   },
@@ -132,8 +151,10 @@ class _LibraryViewState extends State<_LibraryView> {
                     context,
                     currentSortBy: state.sortBy,
                     sortAscending: state.sortAscending,
-                    onSortChanged: (sort) => cubit.setSortBy(sort),
-                    onToggleAscending: () => cubit.toggleSortAscending(),
+                    onSortChanged: (sort) =>
+                        bloc.add(LibraryEvent.sortByChanged(sort)),
+                    onToggleAscending: () =>
+                        bloc.add(const LibraryEvent.sortOrderToggled()),
                   ),
                 ),
                 // View Mode switcher
@@ -148,10 +169,12 @@ class _LibraryViewState extends State<_LibraryView> {
                       ? 'Switch to List view'
                       : 'Switch to Grid view',
                   onPressed: () {
-                    cubit.setViewMode(
-                      state.viewMode == LibraryViewMode.grid
-                          ? LibraryViewMode.list
-                          : LibraryViewMode.grid,
+                    bloc.add(
+                      LibraryEvent.viewModeChanged(
+                        state.viewMode == LibraryViewMode.grid
+                            ? LibraryViewMode.list
+                            : LibraryViewMode.grid,
+                      ),
                     );
                   },
                 ),
@@ -160,7 +183,8 @@ class _LibraryViewState extends State<_LibraryView> {
                   IconButton(
                     icon: const Icon(LucideIcons.checkSquare, size: 20),
                     tooltip: 'Select books',
-                    onPressed: () => cubit.toggleSelectMode(),
+                    onPressed: () =>
+                        bloc.add(const LibraryEvent.selectModeToggled()),
                   ),
               ],
             ],
@@ -170,8 +194,10 @@ class _LibraryViewState extends State<_LibraryView> {
               if (state.failure != null)
                 FailureBanner(
                   failure: state.failure!,
-                  onRetry: () => cubit.loadRecentDocuments(),
-                  onDismiss: () => cubit.loadRecentDocuments(),
+                  onRetry: () =>
+                      bloc.add(const LibraryEvent.loadRequested()),
+                  onDismiss: () =>
+                      bloc.add(const LibraryEvent.loadRequested()),
                 ),
 
               // Search Bar (expandable)
@@ -190,7 +216,9 @@ class _LibraryViewState extends State<_LibraryView> {
                               icon: const Icon(LucideIcons.x, size: 16),
                               onPressed: () {
                                 _searchController.clear();
-                                cubit.setSearchQuery('');
+                                bloc.add(
+                                  const LibraryEvent.searchQueryChanged(''),
+                                );
                               },
                             )
                           : null,
@@ -208,7 +236,8 @@ class _LibraryViewState extends State<_LibraryView> {
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    onChanged: (val) => cubit.setSearchQuery(val),
+                    onChanged: (val) =>
+                        bloc.add(LibraryEvent.searchQueryChanged(val)),
                   ),
                 ),
 
@@ -217,7 +246,8 @@ class _LibraryViewState extends State<_LibraryView> {
                 LibraryFilterBar(
                   selectedFilter: state.filterStatus,
                   state: state,
-                  onSelectFilter: (filter) => cubit.setFilterStatus(filter),
+                  onSelectFilter: (filter) =>
+                      bloc.add(LibraryEvent.filterChanged(filter)),
                 ),
 
               // Main Book Content
@@ -229,13 +259,11 @@ class _LibraryViewState extends State<_LibraryView> {
                     }
 
                     if (state.recentDocuments.isEmpty) {
-                      return AppEmptyView(
+                      return const AppEmptyView(
                         icon: LucideIcons.bookOpen,
                         title: 'Your Library is Empty',
                         message:
-                            'Open a book, PDF document, or comic to start reading.',
-                        actionLabel: 'Open Document',
-                        onAction: () => cubit.pickAndOpenDocument(),
+                            'Add books to your library or open a document directly using the bar below.',
                       );
                     }
 
@@ -273,9 +301,13 @@ class _LibraryViewState extends State<_LibraryView> {
                               FilledButton.tonal(
                                 onPressed: () {
                                   _searchController.clear();
-                                  cubit.setSearchQuery('');
-                                  cubit.setFilterStatus(
-                                    ReadingStatusFilter.all,
+                                  bloc.add(
+                                    const LibraryEvent.searchQueryChanged(''),
+                                  );
+                                  bloc.add(
+                                    const LibraryEvent.filterChanged(
+                                      ReadingStatusFilter.all,
+                                    ),
                                   );
                                 },
                                 child: const Text('Reset Filters'),
@@ -288,29 +320,120 @@ class _LibraryViewState extends State<_LibraryView> {
 
                     // Render Grid View
                     if (state.viewMode == LibraryViewMode.grid) {
-                      return _buildGridView(context, documents, state, cubit);
+                      return _buildGridView(context, documents, state, bloc);
                     }
 
                     // Render List View
-                    return _buildListView(context, documents, state, cubit);
+                    return _buildListView(context, documents, state, bloc);
                   },
                 ),
               ),
 
               // Select Mode Bottom Action Bar
               if (state.isSelectMode && state.selectedPaths.isNotEmpty)
-                _buildSelectModeBar(context, state, cubit),
+                _buildSelectModeBar(context, state, bloc),
             ],
           ),
-          floatingActionButton: state.isSelectMode
-              ? null
-              : FloatingActionButton.extended(
-                  icon: const Icon(LucideIcons.folderOpen, size: 20),
-                  label: const Text('Open File'),
-                  onPressed: () => cubit.pickAndOpenDocument(),
-                ),
+          floatingActionButton:
+              state.isSelectMode ? null : _buildFabBar(context, bloc),
         );
       },
+    );
+  }
+
+  Widget _buildFabBar(BuildContext context, LibraryBloc bloc) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: scheme.primaryContainer,
+      elevation: 3,
+      shadowColor: scheme.shadow.withValues(alpha: 0.25),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: scheme.outlineVariant.withValues(alpha: 0.35),
+          width: 0.8,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Add Book to Library
+            Tooltip(
+              message: 'Add books to library',
+              child: InkWell(
+                onTap: () => bloc.add(const LibraryEvent.addDocuments()),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.bookPlus,
+                        size: 19,
+                        color: scheme.onPrimaryContainer,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Add Book',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            VerticalDivider(
+              width: 1,
+              thickness: 1,
+              indent: 8,
+              endIndent: 8,
+              color: scheme.onPrimaryContainer.withValues(alpha: 0.2),
+            ),
+            // Open Book directly without adding to library
+            Tooltip(
+              message: 'Open book directly without adding to library',
+              child: InkWell(
+                onTap: () => bloc.add(const LibraryEvent.openDirectly()),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.bookOpen,
+                        size: 19,
+                        color: scheme.onPrimaryContainer,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Open Book',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -318,12 +441,12 @@ class _LibraryViewState extends State<_LibraryView> {
     BuildContext context,
     List<RecentDocument> documents,
     LibraryState state,
-    LibraryCubit cubit,
+    LibraryBloc bloc,
   ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        // Responsive columns: 2 on phone (<600), 3-4 on tablet (600-1000), 5-6 on desktop (>1000)
+        // Responsive columns: 2 on phone (<450), 3-4 on tablet (450-1000), 5-6 on desktop (>1000)
         final crossAxisCount = width < 450
             ? 2
             : width < 700
@@ -353,19 +476,20 @@ class _LibraryViewState extends State<_LibraryView> {
               isSelected: isSelected,
               onTap: () {
                 if (state.isSelectMode) {
-                  cubit.toggleSelectDocument(doc.path);
+                  bloc.add(LibraryEvent.selectDocumentToggled(doc.path));
                 } else {
                   _navigateToReader(context, doc.path, doc.fileName);
                 }
               },
               onLongPress: () {
                 if (state.isSelectMode) {
-                  cubit.toggleSelectDocument(doc.path);
+                  bloc.add(LibraryEvent.selectDocumentToggled(doc.path));
                 } else {
                   _openDetailsSheet(context, doc);
                 }
               },
-              onToggleFavorite: () => cubit.toggleFavorite(doc.path),
+              onToggleFavorite: () =>
+                  bloc.add(LibraryEvent.toggleFavorite(doc.path)),
             );
           },
         );
@@ -377,7 +501,7 @@ class _LibraryViewState extends State<_LibraryView> {
     BuildContext context,
     List<RecentDocument> documents,
     LibraryState state,
-    LibraryCubit cubit,
+    LibraryBloc bloc,
   ) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 80),
@@ -393,19 +517,20 @@ class _LibraryViewState extends State<_LibraryView> {
           isSelected: isSelected,
           onTap: () {
             if (state.isSelectMode) {
-              cubit.toggleSelectDocument(doc.path);
+              bloc.add(LibraryEvent.selectDocumentToggled(doc.path));
             } else {
               _navigateToReader(context, doc.path, doc.fileName);
             }
           },
           onLongPress: () {
             if (state.isSelectMode) {
-              cubit.toggleSelectDocument(doc.path);
+              bloc.add(LibraryEvent.selectDocumentToggled(doc.path));
             } else {
               _openDetailsSheet(context, doc);
             }
           },
-          onToggleFavorite: () => cubit.toggleFavorite(doc.path),
+          onToggleFavorite: () =>
+              bloc.add(LibraryEvent.toggleFavorite(doc.path)),
           onOpenDetails: () => _openDetailsSheet(context, doc),
         );
       },
@@ -415,7 +540,7 @@ class _LibraryViewState extends State<_LibraryView> {
   Widget _buildSelectModeBar(
     BuildContext context,
     LibraryState state,
-    LibraryCubit cubit,
+    LibraryBloc bloc,
   ) {
     final scheme = Theme.of(context).colorScheme;
 
@@ -437,8 +562,11 @@ class _LibraryViewState extends State<_LibraryView> {
               child: FilledButton.tonalIcon(
                 icon: const Icon(LucideIcons.circleCheck, size: 16),
                 label: const Text('Mark Finished'),
-                onPressed: () =>
-                    cubit.batchUpdateStatusSelected(ReadingStatus.finished),
+                onPressed: () => bloc.add(
+                  const LibraryEvent.batchUpdateStatusSelected(
+                    ReadingStatus.finished,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -449,7 +577,8 @@ class _LibraryViewState extends State<_LibraryView> {
               ),
               icon: const Icon(LucideIcons.trash2, size: 18),
               tooltip: 'Delete selected',
-              onPressed: () => cubit.batchDeleteSelected(),
+              onPressed: () =>
+                  bloc.add(const LibraryEvent.batchDeleteSelected()),
             ),
           ],
         ),

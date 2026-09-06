@@ -4,6 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../../../core/routes/routes.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
@@ -59,16 +62,78 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<SettingsBloc, SettingsState>(
-      listenWhen: (prev, curr) =>
-          prev.appSettings.screenWakeLock !=
-          curr.appSettings.screenWakeLock,
-      listener: (context, state) => syncSettings(state),
-      child: BlocBuilder<SettingsBloc, SettingsState>(
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<SettingsBloc, SettingsState>(
+          listenWhen: (prev, curr) =>
+              prev.appSettings.screenWakeLock != curr.appSettings.screenWakeLock,
+          listener: (context, state) => syncSettings(state),
+        ),
+        BlocListener<ReaderBloc, ReaderState>(
+          listenWhen: (prev, curr) =>
+              curr.transientFeedback != null &&
+              prev.transientFeedback != curr.transientFeedback,
+          listener: (context, state) {
+            final feedback = state.transientFeedback;
+            if (feedback != null) {
+              final actionRoute = feedback.actionRoute;
+              final actionLabel = feedback.actionLabel;
+              context.read<ReaderBloc>().add(const ReaderEvent.consumeFeedback());
+
+              context.toasts.show(
+                message: feedback.failure.message,
+                type: ToastType.warning,
+                duration: const Duration(seconds: 5),
+                action: actionLabel != null
+                    ? ToastAction(
+                        label: actionLabel,
+                        onPressed: () {
+                          if (actionRoute != null) {
+                            context.push(actionRoute);
+                          }
+                        },
+                      )
+                    : null,
+              );
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<ReaderBloc, ReaderState>(
         buildWhen: (prev, curr) =>
-            prev.globalReaderPrefs != curr.globalReaderPrefs,
-        builder: (context, settingsState) {
-          final prefs = settingsState.globalReaderPrefs;
+            prev.failure != curr.failure ||
+            prev.fileName != curr.fileName,
+        builder: (context, readerState) {
+          if (readerState.failure != null) {
+            return Scaffold(
+              backgroundColor: context.appColors.readerBackground,
+              appBar: AppTopBar(
+                titleText: readerState.fileName ?? 'Document Error',
+                leading: IconButton(
+                  icon: const Icon(LucideIcons.arrowLeft),
+                  tooltip: 'Return to Library',
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go(appRoutes.library.path);
+                    }
+                  },
+                ),
+              ),
+              body: const SafeArea(
+                child: Center(
+                  child: ReaderErrorView(),
+                ),
+              ),
+            );
+          }
+
+          return BlocBuilder<SettingsBloc, SettingsState>(
+            buildWhen: (prev, curr) =>
+                prev.globalReaderPrefs != curr.globalReaderPrefs,
+            builder: (context, settingsState) {
+              final prefs = settingsState.globalReaderPrefs;
 
               return PopScope(
                 canPop: false,
@@ -176,7 +241,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                         onUnpin: () =>
                                             setState(() => _tocPinned = false),
                                         onJumpToPage:
-                                            pageViewController.goToPage,
+                                              pageViewController.goToPage,
                                       ),
                                     Expanded(child: bodyContent),
                                   ],
@@ -192,7 +257,9 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                 ),
               );
             },
-          ),
-        );
+          );
+        },
+      ),
+    );
   }
 }

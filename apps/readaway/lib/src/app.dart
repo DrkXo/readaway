@@ -38,7 +38,7 @@ class _ReadAwayState extends State<ReadAway> {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (context) => GetIt.I.get<SettingsBloc>()..loadPrefs(),
+          create: (context) => GetIt.I.get<SettingsBloc>()..add(const SettingsEvent.loadPrefs()),
         ),
       ],
       child: BlocBuilder<SettingsBloc, SettingsState>(

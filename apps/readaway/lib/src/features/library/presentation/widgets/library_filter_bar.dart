@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../cubit/library_state.dart';
+import '../bloc/library_bloc.dart';
 
 class LibraryFilterBar extends StatelessWidget {
   const LibraryFilterBar({

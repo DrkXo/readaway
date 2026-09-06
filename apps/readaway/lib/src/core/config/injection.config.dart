@@ -20,7 +20,7 @@ import '../../features/library/data/repositories/library_repository_impl.dart'
     as _i912;
 import '../../features/library/domain/repositories/library_repository.dart'
     as _i810;
-import '../../features/library/presentation/cubit/library_cubit.dart' as _i196;
+import '../../features/library/presentation/bloc/library_bloc.dart' as _i395;
 import '../../features/reader/data/repositories/reader_preferences_repository_impl.dart'
     as _i74;
 import '../../features/reader/data/repositories/reader_repository_impl.dart'
@@ -303,8 +303,8 @@ extension GetItInjectableX on _i174.GetIt {
         ttsModelRepository: gh<_i358.TtsModelRepository>(),
       ),
     );
-    gh.factory<_i196.LibraryCubit>(
-      () => _i196.LibraryCubit(gh<_i810.LibraryRepository>()),
+    gh.factory<_i395.LibraryBloc>(
+      () => _i395.LibraryBloc(gh<_i810.LibraryRepository>()),
     );
     gh.factory<_i523.ReaderBloc>(
       () => _i523.ReaderBloc(

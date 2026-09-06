@@ -24,10 +24,11 @@ class ReaderErrorView extends StatelessWidget {
         return FailureView(
           failure: failure,
           onRetry: () {
-            if (state.fileName != null) {
+            final targetPath = state.documentPath ?? state.fileName;
+            if (targetPath != null) {
               context.read<ReaderBloc>().add(
                     ReaderEvent.openDocument(
-                      path: state.fileName!,
+                      path: targetPath,
                       fileName: state.fileName,
                     ),
                   );

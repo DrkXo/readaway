@@ -39,18 +39,26 @@ class FailureBanner extends StatelessWidget {
       margin: margin,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: scheme.errorContainer.withValues(alpha: 0.85),
+        color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: scheme.error.withValues(alpha: 0.25),
+          color: scheme.outlineVariant.withValues(alpha: 0.6),
+          width: 1,
         ),
       ),
       child: Row(
         children: [
-          Icon(
-            _iconFor(failure),
-            size: 20,
-            color: scheme.onErrorContainer,
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: scheme.error.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _iconFor(failure),
+              size: 16,
+              color: scheme.error,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -59,7 +67,7 @@ class FailureBanner extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: scheme.onErrorContainer,
+                color: scheme.onSurface,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -70,7 +78,7 @@ class FailureBanner extends StatelessWidget {
             IconButton(
               icon: const Icon(LucideIcons.refreshCw, size: 16),
               tooltip: 'Retry',
-              color: scheme.onErrorContainer,
+              color: scheme.onSurfaceVariant,
               onPressed: onRetry,
             ),
           ],
@@ -79,7 +87,7 @@ class FailureBanner extends StatelessWidget {
             IconButton(
               icon: const Icon(LucideIcons.x, size: 16),
               tooltip: 'Dismiss',
-              color: scheme.onErrorContainer,
+              color: scheme.onSurfaceVariant,
               onPressed: onDismiss,
             ),
           ],

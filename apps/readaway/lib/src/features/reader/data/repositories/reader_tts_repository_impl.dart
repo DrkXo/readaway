@@ -77,13 +77,22 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
     return TaskEither.tryCatch(
       () async {
         await _ttsController.prepareForPlayback();
+        if (_ttsController.currentVoice == null &&
+            _ttsController.availableVoices.isEmpty) {
+          throw const TtsNoVoiceSelectedFailure(
+            'No voice model is selected or installed.',
+          );
+        }
         return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
-        'Failed to prepare TTS playback: $error',
-        cause: error,
-        stackTrace: stack,
-      ),
+      (error, stack) {
+        if (error is Failure) return error;
+        return TtsSynthesisFailure(
+          'Failed to prepare TTS playback: $error',
+          cause: error,
+          stackTrace: stack,
+        );
+      },
     );
   }
 
@@ -106,14 +115,22 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   TaskEither<Failure, Unit> playText(String text, {MediaItem? tag}) {
     return TaskEither.tryCatch(
       () async {
+        if (_ttsController.currentVoice == null) {
+          throw const TtsNoVoiceSelectedFailure(
+            'No voice model is selected or installed.',
+          );
+        }
         await _ttsController.playText(text, tag: tag);
         return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
-        'Failed to start TTS playback: $error',
-        cause: error,
-        stackTrace: stack,
-      ),
+      (error, stack) {
+        if (error is Failure) return error;
+        return TtsSynthesisFailure(
+          'Failed to start TTS playback: $error',
+          cause: error,
+          stackTrace: stack,
+        );
+      },
     );
   }
 

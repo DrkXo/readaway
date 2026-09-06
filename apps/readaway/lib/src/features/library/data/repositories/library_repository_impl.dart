@@ -84,54 +84,18 @@ class LibraryRepositoryImpl implements LibraryRepository {
   }
 
   @override
-  TaskEither<Failure, Option<RecentDocument>> pickDocument() {
+  TaskEither<Failure, List<RecentDocument>> pickAndAddDocuments() {
     return TaskEither.tryCatch(
       () async {
-        final doc = await _filePickerDataSource.pickDocumentFile();
-        if (doc == null) return none();
+        final pickedDocs = await _filePickerDataSource.pickDocumentFiles();
+        if (pickedDocs.isEmpty) return <RecentDocument>[];
 
-        String title = doc.title;
-        String? author;
-        int pageCount = 0;
-
-        try {
-          await _muPdfService.openDocument(doc.path);
-          final metaTitle = await _muPdfService.getMetaData('info:Title');
-          if (metaTitle != null && metaTitle.trim().isNotEmpty) {
-            title = metaTitle.trim();
-          }
-          final metaAuthor = await _muPdfService.getMetaData('info:Author');
-          if (metaAuthor != null && metaAuthor.trim().isNotEmpty) {
-            author = metaAuthor.trim();
-          }
-          pageCount = await _muPdfService.getPageCount();
-        } catch (_) {
-          // Non-critical if metadata extraction fails for picked file
+        final enrichedList = <RecentDocument>[];
+        for (final doc in pickedDocs) {
+          final enriched = await _enrichAndSave(doc);
+          enrichedList.add(enriched);
         }
-
-        String? coverPath;
-        try {
-          final coverUri = await _coverService.getCoverArtUri(
-            filePath: doc.path,
-            fileName: doc.fileName,
-            pageCount: pageCount > 0 ? pageCount : 1,
-          );
-          if (coverUri != null && coverUri.isScheme('file')) {
-            coverPath = coverUri.toFilePath();
-          }
-        } catch (_) {
-          // Non-critical if cover extraction fails
-        }
-
-        final enrichedDoc = doc.copyWith(
-          title: title,
-          author: author,
-          pageCount: pageCount,
-          coverPath: coverPath,
-        );
-
-        await _localDataSource.saveRecentDocument(enrichedDoc);
-        return some(enrichedDoc);
+        return enrichedList;
       },
       (error, stack) => DocumentNotFoundFailure(
         'Picker error: $error',
@@ -139,6 +103,74 @@ class LibraryRepositoryImpl implements LibraryRepository {
         stackTrace: stack,
       ),
     );
+  }
+
+  @override
+  TaskEither<Failure, Option<RecentDocument>> pickDocument() {
+    return pickAndAddDocuments().map(
+      (docs) => docs.isEmpty ? none() : some(docs.first),
+    );
+  }
+
+  @override
+  TaskEither<Failure, Option<RecentDocument>> pickDocumentWithoutSaving() {
+    return TaskEither.tryCatch(
+      () async {
+        final doc = await _filePickerDataSource.pickDocumentFile();
+        if (doc == null) return none();
+        return some(doc);
+      },
+      (error, stack) => DocumentNotFoundFailure(
+        'Picker error: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  Future<RecentDocument> _enrichAndSave(RecentDocument doc) async {
+    String title = doc.title;
+    String? author;
+    int pageCount = 0;
+
+    try {
+      await _muPdfService.openDocument(doc.path);
+      final metaTitle = await _muPdfService.getMetaData('info:Title');
+      if (metaTitle != null && metaTitle.trim().isNotEmpty) {
+        title = metaTitle.trim();
+      }
+      final metaAuthor = await _muPdfService.getMetaData('info:Author');
+      if (metaAuthor != null && metaAuthor.trim().isNotEmpty) {
+        author = metaAuthor.trim();
+      }
+      pageCount = await _muPdfService.getPageCount();
+    } catch (_) {
+      // Non-critical if metadata extraction fails for picked file
+    }
+
+    String? coverPath;
+    try {
+      final coverUri = await _coverService.getCoverArtUri(
+        filePath: doc.path,
+        fileName: doc.fileName,
+        pageCount: pageCount > 0 ? pageCount : 1,
+      );
+      if (coverUri != null && coverUri.isScheme('file')) {
+        coverPath = coverUri.toFilePath();
+      }
+    } catch (_) {
+      // Non-critical if cover extraction fails
+    }
+
+    final enrichedDoc = doc.copyWith(
+      title: title,
+      author: author,
+      pageCount: pageCount,
+      coverPath: coverPath,
+    );
+
+    await _localDataSource.saveRecentDocument(enrichedDoc);
+    return enrichedDoc;
   }
 
   @override

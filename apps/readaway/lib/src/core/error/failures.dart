@@ -182,6 +182,14 @@ class TtsSynthesisFailure extends TtsFailure {
   const TtsSynthesisFailure(super.message, {super.cause, super.stackTrace});
 }
 
+class TtsNoVoiceSelectedFailure extends TtsFailure {
+  const TtsNoVoiceSelectedFailure([
+    super.message = 'No TTS voice model is selected or installed.',
+    Object? cause,
+    StackTrace? stackTrace,
+  ]) : super(cause: cause, stackTrace: stackTrace);
+}
+
 class TtsWorkerFailure extends TtsFailure {
   const TtsWorkerFailure(super.message, {super.cause, super.stackTrace});
 }

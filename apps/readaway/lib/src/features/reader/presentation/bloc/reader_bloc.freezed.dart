@@ -55,7 +55,7 @@ extension ReaderEventPatterns on ReaderEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _OpenDocument value)?  openDocument,TResult Function( _PageChanged value)?  pageChanged,TResult Function( _LoadPage value)?  loadPage,TResult Function( _CloseDocument value)?  closeDocument,TResult Function( _TtsStart value)?  ttsStart,TResult Function( _TtsClose value)?  ttsClose,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _OpenDocument value)?  openDocument,TResult Function( _PageChanged value)?  pageChanged,TResult Function( _LoadPage value)?  loadPage,TResult Function( _CloseDocument value)?  closeDocument,TResult Function( _TtsStart value)?  ttsStart,TResult Function( _TtsClose value)?  ttsClose,TResult Function( _ConsumeFeedback value)?  consumeFeedback,TResult Function( _TtsErrorOccurred value)?  ttsErrorOccurred,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _OpenDocument() when openDocument != null:
@@ -64,7 +64,9 @@ return pageChanged(_that);case _LoadPage() when loadPage != null:
 return loadPage(_that);case _CloseDocument() when closeDocument != null:
 return closeDocument(_that);case _TtsStart() when ttsStart != null:
 return ttsStart(_that);case _TtsClose() when ttsClose != null:
-return ttsClose(_that);case _:
+return ttsClose(_that);case _ConsumeFeedback() when consumeFeedback != null:
+return consumeFeedback(_that);case _TtsErrorOccurred() when ttsErrorOccurred != null:
+return ttsErrorOccurred(_that);case _:
   return orElse();
 
 }
@@ -82,7 +84,7 @@ return ttsClose(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _OpenDocument value)  openDocument,required TResult Function( _PageChanged value)  pageChanged,required TResult Function( _LoadPage value)  loadPage,required TResult Function( _CloseDocument value)  closeDocument,required TResult Function( _TtsStart value)  ttsStart,required TResult Function( _TtsClose value)  ttsClose,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _OpenDocument value)  openDocument,required TResult Function( _PageChanged value)  pageChanged,required TResult Function( _LoadPage value)  loadPage,required TResult Function( _CloseDocument value)  closeDocument,required TResult Function( _TtsStart value)  ttsStart,required TResult Function( _TtsClose value)  ttsClose,required TResult Function( _ConsumeFeedback value)  consumeFeedback,required TResult Function( _TtsErrorOccurred value)  ttsErrorOccurred,}){
 final _that = this;
 switch (_that) {
 case _OpenDocument():
@@ -91,7 +93,9 @@ return pageChanged(_that);case _LoadPage():
 return loadPage(_that);case _CloseDocument():
 return closeDocument(_that);case _TtsStart():
 return ttsStart(_that);case _TtsClose():
-return ttsClose(_that);case _:
+return ttsClose(_that);case _ConsumeFeedback():
+return consumeFeedback(_that);case _TtsErrorOccurred():
+return ttsErrorOccurred(_that);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -108,7 +112,7 @@ return ttsClose(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _OpenDocument value)?  openDocument,TResult? Function( _PageChanged value)?  pageChanged,TResult? Function( _LoadPage value)?  loadPage,TResult? Function( _CloseDocument value)?  closeDocument,TResult? Function( _TtsStart value)?  ttsStart,TResult? Function( _TtsClose value)?  ttsClose,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _OpenDocument value)?  openDocument,TResult? Function( _PageChanged value)?  pageChanged,TResult? Function( _LoadPage value)?  loadPage,TResult? Function( _CloseDocument value)?  closeDocument,TResult? Function( _TtsStart value)?  ttsStart,TResult? Function( _TtsClose value)?  ttsClose,TResult? Function( _ConsumeFeedback value)?  consumeFeedback,TResult? Function( _TtsErrorOccurred value)?  ttsErrorOccurred,}){
 final _that = this;
 switch (_that) {
 case _OpenDocument() when openDocument != null:
@@ -117,7 +121,9 @@ return pageChanged(_that);case _LoadPage() when loadPage != null:
 return loadPage(_that);case _CloseDocument() when closeDocument != null:
 return closeDocument(_that);case _TtsStart() when ttsStart != null:
 return ttsStart(_that);case _TtsClose() when ttsClose != null:
-return ttsClose(_that);case _:
+return ttsClose(_that);case _ConsumeFeedback() when consumeFeedback != null:
+return consumeFeedback(_that);case _TtsErrorOccurred() when ttsErrorOccurred != null:
+return ttsErrorOccurred(_that);case _:
   return null;
 
 }
@@ -134,7 +140,7 @@ return ttsClose(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String path,  String? fileName)?  openDocument,TResult Function( int index)?  pageChanged,TResult Function( int index)?  loadPage,TResult Function()?  closeDocument,TResult Function()?  ttsStart,TResult Function()?  ttsClose,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String path,  String? fileName)?  openDocument,TResult Function( int index)?  pageChanged,TResult Function( int index)?  loadPage,TResult Function()?  closeDocument,TResult Function()?  ttsStart,TResult Function()?  ttsClose,TResult Function()?  consumeFeedback,TResult Function( String message)?  ttsErrorOccurred,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OpenDocument() when openDocument != null:
 return openDocument(_that.path,_that.fileName);case _PageChanged() when pageChanged != null:
@@ -142,7 +148,9 @@ return pageChanged(_that.index);case _LoadPage() when loadPage != null:
 return loadPage(_that.index);case _CloseDocument() when closeDocument != null:
 return closeDocument();case _TtsStart() when ttsStart != null:
 return ttsStart();case _TtsClose() when ttsClose != null:
-return ttsClose();case _:
+return ttsClose();case _ConsumeFeedback() when consumeFeedback != null:
+return consumeFeedback();case _TtsErrorOccurred() when ttsErrorOccurred != null:
+return ttsErrorOccurred(_that.message);case _:
   return orElse();
 
 }
@@ -160,7 +168,7 @@ return ttsClose();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String path,  String? fileName)  openDocument,required TResult Function( int index)  pageChanged,required TResult Function( int index)  loadPage,required TResult Function()  closeDocument,required TResult Function()  ttsStart,required TResult Function()  ttsClose,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String path,  String? fileName)  openDocument,required TResult Function( int index)  pageChanged,required TResult Function( int index)  loadPage,required TResult Function()  closeDocument,required TResult Function()  ttsStart,required TResult Function()  ttsClose,required TResult Function()  consumeFeedback,required TResult Function( String message)  ttsErrorOccurred,}) {final _that = this;
 switch (_that) {
 case _OpenDocument():
 return openDocument(_that.path,_that.fileName);case _PageChanged():
@@ -168,7 +176,9 @@ return pageChanged(_that.index);case _LoadPage():
 return loadPage(_that.index);case _CloseDocument():
 return closeDocument();case _TtsStart():
 return ttsStart();case _TtsClose():
-return ttsClose();case _:
+return ttsClose();case _ConsumeFeedback():
+return consumeFeedback();case _TtsErrorOccurred():
+return ttsErrorOccurred(_that.message);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -185,7 +195,7 @@ return ttsClose();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String path,  String? fileName)?  openDocument,TResult? Function( int index)?  pageChanged,TResult? Function( int index)?  loadPage,TResult? Function()?  closeDocument,TResult? Function()?  ttsStart,TResult? Function()?  ttsClose,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String path,  String? fileName)?  openDocument,TResult? Function( int index)?  pageChanged,TResult? Function( int index)?  loadPage,TResult? Function()?  closeDocument,TResult? Function()?  ttsStart,TResult? Function()?  ttsClose,TResult? Function()?  consumeFeedback,TResult? Function( String message)?  ttsErrorOccurred,}) {final _that = this;
 switch (_that) {
 case _OpenDocument() when openDocument != null:
 return openDocument(_that.path,_that.fileName);case _PageChanged() when pageChanged != null:
@@ -193,7 +203,9 @@ return pageChanged(_that.index);case _LoadPage() when loadPage != null:
 return loadPage(_that.index);case _CloseDocument() when closeDocument != null:
 return closeDocument();case _TtsStart() when ttsStart != null:
 return ttsStart();case _TtsClose() when ttsClose != null:
-return ttsClose();case _:
+return ttsClose();case _ConsumeFeedback() when consumeFeedback != null:
+return consumeFeedback();case _TtsErrorOccurred() when ttsErrorOccurred != null:
+return ttsErrorOccurred(_that.message);case _:
   return null;
 
 }
@@ -498,9 +510,107 @@ String toString() {
 
 
 /// @nodoc
+
+
+class _ConsumeFeedback implements ReaderEvent {
+  const _ConsumeFeedback();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ConsumeFeedback);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ReaderEvent.consumeFeedback()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class _TtsErrorOccurred implements ReaderEvent {
+  const _TtsErrorOccurred(this.message);
+  
+
+ final  String message;
+
+/// Create a copy of ReaderEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TtsErrorOccurredCopyWith<_TtsErrorOccurred> get copyWith => __$TtsErrorOccurredCopyWithImpl<_TtsErrorOccurred>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsErrorOccurred&&(identical(other.message, message) || other.message == message));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,message);
+
+@override
+String toString() {
+  return 'ReaderEvent.ttsErrorOccurred(message: $message)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TtsErrorOccurredCopyWith<$Res> implements $ReaderEventCopyWith<$Res> {
+  factory _$TtsErrorOccurredCopyWith(_TtsErrorOccurred value, $Res Function(_TtsErrorOccurred) _then) = __$TtsErrorOccurredCopyWithImpl;
+@useResult
+$Res call({
+ String message
+});
+
+
+
+
+}
+/// @nodoc
+class __$TtsErrorOccurredCopyWithImpl<$Res>
+    implements _$TtsErrorOccurredCopyWith<$Res> {
+  __$TtsErrorOccurredCopyWithImpl(this._self, this._then);
+
+  final _TtsErrorOccurred _self;
+  final $Res Function(_TtsErrorOccurred) _then;
+
+/// Create a copy of ReaderEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+  return _then(_TtsErrorOccurred(
+null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
 mixin _$ReaderState {
 
- bool get loading; Failure? get failure; String? get error; String? get fileName; bool get isReflowable; int get pageCount; int get currentPage; List<ReaderDocument?>? get documentPages; List<ui.Image?>? get pageImages; Set<int> get loadingPages; List<OutlineItem>? get outline; String? get bookTitle; String? get author; bool get ttsActive;
+ bool get loading; Failure? get failure; String? get error; String? get fileName; bool get isReflowable; int get pageCount; int get currentPage; List<ReaderDocument?>? get documentPages; List<ui.Image?>? get pageImages; Set<int> get loadingPages; List<OutlineItem>? get outline; String? get bookTitle; String? get author; String? get documentPath; UiFeedback? get transientFeedback; bool get ttsActive;
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -511,16 +621,16 @@ $ReaderStateCopyWith<ReaderState> get copyWith => _$ReaderStateCopyWithImpl<Read
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.isReflowable, isReflowable) || other.isReflowable == isReflowable)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.documentPages, documentPages)&&const DeepCollectionEquality().equals(other.pageImages, pageImages)&&const DeepCollectionEquality().equals(other.loadingPages, loadingPages)&&const DeepCollectionEquality().equals(other.outline, outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author)&&(identical(other.ttsActive, ttsActive) || other.ttsActive == ttsActive));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.isReflowable, isReflowable) || other.isReflowable == isReflowable)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.documentPages, documentPages)&&const DeepCollectionEquality().equals(other.pageImages, pageImages)&&const DeepCollectionEquality().equals(other.loadingPages, loadingPages)&&const DeepCollectionEquality().equals(other.outline, outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author)&&(identical(other.documentPath, documentPath) || other.documentPath == documentPath)&&(identical(other.transientFeedback, transientFeedback) || other.transientFeedback == transientFeedback)&&(identical(other.ttsActive, ttsActive) || other.ttsActive == ttsActive));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,loading,failure,error,fileName,isReflowable,pageCount,currentPage,const DeepCollectionEquality().hash(documentPages),const DeepCollectionEquality().hash(pageImages),const DeepCollectionEquality().hash(loadingPages),const DeepCollectionEquality().hash(outline),bookTitle,author,ttsActive);
+int get hashCode => Object.hash(runtimeType,loading,failure,error,fileName,isReflowable,pageCount,currentPage,const DeepCollectionEquality().hash(documentPages),const DeepCollectionEquality().hash(pageImages),const DeepCollectionEquality().hash(loadingPages),const DeepCollectionEquality().hash(outline),bookTitle,author,documentPath,transientFeedback,ttsActive);
 
 @override
 String toString() {
-  return 'ReaderState(loading: $loading, failure: $failure, error: $error, fileName: $fileName, isReflowable: $isReflowable, pageCount: $pageCount, currentPage: $currentPage, documentPages: $documentPages, pageImages: $pageImages, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author, ttsActive: $ttsActive)';
+  return 'ReaderState(loading: $loading, failure: $failure, error: $error, fileName: $fileName, isReflowable: $isReflowable, pageCount: $pageCount, currentPage: $currentPage, documentPages: $documentPages, pageImages: $pageImages, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author, documentPath: $documentPath, transientFeedback: $transientFeedback, ttsActive: $ttsActive)';
 }
 
 
@@ -531,7 +641,7 @@ abstract mixin class $ReaderStateCopyWith<$Res>  {
   factory $ReaderStateCopyWith(ReaderState value, $Res Function(ReaderState) _then) = _$ReaderStateCopyWithImpl;
 @useResult
 $Res call({
- bool loading, Failure? failure, String? error, String? fileName, bool isReflowable, int pageCount, int currentPage, List<ReaderDocument?>? documentPages, List<ui.Image?>? pageImages, Set<int> loadingPages, List<OutlineItem>? outline, String? bookTitle, String? author, bool ttsActive
+ bool loading, Failure? failure, String? error, String? fileName, bool isReflowable, int pageCount, int currentPage, List<ReaderDocument?>? documentPages, List<ui.Image?>? pageImages, Set<int> loadingPages, List<OutlineItem>? outline, String? bookTitle, String? author, String? documentPath, UiFeedback? transientFeedback, bool ttsActive
 });
 
 
@@ -548,7 +658,7 @@ class _$ReaderStateCopyWithImpl<$Res>
 
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? loading = null,Object? failure = freezed,Object? error = freezed,Object? fileName = freezed,Object? isReflowable = null,Object? pageCount = null,Object? currentPage = null,Object? documentPages = freezed,Object? pageImages = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,Object? ttsActive = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? loading = null,Object? failure = freezed,Object? error = freezed,Object? fileName = freezed,Object? isReflowable = null,Object? pageCount = null,Object? currentPage = null,Object? documentPages = freezed,Object? pageImages = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,Object? documentPath = freezed,Object? transientFeedback = freezed,Object? ttsActive = null,}) {
   return _then(_self.copyWith(
 loading: null == loading ? _self.loading : loading // ignore: cast_nullable_to_non_nullable
 as bool,failure: freezed == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
@@ -563,7 +673,9 @@ as List<ui.Image?>?,loadingPages: null == loadingPages ? _self.loadingPages : lo
 as Set<int>,outline: freezed == outline ? _self.outline : outline // ignore: cast_nullable_to_non_nullable
 as List<OutlineItem>?,bookTitle: freezed == bookTitle ? _self.bookTitle : bookTitle // ignore: cast_nullable_to_non_nullable
 as String?,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
-as String?,ttsActive: null == ttsActive ? _self.ttsActive : ttsActive // ignore: cast_nullable_to_non_nullable
+as String?,documentPath: freezed == documentPath ? _self.documentPath : documentPath // ignore: cast_nullable_to_non_nullable
+as String?,transientFeedback: freezed == transientFeedback ? _self.transientFeedback : transientFeedback // ignore: cast_nullable_to_non_nullable
+as UiFeedback?,ttsActive: null == ttsActive ? _self.ttsActive : ttsActive // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -649,10 +761,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool loading,  Failure? failure,  String? error,  String? fileName,  bool isReflowable,  int pageCount,  int currentPage,  List<ReaderDocument?>? documentPages,  List<ui.Image?>? pageImages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  bool ttsActive)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool loading,  Failure? failure,  String? error,  String? fileName,  bool isReflowable,  int pageCount,  int currentPage,  List<ReaderDocument?>? documentPages,  List<ui.Image?>? pageImages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  String? documentPath,  UiFeedback? transientFeedback,  bool ttsActive)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReaderState() when $default != null:
-return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isReflowable,_that.pageCount,_that.currentPage,_that.documentPages,_that.pageImages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.ttsActive);case _:
+return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isReflowable,_that.pageCount,_that.currentPage,_that.documentPages,_that.pageImages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.documentPath,_that.transientFeedback,_that.ttsActive);case _:
   return orElse();
 
 }
@@ -670,10 +782,10 @@ return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isR
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool loading,  Failure? failure,  String? error,  String? fileName,  bool isReflowable,  int pageCount,  int currentPage,  List<ReaderDocument?>? documentPages,  List<ui.Image?>? pageImages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  bool ttsActive)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool loading,  Failure? failure,  String? error,  String? fileName,  bool isReflowable,  int pageCount,  int currentPage,  List<ReaderDocument?>? documentPages,  List<ui.Image?>? pageImages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  String? documentPath,  UiFeedback? transientFeedback,  bool ttsActive)  $default,) {final _that = this;
 switch (_that) {
 case _ReaderState():
-return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isReflowable,_that.pageCount,_that.currentPage,_that.documentPages,_that.pageImages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.ttsActive);case _:
+return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isReflowable,_that.pageCount,_that.currentPage,_that.documentPages,_that.pageImages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.documentPath,_that.transientFeedback,_that.ttsActive);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -690,10 +802,10 @@ return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isR
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool loading,  Failure? failure,  String? error,  String? fileName,  bool isReflowable,  int pageCount,  int currentPage,  List<ReaderDocument?>? documentPages,  List<ui.Image?>? pageImages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  bool ttsActive)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool loading,  Failure? failure,  String? error,  String? fileName,  bool isReflowable,  int pageCount,  int currentPage,  List<ReaderDocument?>? documentPages,  List<ui.Image?>? pageImages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  String? documentPath,  UiFeedback? transientFeedback,  bool ttsActive)?  $default,) {final _that = this;
 switch (_that) {
 case _ReaderState() when $default != null:
-return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isReflowable,_that.pageCount,_that.currentPage,_that.documentPages,_that.pageImages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.ttsActive);case _:
+return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isReflowable,_that.pageCount,_that.currentPage,_that.documentPages,_that.pageImages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.documentPath,_that.transientFeedback,_that.ttsActive);case _:
   return null;
 
 }
@@ -705,7 +817,7 @@ return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isR
 
 
 class _ReaderState extends ReaderState {
-  const _ReaderState({this.loading = false, this.failure, this.error, this.fileName, this.isReflowable = false, this.pageCount = 0, this.currentPage = 0, final  List<ReaderDocument?>? documentPages, final  List<ui.Image?>? pageImages, final  Set<int> loadingPages = const <int>{}, final  List<OutlineItem>? outline, this.bookTitle, this.author, this.ttsActive = false}): _documentPages = documentPages,_pageImages = pageImages,_loadingPages = loadingPages,_outline = outline,super._();
+  const _ReaderState({this.loading = false, this.failure, this.error, this.fileName, this.isReflowable = false, this.pageCount = 0, this.currentPage = 0, final  List<ReaderDocument?>? documentPages, final  List<ui.Image?>? pageImages, final  Set<int> loadingPages = const <int>{}, final  List<OutlineItem>? outline, this.bookTitle, this.author, this.documentPath, this.transientFeedback, this.ttsActive = false}): _documentPages = documentPages,_pageImages = pageImages,_loadingPages = loadingPages,_outline = outline,super._();
   
 
 @override@JsonKey() final  bool loading;
@@ -751,6 +863,8 @@ class _ReaderState extends ReaderState {
 
 @override final  String? bookTitle;
 @override final  String? author;
+@override final  String? documentPath;
+@override final  UiFeedback? transientFeedback;
 @override@JsonKey() final  bool ttsActive;
 
 /// Create a copy of ReaderState
@@ -763,16 +877,16 @@ _$ReaderStateCopyWith<_ReaderState> get copyWith => __$ReaderStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.isReflowable, isReflowable) || other.isReflowable == isReflowable)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other._documentPages, _documentPages)&&const DeepCollectionEquality().equals(other._pageImages, _pageImages)&&const DeepCollectionEquality().equals(other._loadingPages, _loadingPages)&&const DeepCollectionEquality().equals(other._outline, _outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author)&&(identical(other.ttsActive, ttsActive) || other.ttsActive == ttsActive));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.isReflowable, isReflowable) || other.isReflowable == isReflowable)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other._documentPages, _documentPages)&&const DeepCollectionEquality().equals(other._pageImages, _pageImages)&&const DeepCollectionEquality().equals(other._loadingPages, _loadingPages)&&const DeepCollectionEquality().equals(other._outline, _outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author)&&(identical(other.documentPath, documentPath) || other.documentPath == documentPath)&&(identical(other.transientFeedback, transientFeedback) || other.transientFeedback == transientFeedback)&&(identical(other.ttsActive, ttsActive) || other.ttsActive == ttsActive));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,loading,failure,error,fileName,isReflowable,pageCount,currentPage,const DeepCollectionEquality().hash(_documentPages),const DeepCollectionEquality().hash(_pageImages),const DeepCollectionEquality().hash(_loadingPages),const DeepCollectionEquality().hash(_outline),bookTitle,author,ttsActive);
+int get hashCode => Object.hash(runtimeType,loading,failure,error,fileName,isReflowable,pageCount,currentPage,const DeepCollectionEquality().hash(_documentPages),const DeepCollectionEquality().hash(_pageImages),const DeepCollectionEquality().hash(_loadingPages),const DeepCollectionEquality().hash(_outline),bookTitle,author,documentPath,transientFeedback,ttsActive);
 
 @override
 String toString() {
-  return 'ReaderState(loading: $loading, failure: $failure, error: $error, fileName: $fileName, isReflowable: $isReflowable, pageCount: $pageCount, currentPage: $currentPage, documentPages: $documentPages, pageImages: $pageImages, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author, ttsActive: $ttsActive)';
+  return 'ReaderState(loading: $loading, failure: $failure, error: $error, fileName: $fileName, isReflowable: $isReflowable, pageCount: $pageCount, currentPage: $currentPage, documentPages: $documentPages, pageImages: $pageImages, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author, documentPath: $documentPath, transientFeedback: $transientFeedback, ttsActive: $ttsActive)';
 }
 
 
@@ -783,7 +897,7 @@ abstract mixin class _$ReaderStateCopyWith<$Res> implements $ReaderStateCopyWith
   factory _$ReaderStateCopyWith(_ReaderState value, $Res Function(_ReaderState) _then) = __$ReaderStateCopyWithImpl;
 @override @useResult
 $Res call({
- bool loading, Failure? failure, String? error, String? fileName, bool isReflowable, int pageCount, int currentPage, List<ReaderDocument?>? documentPages, List<ui.Image?>? pageImages, Set<int> loadingPages, List<OutlineItem>? outline, String? bookTitle, String? author, bool ttsActive
+ bool loading, Failure? failure, String? error, String? fileName, bool isReflowable, int pageCount, int currentPage, List<ReaderDocument?>? documentPages, List<ui.Image?>? pageImages, Set<int> loadingPages, List<OutlineItem>? outline, String? bookTitle, String? author, String? documentPath, UiFeedback? transientFeedback, bool ttsActive
 });
 
 
@@ -800,7 +914,7 @@ class __$ReaderStateCopyWithImpl<$Res>
 
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? loading = null,Object? failure = freezed,Object? error = freezed,Object? fileName = freezed,Object? isReflowable = null,Object? pageCount = null,Object? currentPage = null,Object? documentPages = freezed,Object? pageImages = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,Object? ttsActive = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? loading = null,Object? failure = freezed,Object? error = freezed,Object? fileName = freezed,Object? isReflowable = null,Object? pageCount = null,Object? currentPage = null,Object? documentPages = freezed,Object? pageImages = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,Object? documentPath = freezed,Object? transientFeedback = freezed,Object? ttsActive = null,}) {
   return _then(_ReaderState(
 loading: null == loading ? _self.loading : loading // ignore: cast_nullable_to_non_nullable
 as bool,failure: freezed == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
@@ -815,7 +929,9 @@ as List<ui.Image?>?,loadingPages: null == loadingPages ? _self._loadingPages : l
 as Set<int>,outline: freezed == outline ? _self._outline : outline // ignore: cast_nullable_to_non_nullable
 as List<OutlineItem>?,bookTitle: freezed == bookTitle ? _self.bookTitle : bookTitle // ignore: cast_nullable_to_non_nullable
 as String?,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
-as String?,ttsActive: null == ttsActive ? _self.ttsActive : ttsActive // ignore: cast_nullable_to_non_nullable
+as String?,documentPath: freezed == documentPath ? _self.documentPath : documentPath // ignore: cast_nullable_to_non_nullable
+as String?,transientFeedback: freezed == transientFeedback ? _self.transientFeedback : transientFeedback // ignore: cast_nullable_to_non_nullable
+as UiFeedback?,ttsActive: null == ttsActive ? _self.ttsActive : ttsActive // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

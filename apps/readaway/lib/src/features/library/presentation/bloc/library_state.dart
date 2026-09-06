@@ -1,8 +1,4 @@
-import 'package:equatable/equatable.dart';
-
-import '../../../../core/error/failures.dart';
-import '../../domain/entity/reading_status.dart';
-import '../../domain/entity/recent_document.dart';
+part of 'library_bloc.dart';
 
 enum LibraryViewMode {
   grid,
@@ -57,33 +53,25 @@ enum ReadingStatusFilter {
       };
 }
 
-class LibraryState extends Equatable {
-  final bool isLoading;
-  final List<RecentDocument> recentDocuments;
-  final Failure? failure;
-  final RecentDocument? openedDocument;
+@freezed
+abstract class LibraryState with _$LibraryState {
+  const factory LibraryState({
+    @Default(false) bool isLoading,
+    @Default([]) List<RecentDocument> recentDocuments,
+    Failure? failure,
+    RecentDocument? openedDocument,
+    RecentDocument? directOpenDocument,
+    String? noticeMessage,
+    @Default(LibraryViewMode.grid) LibraryViewMode viewMode,
+    @Default(LibrarySortBy.dateOpened) LibrarySortBy sortBy,
+    @Default(false) bool sortAscending,
+    @Default(ReadingStatusFilter.all) ReadingStatusFilter filterStatus,
+    @Default('') String searchQuery,
+    @Default(false) bool isSelectMode,
+    @Default({}) Set<String> selectedPaths,
+  }) = _LibraryState;
 
-  final LibraryViewMode viewMode;
-  final LibrarySortBy sortBy;
-  final bool sortAscending;
-  final ReadingStatusFilter filterStatus;
-  final String searchQuery;
-  final bool isSelectMode;
-  final Set<String> selectedPaths;
-
-  const LibraryState({
-    this.isLoading = false,
-    this.recentDocuments = const [],
-    this.failure,
-    this.openedDocument,
-    this.viewMode = LibraryViewMode.grid,
-    this.sortBy = LibrarySortBy.dateOpened,
-    this.sortAscending = false,
-    this.filterStatus = ReadingStatusFilter.all,
-    this.searchQuery = '',
-    this.isSelectMode = false,
-    this.selectedPaths = const {},
-  });
+  const LibraryState._();
 
   int get totalCount => recentDocuments.length;
   int get readingCount =>
@@ -153,50 +141,4 @@ class LibraryState extends Equatable {
 
     return list;
   }
-
-  LibraryState copyWith({
-    bool? isLoading,
-    List<RecentDocument>? recentDocuments,
-    Failure? failure,
-    RecentDocument? openedDocument,
-    bool clearOpened = false,
-    bool clearFailure = false,
-    LibraryViewMode? viewMode,
-    LibrarySortBy? sortBy,
-    bool? sortAscending,
-    ReadingStatusFilter? filterStatus,
-    String? searchQuery,
-    bool? isSelectMode,
-    Set<String>? selectedPaths,
-  }) {
-    return LibraryState(
-      isLoading: isLoading ?? this.isLoading,
-      recentDocuments: recentDocuments ?? this.recentDocuments,
-      failure: clearFailure ? null : (failure ?? this.failure),
-      openedDocument:
-          clearOpened ? null : (openedDocument ?? this.openedDocument),
-      viewMode: viewMode ?? this.viewMode,
-      sortBy: sortBy ?? this.sortBy,
-      sortAscending: sortAscending ?? this.sortAscending,
-      filterStatus: filterStatus ?? this.filterStatus,
-      searchQuery: searchQuery ?? this.searchQuery,
-      isSelectMode: isSelectMode ?? this.isSelectMode,
-      selectedPaths: selectedPaths ?? this.selectedPaths,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        isLoading,
-        recentDocuments,
-        failure,
-        openedDocument,
-        viewMode,
-        sortBy,
-        sortAscending,
-        filterStatus,
-        searchQuery,
-        isSelectMode,
-        selectedPaths,
-      ];
 }
