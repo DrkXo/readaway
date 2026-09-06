@@ -411,6 +411,42 @@ class AudioPlayerService {
     }
   }
 
+  /// Streams or plays a short preview from a remote [url] without interfering
+  /// with the active session playlist.
+  Future<void> playPreviewUrl(String url, {String? cacheFilePath}) async {
+    try {
+      if (cacheFilePath != null && await File(cacheFilePath).exists()) {
+        await playPreviewFile(cacheFilePath);
+        return;
+      }
+
+      final old = _previewPlayer;
+      _previewPlayer = null;
+      await old?.dispose();
+
+      final preview = AudioPlayer();
+      _previewPlayer = preview;
+
+      await preview.setAudioSource(AudioSource.uri(Uri.parse(url)));
+      await preview.play();
+    } catch (e, st) {
+      logger.e('Failed to play preview URL: $url', e, st);
+      throw AudioPlaybackException('Failed to play preview audio URL', e);
+    }
+  }
+
+  /// Stops any currently playing preview immediately.
+  Future<void> stopPreview() async {
+    try {
+      final old = _previewPlayer;
+      _previewPlayer = null;
+      await old?.stop();
+      await old?.dispose();
+    } catch (e) {
+      logger.w('Error stopping preview player', e);
+    }
+  }
+
   // ==========================================
   // OUTPUT DEVICE CONTROL APIS
   // ==========================================

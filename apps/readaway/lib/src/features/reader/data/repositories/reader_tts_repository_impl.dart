@@ -61,8 +61,7 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   TtsVoiceOption? get currentVoice => _ttsController.currentVoice;
 
   @override
-  List<SherpaTtsModelInfo> get availableVoices =>
-      _ttsController.availableSherpaModels;
+  List<TtsVoiceOption> get availableVoices => _ttsController.availableVoices;
 
   @override
   MediaItem? get baseTag => _ttsController.baseTag;
@@ -72,6 +71,36 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
 
   @override
   void start() => _ttsController.start();
+
+  @override
+  TaskEither<Failure, Unit> prepareForPlayback() {
+    return TaskEither.tryCatch(
+      () async {
+        await _ttsController.prepareForPlayback();
+        return unit;
+      },
+      (error, stack) => TtsSynthesisFailure(
+        'Failed to prepare TTS playback: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  TaskEither<Failure, Unit> releaseResources() {
+    return TaskEither.tryCatch(
+      () async {
+        await _ttsController.releaseResources();
+        return unit;
+      },
+      (error, stack) => TtsSynthesisFailure(
+        'Failed to release TTS resources: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
 
   @override
   TaskEither<Failure, Unit> playText(String text, {MediaItem? tag}) {

@@ -66,10 +66,13 @@ import '../services/storage/hive/app_storage_service.dart' as _i1024;
 import '../services/storage/hive/hive_config_service.dart' as _i155;
 import '../services/theme_service.dart' as _i982;
 import '../services/tts/sherpa/sherpa_model_catalog.dart' as _i468;
+import '../services/tts/sherpa/sherpa_onnx_tts_engine.dart' as _i800;
 import '../services/tts/sherpa/sherpa_onnx_tts_service.dart' as _i572;
 import '../services/tts/sherpa/sherpa_tts_model_downloader.dart' as _i590;
 import '../services/tts/tts_chunker_service.dart' as _i864;
 import '../services/tts/tts_controller_service.dart' as _i573;
+import '../services/tts/tts_engine.dart' as _i801;
+import '../services/tts/tts_engine_registry_impl.dart' as _i802;
 import '../services/wakelock_service.dart' as _i669;
 import '../services/window_service.dart' as _i516;
 
@@ -170,18 +173,20 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
-    await gh.singletonAsync<_i572.SherpaOnnxTtsService>(
-      () {
-        final i = _i572.SherpaOnnxTtsService(
-          downloader: gh<_i590.SherpaTtsModelDownloaderService>(),
-          sherpaTtsModelCatalog: gh<_i468.SherpaTtsModelCatalogService>(),
-          isolateService: gh<_i548.IsolateService>(),
-          pathService: gh<_i145.AppPathService>(),
-        );
-        return i.init().then((_) => i);
-      },
-      preResolve: true,
+    gh.lazySingleton<_i572.SherpaOnnxTtsService>(
+      () => _i572.SherpaOnnxTtsService(
+        downloader: gh<_i590.SherpaTtsModelDownloaderService>(),
+        sherpaTtsModelCatalog: gh<_i468.SherpaTtsModelCatalogService>(),
+        isolateService: gh<_i548.IsolateService>(),
+        pathService: gh<_i145.AppPathService>(),
+      ),
       dispose: (i) => i.dispose(),
+    );
+    gh.lazySingleton<_i800.SherpaOnnxTtsEngine>(
+      () => _i800.SherpaOnnxTtsEngine(gh<_i572.SherpaOnnxTtsService>()),
+    );
+    gh.lazySingleton<_i801.TtsEngineRegistry>(
+      () => _i802.TtsEngineRegistryImpl(gh<_i800.SherpaOnnxTtsEngine>()),
     );
     gh.singleton<_i295.AppRouter>(
       () => _i295.AppRouter(
@@ -248,7 +253,7 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i573.TtsControllerService>(
       () => _i573.TtsControllerService(
-        gh<_i572.SherpaOnnxTtsService>(),
+        gh<_i801.TtsEngineRegistry>(),
         gh<_i370.AudioPlayerService>(),
         gh<_i864.TtsChunkingService>(),
         gh<_i145.AppPathService>(),

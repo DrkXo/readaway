@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
@@ -15,6 +17,8 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   final AudioPlayerService _audioPlayer;
   final AppPathService _pathService;
 
+  String? _activeModelId;
+
   TtsModelRepositoryImpl(
     this._ttsService,
     this._audioPlayer,
@@ -25,7 +29,7 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   List<SherpaTtsModelInfo> get availableModels => _ttsService.availableModels;
 
   @override
-  String? get activeModelId => _ttsService.activeModel?.id;
+  String? get activeModelId => _activeModelId ?? _ttsService.activeModel?.id;
 
   @override
   TaskEither<Failure, Set<String>> getDownloadedModelIds() {
@@ -46,7 +50,8 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   TaskEither<Failure, Unit> activateModel(String modelId) {
     return TaskEither.tryCatch(
       () async {
-        if (_ttsService.activeModel?.id != modelId) {
+        _activeModelId = modelId;
+        if (_ttsService.hasLoadedModel && _ttsService.activeModel?.id != modelId) {
           await _ttsService.loadModel(modelId);
         }
         return unit;
@@ -68,6 +73,9 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   TaskEither<Failure, Unit> deleteModel(String modelId) {
     return TaskEither.tryCatch(
       () async {
+        if (_activeModelId == modelId) {
+          _activeModelId = null;
+        }
         await _ttsService.deleteModel(modelId);
         return unit;
       },
@@ -83,31 +91,74 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   TaskEither<Failure, Unit> playPreview(String modelId) {
     return TaskEither.tryCatch(
       () async {
-        final previousActive = activeModelId;
-        if (_ttsService.activeModel?.id != modelId) {
-          await _ttsService.loadModel(modelId);
-        }
-
         final cacheDir = await _pathService.getTtsAudioCacheDirectory();
-        final previewPath = p.join(cacheDir.path, 'preview_$modelId.wav');
+        final cachedMp3Path = p.join(cacheDir.path, 'preview_$modelId.mp3');
 
-        final result = await _ttsService.generateToFile(
-          text: 'Hello. This is what this voice sounds like while reading.',
-          outputPath: previewPath,
-          speakerId: 0,
-          speed: 1.0,
-        );
-
-        await _audioPlayer.playPreviewFile(result.file.path);
-
-        if (previousActive != null && previousActive != modelId) {
-          await _ttsService.loadModel(previousActive);
+        // 1. Play cached preview audio if available
+        if (await File(cachedMp3Path).exists()) {
+          await _audioPlayer.playPreviewFile(cachedMp3Path);
+          return unit;
         }
 
-        return unit;
+        // 2. Stream / download remote preview sample
+        final model = availableModels.where((m) => m.id == modelId).firstOrNull;
+        if (model?.previewAudioUrl != null) {
+          try {
+            await _audioPlayer.playPreviewUrl(
+              model!.previewAudioUrl!,
+              cacheFilePath: cachedMp3Path,
+            );
+            return unit;
+          } catch (e) {
+            final isDownloaded = await _ttsService.isModelDownloaded(modelId);
+            if (!isDownloaded) rethrow;
+          }
+        }
+
+        // 3. Fallback for downloaded models when offline
+        final isDownloaded = await _ttsService.isModelDownloaded(modelId);
+        if (isDownloaded) {
+          final previousActive = activeModelId;
+          if (_ttsService.activeModel?.id != modelId) {
+            await _ttsService.loadModel(modelId);
+          }
+
+          final previewWavPath = p.join(cacheDir.path, 'preview_$modelId.wav');
+          final result = await _ttsService.generateToFile(
+            text: 'Hello. This is what this voice sounds like while reading.',
+            outputPath: previewWavPath,
+            speakerId: 0,
+            speed: 1.0,
+          );
+
+          await _audioPlayer.playPreviewFile(result.file.path);
+
+          if (previousActive != null && previousActive != modelId) {
+            await _ttsService.loadModel(previousActive);
+          }
+
+          return unit;
+        }
+
+        throw Exception('No preview audio available for $modelId');
       },
       (error, stack) => AudioPlaybackFailure(
         'Failed to preview voice: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  TaskEither<Failure, Unit> stopPreview() {
+    return TaskEither.tryCatch(
+      () async {
+        await _audioPlayer.stopPreview();
+        return unit;
+      },
+      (error, stack) => AudioPlaybackFailure(
+        'Failed to stop voice preview: $error',
         cause: error,
         stackTrace: stack,
       ),

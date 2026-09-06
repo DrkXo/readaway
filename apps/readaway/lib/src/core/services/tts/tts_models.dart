@@ -4,7 +4,11 @@ import '../../error/exceptions/tts_exceptions.dart';
 
 export '../../error/exceptions/tts_exceptions.dart';
 
-enum TtsEngineKind { sherpaOnnx }
+enum TtsEngineKind {
+  sherpaOnnx,
+  deviceVoice,
+  microsoftTts,
+}
 
 class TtsVoiceOption {
   const TtsVoiceOption({
@@ -13,6 +17,9 @@ class TtsVoiceOption {
     required this.label,
     this.languageCode,
     this.sherpaSpeakerId,
+    this.gender,
+    this.quality,
+    this.previewAudioUrl,
   });
 
   final TtsEngineKind engine;
@@ -20,6 +27,24 @@ class TtsVoiceOption {
   final String label;
   final String? languageCode;
   final int? sherpaSpeakerId;
+  final String? gender;
+  final String? quality;
+  final String? previewAudioUrl;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TtsVoiceOption &&
+          runtimeType == other.runtimeType &&
+          engine == other.engine &&
+          id == other.id &&
+          sherpaSpeakerId == other.sherpaSpeakerId;
+
+  @override
+  int get hashCode => engine.hashCode ^ id.hashCode ^ (sherpaSpeakerId?.hashCode ?? 0);
+
+  @override
+  String toString() => 'TtsVoiceOption($engine, $id, $label)';
 }
 
 enum TtsPlaybackState {
@@ -55,6 +80,7 @@ class SherpaTtsModelInfo {
     this.sampleRateHint = 22050,
     this.vocoderUrl,
     this.needsEspeakData = false,
+    this.previewAudioUrl,
   });
 
   final String id;
@@ -70,6 +96,7 @@ class SherpaTtsModelInfo {
   final int sampleRateHint;
   final String? vocoderUrl;
   final bool needsEspeakData;
+  final String? previewAudioUrl;
 
   String get archiveFileName => downloadUrl.split('/').last;
   String? get vocoderFileName => vocoderUrl?.split('/').last;

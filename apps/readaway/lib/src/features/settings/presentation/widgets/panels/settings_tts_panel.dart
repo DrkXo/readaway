@@ -59,9 +59,10 @@ class _TtsView extends StatelessWidget {
 
         Widget? previewButton;
         if (active != null) {
+          final isBusy = state.isTtsBusy(active.id);
           previewButton = IconButton(
-            tooltip: 'Preview',
-            icon: const Icon(LucideIcons.playCircle),
+            tooltip: isBusy ? 'Stop' : 'Preview',
+            icon: Icon(isBusy ? LucideIcons.square : LucideIcons.playCircle),
             onPressed: () => context.read<SettingsBloc>().add(
               SettingsEvent.previewTts(active.id),
             ),
@@ -342,10 +343,23 @@ class _VoiceActions extends StatelessWidget {
     }
 
     if (!isDownloaded) {
-      return IconButton(
-        tooltip: 'Download',
-        icon: const Icon(LucideIcons.download),
-        onPressed: () => bloc.add(SettingsEvent.startTtsDownload(model)),
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: isBusy ? 'Stop sample' : 'Play sample',
+            icon: Icon(
+              isBusy ? LucideIcons.square : LucideIcons.playCircle,
+              color: scheme.primary,
+            ),
+            onPressed: () => bloc.add(SettingsEvent.previewTts(model.id)),
+          ),
+          IconButton(
+            tooltip: 'Download',
+            icon: const Icon(LucideIcons.download),
+            onPressed: () => bloc.add(SettingsEvent.startTtsDownload(model)),
+          ),
+        ],
       );
     }
 
@@ -353,14 +367,12 @@ class _VoiceActions extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Play sample',
+          tooltip: isBusy ? 'Stop sample' : 'Play sample',
           icon: Icon(
-            LucideIcons.playCircle,
-            color: isBusy ? scheme.onSurfaceVariant : scheme.primary,
+            isBusy ? LucideIcons.square : LucideIcons.playCircle,
+            color: scheme.primary,
           ),
-          onPressed: isBusy
-              ? null
-              : () => bloc.add(SettingsEvent.previewTts(model.id)),
+          onPressed: () => bloc.add(SettingsEvent.previewTts(model.id)),
         ),
         if (!isActive)
           TextButton(

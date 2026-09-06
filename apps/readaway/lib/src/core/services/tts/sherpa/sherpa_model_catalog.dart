@@ -293,7 +293,30 @@ class SherpaTtsModelCatalogService {
           : 16000,
       vocoderUrl: type == SherpaTtsModelType.matcha ? _hifiganUrl : null,
       needsEspeakData: _needsEspeakData(id, type),
+      previewAudioUrl: _buildPreviewUrl(id, type, langToken),
     );
+  }
+
+  String? _buildPreviewUrl(String id, SherpaTtsModelType type, String langToken) {
+    const base = 'https://huggingface.co/csukuangfj/sherpa-onnx-tts-samples/resolve/main';
+    if (id.contains('piper-')) {
+      return '$base/piper/mp3/$langToken/$id/0.mp3';
+    }
+    if (type == SherpaTtsModelType.kokoro) {
+      return '$base/kokoro/v1.0/mp3/0-af_alloy.mp3';
+    }
+    if (type == SherpaTtsModelType.matcha) {
+      if (id.contains('ljspeech')) {
+        return '$base/matcha/en_ljspeech/0.mp3';
+      }
+      if (id.contains('zh-en') || id.contains('zh_en')) {
+        return '$base/matcha/zh_en/0.mp3';
+      }
+      if (id.contains('zh')) {
+        return '$base/matcha/zh/0.mp3';
+      }
+    }
+    return null;
   }
 
   bool _needsEspeakData(String id, SherpaTtsModelType type) {

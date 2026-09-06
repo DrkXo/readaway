@@ -68,6 +68,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _disposeImages();
     await _ttsStateSub?.cancel();
     await ttsRepository.stopPipeline().run();
+    await ttsRepository.releaseResources().run();
     await readerRepository.closeDocument().run();
     await readerRepository.updateWindowTitle(null).run();
     return super.close();
@@ -240,19 +241,12 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   /// Starts TTS playback for the page at [pageIndex]: sets the active voice
   /// from settings, spins up the pipeline, and plays the page's text.
   Future<void> _beginPageTts(int pageIndex) async {
+    await ttsRepository.prepareForPlayback().run();
+
     if (ttsRepository.currentVoice == null) {
-      final models = ttsRepository.availableVoices;
-      if (models.isNotEmpty) {
-        final m = models.first;
-        ttsRepository.setVoice(
-          TtsVoiceOption(
-            engine: TtsEngineKind.sherpaOnnx,
-            id: m.id,
-            label: m.displayName,
-            languageCode: m.languageCode,
-            sherpaSpeakerId: m.speakerCount > 0 ? 0 : null,
-          ),
-        );
+      final voices = ttsRepository.availableVoices;
+      if (voices.isNotEmpty) {
+        ttsRepository.setVoice(voices.first);
       }
     }
 

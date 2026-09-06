@@ -50,8 +50,8 @@ abstract interface class ReaderTtsRepository {
   /// Currently selected voice option, if any.
   TtsVoiceOption? get currentVoice;
 
-  /// List of local models available for TTS speech.
-  List<SherpaTtsModelInfo> get availableVoices;
+  /// List of local models/voices available for TTS speech.
+  List<TtsVoiceOption> get availableVoices;
 
   /// Media item tag containing album/title/artist/artUri for notifications.
   MediaItem? get baseTag;
@@ -61,6 +61,12 @@ abstract interface class ReaderTtsRepository {
 
   /// Initializes/starts the TTS audio pipeline.
   void start();
+
+  /// Prepares engine and worker isolates for playback on demand.
+  TaskEither<Failure, Unit> prepareForPlayback();
+
+  /// Releases worker isolates and unloads models when leaving the reader.
+  TaskEither<Failure, Unit> releaseResources();
 
   /// Enqueues and begins speaking [text] with optional notification [tag].
   TaskEither<Failure, Unit> playText(String text, {MediaItem? tag});

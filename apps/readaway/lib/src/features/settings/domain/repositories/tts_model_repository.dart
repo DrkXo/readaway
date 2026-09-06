@@ -25,4 +25,7 @@ abstract interface class TtsModelRepository {
 
   /// Generates a brief spoken sample and plays it back as an audio preview.
   TaskEither<Failure, Unit> playPreview(String modelId);
+
+  /// Stops any currently playing audio preview.
+  TaskEither<Failure, Unit> stopPreview();
 }

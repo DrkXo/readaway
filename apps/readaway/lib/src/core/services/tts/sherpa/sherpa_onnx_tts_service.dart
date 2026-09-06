@@ -14,7 +14,7 @@ import 'sherpa_isolate_worker_service.dart';
 import 'sherpa_model_catalog.dart';
 import 'sherpa_tts_model_downloader.dart';
 
-@singleton
+@lazySingleton
 class SherpaOnnxTtsService {
   SherpaOnnxTtsService({
     required this._downloader,
@@ -39,15 +39,20 @@ class SherpaOnnxTtsService {
 
   bool _bindingsInitialized = false;
 
-  @PostConstruct(preResolve: true)
   Future<void> init() async {
+    _modelsRootDir ??= await _resolveModelsRootDir();
+  }
+
+  /// Lazily initializes native C FFI bindings and spawns the background worker isolate on demand.
+  Future<void> ensureInitialized() async {
     if (!_bindingsInitialized) {
       sherpa.initBindings();
       _bindingsInitialized = true;
     }
     _modelsRootDir ??= await _resolveModelsRootDir();
-    await _sherpaTtsModelCatalog.load();
-
+    if (_sherpaTtsModelCatalog.models.isEmpty) {
+      await _sherpaTtsModelCatalog.load();
+    }
     if (!_isolateService.isSpawned(sherpaTtsIsolateName)) {
       await _isolateService.spawn(
         name: sherpaTtsIsolateName,
@@ -60,26 +65,41 @@ class SherpaOnnxTtsService {
     return _pathService.getTtsModelsDirectory();
   }
 
-  @disposeMethod
-  Future<void> dispose() async {
-    await _isolateService.disposeIsolate(sherpaTtsIsolateName);
+  /// Terminates the worker isolate and releases native ONNX model memory.
+  Future<void> releaseIsolate() async {
+    if (_isolateService.isSpawned(sherpaTtsIsolateName)) {
+      try {
+        if (_activeModel != null) {
+          await _isolateService.sendCommand<bool>(sherpaTtsIsolateName, {
+            'id': _nextId(),
+            'type': 'unload',
+          });
+        }
+      } catch (e) {
+        logger.w('Error unloading model during releaseIsolate: $e');
+      }
+      await _isolateService.disposeIsolate(sherpaTtsIsolateName);
+    }
     _activeModel = null;
     _sampleRate = null;
     _speakerCount = null;
   }
 
+  @disposeMethod
+  Future<void> dispose() async {
+    await releaseIsolate();
+  }
+
   List<SherpaTtsModelInfo> get availableModels => _sherpaTtsModelCatalog.models;
 
-  Directory _modelDir(String modelId) {
-    final root = _modelsRootDir;
-    if (root == null) {
-      throw SherpaTtsException('SherpaOnnxTtsService.init() was not called.');
-    }
+  Future<Directory> _modelDir(String modelId) async {
+    final root = _modelsRootDir ?? await _resolveModelsRootDir();
+    _modelsRootDir = root;
     return Directory(p.join(root.path, modelId));
   }
 
   Future<bool> isModelDownloaded(String modelId) async {
-    final dir = _modelDir(modelId);
+    final dir = await _modelDir(modelId);
     if (!await dir.exists()) return false;
 
     final model = _sherpaTtsModelCatalog.byId(modelId);
@@ -113,6 +133,9 @@ class SherpaOnnxTtsService {
   }
 
   Future<List<SherpaTtsModelInfo>> getDownloadedModels() async {
+    if (_sherpaTtsModelCatalog.models.isEmpty) {
+      await _sherpaTtsModelCatalog.load();
+    }
     final result = <SherpaTtsModelInfo>[];
     for (final m in availableModels) {
       if (await isModelDownloaded(m.id)) result.add(m);
@@ -130,14 +153,15 @@ class SherpaOnnxTtsService {
       _sampleRate = null;
       _speakerCount = null;
     }
-    final dir = _modelDir(modelId);
+    final dir = await _modelDir(modelId);
     if (await dir.exists()) {
       await dir.delete(recursive: true);
     }
   }
 
-  Stream<ModelDownloadProgress> downloadModel(SherpaTtsModelInfo model) {
-    return _downloader.downloadModel(model, _modelDir(model.id));
+  Stream<ModelDownloadProgress> downloadModel(SherpaTtsModelInfo model) async* {
+    final dir = await _modelDir(model.id);
+    yield* _downloader.downloadModel(model, dir);
   }
 
   SherpaTtsModelInfo? get activeModel => _activeModel;
@@ -148,14 +172,12 @@ class SherpaOnnxTtsService {
     int numThreads = 2,
     bool debugLogging = false,
   }) async {
-    if (_modelsRootDir == null) {
-      throw SherpaTtsException('Call init() before loadModel().');
-    }
+    await ensureInitialized();
     final model = _sherpaTtsModelCatalog.byId(modelId);
     if (model == null) {
       throw SherpaTtsException('Unknown model id: $modelId');
     }
-    final dir = _modelDir(modelId);
+    final dir = await _modelDir(modelId);
     if (!await dir.exists()) {
       throw SherpaTtsException('Model $modelId is not downloaded yet.');
     }

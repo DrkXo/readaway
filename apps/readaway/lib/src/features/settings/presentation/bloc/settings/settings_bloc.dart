@@ -355,7 +355,18 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   }
 
   void _onPreviewTts(_PreviewTts event, Emitter<SettingsState> emit) async {
-    if (state.ttsBusyModelId != null) return;
+    // If the currently playing preview is tapped, stop it
+    if (state.ttsBusyModelId == event.modelId) {
+      await ttsModelRepository.stopPreview().run();
+      emit(state.copyWith(ttsBusyModelId: null));
+      return;
+    }
+
+    // Stop any existing preview before starting the new one
+    if (state.ttsBusyModelId != null) {
+      await ttsModelRepository.stopPreview().run();
+    }
+
     emit(state.copyWith(ttsBusyModelId: event.modelId, ttsError: null));
 
     final result = await ttsModelRepository.playPreview(event.modelId).run();
@@ -369,7 +380,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         );
       },
       (_) {
-        emit(state.copyWith(ttsBusyModelId: null));
+        if (state.ttsBusyModelId == event.modelId) {
+          emit(state.copyWith(ttsBusyModelId: null));
+        }
       },
     );
   }

@@ -11,8 +11,8 @@ import 'package:rxdart/rxdart.dart';
 import '../logging_service.dart';
 import '../path_service.dart';
 import '../audio/audio_player_service.dart';
-import 'sherpa/sherpa_onnx_tts_service.dart';
 import 'tts_chunker_service.dart';
+import 'tts_engine.dart';
 import 'tts_models.dart';
 
 /// Manages the TTS playback pipeline: sentence chunking, lookahead synthesis,
@@ -20,13 +20,13 @@ import 'tts_models.dart';
 @lazySingleton
 class TtsControllerService {
   TtsControllerService(
-    this._sherpaTts,
+    this._engineRegistry,
     this._audioPlayer,
     this._chunkingService,
     this._pathService,
   );
 
-  final SherpaOnnxTtsService _sherpaTts;
+  final TtsEngineRegistry _engineRegistry;
   final AudioPlayerService _audioPlayer;
   final TtsChunkingService _chunkingService;
   final AppPathService _pathService;
@@ -87,8 +87,30 @@ class TtsControllerService {
           ? _lastKnownIndex
           : null);
   TtsVoiceOption? get currentVoice => _voice;
-  List<SherpaTtsModelInfo> get availableSherpaModels =>
-      _sherpaTts.availableModels;
+  List<TtsVoiceOption> _cachedInstalledVoices = const [];
+  List<TtsVoiceOption> get availableVoices => _cachedInstalledVoices;
+
+  /// Ensures worker isolate and TTS engine are initialized on-demand.
+  Future<void> prepareForPlayback() async {
+    await _chunkingService.start();
+    await getInstalledVoices();
+    if (_voice != null) {
+      final engine = _engineRegistry.getEngineForVoice(_voice!);
+      await engine.initialize();
+    } else if (_cachedInstalledVoices.isNotEmpty) {
+      await setVoice(_cachedInstalledVoices.first);
+      final engine = _engineRegistry.getEngineForVoice(_voice!);
+      await engine.initialize();
+    }
+  }
+
+  /// Stops playback, terminates chunker and TTS worker isolates, and cleans temporary files.
+  Future<void> releaseResources() async {
+    await stopPipeline();
+    await _chunkingService.stop();
+    await _engineRegistry.disposeAll();
+    await _cleanTempFiles();
+  }
 
   /// Currently active [TtsChunk], if any.
   TtsChunk? get activeChunk => (currentChunkIndex != null &&
@@ -269,6 +291,20 @@ class TtsControllerService {
     try {
       final cacheDir = await _pathService.getTtsAudioCacheDirectory();
 
+      if (_voice == null) {
+        final voices = await getInstalledVoices();
+        if (voices.isNotEmpty) {
+          await setVoice(voices.first);
+        } else {
+          throw const SherpaTtsException(
+            'No TTS voice available. Download a voice first.',
+          );
+        }
+      }
+
+      final engine = _engineRegistry.getEngineForVoice(_voice!);
+      await engine.initialize();
+
       // 1. Pre-buffer: synthesize up to 2 initial chunks before starting playback
       // to guarantee ExoPlayer never starves on Android.
       const lookaheadInitialCount = 2;
@@ -294,10 +330,10 @@ class TtsControllerService {
         );
 
         try {
-          final result = await _sherpaTts.generateToFile(
+          final result = await engine.synthesizeToFile(
             text: textToSpeak,
             outputPath: filePath,
-            speakerId: _voice?.sherpaSpeakerId ?? 0,
+            voice: _voice!,
             speed: _rate <= 0 ? 1.0 : _rate,
           );
           consecutiveErrors = 0;
@@ -369,10 +405,10 @@ class TtsControllerService {
         );
 
         try {
-          final result = await _sherpaTts.generateToFile(
+          final result = await engine.synthesizeToFile(
             text: textToSpeak,
             outputPath: filePath,
-            speakerId: _voice?.sherpaSpeakerId ?? 0,
+            voice: _voice!,
             speed: _rate <= 0 ? 1.0 : _rate,
           );
           consecutiveErrors = 0;
@@ -528,18 +564,8 @@ class TtsControllerService {
   }
 
   Future<List<TtsVoiceOption>> getInstalledVoices() async {
-    final sherpaModels = await _sherpaTts.getDownloadedModels();
-    return sherpaModels
-        .map(
-          (m) => TtsVoiceOption(
-            engine: TtsEngineKind.sherpaOnnx,
-            id: m.id,
-            label: m.displayName,
-            languageCode: m.languageCode,
-            sherpaSpeakerId: m.speakerCount > 0 ? 0 : null,
-          ),
-        )
-        .toList(growable: false);
+    _cachedInstalledVoices = await _engineRegistry.getAllInstalledVoices();
+    return _cachedInstalledVoices;
   }
 
   /// Seeks to a position within the currently playing sentence track.
@@ -566,7 +592,7 @@ class TtsControllerService {
 
   @disposeMethod
   Future<void> dispose() async {
-    await stopPipeline();
+    await releaseResources();
     await _stateController.close();
     await _chunkController.close();
     await _queueController.close();
