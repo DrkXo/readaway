@@ -34,6 +34,16 @@ melos:
       run: cd apps/readaway && dart run build_runner build
       description: Run codegen in all apps
 
+    build:apk:debug:
+      run: cd apps/readaway && flutter build apk --debug
+      description: Build debug APK for ReadAway app
+    build:apk:release:
+      run: cd apps/readaway && flutter build apk --release
+      description: Build release APK for ReadAway app
+    build:apk:split:
+      run: cd apps/readaway && flutter build apk --release --split-per-abi
+      description: Build release APK split per ABI (armeabi-v7a, arm64-v8a, x86_64)
+
     submodules:update:
       run: git submodule update --init --recursive
       description: Update git submodules (MuPDF source)
