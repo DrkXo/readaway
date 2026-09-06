@@ -65,14 +65,15 @@ import '../services/settings_service.dart' as _i114;
 import '../services/storage/hive/app_storage_service.dart' as _i1024;
 import '../services/storage/hive/hive_config_service.dart' as _i155;
 import '../services/theme_service.dart' as _i982;
+import '../services/toast/toast_service.dart' as _i427;
 import '../services/tts/sherpa/sherpa_model_catalog.dart' as _i468;
-import '../services/tts/sherpa/sherpa_onnx_tts_engine.dart' as _i800;
+import '../services/tts/sherpa/sherpa_onnx_tts_engine.dart' as _i446;
 import '../services/tts/sherpa/sherpa_onnx_tts_service.dart' as _i572;
 import '../services/tts/sherpa/sherpa_tts_model_downloader.dart' as _i590;
 import '../services/tts/tts_chunker_service.dart' as _i864;
 import '../services/tts/tts_controller_service.dart' as _i573;
-import '../services/tts/tts_engine.dart' as _i801;
-import '../services/tts/tts_engine_registry_impl.dart' as _i802;
+import '../services/tts/tts_engine.dart' as _i893;
+import '../services/tts/tts_engine_registry_impl.dart' as _i999;
 import '../services/wakelock_service.dart' as _i669;
 import '../services/window_service.dart' as _i516;
 
@@ -102,6 +103,7 @@ extension GetItInjectableX on _i174.GetIt {
       dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i145.AppPathService>(() => _i145.AppPathService());
+    gh.lazySingleton<_i427.ToastService>(() => _i427.ToastService());
     gh.lazySingleton<_i864.TextChunker>(() => _i864.TextChunker());
     gh.lazySingleton<_i502.FilePickerDataSource>(
       () => _i502.FilePickerDataSource(),
@@ -182,12 +184,6 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i800.SherpaOnnxTtsEngine>(
-      () => _i800.SherpaOnnxTtsEngine(gh<_i572.SherpaOnnxTtsService>()),
-    );
-    gh.lazySingleton<_i801.TtsEngineRegistry>(
-      () => _i802.TtsEngineRegistryImpl(gh<_i800.SherpaOnnxTtsEngine>()),
-    );
     gh.singleton<_i295.AppRouter>(
       () => _i295.AppRouter(
         logger: gh<_i264.LoggingService>(),
@@ -251,14 +247,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i674.SettingsRepository>(
       () => _i955.SettingsRepositoryImpl(gh<_i114.SettingsService>()),
     );
-    gh.lazySingleton<_i573.TtsControllerService>(
-      () => _i573.TtsControllerService(
-        gh<_i801.TtsEngineRegistry>(),
-        gh<_i370.AudioPlayerService>(),
-        gh<_i864.TtsChunkingService>(),
-        gh<_i145.AppPathService>(),
-      ),
-      dispose: (i) => i.dispose(),
+    gh.lazySingleton<_i446.SherpaOnnxTtsEngine>(
+      () => _i446.SherpaOnnxTtsEngine(gh<_i572.SherpaOnnxTtsService>()),
+    );
+    gh.lazySingleton<_i893.TtsEngineRegistry>(
+      () => _i999.TtsEngineRegistryImpl(gh<_i446.SherpaOnnxTtsEngine>()),
     );
     gh.lazySingleton<_i360.ReaderPreferencesRepository>(
       () =>
@@ -273,6 +266,15 @@ extension GetItInjectableX on _i174.GetIt {
     }, preResolve: true);
     gh.lazySingleton<_i433.LibraryLocalDataSource>(
       () => _i433.LibraryLocalDataSource(gh<_i1024.AppStorageService>()),
+    );
+    gh.lazySingleton<_i573.TtsControllerService>(
+      () => _i573.TtsControllerService(
+        gh<_i893.TtsEngineRegistry>(),
+        gh<_i370.AudioPlayerService>(),
+        gh<_i864.TtsChunkingService>(),
+        gh<_i145.AppPathService>(),
+      ),
+      dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i820.ReaderRepository>(
       () => _i788.ReaderRepositoryImpl(

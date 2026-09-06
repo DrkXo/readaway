@@ -33,6 +33,7 @@ class _ReadAwayState extends State<ReadAway> {
   Widget build(BuildContext context) {
     final router = GetIt.I.get<AppRouter>().router;
     final themeService = GetIt.I.get<ThemeService>();
+    final toastService = GetIt.I.get<ToastService>();
 
     return MultiBlocProvider(
       providers: [
@@ -49,6 +50,7 @@ class _ReadAwayState extends State<ReadAway> {
               final themeMode = snapshot.data ?? ThemeMode.system;
 
               return MaterialApp.router(
+                scaffoldMessengerKey: toastService.scaffoldMessengerKey,
                 title: F.title,
                 debugShowCheckedModeBanner: false,
                 themeMode: themeMode,
@@ -56,7 +58,10 @@ class _ReadAwayState extends State<ReadAway> {
                 darkTheme: themeService.getDarkTheme(),
                 routerConfig: router,
                 builder: (context, child) {
-                  return child ?? const SizedBox.shrink();
+                  return ToastWrapper(
+                    service: toastService,
+                    child: child ?? const SizedBox.shrink(),
+                  );
                 },
               );
             },
