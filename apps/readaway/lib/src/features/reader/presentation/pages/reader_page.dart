@@ -212,12 +212,14 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                           fit: StackFit.expand,
                                           children: [
                                             Positioned.fill(
-                                              child: ReaderViewport(
-                                                pageViewController:
-                                                    pageViewController,
-                                                prefs: prefs,
-                                                onScrollBoundaryChanged:
-                                                    onScrollBoundaryChanged,
+                                              child: SafeArea(
+                                                child: ReaderViewport(
+                                                  pageViewController:
+                                                      pageViewController,
+                                                  prefs: prefs,
+                                                  onScrollBoundaryChanged:
+                                                      onScrollBoundaryChanged,
+                                                ),
                                               ),
                                             ),
                                             ReaderBrightnessOverlay(
@@ -295,13 +297,13 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                         duration: gestureConstants
                                             .chromeAnimationDuration,
                                         curve: Curves.easeOutCubic,
-                                        child: SafeArea(
-                                          bottom: false,
-                                          child: Container(
-                                            color: context
-                                                .appColors
-                                                .readerBackground
-                                                .withValues(alpha: 0.95),
+                                        child: Container(
+                                          color: context
+                                              .appColors
+                                              .readerBackground
+                                              .withValues(alpha: 0.95),
+                                          child: SafeArea(
+                                            bottom: false,
                                             child: ReaderTopBar(
                                               onOpenDrawer: () => _scaffoldKey
                                                   .currentState

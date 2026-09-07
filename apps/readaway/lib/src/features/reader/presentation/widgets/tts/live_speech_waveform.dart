@@ -84,10 +84,11 @@ class _LiveSpeechWaveformState extends State<LiveSpeechWaveform>
     final totalSpacing = widget.spacing * (barCount - 1);
     final barWidth = math.max(1.5, (widget.width - totalSpacing) / barCount);
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final t = _controller.value * 2 * math.pi;
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final t = _controller.value * 2 * math.pi;
 
         return SizedBox(
           width: widget.width,
@@ -128,6 +129,7 @@ class _LiveSpeechWaveformState extends State<LiveSpeechWaveform>
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 }

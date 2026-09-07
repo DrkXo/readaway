@@ -10,6 +10,8 @@ import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/reader_bloc.dart';
 import 'outline_item_tile.dart';
 
+enum TocTab { chapters, pages }
+
 /// Shared table-of-contents UI used by the mobile drawer and the
 /// desktop side panel.
 class ReaderTocContent extends StatefulWidget {
@@ -35,6 +37,7 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
 
   final _scrollController = ScrollController();
   int _lastScrolledIndex = -1;
+  TocTab _activeTab = TocTab.chapters;
 
   /// Index of the outline item covering [currentPage], -1 if none.
   static int _indexOfCurrent(List<OutlineItem> outline, int currentPage) {
@@ -78,21 +81,30 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
           prev.outline != curr.outline ||
           prev.bookTitle != curr.bookTitle ||
           prev.author != curr.author ||
-          prev.currentPage != curr.currentPage,
+          prev.currentPage != curr.currentPage ||
+          prev.pageCount != curr.pageCount ||
+          prev.isReflowable != curr.isReflowable,
       builder: (context, state) {
         final outline = state.outline;
         final bookTitle = state.bookTitle;
         final author = state.author;
-        final currentIndex = outline == null || outline.isEmpty
-            ? -1
-            : _indexOfCurrent(outline, state.currentPage);
+        final hasOutline = outline != null && outline.isNotEmpty;
+        final effectiveTab = hasOutline ? _activeTab : TocTab.pages;
 
-        // Keep the current chapter in view on initial load or when chapter changes,
+        final currentIndex = hasOutline
+            ? _indexOfCurrent(outline, state.currentPage)
+            : -1;
+
+        final targetIndex = effectiveTab == TocTab.chapters
+            ? currentIndex
+            : state.currentPage;
+
+        // Keep the current chapter or page in view on initial load or when position changes,
         // without overriding user manual scrolling on unrelated rebuilds.
-        if (currentIndex >= 0 && currentIndex != _lastScrolledIndex) {
-          _lastScrolledIndex = currentIndex;
+        if (targetIndex >= 0 && targetIndex != _lastScrolledIndex) {
+          _lastScrolledIndex = targetIndex;
           WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _reveal(currentIndex),
+            (_) => _reveal(targetIndex),
           );
         }
 
@@ -110,7 +122,7 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AppText(
-                          'CONTENTS',
+                          hasOutline ? 'CONTENTS' : 'PAGES',
                           variant: AppTextVariant.label,
                           letterSpacing: 1.4,
                           fontWeight: FontWeight.w700,
@@ -135,9 +147,11 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                         ],
                         const SizedBox(height: 4),
                         AppCaption(
-                          outline == null || outline.isEmpty
-                              ? 'Table of contents'
-                              : '${outline.where((o) => o.level == 0).length} chapters',
+                          hasOutline
+                              ? (_activeTab == TocTab.chapters
+                                  ? '${outline.where((o) => o.level == 0).length} chapters'
+                                  : '${state.pageCount} pages')
+                              : '${state.pageCount} pages',
                         ),
                       ],
                     ),
@@ -146,19 +160,47 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                 ],
               ),
             ),
+            if (hasOutline) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: AppSegmentedControl<TocTab>(
+                    segments: const [
+                      AppSegment(
+                        value: TocTab.chapters,
+                        label: 'Chapters',
+                        icon: LucideIcons.listTree,
+                      ),
+                      AppSegment(
+                        value: TocTab.pages,
+                        label: 'Pages',
+                        icon: LucideIcons.files,
+                      ),
+                    ],
+                    value: _activeTab,
+                    onChanged: (tab) {
+                      setState(() => _activeTab = tab);
+                      _lastScrolledIndex = -1;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        final scrollTarget = tab == TocTab.chapters
+                            ? currentIndex
+                            : state.currentPage;
+                        if (scrollTarget >= 0) _reveal(scrollTarget);
+                      });
+                    },
+                  ),
+                ),
+              ),
+            ],
             Divider(
               height: 1,
               thickness: 1,
               color: scheme.outlineVariant,
             ),
             Expanded(
-              child: outline == null || outline.isEmpty
-                  ? const AppEmptyView(
-                      icon: LucideIcons.listTree,
-                      title: 'No table of contents',
-                      message: 'This document does not expose an outline.',
-                    )
-                  : ListView.builder(
+              child: effectiveTab == TocTab.chapters && hasOutline
+                  ? ListView.builder(
                       controller: _scrollController,
                       itemExtent: _itemExtent,
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -176,12 +218,121 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                           onTap: () => widget.onJumpToPage(item.page),
                         );
                       },
-                    ),
+                    )
+                  : state.pageCount == 0
+                      ? const AppEmptyView(
+                          icon: LucideIcons.fileX,
+                          title: 'No pages',
+                          message: 'This document has no pages.',
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          itemExtent: _itemExtent,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          itemCount: state.pageCount,
+                          itemBuilder: (context, index) {
+                            return _PageItemTile(
+                              pageIndex: index,
+                              isCurrent: index == state.currentPage,
+                              isReflowable: state.isReflowable,
+                              onTap: () => widget.onJumpToPage(index),
+                            );
+                          },
+                        ),
             ),
             const SizedBox(height: 24),
           ],
         );
       },
+    );
+  }
+}
+
+class _PageItemTile extends StatelessWidget {
+  const _PageItemTile({
+    required this.pageIndex,
+    required this.isCurrent,
+    required this.isReflowable,
+    required this.onTap,
+  });
+
+  final int pageIndex;
+  final bool isCurrent;
+  final bool isReflowable;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final pageNumber = pageIndex + 1;
+
+    return Semantics(
+      button: true,
+      selected: isCurrent,
+      label: 'Page $pageNumber',
+      child: Material(
+        color: isCurrent
+            ? scheme.primaryContainer.withValues(alpha: 0.35)
+            : Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isCurrent
+                        ? scheme.primary
+                        : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    isReflowable ? LucideIcons.fileText : LucideIcons.image,
+                    size: 18,
+                    color: isCurrent ? scheme.onPrimary : scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    'Page $pageNumber',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                      color: isCurrent
+                          ? scheme.primary
+                          : theme.textTheme.bodyMedium?.color,
+                    ),
+                  ),
+                ),
+                if (isCurrent)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Current',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

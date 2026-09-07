@@ -14,7 +14,7 @@ class AppPathService {
 
   /// User documents directory (`getApplicationDocumentsDirectory`).
   Future<Directory> get documentsDirectory async =>
-      _documentsDir ??= await getApplicationDocumentsDirectory();
+      _documentsDir ??= await getApplicationSupportDirectory();
 
   /// App-private root inside the documents directory: `<documents>/.readaway`.
   ///

@@ -8,6 +8,7 @@ import 'package:readaway/src/features/settings/domain/entity/reader_preferences.
 import '../../bloc/reader_bloc.dart';
 import '../../controllers/reader_page_view_controller.dart';
 import '../common/reader_error_view.dart';
+import '../tts/reader_tts_mini_player_bar.dart';
 import 'items/fixed_image_page_item.dart';
 import 'items/reflowable_page_item.dart';
 import 'reader_continuous_view.dart';
@@ -50,7 +51,8 @@ class ReaderViewport extends StatelessWidget {
           prev.currentPage != curr.currentPage ||
           prev.isReflowable != curr.isReflowable ||
           prev.documentPages != curr.documentPages ||
-          prev.pageImages != curr.pageImages,
+          prev.pageImages != curr.pageImages ||
+          prev.ttsActive != curr.ttsActive,
       builder: (context, state) {
         if (state.loading) {
           return const Center(child: CircularProgressIndicator());
@@ -83,12 +85,17 @@ class ReaderViewport extends StatelessWidget {
             prefs.scrollDirection == ReaderScrollDirection.vertical &&
             prefs.pageSnap;
 
+        final double miniPlayerPadding = state.ttsActive
+            ? (ReaderTtsMiniPlayerBar.height + 12.0)
+            : 0.0;
+
         final Widget view;
         if (isContinuous) {
           view = ReaderContinuousView(
             currentPage: state.currentPage,
             pageCount: state.pageCount,
             controller: pageViewController,
+            bottomPadding: miniPlayerPadding,
             itemBuilder: (ctx, idx) =>
                 _buildPageItem(ctx, state, idx, isContinuous: true),
             onPageChangeRequested: (idx) => _onPageCommitted(context, idx),

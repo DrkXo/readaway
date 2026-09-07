@@ -13,6 +13,7 @@ class ReaderContinuousView extends StatefulWidget {
     required this.itemBuilder,
     required this.onPageChangeRequested,
     this.controller,
+    this.bottomPadding = 0.0,
   });
 
   final int currentPage;
@@ -20,6 +21,7 @@ class ReaderContinuousView extends StatefulWidget {
   final Widget Function(BuildContext context, int index) itemBuilder;
   final ValueChanged<int> onPageChangeRequested;
   final ReaderPageViewController? controller;
+  final double bottomPadding;
 
   @override
   State<ReaderContinuousView> createState() => _ReaderContinuousViewState();
@@ -217,6 +219,7 @@ class _ReaderContinuousViewState extends State<ReaderContinuousView> {
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
+        padding: EdgeInsets.only(bottom: widget.bottomPadding),
         itemCount: widget.pageCount,
         itemBuilder: (context, index) {
           return KeyedSubtree(

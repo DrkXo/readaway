@@ -10,6 +10,7 @@ import '../../../../../settings/domain/entity/reader_preferences.dart';
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../../gestures/reader_gesture_arena.dart';
+import '../../tts/reader_tts_mini_player_bar.dart';
 import '../reader_document_view.dart';
 import '../reader_selection_area.dart';
 
@@ -68,6 +69,14 @@ class _ReflowablePageItemState extends State<ReflowablePageItem> {
     _scrollController = ScrollController();
     // Seed the boundary state once layout is complete.
     WidgetsBinding.instance.addPostFrameCallback((_) => _reportBoundary());
+  }
+
+  @override
+  void didUpdateWidget(ReflowablePageItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.state.ttsActive != oldWidget.state.ttsActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reportBoundary());
+    }
   }
 
   @override
@@ -190,11 +199,15 @@ class _ReflowablePageItemState extends State<ReflowablePageItem> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final double extraBottom = (!widget.isContinuous && widget.state.ttsActive)
+        ? (ReaderTtsMiniPlayerBar.height + 12.0)
+        : 0.0;
+
     Widget buildPageContent() {
       return Padding(
         padding: EdgeInsets.only(
           top: widget.prefs.marginTop,
-          bottom: widget.prefs.marginBottom,
+          bottom: widget.prefs.marginBottom + extraBottom,
           left: widget.prefs.marginHorizontal,
           right: widget.prefs.marginHorizontal,
         ),

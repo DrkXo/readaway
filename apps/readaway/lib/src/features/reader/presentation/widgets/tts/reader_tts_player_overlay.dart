@@ -233,6 +233,27 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
     }
   }
 
+  double _currentDragExtent = 1.0;
+
+  void _handleFullDragUpdate(DragUpdateDetails details) {
+    _handleDragUpdate(details, _currentDragExtent);
+  }
+
+  void _handleFullDragEnd(DragEndDetails details) {
+    _handleDragEnd(details, _currentDragExtent);
+  }
+
+  late final Widget _fullPlayerView = ReaderTtsFullPlayerView(
+    onClose: _collapse,
+    onClosePlayer: _close,
+    onDragUpdate: _handleFullDragUpdate,
+    onDragEnd: _handleFullDragEnd,
+  );
+
+  late final Widget _miniPlayerView = ReaderTtsMiniPlayerBar(
+    onClosePlayer: _close,
+  );
+
   void _expand() => _motion.animateTo(1.0);
   void _collapse() => _motion.animateTo(0.0);
   void _close() => context.read<ReaderBloc>().add(const ReaderEvent.ttsClose());
@@ -278,6 +299,7 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
               effectiveControlBarHeight: effectiveControlBarHeight,
               effectiveBottomPadding: effectiveBottomPadding,
             );
+            _currentDragExtent = dragExtent;
 
             final collapsedTop =
                 overlayHeight -
@@ -336,9 +358,7 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
                                   onVerticalDragEnd: (d) =>
                                       _handleDragEnd(d, dragExtent),
                                   onHorizontalDragEnd: _handleSkipDrag,
-                                  child: ReaderTtsMiniPlayerBar(
-                                    onClosePlayer: _close,
-                                  ),
+                                  child: _miniPlayerView,
                                 ),
                               ),
                             ),
@@ -353,14 +373,7 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
                                   maxHeight: double.infinity,
                                   child: SizedBox(
                                     height: overlayHeight,
-                                    child: ReaderTtsFullPlayerView(
-                                      onClose: _collapse,
-                                      onClosePlayer: _close,
-                                      onDragUpdate: (d) =>
-                                          _handleDragUpdate(d, dragExtent),
-                                      onDragEnd: (d) =>
-                                          _handleDragEnd(d, dragExtent),
-                                    ),
+                                    child: _fullPlayerView,
                                   ),
                                 ),
                               ),

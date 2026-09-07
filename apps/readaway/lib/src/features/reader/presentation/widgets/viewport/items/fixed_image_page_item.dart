@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../bloc/reader_bloc.dart';
+import '../../tts/reader_tts_mini_player_bar.dart';
 
 /// An image-based page item widget that lazily loads and renders fixed page content (PDF, CBZ, CBR).
 ///
@@ -99,6 +100,10 @@ class _FixedImagePageItemState extends State<FixedImagePageItem> {
       );
     }
 
+    final double extraBottom = (!widget.isContinuous && widget.state.ttsActive)
+        ? (ReaderTtsMiniPlayerBar.height + 12.0)
+        : 0.0;
+
     return GestureDetector(
       onDoubleTap: _onDoubleTap,
       child: ClipRect(
@@ -109,7 +114,12 @@ class _FixedImagePageItemState extends State<FixedImagePageItem> {
           panEnabled: _isZoomed,
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.only(
+                left: 8,
+                right: 8,
+                top: 8,
+                bottom: 8 + extraBottom,
+              ),
               child: imageWidget,
             ),
           ),
