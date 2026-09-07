@@ -68,7 +68,8 @@ class AudioPlayerService {
       AudioSessionConfiguration.speech();
 
   Stream<int?> get currentIndexStream => _sessionPlayer.currentIndexStream;
-  Stream<PlayerState> get sessionStateStream => _sessionPlayer.playerStateStream;
+  Stream<PlayerState> get sessionStateStream =>
+      _sessionPlayer.playerStateStream;
   Stream<ProcessingState> get processingStateStream =>
       _sessionPlayer.processingStateStream;
   Stream<Duration> get positionStream => _sessionPlayer.positionStream;
@@ -146,7 +147,10 @@ class AudioPlayerService {
       _initialized = true;
     } catch (e, st) {
       logger.e('Failed to initialize AudioPlayerService', e, st);
-      throw AudioPlaybackException('Failed to initialize AudioPlayerService', e);
+      throw AudioPlaybackException(
+        'Failed to initialize AudioPlayerService',
+        e,
+      );
     }
   }
 
@@ -293,7 +297,10 @@ class AudioPlayerService {
   });
 
   /// Seeks to a specific track index in the current playlist.
-  Future<void> seekToIndex(int index, {Duration position = Duration.zero}) async {
+  Future<void> seekToIndex(
+    int index, {
+    Duration position = Duration.zero,
+  }) async {
     if (index < 0 || index >= _sessionPlayer.sequence.length) return;
     try {
       await _sessionPlayer.seek(position, index: index);

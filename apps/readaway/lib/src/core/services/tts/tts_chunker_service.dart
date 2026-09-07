@@ -316,13 +316,14 @@ class TextChunker {
 
       if (latinTerminator != null) {
         // Decimal check: e.g. "3.14" -> skip
-        if (latinTerminator == '.' && _isDecimalNumber(paragraphText, match.start)) {
+        if (latinTerminator == '.' &&
+            _isDecimalNumber(paragraphText, match.start)) {
           continue;
         }
 
         final isAtEnd = matchEnd >= paragraphText.length;
-        final hasFollowingWhitespace = !isAtEnd &&
-            RegExp(r'\s').hasMatch(paragraphText[matchEnd]);
+        final hasFollowingWhitespace =
+            !isAtEnd && RegExp(r'\s').hasMatch(paragraphText[matchEnd]);
 
         if (!isAtEnd && !hasFollowingWhitespace) {
           // e.g. web address, file extension, or email
@@ -374,7 +375,8 @@ class TextChunker {
   /// Checks whether the word preceding a period at [periodIndex] is an abbreviation or initial.
   bool _isAbbreviationOrInitial(String text, int periodIndex) {
     final prefix = text.substring(0, periodIndex + 1);
-    final lastWord = prefix.split(RegExp(r'\s+')).lastOrNull?.toLowerCase() ?? '';
+    final lastWord =
+        prefix.split(RegExp(r'\s+')).lastOrNull?.toLowerCase() ?? '';
     if (lastWord.isEmpty) return false;
 
     if (_abbreviations.contains(lastWord)) return true;
@@ -489,9 +491,10 @@ class TextChunker {
     }
 
     // 4. Conjunctions
-    final conjMatch = RegExp(r'\s+(?:and|but|or|so|yet|which|that|because|although)\s+', caseSensitive: false)
-        .allMatches(window)
-        .lastOrNull;
+    final conjMatch = RegExp(
+      r'\s+(?:and|but|or|so|yet|which|that|because|although)\s+',
+      caseSensitive: false,
+    ).allMatches(window).lastOrNull;
     if (conjMatch != null && conjMatch.start > (searchRange * 0.2)) {
       return searchStart + conjMatch.start + 1; // Break before conjunction
     }

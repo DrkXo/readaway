@@ -138,7 +138,8 @@ mixin ReaderBottomBarMixin on State<ReaderBottomBar>, TickerProvider {
         final scheme = theme.colorScheme;
         final mediaQuery = MediaQuery.of(context);
         final bottomPadding = mediaQuery.padding.bottom;
-        final cardBgColor = widget.panelBackgroundColor ??
+        final cardBgColor =
+            widget.panelBackgroundColor ??
             widget.backgroundColor ??
             scheme.surface.withValues(alpha: 0.95);
 

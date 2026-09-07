@@ -194,7 +194,8 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
     required double effectiveControlBarHeight,
     required double effectiveBottomPadding,
   }) {
-    final extent = overlayHeight -
+    final extent =
+        overlayHeight -
         effectiveControlBarHeight -
         ReaderTtsMiniPlayerBar.height -
         _miniMargin -
@@ -278,12 +279,14 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
               effectiveBottomPadding: effectiveBottomPadding,
             );
 
-            final collapsedTop = overlayHeight -
+            final collapsedTop =
+                overlayHeight -
                 effectiveControlBarHeight -
                 ReaderTtsMiniPlayerBar.height -
                 _miniMargin -
                 effectiveBottomPadding;
-            final collapsedBottom = effectiveControlBarHeight +
+            final collapsedBottom =
+                effectiveControlBarHeight +
                 _miniMargin +
                 effectiveBottomPadding;
 
@@ -312,9 +315,9 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
                       opacity: presenceOpacity,
                       child: Material(
                         elevation: elevation,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHigh,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(radius),
                         clipBehavior: Clip.antiAlias,
                         child: Stack(

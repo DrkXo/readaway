@@ -32,8 +32,7 @@ class ReaderFontSizeQuickView extends StatelessWidget {
 
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.fontSize !=
-          curr.globalReaderPrefs.fontSize,
+          prev.globalReaderPrefs.fontSize != curr.globalReaderPrefs.fontSize,
       builder: (context, settingsState) {
         final prefs = settingsState.globalReaderPrefs;
         final fontSize = prefs.fontSize;

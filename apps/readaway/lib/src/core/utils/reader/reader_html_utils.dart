@@ -261,9 +261,9 @@ Map<String, String> parseDeclarations(String style) {
       } else if (c == 34 /* " */ && !inSingleQuote) {
         inDoubleQuote = !inDoubleQuote;
       } else if (!inSingleQuote && !inDoubleQuote) {
-        if (c == 40 /* ( */) {
+        if (c == 40 /* ( */ ) {
           parenDepth++;
-        } else if (c == 41 /* ) */) {
+        } else if (c == 41 /* ) */ ) {
           if (parenDepth > 0) parenDepth--;
         } else if (c == 58 /* : */ && colon == -1 && parenDepth == 0) {
           colon = i;

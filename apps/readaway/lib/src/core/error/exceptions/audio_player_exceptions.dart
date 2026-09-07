@@ -5,10 +5,9 @@ class AudioPlayerException implements Exception {
   const AudioPlayerException(this.message, [this.cause]);
 
   @override
-  String toString() =>
-      cause != null
-          ? 'AudioPlayerException: $message (caused by: $cause)'
-          : 'AudioPlayerException: $message';
+  String toString() => cause != null
+      ? 'AudioPlayerException: $message (caused by: $cause)'
+      : 'AudioPlayerException: $message';
 }
 
 class AudioPlaybackException extends AudioPlayerException {

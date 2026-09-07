@@ -86,7 +86,9 @@ class JAAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       queue.add(queueItems);
 
       final currentIndex = sequenceState.currentIndex;
-      if (currentIndex != null && currentIndex >= 0 && currentIndex < queueItems.length) {
+      if (currentIndex != null &&
+          currentIndex >= 0 &&
+          currentIndex < queueItems.length) {
         mediaItem.add(queueItems[currentIndex]);
       }
     });

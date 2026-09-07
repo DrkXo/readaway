@@ -78,8 +78,9 @@ class LibrarySortSheet extends StatelessWidget {
                       color: scheme.primary,
                     ),
                   ),
-                  backgroundColor:
-                      scheme.primaryContainer.withValues(alpha: 0.35),
+                  backgroundColor: scheme.primaryContainer.withValues(
+                    alpha: 0.35,
+                  ),
                   side: BorderSide(
                     color: scheme.primary.withValues(alpha: 0.3),
                   ),
@@ -93,8 +94,10 @@ class LibrarySortSheet extends StatelessWidget {
             ...LibrarySortBy.values.map((sort) {
               final isSelected = sort == currentSortBy;
               return ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
                 dense: true,
                 leading: Icon(
                   _iconForSort(sort),
@@ -105,8 +108,9 @@ class LibrarySortSheet extends StatelessWidget {
                   sort.label,
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight:
-                        isSelected ? FontWeight.w700 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w700
+                        : FontWeight.normal,
                     color: isSelected ? scheme.primary : scheme.onSurface,
                   ),
                 ),
@@ -137,11 +141,11 @@ class LibrarySortSheet extends StatelessWidget {
   }
 
   IconData _iconForSort(LibrarySortBy sort) => switch (sort) {
-        LibrarySortBy.dateOpened => LucideIcons.clock,
-        LibrarySortBy.dateAdded => LucideIcons.calendarPlus,
-        LibrarySortBy.title => LucideIcons.aArrowDown,
-        LibrarySortBy.author => LucideIcons.user,
-        LibrarySortBy.progress => LucideIcons.percent,
-        LibrarySortBy.fileSize => LucideIcons.hardDrive,
-      };
+    LibrarySortBy.dateOpened => LucideIcons.clock,
+    LibrarySortBy.dateAdded => LucideIcons.calendarPlus,
+    LibrarySortBy.title => LucideIcons.aArrowDown,
+    LibrarySortBy.author => LucideIcons.user,
+    LibrarySortBy.progress => LucideIcons.percent,
+    LibrarySortBy.fileSize => LucideIcons.hardDrive,
+  };
 }

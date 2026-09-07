@@ -14,11 +14,12 @@ class ReaderAutoScrollController extends ChangeNotifier {
   ReaderAutoScrollController({
     double initialSpeed = 40.0,
     ReaderGestureConstants? constants,
-  })  : _speed = initialSpeed,
-        _constants = constants ??
-            (GetIt.I.isRegistered<ReaderGestureConstants>()
-                ? GetIt.I<ReaderGestureConstants>()
-                : const ReaderGestureConstants());
+  }) : _speed = initialSpeed,
+       _constants =
+           constants ??
+           (GetIt.I.isRegistered<ReaderGestureConstants>()
+               ? GetIt.I<ReaderGestureConstants>()
+               : const ReaderGestureConstants());
 
   double _speed;
   final ReaderGestureConstants _constants;

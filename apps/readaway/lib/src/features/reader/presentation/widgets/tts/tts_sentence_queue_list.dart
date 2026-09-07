@@ -33,14 +33,19 @@ class _TtsSentenceQueueListState extends State<TtsSentenceQueueList> {
   void initState() {
     super.initState();
     // Hoist combined stream creation out of build() to prevent recreation and re-subscriptions
-    _playbackStream = Rx.combineLatest3<int, TtsChunk?, TtsPlaybackEvent,
-        (int, TtsChunk?, bool)>(
-      widget.tts.queueVersion,
-      widget.tts.currentChunk.cast<TtsChunk?>().startWith(null),
-      widget.tts.playbackState,
-      (version, chunk, event) =>
-          (version, chunk, event.state == TtsPlaybackState.playing),
-    );
+    _playbackStream =
+        Rx.combineLatest3<
+          int,
+          TtsChunk?,
+          TtsPlaybackEvent,
+          (int, TtsChunk?, bool)
+        >(
+          widget.tts.queueVersion,
+          widget.tts.currentChunk.cast<TtsChunk?>().startWith(null),
+          widget.tts.playbackState,
+          (version, chunk, event) =>
+              (version, chunk, event.state == TtsPlaybackState.playing),
+        );
 
     _chunkSub = widget.tts.currentChunk.listen((_) {
       _scrollToActiveIndex();
@@ -148,15 +153,17 @@ class _TtsSentenceQueueListState extends State<TtsSentenceQueueList> {
                               )
                             : Icon(
                                 LucideIcons.dot,
-                                color: scheme.onSurfaceVariant
-                                    .withValues(alpha: 0.5),
+                                color: scheme.onSurfaceVariant.withValues(
+                                  alpha: 0.5,
+                                ),
                                 size: 16,
                               ),
                         title: AppText(
                           chunk.text,
                           variant: AppTextVariant.body,
-                          fontWeight:
-                              isCurrent ? FontWeight.w600 : FontWeight.normal,
+                          fontWeight: isCurrent
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                           color: isCurrent
                               ? scheme.onSurface
                               : scheme.onSurface.withValues(alpha: 0.8),
@@ -173,7 +180,9 @@ class _TtsSentenceQueueListState extends State<TtsSentenceQueueList> {
                       children: [
                         Expanded(
                           child: Divider(
-                            color: scheme.outlineVariant.withValues(alpha: 0.25),
+                            color: scheme.outlineVariant.withValues(
+                              alpha: 0.25,
+                            ),
                             height: 1,
                             thickness: 0.8,
                           ),
@@ -185,14 +194,17 @@ class _TtsSentenceQueueListState extends State<TtsSentenceQueueList> {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: scheme.onSurfaceVariant
-                                  .withValues(alpha: 0.35),
+                              color: scheme.onSurfaceVariant.withValues(
+                                alpha: 0.35,
+                              ),
                             ),
                           ),
                         ),
                         Expanded(
                           child: Divider(
-                            color: scheme.outlineVariant.withValues(alpha: 0.25),
+                            color: scheme.outlineVariant.withValues(
+                              alpha: 0.25,
+                            ),
                             height: 1,
                             thickness: 0.8,
                           ),

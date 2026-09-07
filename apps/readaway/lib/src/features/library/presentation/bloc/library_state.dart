@@ -5,9 +5,9 @@ enum LibraryViewMode {
   list;
 
   String get label => switch (this) {
-        LibraryViewMode.grid => 'Grid',
-        LibraryViewMode.list => 'List',
-      };
+    LibraryViewMode.grid => 'Grid',
+    LibraryViewMode.list => 'List',
+  };
 }
 
 enum LibrarySortBy {
@@ -19,22 +19,22 @@ enum LibrarySortBy {
   fileSize;
 
   String get label => switch (this) {
-        LibrarySortBy.dateOpened => 'Date Opened',
-        LibrarySortBy.dateAdded => 'Date Added',
-        LibrarySortBy.title => 'Title',
-        LibrarySortBy.author => 'Author',
-        LibrarySortBy.progress => 'Progress',
-        LibrarySortBy.fileSize => 'File Size',
-      };
+    LibrarySortBy.dateOpened => 'Date Opened',
+    LibrarySortBy.dateAdded => 'Date Added',
+    LibrarySortBy.title => 'Title',
+    LibrarySortBy.author => 'Author',
+    LibrarySortBy.progress => 'Progress',
+    LibrarySortBy.fileSize => 'File Size',
+  };
 
   bool get defaultAscending => switch (this) {
-        LibrarySortBy.title => true,
-        LibrarySortBy.author => true,
-        LibrarySortBy.dateOpened => false,
-        LibrarySortBy.dateAdded => false,
-        LibrarySortBy.progress => false,
-        LibrarySortBy.fileSize => false,
-      };
+    LibrarySortBy.title => true,
+    LibrarySortBy.author => true,
+    LibrarySortBy.dateOpened => false,
+    LibrarySortBy.dateAdded => false,
+    LibrarySortBy.progress => false,
+    LibrarySortBy.fileSize => false,
+  };
 }
 
 enum ReadingStatusFilter {
@@ -45,12 +45,12 @@ enum ReadingStatusFilter {
   favorites;
 
   String get label => switch (this) {
-        ReadingStatusFilter.all => 'All',
-        ReadingStatusFilter.reading => 'Reading',
-        ReadingStatusFilter.unread => 'Unread',
-        ReadingStatusFilter.finished => 'Finished',
-        ReadingStatusFilter.favorites => 'Favorites',
-      };
+    ReadingStatusFilter.all => 'All',
+    ReadingStatusFilter.reading => 'Reading',
+    ReadingStatusFilter.unread => 'Unread',
+    ReadingStatusFilter.finished => 'Finished',
+    ReadingStatusFilter.favorites => 'Favorites',
+  };
 }
 
 @freezed
@@ -74,22 +74,22 @@ abstract class LibraryState with _$LibraryState {
   const LibraryState._();
 
   int get totalCount => recentDocuments.length;
-  int get readingCount =>
-      recentDocuments.where((d) => d.readingStatus == ReadingStatus.reading).length;
-  int get unreadCount =>
-      recentDocuments.where((d) => d.readingStatus == ReadingStatus.unread).length;
-  int get finishedCount =>
-      recentDocuments.where((d) => d.isFinished).length;
-  int get favoritesCount =>
-      recentDocuments.where((d) => d.isFavorite).length;
+  int get readingCount => recentDocuments
+      .where((d) => d.readingStatus == ReadingStatus.reading)
+      .length;
+  int get unreadCount => recentDocuments
+      .where((d) => d.readingStatus == ReadingStatus.unread)
+      .length;
+  int get finishedCount => recentDocuments.where((d) => d.isFinished).length;
+  int get favoritesCount => recentDocuments.where((d) => d.isFavorite).length;
 
   int countForFilter(ReadingStatusFilter filter) => switch (filter) {
-        ReadingStatusFilter.all => totalCount,
-        ReadingStatusFilter.reading => readingCount,
-        ReadingStatusFilter.unread => unreadCount,
-        ReadingStatusFilter.finished => finishedCount,
-        ReadingStatusFilter.favorites => favoritesCount,
-      };
+    ReadingStatusFilter.all => totalCount,
+    ReadingStatusFilter.reading => readingCount,
+    ReadingStatusFilter.unread => unreadCount,
+    ReadingStatusFilter.finished => finishedCount,
+    ReadingStatusFilter.favorites => favoritesCount,
+  };
 
   List<RecentDocument> get filteredDocuments {
     var list = recentDocuments.where((doc) {
@@ -98,8 +98,7 @@ abstract class LibraryState with _$LibraryState {
         ReadingStatusFilter.all => true,
         ReadingStatusFilter.reading =>
           doc.readingStatus == ReadingStatus.reading,
-        ReadingStatusFilter.unread =>
-          doc.readingStatus == ReadingStatus.unread,
+        ReadingStatusFilter.unread => doc.readingStatus == ReadingStatus.unread,
         ReadingStatusFilter.finished => doc.isFinished,
         ReadingStatusFilter.favorites => doc.isFavorite,
       };
@@ -126,14 +125,15 @@ abstract class LibraryState with _$LibraryState {
       final order = switch (sortBy) {
         LibrarySortBy.dateOpened => a.lastOpened.compareTo(b.lastOpened),
         LibrarySortBy.dateAdded => a.dateAdded.compareTo(b.dateAdded),
-        LibrarySortBy.title => a.displayTitle
-            .toLowerCase()
-            .compareTo(b.displayTitle.toLowerCase()),
-        LibrarySortBy.author => (a.displayAuthor ?? '')
-            .toLowerCase()
-            .compareTo((b.displayAuthor ?? '').toLowerCase()),
-        LibrarySortBy.progress =>
-          a.progressPercent.compareTo(b.progressPercent),
+        LibrarySortBy.title => a.displayTitle.toLowerCase().compareTo(
+          b.displayTitle.toLowerCase(),
+        ),
+        LibrarySortBy.author => (a.displayAuthor ?? '').toLowerCase().compareTo(
+          (b.displayAuthor ?? '').toLowerCase(),
+        ),
+        LibrarySortBy.progress => a.progressPercent.compareTo(
+          b.progressPercent,
+        ),
         LibrarySortBy.fileSize => a.fileSize.compareTo(b.fileSize),
       };
       return sortAscending ? order : -order;

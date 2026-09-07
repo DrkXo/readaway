@@ -151,8 +151,9 @@ class TtsSpeedControlPanel extends StatelessWidget {
                 icon: const Icon(LucideIcons.minus, size: 18),
                 tooltip: 'Decrease speed (-0.05×)',
                 style: IconButton.styleFrom(
-                  backgroundColor:
-                      scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  backgroundColor: scheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   foregroundColor: scheme.onSurface,
                   padding: const EdgeInsets.all(10),
                   minimumSize: const Size(44, 44),
@@ -165,10 +166,12 @@ class TtsSpeedControlPanel extends StatelessWidget {
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 4,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 8),
-                    overlayShape:
-                        const RoundSliderOverlayShape(overlayRadius: 18),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 8,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 18,
+                    ),
                     activeTrackColor: scheme.primary,
                     inactiveTrackColor: scheme.surfaceContainerHighest,
                     thumbColor: scheme.primary,
@@ -200,8 +203,9 @@ class TtsSpeedControlPanel extends StatelessWidget {
                 icon: const Icon(LucideIcons.plus, size: 18),
                 tooltip: 'Increase speed (+0.05×)',
                 style: IconButton.styleFrom(
-                  backgroundColor:
-                      scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  backgroundColor: scheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   foregroundColor: scheme.onSurface,
                   padding: const EdgeInsets.all(10),
                   minimumSize: const Size(44, 44),
@@ -218,49 +222,58 @@ class TtsSpeedControlPanel extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             child: Row(
-              children: presetSpeeds.map((preset) {
-                final isSelected = (rate - preset).abs() < 0.02;
+              children: presetSpeeds
+                  .map((preset) {
+                    final isSelected = (rate - preset).abs() < 0.02;
 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: InkWell(
-                    onTap: () => onRateChanged(preset),
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      constraints: const BoxConstraints(minHeight: 38, minWidth: 44),
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? scheme.primary
-                            : scheme.surfaceContainerHighest
-                                .withValues(alpha: 0.5),
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: InkWell(
+                        onTap: () => onRateChanged(preset),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isSelected
-                              ? scheme.primary
-                              : scheme.outlineVariant.withValues(alpha: 0.3),
-                          width: 1,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minHeight: 38,
+                            minWidth: 44,
+                          ),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? scheme.primary
+                                : scheme.surfaceContainerHighest.withValues(
+                                    alpha: 0.5,
+                                  ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isSelected
+                                  ? scheme.primary
+                                  : scheme.outlineVariant.withValues(
+                                      alpha: 0.3,
+                                    ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            formatRate(preset),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? scheme.onPrimary
+                                  : scheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
                       ),
-                      child: Text(
-                        formatRate(preset),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.w500,
-                          color: isSelected
-                              ? scheme.onPrimary
-                              : scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(growable: false),
+                    );
+                  })
+                  .toList(growable: false),
             ),
           ),
         ],

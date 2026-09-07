@@ -33,8 +33,8 @@ class BookListTile extends StatelessWidget {
     final progressText = document.isFinished
         ? 'Finished'
         : document.pageCount > 0
-            ? 'Page ${document.lastReadPage + 1} of ${document.pageCount} (${document.progressFormatted})'
-            : document.readingStatus.label;
+        ? 'Page ${document.lastReadPage + 1} of ${document.pageCount} (${document.progressFormatted})'
+        : document.readingStatus.label;
 
     return InkWell(
       onTap: onTap,
@@ -149,8 +149,9 @@ class BookListTile extends StatelessWidget {
                         value: document.progressPercent,
                         minHeight: 3,
                         backgroundColor: scheme.surfaceContainerHighest,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(scheme.primary),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          scheme.primary,
+                        ),
                       ),
                     ),
                   ],
@@ -183,7 +184,9 @@ class BookListTile extends StatelessWidget {
                   icon: Icon(
                     LucideIcons.star,
                     size: 18,
-                    color: document.isFavorite ? appColors.warning : scheme.outline,
+                    color: document.isFavorite
+                        ? appColors.warning
+                        : scheme.outline,
                   ),
                   tooltip: document.isFavorite
                       ? 'Remove from favorites'

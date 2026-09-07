@@ -12,10 +12,15 @@ abstract interface class ReaderPreferencesRepository {
   TaskEither<Failure, Unit> saveGlobalPreferences(ReaderPreferences prefs);
 
   /// Fetches document-specific reading preferences.
-  TaskEither<Failure, Option<ReaderPreferences>> getDocumentPreferences(String path);
+  TaskEither<Failure, Option<ReaderPreferences>> getDocumentPreferences(
+    String path,
+  );
 
   /// Saves document-specific reading preferences.
-  TaskEither<Failure, Unit> saveDocumentPreferences(String path, ReaderPreferences prefs);
+  TaskEither<Failure, Unit> saveDocumentPreferences(
+    String path,
+    ReaderPreferences prefs,
+  );
 
   /// Resets all reading preferences in storage.
   TaskEither<Failure, Unit> resetAllPreferences();
@@ -23,4 +28,3 @@ abstract interface class ReaderPreferencesRepository {
   /// Imports and overrides global reading preferences.
   TaskEither<Failure, Unit> importGlobalPreferences(ReaderPreferences prefs);
 }
-

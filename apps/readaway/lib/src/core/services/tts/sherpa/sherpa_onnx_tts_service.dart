@@ -402,7 +402,11 @@ class SherpaOnnxTtsService {
         },
       );
       final rawWaveform = result['waveform'] as List<dynamic>?;
-      final waveform = rawWaveform?.map((e) => (e as num).toDouble()).toList(growable: false) ?? const <double>[];
+      final waveform =
+          rawWaveform
+              ?.map((e) => (e as num).toDouble())
+              .toList(growable: false) ??
+          const <double>[];
 
       return (
         file: File(result['outputPath'] as String),

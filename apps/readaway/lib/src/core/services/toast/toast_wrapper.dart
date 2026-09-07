@@ -49,7 +49,8 @@ class ToastWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveService = service ??
+    final effectiveService =
+        service ??
         (GetIt.I.isRegistered<ToastService>()
             ? GetIt.I.get<ToastService>()
             : null);

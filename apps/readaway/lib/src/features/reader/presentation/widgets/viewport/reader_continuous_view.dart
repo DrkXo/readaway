@@ -170,7 +170,10 @@ class _ReaderContinuousViewState extends State<ReaderContinuousView> {
   }
 
   GlobalKey _keyForIndex(int index) {
-    return _pageKeys.putIfAbsent(index, () => GlobalKey(debugLabel: 'continuous_page_$index'));
+    return _pageKeys.putIfAbsent(
+      index,
+      () => GlobalKey(debugLabel: 'continuous_page_$index'),
+    );
   }
 
   void _detectVisiblePage() {

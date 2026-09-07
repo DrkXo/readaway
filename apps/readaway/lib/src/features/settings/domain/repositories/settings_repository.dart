@@ -17,4 +17,3 @@ abstract interface class SettingsRepository {
   /// Stream of settings changes over time.
   Stream<Settings> watchSettings();
 }
-

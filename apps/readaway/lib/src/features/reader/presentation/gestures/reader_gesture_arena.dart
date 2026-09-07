@@ -21,8 +21,9 @@ enum _ClaimedGesture {
 /// 4. Tap -> 3-zone tap actions (Prev, Chrome toggle, Next).
 class ReaderGestureArena extends StatefulWidget {
   /// Timestamp of the last tap handled by an inner widget (e.g. link).
-  static DateTime _lastSuppressedTapTime =
-      DateTime.fromMillisecondsSinceEpoch(0);
+  static DateTime _lastSuppressedTapTime = DateTime.fromMillisecondsSinceEpoch(
+    0,
+  );
 
   /// Call this when an inner widget (such as a link) handles a tap,
   /// suppressing the arena's own tap action (chrome toggle / page turn).

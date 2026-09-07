@@ -55,9 +55,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       if (event.state == TtsPlaybackState.completed) {
         _onPageTtsCompleted();
       } else if (event.state == TtsPlaybackState.error) {
-        add(ReaderEvent.ttsErrorOccurred(
-          event.message ?? 'Speech synthesis error',
-        ));
+        add(
+          ReaderEvent.ttsErrorOccurred(
+            event.message ?? 'Speech synthesis error',
+          ),
+        );
       }
     });
   }
@@ -283,7 +285,10 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
   /// Starts TTS playback for the page at [pageIndex]: sets the active voice
   /// from settings, spins up the pipeline, and plays the page's text.
-  Future<void> _beginPageTts(int pageIndex, [Emitter<ReaderState>? emit]) async {
+  Future<void> _beginPageTts(
+    int pageIndex, [
+    Emitter<ReaderState>? emit,
+  ]) async {
     final prepResult = await ttsRepository.prepareForPlayback().run();
     final prepFailure = prepResult.getLeft().toNullable();
     if (prepFailure != null) {

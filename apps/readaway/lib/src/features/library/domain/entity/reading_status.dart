@@ -12,9 +12,9 @@ enum ReadingStatus {
   abandoned;
 
   String get label => switch (this) {
-        ReadingStatus.unread => 'Unread',
-        ReadingStatus.reading => 'Reading',
-        ReadingStatus.finished => 'Finished',
-        ReadingStatus.abandoned => 'On Hold',
-      };
+    ReadingStatus.unread => 'Unread',
+    ReadingStatus.reading => 'Reading',
+    ReadingStatus.finished => 'Finished',
+    ReadingStatus.abandoned => 'On Hold',
+  };
 }

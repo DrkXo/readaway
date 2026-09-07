@@ -19,40 +19,60 @@ dependency_overrides:
 melos:
   sdkPath: .fvm/flutter_sdk
 
+  categories:
+    app:
+      - apps/*
+    packages:
+      - "packages/**"
+
   packages:
     - apps/*
     - packages/*
 
   scripts:
     analyze:
-      run: melos exec -- dart analyze --fatal-infos
+      run: melos exec --depends-on="flutter" -- dart analyze --fatal-infos
       description: Run dart analyze in all packages
     format:
-      run: melos exec -- dart format --set-exit-if-changed .
+      run: melos exec --depends-on="flutter" -- dart format --set-exit-if-changed .
       description: Check formatting in all packages
-    codegen:apps:
-      run: cd apps/readaway && dart run build_runner build
+    codegen:
+      run: melos exec -c 1 --depends-on build_runner -- dart run build_runner build
       description: Run codegen in all apps
 
+    refresh:
+      run: melos exec --depends-on="flutter" --  flutter clean && flutter pub get
+      description: Refresh Apps & Packages Deps
+
     build:apk:debug:
-      run: cd apps/readaway && flutter build apk --debug
+      run: melos exec --category="apps" -- flutter build apk --debug
       description: Build debug APK for ReadAway app
     build:apk:release:
-      run: cd apps/readaway && flutter build apk --release
+      run: melos exec --category="apps" -- flutter build apk --release
       description: Build release APK for ReadAway app
     build:apk:split:
-      run: cd apps/readaway && flutter build apk --release --split-per-abi
+      run: melos exec --category="apps" -- flutter build apk --release --split-per-abi
       description: Build release APK split per ABI (armeabi-v7a, arm64-v8a, x86_64)
+    build:linux:
+      description: Build Linux binary and clean workspace for ReadAway app
+      steps:
+        - cd apps/readaway
+        - fvm flutter clean
+        - fvm flutter build linux --release
 
     submodules:update:
       run: git submodule update --init --recursive
       description: Update git submodules (MuPDF source)
     ffi:build:
-      run: cd packages/mupdf/native/mupdf && make -j$(nproc) XCFLAGS=-fPIC
       description: Build MuPDF native library from source
+      steps:
+        - cd packages/mupdf/native/mupdf
+        - make -j$(nproc) XCFLAGS=-fPIC
     ffi:clean:
       run: rm -rf packages/mupdf/native/mupdf/build/
       description: Clean MuPDF build artifacts
     ffi:generate:
-      run: cd packages/mupdf && dart run ffigen --config ffigen.yaml
       description: Regenerate FFI bindings from mupdf_wrapper.h
+      steps:
+        - cd packages/mupdf
+        - dart run ffigen --config ffigen.yaml

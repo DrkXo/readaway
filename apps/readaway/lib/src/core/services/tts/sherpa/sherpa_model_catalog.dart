@@ -297,8 +297,13 @@ class SherpaTtsModelCatalogService {
     );
   }
 
-  String? _buildPreviewUrl(String id, SherpaTtsModelType type, String langToken) {
-    const base = 'https://huggingface.co/csukuangfj/sherpa-onnx-tts-samples/resolve/main';
+  String? _buildPreviewUrl(
+    String id,
+    SherpaTtsModelType type,
+    String langToken,
+  ) {
+    const base =
+        'https://huggingface.co/csukuangfj/sherpa-onnx-tts-samples/resolve/main';
     if (id.contains('piper-')) {
       return '$base/piper/mp3/$langToken/$id/0.mp3';
     }

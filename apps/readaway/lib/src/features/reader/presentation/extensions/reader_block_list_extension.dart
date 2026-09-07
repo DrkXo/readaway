@@ -265,12 +265,14 @@ InlineSpan _mapSpan(
     final effectiveRecognizer = recognizer ?? inheritedRecognizer;
 
     final children = span.children
-        .map((c) => _mapSpan(
-              c,
-              ctx,
-              style,
-              inheritedRecognizer: effectiveRecognizer,
-            ))
+        .map(
+          (c) => _mapSpan(
+            c,
+            ctx,
+            style,
+            inheritedRecognizer: effectiveRecognizer,
+          ),
+        )
         .toList();
 
     return TextSpan(

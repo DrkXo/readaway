@@ -113,9 +113,10 @@ class _ScrollDirectionRow extends StatelessWidget {
               label: 'Vertical',
             ),
           ],
-          onChanged: (direction) => context.read<SettingsBloc>().updateReaderPrefs(
-            (p) => p.copyWith(scrollDirection: direction),
-          ),
+          onChanged: (direction) =>
+              context.read<SettingsBloc>().updateReaderPrefs(
+                (p) => p.copyWith(scrollDirection: direction),
+              ),
         );
       },
     );
@@ -158,9 +159,10 @@ class _PageTransitionRow extends StatelessWidget {
               label: 'Cover',
             ),
           ],
-          onChanged: (transition) => context.read<SettingsBloc>().updateReaderPrefs(
-            (p) => p.copyWith(pageTransition: transition),
-          ),
+          onChanged: (transition) =>
+              context.read<SettingsBloc>().updateReaderPrefs(
+                (p) => p.copyWith(pageTransition: transition),
+              ),
         );
       },
     );
@@ -174,8 +176,7 @@ class _PageSnapRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.pageSnap !=
-          curr.globalReaderPrefs.pageSnap,
+          prev.globalReaderPrefs.pageSnap != curr.globalReaderPrefs.pageSnap,
       builder: (context, state) {
         final prefs = state.globalReaderPrefs;
         return SettingsSwitchRow(

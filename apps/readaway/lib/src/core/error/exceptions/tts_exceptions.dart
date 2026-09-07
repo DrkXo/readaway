@@ -5,10 +5,9 @@ class TtsException implements Exception {
   const TtsException(this.message, [this.cause]);
 
   @override
-  String toString() =>
-      cause != null
-          ? 'TtsException: $message (caused by: $cause)'
-          : 'TtsException: $message';
+  String toString() => cause != null
+      ? 'TtsException: $message (caused by: $cause)'
+      : 'TtsException: $message';
 }
 
 class TtsModelNotLoadedException extends TtsException {
@@ -30,8 +29,7 @@ class ChunkingException implements Exception {
   const ChunkingException(this.message, [this.cause]);
 
   @override
-  String toString() =>
-      cause != null
-          ? 'ChunkingException: $message (caused by: $cause)'
-          : 'ChunkingException: $message';
+  String toString() => cause != null
+      ? 'ChunkingException: $message (caused by: $cause)'
+      : 'ChunkingException: $message';
 }

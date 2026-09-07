@@ -14,12 +14,16 @@ class ReaderErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ReaderBloc, ReaderState>(
-      buildWhen: (prev, curr) => prev.failure != curr.failure || prev.error != curr.error,
+      buildWhen: (prev, curr) =>
+          prev.failure != curr.failure || prev.error != curr.error,
       builder: (context, state) {
-        final failure = state.failure ??
+        final failure =
+            state.failure ??
             (state.error != null
                 ? UnexpectedFailure(state.error!)
-                : const UnexpectedFailure('An unexpected error occurred while loading this document.'));
+                : const UnexpectedFailure(
+                    'An unexpected error occurred while loading this document.',
+                  ));
 
         return FailureView(
           failure: failure,
@@ -27,11 +31,11 @@ class ReaderErrorView extends StatelessWidget {
             final targetPath = state.documentPath ?? state.fileName;
             if (targetPath != null) {
               context.read<ReaderBloc>().add(
-                    ReaderEvent.openDocument(
-                      path: targetPath,
-                      fileName: state.fileName,
-                    ),
-                  );
+                ReaderEvent.openDocument(
+                  path: targetPath,
+                  fileName: state.fileName,
+                ),
+              );
             }
           },
           retryLabel: 'Reload Document',

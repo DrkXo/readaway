@@ -31,8 +31,7 @@ class EdgeSwipePolicy {
     final t = threshold ?? constants.activationThresholdPx;
     final absX = deltaX.abs();
     final absY = deltaY.abs();
-    return absY >= t &&
-        absY > absX * constants.directionDominanceMultiplier;
+    return absY >= t && absY > absX * constants.directionDominanceMultiplier;
   }
 
   /// Computes updated auto-scroll speed based on vertical finger drag.
@@ -43,8 +42,8 @@ class EdgeSwipePolicy {
     double viewHeight,
   ) {
     if (viewHeight <= 0) return startSpeed;
-    final totalRange = constants.maxAutoScrollSpeed -
-        constants.minAutoScrollSpeed;
+    final totalRange =
+        constants.maxAutoScrollSpeed - constants.minAutoScrollSpeed;
     final change = (-deltaY / viewHeight) * totalRange;
     final raw = (startSpeed + change).clamp(
       constants.minAutoScrollSpeed,

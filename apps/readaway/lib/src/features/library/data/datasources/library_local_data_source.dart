@@ -30,7 +30,9 @@ class LibraryLocalDataSource {
       }
       return list;
     } catch (e) {
-      logger.e('[LibraryLocalDataSource] Failed to parse library documents: $e');
+      logger.e(
+        '[LibraryLocalDataSource] Failed to parse library documents: $e',
+      );
       return const [];
     }
   }

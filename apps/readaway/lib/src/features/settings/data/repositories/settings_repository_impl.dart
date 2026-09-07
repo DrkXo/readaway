@@ -57,4 +57,3 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Stream<Settings> watchSettings() => _settingsService.changes;
 }
-

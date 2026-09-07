@@ -60,7 +60,8 @@ class _FixedImagePageItemState extends State<FixedImagePageItem> {
 
   @override
   Widget build(BuildContext context) {
-    final image = widget.state.pageImages != null &&
+    final image =
+        widget.state.pageImages != null &&
             widget.index < widget.state.pageImages!.length
         ? widget.state.pageImages![widget.index]
         : null;

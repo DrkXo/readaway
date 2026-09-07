@@ -59,7 +59,6 @@ class _MiniPlayerCover extends StatelessWidget {
 
   final ReaderTtsRepository tts;
 
-
   @override
   Widget build(BuildContext context) {
     final appColors = context.appColors;

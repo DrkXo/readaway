@@ -101,7 +101,8 @@ class ToastService {
     VoidCallback? onTap,
     bool showCloseButton = true,
   }) {
-    final effectiveAction = action ??
+    final effectiveAction =
+        action ??
         (onRetry != null
             ? ToastAction(label: retryLabel, onPressed: onRetry)
             : null);
@@ -178,8 +179,10 @@ class ToastService {
   void showCustom({
     required Widget content,
     Duration duration = const Duration(seconds: 4),
-    EdgeInsetsGeometry margin =
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    EdgeInsetsGeometry margin = const EdgeInsets.symmetric(
+      horizontal: 16,
+      vertical: 16,
+    ),
   }) {
     final messenger = _messenger;
     if (messenger == null) return;

@@ -194,17 +194,17 @@ class _LibraryViewState extends State<_LibraryView> {
               if (state.failure != null)
                 FailureBanner(
                   failure: state.failure!,
-                  onRetry: () =>
-                      bloc.add(const LibraryEvent.loadRequested()),
-                  onDismiss: () =>
-                      bloc.add(const LibraryEvent.loadRequested()),
+                  onRetry: () => bloc.add(const LibraryEvent.loadRequested()),
+                  onDismiss: () => bloc.add(const LibraryEvent.loadRequested()),
                 ),
 
               // Search Bar (expandable)
               if (_isSearchVisible)
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                   child: TextField(
                     controller: _searchController,
                     autofocus: true,
@@ -334,8 +334,9 @@ class _LibraryViewState extends State<_LibraryView> {
                 _buildSelectModeBar(context, state, bloc),
             ],
           ),
-          floatingActionButton:
-              state.isSelectMode ? null : _buildFabBar(context, bloc),
+          floatingActionButton: state.isSelectMode
+              ? null
+              : _buildFabBar(context, bloc),
         );
       },
     );
@@ -450,12 +451,12 @@ class _LibraryViewState extends State<_LibraryView> {
         final crossAxisCount = width < 450
             ? 2
             : width < 700
-                ? 3
-                : width < 1000
-                    ? 4
-                    : width < 1300
-                        ? 5
-                        : 6;
+            ? 3
+            : width < 1000
+            ? 4
+            : width < 1300
+            ? 5
+            : 6;
 
         return GridView.builder(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 80),

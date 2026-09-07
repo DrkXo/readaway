@@ -101,9 +101,7 @@ class CoverPageTransitionStrategy extends ReaderPageTransitionStrategy {
       );
     } else {
       // Backward: Outgoing page slides OUT on top to reveal the stationary incoming page beneath
-      final outgoingOffset = isHorizontal
-          ? Offset(t, 0)
-          : Offset(0, t);
+      final outgoingOffset = isHorizontal ? Offset(t, 0) : Offset(0, t);
 
       return Stack(
         fit: StackFit.expand,

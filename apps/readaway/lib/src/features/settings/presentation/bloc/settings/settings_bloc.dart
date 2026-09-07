@@ -32,11 +32,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     required this.settingsRepository,
     required this.ttsModelRepository,
   }) : super(
-          const SettingsState(
-            globalReaderPrefs: ReaderPreferences(),
-            appSettings: Settings(),
-          ),
-        ) {
+         const SettingsState(
+           globalReaderPrefs: ReaderPreferences(),
+           appSettings: Settings(),
+         ),
+       ) {
     on<_LoadPrefs>(_onLoadPrefs, transformer: droppable());
     // `restartable` (not `droppable`) so rapid slider drags always land on the
     // final value: each new event cancels the previous in-flight handler.
@@ -65,8 +65,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _SetGlobalReaderPref event,
     Emitter<SettingsState> emit,
   ) async {
-    final result =
-        await preferencesRepository.saveGlobalPreferences(event.prefs).run();
+    final result = await preferencesRepository
+        .saveGlobalPreferences(event.prefs)
+        .run();
     result.fold(
       (failure) => logger.e('Failed to set global prefs: $failure'),
       (_) {
@@ -105,8 +106,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) async {
     final global = event.all['global'] ?? const ReaderPreferences();
-    final result =
-        await preferencesRepository.importGlobalPreferences(global).run();
+    final result = await preferencesRepository
+        .importGlobalPreferences(global)
+        .run();
     result.fold(
       (failure) => logger.e('Failed to import prefs: $failure'),
       (_) {
@@ -120,8 +122,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _LoadPrefs event,
     Emitter<SettingsState> emit,
   ) async {
-    final prefsResult =
-        await preferencesRepository.getGlobalPreferences().run();
+    final prefsResult = await preferencesRepository
+        .getGlobalPreferences()
+        .run();
     final settingsResult = await settingsRepository.getSettings().run();
 
     final prefs = prefsResult.getOrElse((_) => state.globalReaderPrefs);
@@ -142,8 +145,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   }
 
   void _onRefreshTts(_RefreshTts event, Emitter<SettingsState> emit) async {
-    final downloadedResult =
-        await ttsModelRepository.getDownloadedModelIds().run();
+    final downloadedResult = await ttsModelRepository
+        .getDownloadedModelIds()
+        .run();
 
     await downloadedResult.fold(
       (failure) async {
@@ -158,8 +162,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
               .globalViewSettings
               .ttsVoice;
           if (persisted != null && downloadedIds.contains(persisted)) {
-            final loadResult =
-                await ttsModelRepository.activateModel(persisted).run();
+            final loadResult = await ttsModelRepository
+                .activateModel(persisted)
+                .run();
             if (loadResult.isRight()) {
               activeModelId = persisted;
             }
@@ -314,8 +319,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         }
         emit(
           state.copyWith(
-            ttsDownloadedIds:
-                state.ttsDownloadedIds.where((e) => e != id).toSet(),
+            ttsDownloadedIds: state.ttsDownloadedIds
+                .where((e) => e != id)
+                .toSet(),
             ttsActiveModelId: wasActive ? null : state.ttsActiveModelId,
           ),
         );

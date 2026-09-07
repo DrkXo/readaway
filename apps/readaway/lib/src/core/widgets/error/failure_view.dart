@@ -38,13 +38,13 @@ class _FailureViewState extends State<FailureView> {
     String title,
     String description,
     String? suggestedSecondaryLabel,
-  }) _resolvePresentation(Failure failure) {
+  })
+  _resolvePresentation(Failure failure) {
     return switch (failure) {
       DocumentNotFoundFailure() => (
         icon: LucideIcons.fileX,
         title: 'Document Not Found',
-        description:
-            'The requested file could not be found or has been moved.',
+        description: 'The requested file could not be found or has been moved.',
         suggestedSecondaryLabel: 'Open Another File',
       ),
       UnsupportedDocumentFormatFailure(:final format) => (
@@ -74,7 +74,9 @@ class _FailureViewState extends State<FailureView> {
         description: 'Document selection was cancelled.',
         suggestedSecondaryLabel: 'Select Document',
       ),
-      StorageReadFailure() || StorageWriteFailure() || StorageResetFailure() => (
+      StorageReadFailure() ||
+      StorageWriteFailure() ||
+      StorageResetFailure() => (
         icon: LucideIcons.database,
         title: 'Storage Error',
         description:
@@ -135,7 +137,8 @@ class _FailureViewState extends State<FailureView> {
         description: 'Unable to route or play audio through device speakers.',
         suggestedSecondaryLabel: null,
       ),
-      StoragePermissionDeniedFailure() || NotificationPermissionDeniedFailure() => (
+      StoragePermissionDeniedFailure() ||
+      NotificationPermissionDeniedFailure() => (
         icon: LucideIcons.shieldAlert,
         title: 'Permission Denied',
         description:
@@ -189,13 +192,14 @@ class _FailureViewState extends State<FailureView> {
                 Text(
                   info.title,
                   textAlign: TextAlign.center,
-                  style: (widget.compact
-                          ? Theme.of(context).textTheme.titleMedium
-                          : Theme.of(context).textTheme.titleLarge)
-                      ?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onSurface,
-                  ),
+                  style:
+                      (widget.compact
+                              ? Theme.of(context).textTheme.titleMedium
+                              : Theme.of(context).textTheme.titleLarge)
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: scheme.onSurface,
+                          ),
                 ),
                 const SizedBox(height: 8),
 
@@ -204,86 +208,93 @@ class _FailureViewState extends State<FailureView> {
                   info.description,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
 
-              // Actions
-              if (widget.onRetry != null || widget.onSecondaryAction != null) ...[
-                const SizedBox(height: 20),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    if (widget.onRetry != null)
-                      FilledButton.icon(
-                        onPressed: widget.onRetry,
-                        icon: const Icon(LucideIcons.refreshCw, size: 16),
-                        label: Text(widget.retryLabel),
-                      ),
-                    if (widget.onSecondaryAction != null && secondaryLabel != null)
-                      OutlinedButton(
-                        onPressed: widget.onSecondaryAction,
-                        child: Text(secondaryLabel),
-                      ),
-                  ],
-                ),
-              ],
-
-              // Technical Details Collapsible (for debug / troubleshooting)
-              if (widget.failure.cause != null || kDebugMode) ...[
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => setState(() => _showDetails = !_showDetails),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                // Actions
+                if (widget.onRetry != null ||
+                    widget.onSecondaryAction != null) ...[
+                  const SizedBox(height: 20),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
                     children: [
-                      Text(
-                        _showDetails ? 'Hide Diagnostics' : 'View Diagnostics',
+                      if (widget.onRetry != null)
+                        FilledButton.icon(
+                          onPressed: widget.onRetry,
+                          icon: const Icon(LucideIcons.refreshCw, size: 16),
+                          label: Text(widget.retryLabel),
+                        ),
+                      if (widget.onSecondaryAction != null &&
+                          secondaryLabel != null)
+                        OutlinedButton(
+                          onPressed: widget.onSecondaryAction,
+                          child: Text(secondaryLabel),
+                        ),
+                    ],
+                  ),
+                ],
+
+                // Technical Details Collapsible (for debug / troubleshooting)
+                if (widget.failure.cause != null || kDebugMode) ...[
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () =>
+                        setState(() => _showDetails = !_showDetails),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _showDetails
+                              ? 'Hide Diagnostics'
+                              : 'View Diagnostics',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Icon(
+                          _showDetails
+                              ? LucideIcons.chevronUp
+                              : LucideIcons.chevronDown,
+                          size: 14,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_showDetails)
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHighest.withValues(
+                          alpha: 0.5,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: scheme.outlineVariant.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: SelectableText(
+                        '${widget.failure}\n'
+                        '${widget.failure.stackTrace != null ? '\nStack Trace:\n${widget.failure.stackTrace}' : ''}',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontFamily: 'monospace',
+                          fontSize: 11,
                           color: scheme.onSurfaceVariant,
                         ),
                       ),
-                      Icon(
-                        _showDetails
-                            ? LucideIcons.chevronUp
-                            : LucideIcons.chevronDown,
-                        size: 14,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                ),
-                if (_showDetails)
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: scheme.outlineVariant.withValues(alpha: 0.5),
-                      ),
                     ),
-                    child: SelectableText(
-                      '${widget.failure}\n'
-                      '${widget.failure.stackTrace != null ? '\nStack Trace:\n${widget.failure.stackTrace}' : ''}',
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

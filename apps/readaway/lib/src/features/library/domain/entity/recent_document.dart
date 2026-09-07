@@ -30,8 +30,7 @@ abstract class RecentDocument with _$RecentDocument {
   factory RecentDocument.fromJson(Map<String, dynamic> json) =>
       _$RecentDocumentFromJson(json);
 
-  String get displayTitle =>
-      title.trim().isNotEmpty ? title.trim() : fileName;
+  String get displayTitle => title.trim().isNotEmpty ? title.trim() : fileName;
 
   String? get displayAuthor =>
       (author != null && author!.trim().isNotEmpty) ? author!.trim() : null;
@@ -41,8 +40,7 @@ abstract class RecentDocument with _$RecentDocument {
     return ((lastReadPage + 1) / pageCount).clamp(0.0, 1.0);
   }
 
-  String get progressFormatted =>
-      '${(progressPercent * 100).toInt()}%';
+  String get progressFormatted => '${(progressPercent * 100).toInt()}%';
 
   bool get isFinished =>
       readingStatus == ReadingStatus.finished ||

@@ -40,12 +40,16 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
   void initState() {
     super.initState();
     // Hoist combined stream creation out of build() to prevent recreation and memory thrashing
-    _waveformStream = Rx.combineLatest2<PositionData, List<double>,
-        (PositionData, List<double>)>(
-      widget.tts.positionDataStream,
-      widget.tts.currentWaveform,
-      (posData, waveform) => (posData, waveform),
-    );
+    _waveformStream =
+        Rx.combineLatest2<
+          PositionData,
+          List<double>,
+          (PositionData, List<double>)
+        >(
+          widget.tts.positionDataStream,
+          widget.tts.currentWaveform,
+          (posData, waveform) => (posData, waveform),
+        );
   }
 
   @override
@@ -132,12 +136,14 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color:
-                                          scheme.surface.withValues(alpha: 0.9),
+                                      color: scheme.surface.withValues(
+                                        alpha: 0.9,
+                                      ),
                                       borderRadius: BorderRadius.circular(4),
                                       border: Border.all(
-                                        color: scheme.outlineVariant
-                                            .withValues(alpha: 0.4),
+                                        color: scheme.outlineVariant.withValues(
+                                          alpha: 0.4,
+                                        ),
                                         width: 0.5,
                                       ),
                                     ),
@@ -157,8 +163,9 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: scheme.primaryContainer
-                                .withValues(alpha: 0.6),
+                            color: scheme.primaryContainer.withValues(
+                              alpha: 0.6,
+                            ),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -189,7 +196,9 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                           Builder(
                             builder: (context) {
                               final pIdx = snapshot.data?.paragraphIndex;
-                              final pText = pIdx != null ? ' • ¶ ${pIdx + 1}' : '';
+                              final pText = pIdx != null
+                                  ? ' • ¶ ${pIdx + 1}'
+                                  : '';
                               return AppCaption(
                                 'Sentence $index of $total$pText',
                               );
@@ -335,14 +344,16 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             decoration: BoxDecoration(
                               color: _showSpeedPanel
                                   ? scheme.primary
-                                  : scheme.surfaceContainerHighest
-                                      .withValues(alpha: 0.6),
+                                  : scheme.surfaceContainerHighest.withValues(
+                                      alpha: 0.6,
+                                    ),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: _showSpeedPanel
                                     ? scheme.primary
-                                    : scheme.outlineVariant
-                                        .withValues(alpha: 0.3),
+                                    : scheme.outlineVariant.withValues(
+                                        alpha: 0.3,
+                                      ),
                               ),
                             ),
                             child: Row(

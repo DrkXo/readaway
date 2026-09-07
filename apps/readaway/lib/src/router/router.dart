@@ -84,13 +84,15 @@ class AppRouter {
     required LoggingService logger,
     required AppRoutes appRoutes,
     required FileOpenService fileOpenService,
-  })  : _logger = logger,
-        _appRoutes = appRoutes,
-        _fileOpenService = fileOpenService {
+  }) : _logger = logger,
+       _appRoutes = appRoutes,
+       _fileOpenService = fileOpenService {
     _fileOpenSubscription = _fileOpenService.incomingDocuments.listen((doc) {
       final route =
           '${_appRoutes.reader.path}?path=${Uri.encodeComponent(doc.path)}&fileName=${Uri.encodeComponent(doc.fileName)}';
-      _logger.logger.info('[AppRouter] Pushing runtime opened document: $route');
+      _logger.logger.info(
+        '[AppRouter] Pushing runtime opened document: $route',
+      );
       _router.push(route);
     });
   }

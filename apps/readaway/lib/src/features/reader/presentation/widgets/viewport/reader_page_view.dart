@@ -75,11 +75,13 @@ class _ReaderPageViewState extends State<ReaderPageView>
   void initState() {
     super.initState();
     _currentPage = widget.currentPage;
-    _animController = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..addListener(_onAnimationTick)
-     ..addStatusListener(_onAnimationStatus);
+    _animController =
+        AnimationController(
+            vsync: this,
+            duration: widget.duration,
+          )
+          ..addListener(_onAnimationTick)
+          ..addStatusListener(_onAnimationStatus);
 
     _curvedAnim = CurvedAnimation(
       parent: _animController,
@@ -125,7 +127,9 @@ class _ReaderPageViewState extends State<ReaderPageView>
     }
 
     // External state change from BLoC (e.g. TOC jump, direct state change)
-    if (widget.currentPage != _currentPage && !_animController.isAnimating && !_isInteractive) {
+    if (widget.currentPage != _currentPage &&
+        !_animController.isAnimating &&
+        !_isInteractive) {
       final isFwd = widget.currentPage > _currentPage;
       if (widget.transition == ReaderPageTransition.none) {
         setState(() {
@@ -302,14 +306,16 @@ class _ReaderPageViewState extends State<ReaderPageView>
     if (commit) {
       _curvedAnim.curve = Curves.easeOutCubic;
       final remaining = (1.0 - currentProgress).clamp(0.05, 1.0);
-      final durationMs =
-          (widget.duration.inMilliseconds * remaining).round().clamp(100, 400);
+      final durationMs = (widget.duration.inMilliseconds * remaining)
+          .round()
+          .clamp(100, 400);
       _animController.duration = Duration(milliseconds: durationMs);
       _animController.forward(from: currentProgress);
     } else {
       _curvedAnim.curve = Curves.easeOutCubic;
-      final durationMs =
-          (widget.duration.inMilliseconds * currentProgress).round().clamp(80, 300);
+      final durationMs = (widget.duration.inMilliseconds * currentProgress)
+          .round()
+          .clamp(80, 300);
       _animController.duration = Duration(milliseconds: durationMs);
       _animController.reverse(from: currentProgress);
     }
@@ -327,7 +333,9 @@ class _ReaderPageViewState extends State<ReaderPageView>
       final isVertical = widget.direction == ReaderScrollDirection.vertical;
       final delta = isVertical
           ? event.scrollDelta.dy
-          : (event.scrollDelta.dx != 0 ? event.scrollDelta.dx : event.scrollDelta.dy);
+          : (event.scrollDelta.dx != 0
+                ? event.scrollDelta.dx
+                : event.scrollDelta.dy);
 
       if (delta.abs() > 15) {
         _lastPointerScrollTime = now;
@@ -368,7 +376,8 @@ class _ReaderPageViewState extends State<ReaderPageView>
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBgColor = widget.backgroundColor ??
+    final effectiveBgColor =
+        widget.backgroundColor ??
         Theme.of(context).extension<AppColors>()?.readerBackground ??
         Theme.of(context).scaffoldBackgroundColor;
 

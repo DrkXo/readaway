@@ -35,14 +35,14 @@ class HttpService {
   HttpService({
     required this.logger,
     required this._pathService,
-  })  : _dio = Dio(
-          BaseOptions(
-            connectTimeout: _defaultTimeout,
-            receiveTimeout: _defaultTimeout,
-            sendTimeout: _defaultTimeout,
-            contentType: 'application/json',
-          ),
-        ) {
+  }) : _dio = Dio(
+         BaseOptions(
+           connectTimeout: _defaultTimeout,
+           receiveTimeout: _defaultTimeout,
+           sendTimeout: _defaultTimeout,
+           contentType: 'application/json',
+         ),
+       ) {
     _configureAdapter();
   }
 

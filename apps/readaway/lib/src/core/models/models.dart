@@ -6,7 +6,6 @@ part 'models.freezed.dart';
 part 'models.g.dart';
 part 'settings.dart';
 
-
 /// Contextual quick panels displayed above the reader bottom bar.
 enum ReaderBottomPanel {
   /// Display brightness overlay and theme switcher (light/system/dark).

@@ -15,7 +15,8 @@ class SettingsButton extends StatelessWidget {
     return AppIconButton(
       icon: LucideIcons.settings,
       tooltip: tooltip,
-      onPressed: onPressed ??
+      onPressed:
+          onPressed ??
           () {
             appRouter.push(appRoutes.settings.path);
           },

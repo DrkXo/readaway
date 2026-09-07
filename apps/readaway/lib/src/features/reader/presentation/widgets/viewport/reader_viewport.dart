@@ -30,7 +30,7 @@ class ReaderViewport extends StatelessWidget {
   /// Only fires for reflowable pages in vertical snap-paging mode. The parent uses this
   /// to decide whether the gesture arena should claim a vertical drag for page-turning.
   final void Function({required bool atTop, required bool atBottom})?
-      onScrollBoundaryChanged;
+  onScrollBoundaryChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -73,12 +73,14 @@ class ReaderViewport extends StatelessWidget {
           },
         );
 
-        final isContinuous = prefs.scrollDirection == ReaderScrollDirection.vertical &&
+        final isContinuous =
+            prefs.scrollDirection == ReaderScrollDirection.vertical &&
             !prefs.pageSnap;
 
         // The scroll boundary callback is only meaningful in vertical snap-paging mode.
         // In continuous mode the inner scroll view IS the primary scroller.
-        final isVerticalSnap = prefs.scrollDirection == ReaderScrollDirection.vertical &&
+        final isVerticalSnap =
+            prefs.scrollDirection == ReaderScrollDirection.vertical &&
             prefs.pageSnap;
 
         final Widget view;
@@ -105,7 +107,9 @@ class ReaderViewport extends StatelessWidget {
               idx,
               isContinuous: false,
               // Only pass boundary callback in vertical snap mode.
-              onScrollBoundaryChanged: isVerticalSnap ? onScrollBoundaryChanged : null,
+              onScrollBoundaryChanged: isVerticalSnap
+                  ? onScrollBoundaryChanged
+                  : null,
             ),
             onPageChangeRequested: (idx) => _onPageCommitted(context, idx),
           );
@@ -124,7 +128,8 @@ class ReaderViewport extends StatelessWidget {
     ReaderState state,
     int index, {
     bool isContinuous = false,
-    void Function({required bool atTop, required bool atBottom})? onScrollBoundaryChanged,
+    void Function({required bool atTop, required bool atBottom})?
+    onScrollBoundaryChanged,
   }) {
     if (state.isReflowable) {
       return ReflowablePageItem(

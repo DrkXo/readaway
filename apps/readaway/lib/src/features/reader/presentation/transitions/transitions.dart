@@ -20,7 +20,7 @@ class ReaderPageTransitionFactory {
   ReaderPageTransitionFactory._();
 
   static final Map<ReaderPageTransition, ReaderPageTransitionStrategy>
-      _registry = {
+  _registry = {
     ReaderPageTransition.none: const NonePageTransitionStrategy(),
     ReaderPageTransition.fade: const FadePageTransitionStrategy(),
     ReaderPageTransition.slide: const SlidePageTransitionStrategy(),

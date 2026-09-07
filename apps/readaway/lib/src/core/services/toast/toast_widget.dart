@@ -28,11 +28,11 @@ class ToastWidget extends StatelessWidget {
   });
 
   IconData _defaultIcon(ToastType type) => switch (type) {
-        ToastType.success => LucideIcons.circleCheck,
-        ToastType.error => LucideIcons.alertCircle,
-        ToastType.warning => LucideIcons.alertTriangle,
-        ToastType.info => LucideIcons.info,
-      };
+    ToastType.success => LucideIcons.circleCheck,
+    ToastType.error => LucideIcons.alertCircle,
+    ToastType.warning => LucideIcons.alertTriangle,
+    ToastType.info => LucideIcons.info,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +66,8 @@ class ToastWidget extends StatelessWidget {
               color: bg,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: border, width: 1),
-              boxShadow: appColors?.shadowMd ??
+              boxShadow:
+                  appColors?.shadowMd ??
                   const [
                     BoxShadow(
                       color: Color(0x1A000000),

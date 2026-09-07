@@ -65,7 +65,6 @@ abstract class Settings with _$Settings {
     @Default(AiSettings()) AiSettings aiSettings,
     @Default(GlobalReadSettings()) GlobalReadSettings globalReadSettings,
     @Default(GlobalViewSettings()) GlobalViewSettings globalViewSettings,
-   
   }) = _Settings;
 
   factory Settings.fromJson(Map<String, dynamic> json) =>

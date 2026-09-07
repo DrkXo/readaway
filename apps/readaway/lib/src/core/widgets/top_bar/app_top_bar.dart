@@ -52,8 +52,8 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => Size.fromHeight(
-        height ?? (_isDesktop ? desktopHeight : mobileHeight),
-      );
+    height ?? (_isDesktop ? desktopHeight : mobileHeight),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +63,8 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
     final windowService = GetIt.I<WindowService>();
 
     final barHeight = height ?? (isDesktop ? desktopHeight : mobileHeight);
-    final effectiveBgColor = backgroundColor ??
+    final effectiveBgColor =
+        backgroundColor ??
         scheme.surface.withValues(alpha: isDesktop ? 0.96 : 0.92);
 
     Widget? titleWidget = title;
@@ -136,11 +137,13 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
               Expanded(
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
-                  onPanStart:
-                      isDesktop ? (_) => windowService.startDragging() : null,
+                  onPanStart: isDesktop
+                      ? (_) => windowService.startDragging()
+                      : null,
                   onDoubleTap: isDesktop ? windowService.toggleMaximize : null,
                   child: Container(
-                    padding: contentPadding ??
+                    padding:
+                        contentPadding ??
                         const EdgeInsets.symmetric(horizontal: 8.0),
                     alignment: Alignment.centerLeft,
                     child: titleWidget ?? const SizedBox.shrink(),

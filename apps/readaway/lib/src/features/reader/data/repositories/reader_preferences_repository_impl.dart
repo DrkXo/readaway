@@ -40,7 +40,9 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   }
 
   @override
-  TaskEither<Failure, Option<ReaderPreferences>> getDocumentPreferences(String path) {
+  TaskEither<Failure, Option<ReaderPreferences>> getDocumentPreferences(
+    String path,
+  ) {
     return TaskEither.tryCatch(
       () async {
         final prefs = await _storage.readReaderDocumentPrefs(path);
@@ -55,7 +57,10 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> saveDocumentPreferences(String path, ReaderPreferences prefs) {
+  TaskEither<Failure, Unit> saveDocumentPreferences(
+    String path,
+    ReaderPreferences prefs,
+  ) {
     return TaskEither.tryCatch(
       () async {
         await _storage.writeReaderDocumentPrefs(path, prefs);
@@ -99,4 +104,3 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
     );
   }
 }
-

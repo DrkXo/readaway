@@ -41,7 +41,8 @@ class TtsVoiceOption {
           sherpaSpeakerId == other.sherpaSpeakerId;
 
   @override
-  int get hashCode => engine.hashCode ^ id.hashCode ^ (sherpaSpeakerId?.hashCode ?? 0);
+  int get hashCode =>
+      engine.hashCode ^ id.hashCode ^ (sherpaSpeakerId?.hashCode ?? 0);
 
   @override
   String toString() => 'TtsVoiceOption($engine, $id, $label)';

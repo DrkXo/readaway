@@ -12,8 +12,8 @@ class ReaderPageViewController extends ChangeNotifier {
     int initialPage = 0,
     int initialPageCount = 0,
     int? pageCount,
-  })  : _currentPage = initialPage,
-        _pageCount = pageCount ?? initialPageCount;
+  }) : _currentPage = initialPage,
+       _pageCount = pageCount ?? initialPageCount;
 
   int _currentPage;
   int _pageCount;
@@ -23,14 +23,15 @@ class ReaderPageViewController extends ChangeNotifier {
 
   /// Delegate for animated navigation provided by the active viewport widget (e.g. ReaderPageView).
   Future<void> Function(int targetPage, {Duration? duration, Curve? curve})?
-      animateToPageDelegate;
+  animateToPageDelegate;
 
   /// Delegate for instantaneous jump provided by the active viewport widget.
   void Function(int targetPage)? jumpToPageDelegate;
 
   /// Delegates for interactive page dragging provided by the active viewport widget.
   void Function()? dragStartDelegate;
-  void Function(double primaryDelta, double normalizedDelta)? dragUpdateDelegate;
+  void Function(double primaryDelta, double normalizedDelta)?
+  dragUpdateDelegate;
   void Function(double velocity)? dragEndDelegate;
   void Function()? dragCancelDelegate;
 
@@ -147,12 +148,14 @@ class ReaderPageViewController extends ChangeNotifier {
 
     if (atEnd) {
       // User scrolled to the very bottom and pulled up further
-      if (overscrollDelta > overscrollThreshold || velocity < -velocityThreshold) {
+      if (overscrollDelta > overscrollThreshold ||
+          velocity < -velocityThreshold) {
         nextPage();
       }
     } else {
       // User scrolled to the very top and pulled down further
-      if (overscrollDelta < -overscrollThreshold || velocity > velocityThreshold) {
+      if (overscrollDelta < -overscrollThreshold ||
+          velocity > velocityThreshold) {
         previousPage();
       }
     }

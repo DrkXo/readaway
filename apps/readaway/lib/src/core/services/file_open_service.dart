@@ -26,7 +26,9 @@ class IncomingDocument {
 
 @singleton
 class FileOpenService {
-  static const MethodChannel _channel = MethodChannel('dev.readaway/file_opener');
+  static const MethodChannel _channel = MethodChannel(
+    'dev.readaway/file_opener',
+  );
 
   final LoggingService _loggingService;
 
@@ -75,7 +77,9 @@ class FileOpenService {
         if (file.existsSync()) {
           final fileName = p.basename(cleaned);
           _log.info('[FileOpenService] Detected CLI argument file: $cleaned');
-          queueDocument(IncomingDocument(path: file.absolute.path, fileName: fileName));
+          queueDocument(
+            IncomingDocument(path: file.absolute.path, fileName: fileName),
+          );
           break;
         }
       } catch (e) {
@@ -94,19 +98,24 @@ class FileOpenService {
           final args = call.arguments;
           if (args is Map) {
             final path = args['path'] as String?;
-            final fileName = (args['fileName'] as String?) ??
+            final fileName =
+                (args['fileName'] as String?) ??
                 (path != null ? p.basename(path) : null);
             if (path != null && path.isNotEmpty) {
               _log.info('[FileOpenService] Received runtime openFile: $path');
-              queueDocument(IncomingDocument(
-                path: path,
-                fileName: fileName ?? p.basename(path),
-              ));
+              queueDocument(
+                IncomingDocument(
+                  path: path,
+                  fileName: fileName ?? p.basename(path),
+                ),
+              );
             }
           }
           break;
         default:
-          _log.warning('[FileOpenService] Unhandled platform call: ${call.method}');
+          _log.warning(
+            '[FileOpenService] Unhandled platform call: ${call.method}',
+          );
       }
     });
 
@@ -114,14 +123,19 @@ class FileOpenService {
       final initial = await _channel.invokeMethod<Map>('getInitialFile');
       if (initial != null) {
         final path = initial['path'] as String?;
-        final fileName = (initial['fileName'] as String?) ??
+        final fileName =
+            (initial['fileName'] as String?) ??
             (path != null ? p.basename(path) : null);
         if (path != null && path.isNotEmpty) {
-          _log.info('[FileOpenService] Received initial file from native: $path');
-          queueDocument(IncomingDocument(
-            path: path,
-            fileName: fileName ?? p.basename(path),
-          ));
+          _log.info(
+            '[FileOpenService] Received initial file from native: $path',
+          );
+          queueDocument(
+            IncomingDocument(
+              path: path,
+              fileName: fileName ?? p.basename(path),
+            ),
+          );
         }
       }
     } on MissingPluginException {

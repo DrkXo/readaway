@@ -51,7 +51,8 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
     return TaskEither.tryCatch(
       () async {
         _activeModelId = modelId;
-        if (_ttsService.hasLoadedModel && _ttsService.activeModel?.id != modelId) {
+        if (_ttsService.hasLoadedModel &&
+            _ttsService.activeModel?.id != modelId) {
           await _ttsService.loadModel(modelId);
         }
         return unit;

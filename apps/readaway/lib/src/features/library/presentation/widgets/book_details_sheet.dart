@@ -63,7 +63,7 @@ class BookDetailsSheet extends StatelessWidget {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
@@ -268,7 +268,9 @@ class BookDetailsSheet extends StatelessWidget {
                 IconButton.filledTonal(
                   icon: Icon(
                     LucideIcons.star,
-                    color: document.isFavorite ? appColors.warning : scheme.primary,
+                    color: document.isFavorite
+                        ? appColors.warning
+                        : scheme.primary,
                   ),
                   tooltip: document.isFavorite
                       ? 'Remove favorite'

@@ -40,10 +40,13 @@ class DocumentCoverService {
       final coverDir = await _pathService.getCoversDirectory();
 
       final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
-      final fileHash =
-          md5.convert(utf8.encode(filePath)).toString().substring(0, 8);
-      final coverFile =
-          File(p.join(coverDir.path, 'cover_${safeName}_$fileHash.png'));
+      final fileHash = md5
+          .convert(utf8.encode(filePath))
+          .toString()
+          .substring(0, 8);
+      final coverFile = File(
+        p.join(coverDir.path, 'cover_${safeName}_$fileHash.png'),
+      );
       if (await coverFile.exists()) {
         return coverFile.uri;
       }

@@ -52,8 +52,9 @@ class LibraryFilterBar extends StatelessWidget {
                     filter.label,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                       color: isSelected
                           ? scheme.onSurface
                           : scheme.onSurfaceVariant,

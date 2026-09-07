@@ -70,7 +70,8 @@ class TtsControllerService {
   bool _pipelineDone = false;
 
   AudioPlayerService get audioPlayer => _audioPlayer;
-  Stream<PositionData> get positionDataStream => _audioPlayer.positionDataStream;
+  Stream<PositionData> get positionDataStream =>
+      _audioPlayer.positionDataStream;
   ValueStream<TtsPlaybackEvent> get playbackState => _stateController.stream;
   Stream<TtsChunk> get currentChunk => _chunkController.stream.whereNotNull();
   ValueStream<int> get queueVersion => _queueController.stream;
@@ -82,10 +83,10 @@ class TtsControllerService {
   int? get currentChunkIndex => _currentIndex >= 0
       ? _currentIndex
       : (_masterQueue.isNotEmpty &&
-              _lastKnownIndex >= 0 &&
-              _lastKnownIndex < _masterQueue.length
-          ? _lastKnownIndex
-          : null);
+                _lastKnownIndex >= 0 &&
+                _lastKnownIndex < _masterQueue.length
+            ? _lastKnownIndex
+            : null);
   TtsVoiceOption? get currentVoice => _voice;
   List<TtsVoiceOption> _cachedInstalledVoices = const [];
   List<TtsVoiceOption> get availableVoices => _cachedInstalledVoices;
@@ -113,7 +114,8 @@ class TtsControllerService {
   }
 
   /// Currently active [TtsChunk], if any.
-  TtsChunk? get activeChunk => (currentChunkIndex != null &&
+  TtsChunk? get activeChunk =>
+      (currentChunkIndex != null &&
           currentChunkIndex! >= 0 &&
           currentChunkIndex! < _masterQueue.length)
       ? _masterQueue[currentChunkIndex!]
@@ -152,7 +154,9 @@ class TtsControllerService {
         // background synthesis is continuing and will append more.
       } else if (playerState.playing) {
         if (!_stateController.isClosed) {
-          _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.playing));
+          _stateController.add(
+            const TtsPlaybackEvent(TtsPlaybackState.playing),
+          );
         }
       } else if (!playerState.playing &&
           playerState.processingState == ProcessingState.ready) {
@@ -359,11 +363,16 @@ class TtsControllerService {
             duration: Duration(milliseconds: (result.duration * 1000).round()),
           );
 
-          initialSources.add(AudioSource.file(result.file.path, tag: mediaItem));
+          initialSources.add(
+            AudioSource.file(result.file.path, tag: mediaItem),
+          );
         } catch (e) {
           if (sessionId != _activeSessionId) return;
           consecutiveErrors++;
-          logger.w('TTS pre-buffering skipped problematic chunk $i ($consecutiveErrors/$maxConsecutiveErrors)', e);
+          logger.w(
+            'TTS pre-buffering skipped problematic chunk $i ($consecutiveErrors/$maxConsecutiveErrors)',
+            e,
+          );
           if (consecutiveErrors >= maxConsecutiveErrors) {
             _stateController.add(
               TtsPlaybackEvent(TtsPlaybackState.error, message: e.toString()),
@@ -438,7 +447,10 @@ class TtsControllerService {
         } catch (e) {
           if (sessionId != _activeSessionId) return;
           consecutiveErrors++;
-          logger.w('TTS synthesis skipped problematic chunk $i ($consecutiveErrors/$maxConsecutiveErrors)', e);
+          logger.w(
+            'TTS synthesis skipped problematic chunk $i ($consecutiveErrors/$maxConsecutiveErrors)',
+            e,
+          );
           if (consecutiveErrors >= maxConsecutiveErrors) {
             _stateController.add(
               TtsPlaybackEvent(TtsPlaybackState.error, message: e.toString()),
@@ -451,34 +463,34 @@ class TtsControllerService {
       if (sessionId == _activeSessionId) {
         _pipelineDone = true;
       }
-  } catch (e, st) {
-    if (sessionId != _activeSessionId) return;
-    logger.e('TTS playback pipeline crashed', e, st);
-    if (!_stateController.isClosed) {
-      _stateController.add(
-        TtsPlaybackEvent(
-          TtsPlaybackState.error,
-          message: 'Playback pipeline failure: $e',
-        ),
-      );
+    } catch (e, st) {
+      if (sessionId != _activeSessionId) return;
+      logger.e('TTS playback pipeline crashed', e, st);
+      if (!_stateController.isClosed) {
+        _stateController.add(
+          TtsPlaybackEvent(
+            TtsPlaybackState.error,
+            message: 'Playback pipeline failure: $e',
+          ),
+        );
+      }
     }
   }
-}
 
   Future<void> pause() => _audioPlayer.pause();
 
   Future<void> resume() async {
     final isStoppedOrCompleted =
         _stateController.value.state == TtsPlaybackState.stopped ||
-            _stateController.value.state == TtsPlaybackState.completed;
+        _stateController.value.state == TtsPlaybackState.completed;
 
     if (_audioPlayer.playlistLength > 0 && !isStoppedOrCompleted) {
       await _audioPlayer.resume();
     } else if (_masterQueue.isNotEmpty) {
       final startIndex =
           (_lastKnownIndex >= 0 && _lastKnownIndex < _masterQueue.length)
-              ? _lastKnownIndex
-              : 0;
+          ? _lastKnownIndex
+          : 0;
       final sessionId = ++_activeSessionId;
       await _audioPlayer.stopSession();
       await _cleanTempFiles();
@@ -516,7 +528,7 @@ class TtsControllerService {
       final playlistIndex = index - _pipelineStartIndex;
       final isStoppedOrCompleted =
           _stateController.value.state == TtsPlaybackState.stopped ||
-              _stateController.value.state == TtsPlaybackState.completed;
+          _stateController.value.state == TtsPlaybackState.completed;
 
       if (!isStoppedOrCompleted &&
           playlistIndex >= 0 &&

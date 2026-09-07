@@ -96,11 +96,13 @@ class _WaveformScrubberState extends State<WaveformScrubber> {
         : widget.position;
 
     final increasedPos = displayPos + const Duration(seconds: 2);
-    final clampedIncreased =
-        increasedPos > widget.duration ? widget.duration : increasedPos;
+    final clampedIncreased = increasedPos > widget.duration
+        ? widget.duration
+        : increasedPos;
     final decreasedPos = displayPos - const Duration(seconds: 2);
-    final clampedDecreased =
-        decreasedPos < Duration.zero ? Duration.zero : decreasedPos;
+    final clampedDecreased = decreasedPos < Duration.zero
+        ? Duration.zero
+        : decreasedPos;
 
     return Column(
       mainAxisSize: MainAxisSize.min,

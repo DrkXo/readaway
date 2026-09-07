@@ -24,4 +24,3 @@ Future<void> configureDependencies() async {
   // waits for worker + all async deps
   await _sl.allReady();
 }
-

@@ -16,10 +16,10 @@ class TtsWordSpan {
   final int endOffset;
 
   Map<String, dynamic> toMap() => {
-        'word': word,
-        'startOffset': startOffset,
-        'endOffset': endOffset,
-      };
+    'word': word,
+    'startOffset': startOffset,
+    'endOffset': endOffset,
+  };
 
   factory TtsWordSpan.fromMap(Map<dynamic, dynamic> map) {
     return TtsWordSpan(
@@ -112,16 +112,16 @@ class TtsChunk {
 
   /// Converts this [TtsChunk] into a primitive Map suitable for SendPort transmission.
   Map<String, dynamic> toMap() => {
-        'text': text,
-        'spokenText': spokenText,
-        'startOffset': startOffset,
-        'endOffset': endOffset,
-        'rawStartOffset': rawStartOffset ?? startOffset,
-        'rawEndOffset': rawEndOffset ?? endOffset,
-        'isParagraphEnd': isParagraphEnd,
-        'paragraphIndex': paragraphIndex,
-        'words': words.map((w) => w.toMap()).toList(growable: false),
-      };
+    'text': text,
+    'spokenText': spokenText,
+    'startOffset': startOffset,
+    'endOffset': endOffset,
+    'rawStartOffset': rawStartOffset ?? startOffset,
+    'rawEndOffset': rawEndOffset ?? endOffset,
+    'isParagraphEnd': isParagraphEnd,
+    'paragraphIndex': paragraphIndex,
+    'words': words.map((w) => w.toMap()).toList(growable: false),
+  };
 
   /// Deserializes a [TtsChunk] from an isolate response Map.
   factory TtsChunk.fromMap(Map<dynamic, dynamic> map) {
@@ -137,9 +137,9 @@ class TtsChunk {
       paragraphIndex: map['paragraphIndex'] as int? ?? 0,
       words: rawWords != null
           ? rawWords
-              .whereType<Map<dynamic, dynamic>>()
-              .map((w) => TtsWordSpan.fromMap(w))
-              .toList(growable: false)
+                .whereType<Map<dynamic, dynamic>>()
+                .map((w) => TtsWordSpan.fromMap(w))
+                .toList(growable: false)
           : const [],
     );
   }
