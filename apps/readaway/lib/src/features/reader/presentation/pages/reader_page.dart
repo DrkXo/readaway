@@ -68,7 +68,8 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
       listeners: [
         BlocListener<SettingsBloc, SettingsState>(
           listenWhen: (prev, curr) =>
-              prev.appSettings.screenWakeLock != curr.appSettings.screenWakeLock,
+              prev.appSettings.screenWakeLock !=
+              curr.appSettings.screenWakeLock,
           listener: (context, state) => syncSettings(state),
         ),
         BlocListener<ReaderBloc, ReaderState>(
@@ -80,7 +81,9 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
             if (feedback != null) {
               final actionRoute = feedback.actionRoute;
               final actionLabel = feedback.actionLabel;
-              context.read<ReaderBloc>().add(const ReaderEvent.consumeFeedback());
+              context.read<ReaderBloc>().add(
+                const ReaderEvent.consumeFeedback(),
+              );
 
               context.toasts.show(
                 message: feedback.failure.message,
@@ -103,8 +106,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
       ],
       child: BlocBuilder<ReaderBloc, ReaderState>(
         buildWhen: (prev, curr) =>
-            prev.failure != curr.failure ||
-            prev.fileName != curr.fileName,
+            prev.failure != curr.failure || prev.fileName != curr.fileName,
         builder: (context, readerState) {
           if (readerState.failure != null) {
             return Scaffold(
@@ -163,166 +165,194 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                       key: _scaffoldKey,
                       drawer: ReaderDrawer(
                         onJumpToPage: (page) {
-                          if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+                          if (_scaffoldKey.currentState?.isDrawerOpen ??
+                              false) {
                             _scaffoldKey.currentState?.closeDrawer();
                           }
                           jumpToPage(page);
                         },
                       ),
                       backgroundColor: context.appColors.readerBackground,
-                      body: ValueListenableBuilder<bool>(
-                        valueListenable: isChromeVisibleNotifier,
-                        builder: (context, isChromeVisible, _) {
-                          return Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              // 1. Fullscreen Document Viewport with Gesture Arena
-                              ReaderGestureArena(
-                                enabled: true,
-                                isVerticalPaging: prefs.scrollDirection == ReaderScrollDirection.vertical &&
-                                    prefs.pageSnap,
-                                isAtScrollBoundary: isAtScrollBoundary,
-                                currentSpeed: autoScrollController.speed,
-                                autoScrollActive: autoScrollController.isActive,
-                                onSpeedChange: onSpeedGestureChange,
-                                onPageDragStart: pageViewController.handleDragStart,
-                                onPageDragUpdate: pageViewController.handleDragUpdate,
-                                onPageDragEnd: pageViewController.handleDragEnd,
-                                onPageDragCancel: pageViewController.handleDragCancel,
-                                onTapAction: handleTapAction,
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final isWide = constraints.maxWidth >= 900;
-                                    final bodyContent = KeyedSubtree(
-                                      key: _contentKey,
-                                      child: Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          Positioned.fill(
-                                            child: ReaderViewport(
-                                              pageViewController: pageViewController,
-                                              prefs: prefs,
-                                              onScrollBoundaryChanged: onScrollBoundaryChanged,
+                      body: ReaderTtsPlayerOverlay(
+                        isChromeVisible: isChromeVisibleNotifier,
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: isChromeVisibleNotifier,
+                          builder: (context, isChromeVisible, _) {
+                            return Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                // 1. Fullscreen Document Viewport with Gesture Arena
+                                ReaderGestureArena(
+                                  enabled: true,
+                                  isVerticalPaging:
+                                      prefs.scrollDirection ==
+                                          ReaderScrollDirection.vertical &&
+                                      prefs.pageSnap,
+                                  isAtScrollBoundary: isAtScrollBoundary,
+                                  currentSpeed: autoScrollController.speed,
+                                  autoScrollActive:
+                                      autoScrollController.isActive,
+                                  onSpeedChange: onSpeedGestureChange,
+                                  onPageDragStart:
+                                      pageViewController.handleDragStart,
+                                  onPageDragUpdate:
+                                      pageViewController.handleDragUpdate,
+                                  onPageDragEnd:
+                                      pageViewController.handleDragEnd,
+                                  onPageDragCancel:
+                                      pageViewController.handleDragCancel,
+                                  onTapAction: handleTapAction,
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final isWide =
+                                          constraints.maxWidth >= 900;
+                                      final bodyContent = KeyedSubtree(
+                                        key: _contentKey,
+                                        child: Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            Positioned.fill(
+                                              child: ReaderViewport(
+                                                pageViewController:
+                                                    pageViewController,
+                                                prefs: prefs,
+                                                onScrollBoundaryChanged:
+                                                    onScrollBoundaryChanged,
+                                              ),
                                             ),
-                                          ),
-                                          ReaderBrightnessOverlay(
-                                            opacity: prefs.brightnessOverlay,
-                                          ),
-                                          ReaderContrastOverlay(
-                                            intensity: prefs.contrastOverlay,
-                                          ),
-                                          if (isWide && !_tocPinned)
-                                            ReaderTocPeek(
-                                              onPin: () =>
-                                                  setState(() => _tocPinned = true),
+                                            ReaderBrightnessOverlay(
+                                              opacity: prefs.brightnessOverlay,
+                                            ),
+                                            ReaderContrastOverlay(
+                                              intensity: prefs.contrastOverlay,
+                                            ),
+                                            if (isWide && !_tocPinned)
+                                              ReaderTocPeek(
+                                                onPin: () => setState(
+                                                  () => _tocPinned = true,
+                                                ),
+                                                onJumpToPage: jumpToPage,
+                                              ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (!isWide) return bodyContent;
+
+                                      return Row(
+                                        children: [
+                                          if (_tocPinned)
+                                            ReaderTocSidePanel(
+                                              onUnpin: () => setState(
+                                                () => _tocPinned = false,
+                                              ),
                                               onJumpToPage: jumpToPage,
                                             ),
+                                          Expanded(child: bodyContent),
                                         ],
-                                      ),
-                                    );
+                                      );
+                                    },
+                                  ),
+                                ),
 
-                                    if (!isWide) return bodyContent;
-
-                                    return Row(
-                                      children: [
-                                        if (_tocPinned)
-                                          ReaderTocSidePanel(
-                                            onUnpin: () =>
-                                                setState(() => _tocPinned = false),
-                                            onJumpToPage: jumpToPage,
+                                // 3. Floating Auto-Scroll Speed HUD Capsule
+                                ValueListenableBuilder<bool>(
+                                  valueListenable: speedHudVisibleNotifier,
+                                  builder: (context, visible, _) {
+                                    return ValueListenableBuilder<double>(
+                                      valueListenable: speedLevelNotifier,
+                                      builder: (context, speed, _) {
+                                        return Positioned(
+                                          top: 80,
+                                          left: 0,
+                                          right: 0,
+                                          child: ReaderAutoScrollHud(
+                                            speed: speed,
+                                            visible: visible,
                                           ),
-                                        Expanded(child: bodyContent),
-                                      ],
+                                        );
+                                      },
                                     );
                                   },
                                 ),
-                              ),
 
-                              // 3. Floating Auto-Scroll Speed HUD Capsule
-                              ValueListenableBuilder<bool>(
-                                valueListenable: speedHudVisibleNotifier,
-                                builder: (context, visible, _) {
-                                  return ValueListenableBuilder<double>(
-                                    valueListenable: speedLevelNotifier,
-                                    builder: (context, speed, _) {
-                                      return Positioned(
-                                        top: 80,
-                                        left: 0,
-                                        right: 0,
-                                        child: ReaderAutoScrollHud(
-                                          speed: speed,
-                                          visible: visible,
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-
-                              // 4. Floating Top Bar (Animated Slide + Fade)
-                              Positioned(
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                child: IgnorePointer(
-                                  ignoring: !isChromeVisible,
-                                  child: AnimatedSlide(
-                                    offset: isChromeVisible ? Offset.zero : const Offset(0, -1),
-                                    duration: gestureConstants.chromeAnimationDuration,
-                                    curve: Curves.easeOutCubic,
-                                    child: AnimatedOpacity(
-                                      opacity: isChromeVisible ? 1.0 : 0.0,
-                                      duration: gestureConstants.chromeAnimationDuration,
+                                // 4. Floating Top Bar (Animated Slide + Fade)
+                                Positioned(
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  child: IgnorePointer(
+                                    ignoring: !isChromeVisible,
+                                    child: AnimatedSlide(
+                                      offset: isChromeVisible
+                                          ? Offset.zero
+                                          : const Offset(0, -1),
+                                      duration: gestureConstants
+                                          .chromeAnimationDuration,
                                       curve: Curves.easeOutCubic,
-                                      child: SafeArea(
-                                        bottom: false,
-                                        child: Container(
-                                          color: context.appColors.readerBackground
-                                              .withValues(alpha: 0.95),
-                                          child: ReaderTopBar(
-                                            onOpenDrawer: () =>
-                                                _scaffoldKey.currentState?.openDrawer(),
-                                            onCloseDocument: closeReader,
+                                      child: AnimatedOpacity(
+                                        opacity: isChromeVisible ? 1.0 : 0.0,
+                                        duration: gestureConstants
+                                            .chromeAnimationDuration,
+                                        curve: Curves.easeOutCubic,
+                                        child: SafeArea(
+                                          bottom: false,
+                                          child: Container(
+                                            color: context
+                                                .appColors
+                                                .readerBackground
+                                                .withValues(alpha: 0.95),
+                                            child: ReaderTopBar(
+                                              onOpenDrawer: () => _scaffoldKey
+                                                  .currentState
+                                                  ?.openDrawer(),
+                                              onCloseDocument: closeReader,
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
 
-                              // 5. Floating Bottom Navigation Bar (Animated Slide + Fade)
-                              Positioned(
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                child: IgnorePointer(
-                                  ignoring: !isChromeVisible,
-                                  child: AnimatedSlide(
-                                    offset: isChromeVisible ? Offset.zero : const Offset(0, 1),
-                                    duration: gestureConstants.chromeAnimationDuration,
-                                    curve: Curves.easeOutCubic,
-                                    child: AnimatedOpacity(
-                                      opacity: isChromeVisible ? 1.0 : 0.0,
-                                      duration: gestureConstants.chromeAnimationDuration,
+                                // 5. Floating Bottom Navigation Bar (Animated Slide + Fade)
+                                Positioned(
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  child: IgnorePointer(
+                                    ignoring: !isChromeVisible,
+                                    child: AnimatedSlide(
+                                      offset: isChromeVisible
+                                          ? Offset.zero
+                                          : const Offset(0, 1),
+                                      duration: gestureConstants
+                                          .chromeAnimationDuration,
                                       curve: Curves.easeOutCubic,
-                                      child: ReaderBottomBar(
-                                        onOpenDrawer: () =>
-                                            _scaffoldKey.currentState?.openDrawer(),
-                                        onPreviousPage: pageViewController.previousPage,
-                                        onNextPage: pageViewController.nextPage,
-                                        onSeekToPage: pageViewController.goToPage,
+                                      child: AnimatedOpacity(
+                                        opacity: isChromeVisible ? 1.0 : 0.0,
+                                        duration: gestureConstants
+                                            .chromeAnimationDuration,
+                                        curve: Curves.easeOutCubic,
+                                        child: ReaderBottomBar(
+                                          onOpenDrawer: () => _scaffoldKey
+                                              .currentState
+                                              ?.openDrawer(),
+                                          onPreviousPage:
+                                              pageViewController.previousPage,
+                                          onNextPage:
+                                              pageViewController.nextPage,
+                                          onSeekToPage:
+                                              pageViewController.goToPage,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-
-                              // 6. Reader TTS Player Overlay
-                              const ReaderTtsPlayerOverlay(),
-                            ],
-                          );
-                        },
+                              ],
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),

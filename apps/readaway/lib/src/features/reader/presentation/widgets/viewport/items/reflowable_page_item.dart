@@ -190,8 +190,6 @@ class _ReflowablePageItemState extends State<ReflowablePageItem> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final hasNextPage = widget.index < widget.state.pageCount - 1;
-
     Widget buildPageContent() {
       return Padding(
         padding: EdgeInsets.only(
@@ -225,18 +223,6 @@ class _ReflowablePageItemState extends State<ReflowablePageItem> {
                   onTapUrl: (url) => _onTapUrl(context, url),
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // Elegant end-of-page cue
-              _EndOfPageIndicator(
-                currentPage: widget.index + 1,
-                totalPages: widget.state.pageCount,
-                hasNextPage: hasNextPage,
-                onNextPage: hasNextPage
-                    ? () => widget.onPageChangeRequested(widget.index + 1)
-                    : null,
-              ),
-              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -311,67 +297,6 @@ class _ReflowablePageItemState extends State<ReflowablePageItem> {
           logger.d('Link resolved to invalid page $page: $url');
         }
       },
-    );
-  }
-}
-
-class _EndOfPageIndicator extends StatelessWidget {
-  const _EndOfPageIndicator({
-    required this.currentPage,
-    required this.totalPages,
-    required this.hasNextPage,
-    this.onNextPage,
-  });
-
-  final int currentPage;
-  final int totalPages;
-  final bool hasNextPage;
-  final VoidCallback? onNextPage;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.appColors;
-    final hintColor = colors.readerForeground.withValues(alpha: 0.5);
-
-    return SizedBox(
-      width: double.infinity,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Spacer(),
-                Container(
-                  width: 40,
-                  height: 1,
-                  color: colors.readerForeground.withValues(alpha: 0.2),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    hasNextPage
-                        ? '$currentPage / $totalPages'
-                        : 'End of Document',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: hintColor,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 40,
-                  height: 1,
-                  color: colors.readerForeground.withValues(alpha: 0.2),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 
 /// Context and layout metrics provided to a [ReaderPageTransitionStrategy].

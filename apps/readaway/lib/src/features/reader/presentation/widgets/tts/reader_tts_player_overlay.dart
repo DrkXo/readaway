@@ -1,5 +1,6 @@
 import 'dart:ui' show lerpDouble;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:motor/motor.dart';
@@ -10,7 +11,14 @@ import 'reader_tts_full_player_view.dart';
 import 'reader_tts_mini_player_bar.dart';
 
 class ReaderTtsPlayerOverlay extends StatefulWidget {
-  const ReaderTtsPlayerOverlay({super.key});
+  const ReaderTtsPlayerOverlay({
+    super.key,
+    this.isChromeVisible,
+    this.child,
+  });
+
+  final ValueListenable<bool>? isChromeVisible;
+  final Widget? child;
 
   @override
   State<ReaderTtsPlayerOverlay> createState() => _ReaderTtsPlayerOverlayState();
@@ -21,8 +29,8 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
   static const _presenceDuration = Duration(milliseconds: 320);
 
   late final AnimationController _presence;
+  late final OverlayPortalController _portalController;
 
-  bool _sheetMounted = false;
   bool _active = false;
 
   @override
@@ -32,10 +40,17 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
       vsync: this,
       duration: _presenceDuration,
     );
+    _portalController = OverlayPortalController();
     final active = context.read<ReaderBloc>().state.ttsActive;
     _active = active;
-    _sheetMounted = active;
-    if (active) _presence.value = 1;
+    if (active) {
+      _presence.value = 1;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _active && !_portalController.isShowing) {
+          _portalController.show();
+        }
+      });
+    }
   }
 
   @override
@@ -47,15 +62,17 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
   void _syncWithActive(bool active) {
     setState(() {
       _active = active;
-      if (active) _sheetMounted = true;
     });
 
     if (active) {
+      if (!_portalController.isShowing) {
+        _portalController.show();
+      }
       _presence.forward();
     } else {
       _presence.reverse().whenCompleteOrCancel(() {
-        if (mounted && _presence.isDismissed) {
-          setState(() => _sheetMounted = false);
+        if (mounted && _presence.isDismissed && !_active) {
+          _portalController.hide();
         }
       });
     }
@@ -66,17 +83,22 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
     return BlocListener<ReaderBloc, ReaderState>(
       listenWhen: (prev, curr) => prev.ttsActive != curr.ttsActive,
       listener: (context, state) => _syncWithActive(state.ttsActive),
-      child: !_sheetMounted
-          ? const SizedBox.shrink()
-          : Positioned.fill(
-              child: IgnorePointer(
-                ignoring: !_active,
-                child: _ReaderTtsExpandableSheet(
-                  key: const ValueKey('tts_sheet'),
-                  presence: _presence,
-                ),
+      child: OverlayPortal(
+        controller: _portalController,
+        overlayChildBuilder: (context) {
+          return Positioned.fill(
+            child: IgnorePointer(
+              ignoring: !_active,
+              child: _ReaderTtsExpandableSheet(
+                key: const ValueKey('tts_sheet'),
+                presence: _presence,
+                isChromeVisible: widget.isChromeVisible,
               ),
             ),
+          );
+        },
+        child: widget.child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }
@@ -89,10 +111,12 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
 class _ReaderTtsExpandableSheet extends StatefulWidget {
   const _ReaderTtsExpandableSheet({
     required this.presence,
+    this.isChromeVisible,
     super.key,
   });
 
   final Animation<double> presence;
+  final ValueListenable<bool>? isChromeVisible;
 
   @override
   State<_ReaderTtsExpandableSheet> createState() =>
@@ -100,13 +124,15 @@ class _ReaderTtsExpandableSheet extends StatefulWidget {
 }
 
 class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const _miniMargin = 8.0;
   static const _flingVelocityThreshold = 700.0;
   static const _fadeOutEnd = 0.45;
   static const _fadeInStart = 0.3;
 
   late final SingleMotionController _motion;
+  late final AnimationController _chromeController;
+  late final Animation<double> _chromeAnimation;
 
   @override
   void initState() {
@@ -116,17 +142,63 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
       vsync: this,
       initialValue: 0.0,
     );
+    _chromeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+      value: (widget.isChromeVisible?.value ?? true) ? 1.0 : 0.0,
+    );
+    _chromeAnimation = CurvedAnimation(
+      parent: _chromeController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    widget.isChromeVisible?.addListener(_onChromeVisibleChanged);
+  }
+
+  @override
+  void didUpdateWidget(_ReaderTtsExpandableSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isChromeVisible != widget.isChromeVisible) {
+      oldWidget.isChromeVisible?.removeListener(_onChromeVisibleChanged);
+      widget.isChromeVisible?.addListener(_onChromeVisibleChanged);
+      final target = (widget.isChromeVisible?.value ?? true) ? 1.0 : 0.0;
+      if (_chromeController.value != target) {
+        if (target == 1.0) {
+          _chromeController.forward();
+        } else {
+          _chromeController.reverse();
+        }
+      }
+    }
+  }
+
+  void _onChromeVisibleChanged() {
+    final visible = widget.isChromeVisible?.value ?? true;
+    if (visible) {
+      _chromeController.forward();
+    } else {
+      _chromeController.reverse();
+    }
   }
 
   @override
   void dispose() {
+    widget.isChromeVisible?.removeListener(_onChromeVisibleChanged);
+    _chromeController.dispose();
     _motion.dispose();
     super.dispose();
   }
 
-  double _calculateDragExtent(double overlayHeight) {
-    final extent =
-        overlayHeight - ReaderBottomBar.height - ReaderTtsMiniPlayerBar.height;
+  double _calculateDragExtent({
+    required double overlayHeight,
+    required double effectiveControlBarHeight,
+    required double effectiveBottomPadding,
+  }) {
+    final extent = overlayHeight -
+        effectiveControlBarHeight -
+        ReaderTtsMiniPlayerBar.height -
+        _miniMargin -
+        effectiveBottomPadding;
     return extent > 0 ? extent : 1.0; // Prevent division by zero
   }
 
@@ -166,14 +238,16 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final overlayHeight = constraints.maxHeight;
-        const controlBarHeight = ReaderBottomBar.height;
-        final dragExtent = _calculateDragExtent(overlayHeight);
 
         return AnimatedBuilder(
-          animation: Listenable.merge([_motion, widget.presence]),
+          animation: Listenable.merge(
+            [_motion, widget.presence, _chromeAnimation],
+          ),
           builder: (context, child) {
             // Clamp t to handle physics overshoots gracefully in geometry lerps
             final t = _motion.value.clamp(0.0, 1.0);
@@ -194,15 +268,27 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
             final dy = (1.0 - curvedPresence) * slideDistance;
             final presenceOpacity = curvedPresence.clamp(0.0, 1.0);
 
-            final top = lerpDouble(
-              overlayHeight -
-                  controlBarHeight -
-                  ReaderTtsMiniPlayerBar.height -
-                  _miniMargin,
-              0,
-              t,
-            )!;
-            final bottom = lerpDouble(controlBarHeight + _miniMargin, 0, t)!;
+            final chromeAnim = _chromeAnimation.value;
+            final effectiveControlBarHeight =
+                ReaderBottomBar.height * chromeAnim;
+            final effectiveBottomPadding = (1.0 - chromeAnim) * bottomPadding;
+            final dragExtent = _calculateDragExtent(
+              overlayHeight: overlayHeight,
+              effectiveControlBarHeight: effectiveControlBarHeight,
+              effectiveBottomPadding: effectiveBottomPadding,
+            );
+
+            final collapsedTop = overlayHeight -
+                effectiveControlBarHeight -
+                ReaderTtsMiniPlayerBar.height -
+                _miniMargin -
+                effectiveBottomPadding;
+            final collapsedBottom = effectiveControlBarHeight +
+                _miniMargin +
+                effectiveBottomPadding;
+
+            final top = lerpDouble(collapsedTop, 0, t)!;
+            final bottom = lerpDouble(collapsedBottom, 0, t)!;
             final horizontalMargin = lerpDouble(_miniMargin, 0, t)!;
             final radius = lerpDouble(20, 0, t)!;
             final elevation = lerpDouble(6, 0, t)!;
