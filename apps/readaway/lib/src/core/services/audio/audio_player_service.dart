@@ -332,6 +332,18 @@ class AudioPlayerService {
   double get speed => _sessionPlayer.speed;
   Stream<double> get speedStream => _sessionPlayer.speedStream;
 
+  /// Sets playback pitch multiplier (e.g. 0.8, 1.0, 1.2).
+  Future<void> setPitch(double pitch) async {
+    try {
+      await _sessionPlayer.setPitch(pitch);
+    } catch (e, st) {
+      logger.e('Failed to set playback pitch: $pitch', e, st);
+    }
+  }
+
+  double get pitch => _sessionPlayer.pitch;
+  Stream<double> get pitchStream => _sessionPlayer.pitchStream;
+
   /// Sets playback volume (0.0 to 1.0).
   Future<void> setVolume(double volume) async {
     try {

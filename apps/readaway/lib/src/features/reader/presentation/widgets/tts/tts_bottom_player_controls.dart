@@ -11,7 +11,9 @@ import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../domain/repositories/reader_tts_repository.dart';
 import 'live_speech_waveform.dart';
+import 'tts_pitch_control_panel.dart';
 import 'tts_speed_control_panel.dart';
+import 'tts_voice_selection_panel.dart';
 import 'waveform_scrubber.dart';
 
 /// Bottom-anchored controls view with scrubber, speed button, and playback transport controls.
@@ -34,11 +36,14 @@ class TtsBottomPlayerControls extends StatefulWidget {
 
 class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
   bool _showSpeedPanel = false;
+  bool _showVoicePanel = false;
+  bool _showPitchPanel = false;
   late final Stream<(PositionData, List<double>)> _waveformStream;
 
   @override
   void initState() {
     super.initState();
+    widget.tts.loadAvailableVoices();
     // Hoist combined stream creation out of build() to prevent recreation and memory thrashing
     _waveformStream =
         Rx.combineLatest2<
@@ -73,11 +78,11 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
             ),
           ),
         ),
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 1. Current Active Sentence Info
+            // 1. Current Active Sentence Info Header (Clean, wide, prominent text)
             StreamBuilder<TtsChunk>(
               stream: tts.currentChunk,
               builder: (context, snapshot) {
@@ -100,8 +105,8 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             clipBehavior: Clip.none,
                             children: [
                               Container(
-                                width: 44,
-                                height: 58,
+                                width: 42,
+                                height: 54,
                                 decoration: BoxDecoration(
                                   color: scheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(6),
@@ -111,8 +116,8 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                                   borderRadius: BorderRadius.circular(6),
                                   child: Image.file(
                                     coverFile,
-                                    width: 44,
-                                    height: 58,
+                                    width: 42,
+                                    height: 54,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, _, _) => Center(
                                       child: LiveSpeechWaveform(
@@ -180,7 +185,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                         );
                       },
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,11 +193,11 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                           AppText(
                             text,
                             variant: AppTextVariant.title,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 3),
                           Builder(
                             builder: (context) {
                               final pIdx = snapshot.data?.paragraphIndex;
@@ -256,9 +261,183 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
               },
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            // 3. Intra-Sentence Interactive Waveform Progress Scrubber
+            // 3. Unified Speech Settings Toolbar (Voice, Speed, Pitch)
+            Row(
+              children: [
+                // 3a. Voice Selection Pill
+                Expanded(
+                  child: StreamBuilder<TtsVoiceOption?>(
+                    stream: tts.currentVoiceOption,
+                    initialData: tts.currentVoice,
+                    builder: (context, voiceSnap) {
+                      final voice = voiceSnap.data ?? tts.currentVoice;
+                      final label = voice?.label ?? 'Voice';
+
+                      return _buildSettingPill(
+                        scheme: scheme,
+                        icon: LucideIcons.mic,
+                        label: label,
+                        isActive: _showVoicePanel,
+                        tooltip: 'Voice: $label',
+                        onTap: () {
+                          setState(() {
+                            _showVoicePanel = !_showVoicePanel;
+                            if (_showVoicePanel) {
+                              _showSpeedPanel = false;
+                              _showPitchPanel = false;
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // 3b. Playback Speed Pill
+                Expanded(
+                  child: StreamBuilder<double>(
+                    stream: tts.rateStream,
+                    initialData: tts.rate,
+                    builder: (context, rateSnap) {
+                      final rate = rateSnap.data ?? 1.0;
+                      final label = TtsSpeedControlPanel.formatRate(rate);
+
+                      return _buildSettingPill(
+                        scheme: scheme,
+                        icon: LucideIcons.gauge,
+                        label: label,
+                        isActive: _showSpeedPanel,
+                        tooltip: 'Speed: $label (Long press to reset)',
+                        onTap: () {
+                          setState(() {
+                            _showSpeedPanel = !_showSpeedPanel;
+                            if (_showSpeedPanel) {
+                              _showVoicePanel = false;
+                              _showPitchPanel = false;
+                            }
+                          });
+                        },
+                        onLongPress: () => tts.setRate(1.0).run(),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // 3c. Voice Pitch Pill
+                Expanded(
+                  child: StreamBuilder<double>(
+                    stream: tts.pitchStream,
+                    initialData: tts.pitch,
+                    builder: (context, pitchSnap) {
+                      final pitch = pitchSnap.data ?? tts.pitch;
+                      final label = TtsPitchControlPanel.formatPitch(pitch);
+
+                      return _buildSettingPill(
+                        scheme: scheme,
+                        icon: LucideIcons.audioWaveform,
+                        label: label,
+                        isActive: _showPitchPanel,
+                        tooltip: 'Pitch: $label (Long press to reset)',
+                        onTap: () {
+                          setState(() {
+                            _showPitchPanel = !_showPitchPanel;
+                            if (_showPitchPanel) {
+                              _showVoicePanel = false;
+                              _showSpeedPanel = false;
+                            }
+                          });
+                        },
+                        onLongPress: () => tts.setPitch(1.0).run(),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            // 4. Expandable Settings Panel (Voice list, Speed slider, or Pitch slider)
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: _showVoicePanel
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: StreamBuilder<List<TtsVoiceOption>>(
+                        stream: tts.availableVoicesStream,
+                        initialData: tts.availableVoices,
+                        builder: (context, voicesSnap) {
+                          final voices =
+                              voicesSnap.data ?? tts.availableVoices;
+                          return StreamBuilder<TtsVoiceOption?>(
+                            stream: tts.currentVoiceOption,
+                            initialData: tts.currentVoice,
+                            builder: (context, voiceSnap) {
+                              final currentVoice =
+                                  voiceSnap.data ?? tts.currentVoice;
+                              return TtsVoiceSelectionPanel(
+                                currentVoice: currentVoice,
+                                availableVoices: voices,
+                                onVoiceSelected: (voice) {
+                                  tts.setVoice(voice);
+                                },
+                                onClose: () {
+                                  setState(() => _showVoicePanel = false);
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    )
+                  : _showSpeedPanel
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: StreamBuilder<double>(
+                            stream: tts.rateStream,
+                            initialData: tts.rate,
+                            builder: (context, rateSnap) {
+                              final rate = rateSnap.data ?? 1.0;
+                              return TtsSpeedControlPanel(
+                                rate: rate,
+                                onRateChanged: (newRate) =>
+                                    tts.setRate(newRate).run(),
+                                onClose: () {
+                                  setState(() => _showSpeedPanel = false);
+                                },
+                              );
+                            },
+                          ),
+                        )
+                      : _showPitchPanel
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: StreamBuilder<double>(
+                                stream: tts.pitchStream,
+                                initialData: tts.pitch,
+                                builder: (context, pitchSnap) {
+                                  final pitch = pitchSnap.data ?? 1.0;
+                                  return TtsPitchControlPanel(
+                                    pitch: pitch,
+                                    onPitchChanged: (newPitch) =>
+                                        tts.setPitch(newPitch).run(),
+                                    onClose: () {
+                                      setState(() => _showPitchPanel = false);
+                                    },
+                                  );
+                                },
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+            ),
+
+            const SizedBox(height: 8),
+
+            // 5. Intra-Sentence Interactive Waveform Progress Scrubber
             StreamBuilder<(PositionData, List<double>)>(
               stream: _waveformStream,
               builder: (context, snapshot) {
@@ -281,33 +460,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
 
             const SizedBox(height: 6),
 
-            // 3b. Expandable Speech Rate Controller Panel
-            AnimatedSize(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: _showSpeedPanel
-                  ? StreamBuilder<double>(
-                      stream: tts.rateStream,
-                      initialData: tts.rate,
-                      builder: (context, rateSnap) {
-                        final rate = rateSnap.data ?? 1.0;
-                        return TtsSpeedControlPanel(
-                          rate: rate,
-                          onRateChanged: (newRate) =>
-                              tts.setRate(newRate).run(),
-                          onClose: () {
-                            setState(() => _showSpeedPanel = false);
-                          },
-                        );
-                      },
-                    )
-                  : const SizedBox.shrink(),
-            ),
-
-            const SizedBox(height: 6),
-
-            // 4. Transport Control Row with Speed Pill and Playback Buttons
+            // 6. Transport Controls Row (Stop, Prev, Play/Pause, Next, Replay)
             StreamBuilder<TtsPlaybackEvent>(
               stream: tts.playbackState,
               builder: (context, snapshot) {
@@ -315,83 +468,14 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     snapshot.data?.state == TtsPlaybackState.playing;
 
                 return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // Playback Speed Selector Pill (toggles speed controller panel)
-                    StreamBuilder<double>(
-                      stream: tts.rateStream,
-                      initialData: tts.rate,
-                      builder: (context, rateSnap) {
-                        final rate = rateSnap.data ?? 1.0;
-                        final label = TtsSpeedControlPanel.formatRate(rate);
-
-                        return InkWell(
-                          onTap: () {
-                            setState(() {
-                              _showSpeedPanel = !_showSpeedPanel;
-                            });
-                          },
-                          onLongPress: () {
-                            tts.setRate(1.0).run();
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _showSpeedPanel
-                                  ? scheme.primary
-                                  : scheme.surfaceContainerHighest.withValues(
-                                      alpha: 0.6,
-                                    ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: _showSpeedPanel
-                                    ? scheme.primary
-                                    : scheme.outlineVariant.withValues(
-                                        alpha: 0.3,
-                                      ),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  LucideIcons.gauge,
-                                  size: 13,
-                                  color: _showSpeedPanel
-                                      ? scheme.onPrimary
-                                      : scheme.primary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  label,
-                                  style: TextStyle(
-                                    color: _showSpeedPanel
-                                        ? scheme.onPrimary
-                                        : scheme.onSurface,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 3),
-                                Icon(
-                                  _showSpeedPanel
-                                      ? LucideIcons.chevronDown
-                                      : LucideIcons.chevronUp,
-                                  size: 13,
-                                  color: _showSpeedPanel
-                                      ? scheme.onPrimary.withValues(alpha: 0.8)
-                                      : scheme.onSurfaceVariant,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                    // Stop Session Button
+                    AppIconButton(
+                      icon: LucideIcons.square,
+                      tooltip: 'Stop reading',
+                      onPressed: () => tts.stop().run(),
+                      size: AppIconButtonSize.medium,
                     ),
 
                     // Skip Previous Sentence
@@ -402,13 +486,14 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                       size: AppIconButtonSize.large,
                     ),
 
-                    // Play / Pause Button
+                    // Hero Play / Pause Button
                     IconButton.filled(
-                      iconSize: 28,
+                      iconSize: 30,
                       style: IconButton.styleFrom(
                         padding: const EdgeInsets.all(14),
                         backgroundColor: scheme.primary,
                         foregroundColor: scheme.onPrimary,
+                        elevation: 1,
                       ),
                       icon: Icon(
                         isPlaying ? LucideIcons.pause : LucideIcons.play,
@@ -431,11 +516,11 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                       size: AppIconButtonSize.large,
                     ),
 
-                    // Stop / Reset Session Button
+                    // Replay Current Sentence Button
                     AppIconButton(
-                      icon: LucideIcons.square,
-                      tooltip: 'Stop',
-                      onPressed: () => tts.stop().run(),
+                      icon: LucideIcons.rotateCcw,
+                      tooltip: 'Replay sentence',
+                      onPressed: () => tts.seek(Duration.zero).run(),
                       size: AppIconButtonSize.medium,
                     ),
                   ],
@@ -443,6 +528,78 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingPill({
+    required ColorScheme scheme,
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required String tooltip,
+    required VoidCallback onTap,
+    VoidCallback? onLongPress,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 7,
+            ),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? scheme.primary
+                  : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isActive
+                    ? scheme.primary
+                    : scheme.outlineVariant.withValues(alpha: 0.35),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 14,
+                  color: isActive ? scheme.onPrimary : scheme.primary,
+                ),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isActive ? scheme.onPrimary : scheme.onSurface,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 3),
+                Icon(
+                  isActive ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                  size: 12,
+                  color: isActive
+                      ? scheme.onPrimary.withValues(alpha: 0.8)
+                      : scheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

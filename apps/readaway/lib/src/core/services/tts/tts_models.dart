@@ -44,6 +44,18 @@ class TtsVoiceOption {
   int get hashCode =>
       engine.hashCode ^ id.hashCode ^ (sherpaSpeakerId?.hashCode ?? 0);
 
+  String get storageKey =>
+      sherpaSpeakerId != null ? '$id@$sherpaSpeakerId' : id;
+
+  bool matchesKey(String? key) {
+    if (key == null || key.isEmpty) return false;
+    if (key == storageKey) return true;
+    if (key == id && (sherpaSpeakerId == null || sherpaSpeakerId == 0)) {
+      return true;
+    }
+    return false;
+  }
+
   @override
   String toString() => 'TtsVoiceOption($engine, $id, $label)';
 }

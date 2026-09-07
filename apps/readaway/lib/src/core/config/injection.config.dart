@@ -287,6 +287,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i370.AudioPlayerService>(),
         gh<_i864.TtsChunkingService>(),
         gh<_i145.AppPathService>(),
+        gh<_i114.SettingsService>(),
       ),
       dispose: (i) => i.dispose(),
     );

@@ -46,6 +46,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   Stream<double> get rateStream => _ttsController.rateStream;
 
   @override
+  double get pitch => _ttsController.pitch;
+
+  @override
+  Stream<double> get pitchStream => _ttsController.pitchStream;
+
+  @override
   List<TtsChunk> get queue => _ttsController.queue;
 
   @override
@@ -62,6 +68,14 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
 
   @override
   List<TtsVoiceOption> get availableVoices => _ttsController.availableVoices;
+
+  @override
+  Stream<List<TtsVoiceOption>> get availableVoicesStream =>
+      _ttsController.availableVoicesStream;
+
+  @override
+  Future<List<TtsVoiceOption>> loadAvailableVoices() =>
+      _ttsController.getInstalledVoices();
 
   @override
   MediaItem? get baseTag => _ttsController.baseTag;
@@ -318,6 +332,21 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
       },
       (error, stack) => TtsSynthesisFailure(
         'Failed to set playback rate: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  TaskEither<Failure, Unit> setPitch(double pitch) {
+    return TaskEither.tryCatch(
+      () async {
+        await _ttsController.setPitch(pitch);
+        return unit;
+      },
+      (error, stack) => TtsSynthesisFailure(
+        'Failed to set playback pitch: $error',
         cause: error,
         stackTrace: stack,
       ),

@@ -94,13 +94,10 @@ class ReaderTtsFullPlayerView extends StatelessWidget {
           ),
 
           // 3. Anchored Bottom Media Controls Section
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: TtsBottomPlayerControls(
-              tts: tts,
-              onDragUpdate: onDragUpdate,
-              onDragEnd: onDragEnd,
-            ),
+          TtsBottomPlayerControls(
+            tts: tts,
+            onDragUpdate: onDragUpdate,
+            onDragEnd: onDragEnd,
           ),
         ],
       ),

@@ -8,8 +8,10 @@ import 'package:mutex/mutex.dart';
 import 'package:path/path.dart' as p;
 import 'package:rxdart/rxdart.dart';
 
+import '../../models/models.dart';
 import '../logging_service.dart';
 import '../path_service.dart';
+import '../settings_service.dart';
 import '../audio/audio_player_service.dart';
 import 'tts_chunker_service.dart';
 import 'tts_engine.dart';
@@ -24,23 +26,38 @@ class TtsControllerService {
     this._audioPlayer,
     this._chunkingService,
     this._pathService,
-  );
+    this._settingsService,
+  ) {
+    final gvs = _settingsService.settings.globalViewSettings;
+    _rate = gvs.ttsRate > 0 ? gvs.ttsRate : 1.0;
+    _pitch = gvs.ttsPitch > 0 ? gvs.ttsPitch : 1.0;
+    _rateController = BehaviorSubject<double>.seeded(_rate);
+    _pitchController = BehaviorSubject<double>.seeded(_pitch);
+    _settingsSubscription = _settingsService.changes.listen(_onSettingsChanged);
+  }
 
   final TtsEngineRegistry _engineRegistry;
   final AudioPlayerService _audioPlayer;
   final TtsChunkingService _chunkingService;
   final AppPathService _pathService;
+  final SettingsService _settingsService;
+
+  StreamSubscription<Settings>? _settingsSubscription;
 
   final Mutex _pipelineMutex = Mutex();
 
   TtsVoiceOption? _voice;
   double _rate = 1.0;
-  // ignore: unused_field
   double _pitch = 1.0;
 
   final _voiceController = BehaviorSubject<TtsVoiceOption?>.seeded(null);
   ValueStream<TtsVoiceOption?> get currentVoiceOption =>
       _voiceController.stream;
+
+  final _voicesController =
+      BehaviorSubject<List<TtsVoiceOption>>.seeded(const []);
+  ValueStream<List<TtsVoiceOption>> get availableVoicesStream =>
+      _voicesController.stream;
 
   List<TtsChunk> _masterQueue = [];
   int _currentIndex = -1;
@@ -60,7 +77,8 @@ class TtsControllerService {
 
   /// Bumped whenever [_masterQueue] is (re)built so UI can rebuild its sentence list.
   final _queueController = BehaviorSubject<int>.seeded(0);
-  final _rateController = BehaviorSubject<double>.seeded(1.0);
+  late final BehaviorSubject<double> _rateController;
+  late final BehaviorSubject<double> _pitchController;
   final _waveformController = BehaviorSubject<List<double>>.seeded(const []);
 
   StreamSubscription<int?>? _indexSubscription;
@@ -78,6 +96,8 @@ class TtsControllerService {
   ValueStream<List<double>> get currentWaveform => _waveformController.stream;
   double get rate => _rate;
   ValueStream<double> get rateStream => _rateController.stream;
+  double get pitch => _pitch;
+  ValueStream<double> get pitchStream => _pitchController.stream;
   List<TtsChunk> get queue => List.unmodifiable(_masterQueue);
   int get queueLength => _masterQueue.length;
   int? get currentChunkIndex => _currentIndex >= 0
@@ -89,20 +109,77 @@ class TtsControllerService {
             : null);
   TtsVoiceOption? get currentVoice => _voice;
   List<TtsVoiceOption> _cachedInstalledVoices = const [];
-  List<TtsVoiceOption> get availableVoices => _cachedInstalledVoices;
+  List<TtsVoiceOption> get availableVoices =>
+      _voicesController.value.isNotEmpty
+          ? _voicesController.value
+          : _cachedInstalledVoices;
+
+  void _onSettingsChanged(Settings settings) {
+    final gvs = settings.globalViewSettings;
+
+    // Sync rate if changed externally
+    if (gvs.ttsRate > 0 && (gvs.ttsRate - _rate).abs() >= 0.001) {
+      _rate = gvs.ttsRate;
+      if (!_rateController.isClosed) {
+        _rateController.add(_rate);
+      }
+      unawaited(_audioPlayer.setSpeed(_rate));
+    }
+
+    // Sync pitch if changed externally
+    if (gvs.ttsPitch > 0 && (gvs.ttsPitch - _pitch).abs() >= 0.001) {
+      _pitch = gvs.ttsPitch;
+      if (!_pitchController.isClosed) {
+        _pitchController.add(_pitch);
+      }
+      unawaited(_audioPlayer.setPitch(_pitch));
+    }
+
+    final targetVoiceKey = gvs.ttsVoice;
+    if (targetVoiceKey == null || targetVoiceKey.isEmpty) return;
+    if (_voice?.matchesKey(targetVoiceKey) ?? false) return;
+
+    if (_cachedInstalledVoices.isNotEmpty) {
+      final match = _cachedInstalledVoices
+          .where((v) => v.matchesKey(targetVoiceKey))
+          .firstOrNull;
+      if (match != null) {
+        unawaited(setVoice(match));
+      }
+    } else {
+      unawaited(() async {
+        final voices = await getInstalledVoices();
+        final match =
+            voices.where((v) => v.matchesKey(targetVoiceKey)).firstOrNull;
+        if (match != null) {
+          await setVoice(match);
+        }
+      }());
+    }
+  }
 
   /// Ensures worker isolate and TTS engine are initialized on-demand.
   Future<void> prepareForPlayback() async {
     await _chunkingService.start();
-    await getInstalledVoices();
-    if (_voice != null) {
-      final engine = _engineRegistry.getEngineForVoice(_voice!);
-      await engine.initialize();
-    } else if (_cachedInstalledVoices.isNotEmpty) {
-      await setVoice(_cachedInstalledVoices.first);
-      final engine = _engineRegistry.getEngineForVoice(_voice!);
+    final voices = await getInstalledVoices();
+
+    final targetVoiceKey = _settingsService.settings.globalViewSettings.ttsVoice;
+    TtsVoiceOption? resolvedVoice;
+
+    if (targetVoiceKey != null && targetVoiceKey.isNotEmpty) {
+      resolvedVoice =
+          voices.where((v) => v.matchesKey(targetVoiceKey)).firstOrNull;
+    }
+
+    resolvedVoice ??= _voice ?? voices.firstOrNull;
+
+    if (resolvedVoice != null) {
+      await setVoice(resolvedVoice);
+      final engine = _engineRegistry.getEngineForVoice(resolvedVoice);
       await engine.initialize();
     }
+    await _audioPlayer.setSpeed(_rate);
+    await _audioPlayer.setPitch(_pitch);
   }
 
   /// Stops playback, terminates chunker and TTS worker isolates, and cleans temporary files.
@@ -284,8 +361,9 @@ class TtsControllerService {
   Future<void> _synthesizeAndPlayPipeline(
     int sessionId,
     int startIndex,
-    MediaItem? baseTag,
-  ) async {
+    MediaItem? baseTag, {
+    bool autoPlay = true,
+  }) async {
     _pipelineStartIndex = startIndex;
     _currentIndex = startIndex;
     _lastKnownIndex = startIndex;
@@ -297,8 +375,17 @@ class TtsControllerService {
 
       if (_voice == null) {
         final voices = await getInstalledVoices();
-        if (voices.isNotEmpty) {
-          await setVoice(voices.first);
+        final targetVoiceKey =
+            _settingsService.settings.globalViewSettings.ttsVoice;
+        TtsVoiceOption? resolvedVoice;
+        if (targetVoiceKey != null && targetVoiceKey.isNotEmpty) {
+          resolvedVoice =
+              voices.where((v) => v.matchesKey(targetVoiceKey)).firstOrNull;
+        }
+        resolvedVoice ??= voices.firstOrNull;
+
+        if (resolvedVoice != null) {
+          await setVoice(resolvedVoice);
         } else {
           throw const SherpaTtsException(
             'No TTS voice available. Download a voice first.',
@@ -339,6 +426,7 @@ class TtsControllerService {
             outputPath: filePath,
             voice: _voice!,
             speed: _rate <= 0 ? 1.0 : _rate,
+            pitch: _pitch <= 0 ? 1.0 : _pitch,
           );
           consecutiveErrors = 0;
           if (sessionId != _activeSessionId) {
@@ -391,7 +479,7 @@ class TtsControllerService {
         await _audioPlayer.setPlaylist(
           initialSources,
           initialIndex: 0,
-          autoPlay: true,
+          autoPlay: autoPlay,
         );
       }
 
@@ -419,6 +507,7 @@ class TtsControllerService {
             outputPath: filePath,
             voice: _voice!,
             speed: _rate <= 0 ? 1.0 : _rate,
+            pitch: _pitch <= 0 ? 1.0 : _pitch,
           );
           consecutiveErrors = 0;
           if (sessionId != _activeSessionId) {
@@ -577,6 +666,9 @@ class TtsControllerService {
 
   Future<List<TtsVoiceOption>> getInstalledVoices() async {
     _cachedInstalledVoices = await _engineRegistry.getAllInstalledVoices();
+    if (!_voicesController.isClosed) {
+      _voicesController.add(_cachedInstalledVoices);
+    }
     return _cachedInstalledVoices;
   }
 
@@ -589,27 +681,94 @@ class TtsControllerService {
       _rateController.add(rate);
     }
     await _audioPlayer.setSpeed(rate);
+
+    final currentSettings = _settingsService.settings;
+    if ((currentSettings.globalViewSettings.ttsRate - rate).abs() >= 0.001) {
+      _settingsService.scheduleSave(
+        currentSettings.copyWith(
+          globalViewSettings: currentSettings.globalViewSettings.copyWith(
+            ttsRate: rate,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> setPitch(double pitch) async {
     _pitch = pitch;
+    if (!_pitchController.isClosed) {
+      _pitchController.add(pitch);
+    }
+    await _audioPlayer.setPitch(pitch);
+
+    final currentSettings = _settingsService.settings;
+    if ((currentSettings.globalViewSettings.ttsPitch - pitch).abs() >= 0.001) {
+      _settingsService.scheduleSave(
+        currentSettings.copyWith(
+          globalViewSettings: currentSettings.globalViewSettings.copyWith(
+            ttsPitch: pitch,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> setVoice(TtsVoiceOption voice) async {
+    final voiceChanged = _voice != voice;
     _voice = voice;
     if (!_voiceController.isClosed) {
       _voiceController.add(voice);
+    }
+
+    // Persist selected voice to settings
+    final currentSettings = _settingsService.settings;
+    if (currentSettings.globalViewSettings.ttsVoice != voice.storageKey) {
+      await _settingsService.save(
+        currentSettings.copyWith(
+          globalViewSettings: currentSettings.globalViewSettings.copyWith(
+            ttsVoice: voice.storageKey,
+          ),
+        ),
+      );
+    }
+
+    if (voiceChanged) {
+      final engine = _engineRegistry.getEngineForVoice(voice);
+      await engine.initialize();
+
+      // If playback is currently active (playing or paused), re-synthesize from current chunk with new voice
+      final isPlaying =
+          _stateController.value.state == TtsPlaybackState.playing;
+      final isPaused = _stateController.value.state == TtsPlaybackState.paused;
+      if (_masterQueue.isNotEmpty && (isPlaying || isPaused)) {
+        final cur = _currentIndex >= 0 ? _currentIndex : _lastKnownIndex;
+        final sessionId = ++_activeSessionId;
+        await _audioPlayer.stopSession();
+        await _cleanTempFiles();
+        _pipelineDone = false;
+        unawaited(
+          _synthesizeAndPlayPipeline(
+            sessionId,
+            cur,
+            _baseTag,
+            autoPlay: isPlaying,
+          ),
+        );
+      }
     }
   }
 
   @disposeMethod
   Future<void> dispose() async {
     await releaseResources();
+    _settingsSubscription?.cancel();
     await _stateController.close();
     await _chunkController.close();
     await _queueController.close();
     await _voiceController.close();
+    await _voicesController.close();
     await _rateController.close();
+    await _pitchController.close();
     await _waveformController.close();
   }
 }

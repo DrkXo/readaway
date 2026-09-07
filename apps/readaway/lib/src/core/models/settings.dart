@@ -312,6 +312,7 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default(0.3) double readingRulerOpacity,
     @Default('#000000') String readingRulerColor,
     @Default(1.0) double ttsRate,
+    @Default(1.0) double ttsPitch,
     @Default(500) int ttsSentenceGap,
     @Default(1000) int ttsParagraphGap,
     String? ttsVoice,

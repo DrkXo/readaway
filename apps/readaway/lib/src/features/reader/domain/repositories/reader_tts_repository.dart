@@ -35,6 +35,12 @@ abstract interface class ReaderTtsRepository {
   /// Stream of playback rate changes.
   Stream<double> get rateStream;
 
+  /// Current playback pitch multiplier.
+  double get pitch;
+
+  /// Stream of playback pitch changes.
+  Stream<double> get pitchStream;
+
   /// All sentence chunks for the current page.
   List<TtsChunk> get queue;
 
@@ -52,6 +58,12 @@ abstract interface class ReaderTtsRepository {
 
   /// List of local models/voices available for TTS speech.
   List<TtsVoiceOption> get availableVoices;
+
+  /// Stream of available local voice options.
+  Stream<List<TtsVoiceOption>> get availableVoicesStream;
+
+  /// Refreshes and returns available local voice options.
+  Future<List<TtsVoiceOption>> loadAvailableVoices();
 
   /// Media item tag containing album/title/artist/artUri for notifications.
   MediaItem? get baseTag;
@@ -109,4 +121,7 @@ abstract interface class ReaderTtsRepository {
 
   /// Sets speech playback rate.
   TaskEither<Failure, Unit> setRate(double rate);
+
+  /// Sets speech playback pitch.
+  TaskEither<Failure, Unit> setPitch(double pitch);
 }

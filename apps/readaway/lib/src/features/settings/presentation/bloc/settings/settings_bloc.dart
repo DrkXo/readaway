@@ -26,6 +26,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
   final _ttsDownloadSubs =
       <String, StreamSubscription<ModelDownloadProgress>>{};
+  StreamSubscription<Settings>? _settingsSub;
 
   SettingsBloc({
     required this.preferencesRepository,
@@ -59,6 +60,15 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
     add(const SettingsEvent.loadPrefs());
     add(const _RefreshTts());
+
+    _settingsSub = settingsRepository.watchSettings().listen((settings) {
+      final voice = settings.globalViewSettings.ttsVoice;
+      final modelId =
+          voice != null && voice.contains('@') ? voice.split('@').first : voice;
+      if (modelId != state.ttsActiveModelId && !isClosed) {
+        add(const _RefreshTts());
+      }
+    });
   }
 
   void _onSetGlobalReaderPref(
@@ -402,6 +412,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
   @override
   Future<void> close() {
+    _settingsSub?.cancel();
     for (final sub in _ttsDownloadSubs.values) {
       sub.cancel();
     }
