@@ -37,10 +37,6 @@ android {
                 arguments += listOf("APP_SUPPORT_FLEXIBLE_PAGE_SIZES=true")
             }
         }
-
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
-        }
     }
 
     packaging {
@@ -55,12 +51,21 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+
+            // Enable R8 tree-shaking and resource shrinking for release builds.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("com.google.android.play:core:1.10.3")
     constraints {
         implementation("org.chromium.net:cronet-api:143.7445.0")
         implementation("org.chromium.net:cronet-shared:143.7445.0")
