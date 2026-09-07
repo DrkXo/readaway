@@ -22,86 +22,123 @@ class CoverPageTransitionStrategy extends ReaderPageTransitionStrategy {
     required PageTransitionMetrics metrics,
   }) {
     final t = progress.clamp(0.0, 1.0);
-    final sign = metrics.isForward ? 1.0 : -1.0;
     final isHorizontal = metrics.isHorizontal;
+    final isForward = metrics.isForward;
 
-    // Incoming page offset from 1.0 to 0.0
-    final incomingOffset = isHorizontal
-        ? Offset(sign * (1.0 - t), 0)
-        : Offset(0, sign * (1.0 - t));
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Outgoing page remains stationary beneath
-        Stack(
-          fit: StackFit.expand,
-          children: [
-            outgoingPage,
-            if (dimBackground && t > 0)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Container(
-                    color: Colors.black.withValues(
-                      alpha: (t * 0.15).clamp(0.0, 1.0),
+    Widget buildElevationShadow() {
+      return Positioned(
+        left: isHorizontal ? -elevation : 0,
+        top: !isHorizontal ? -elevation : 0,
+        right: isHorizontal ? null : 0,
+        bottom: !isHorizontal ? null : 0,
+        width: isHorizontal ? elevation : null,
+        height: !isHorizontal ? elevation : null,
+        child: IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: isHorizontal
+                  ? LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.25),
+                      ],
+                    )
+                  : LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.25),
+                      ],
                     ),
-                  ),
-                ),
-              ),
-          ],
+            ),
+          ),
         ),
+      );
+    }
 
-        // Incoming page slides over
-        FractionalTranslation(
-          translation: incomingOffset,
-          child: Stack(
+    if (isForward) {
+      // Forward: Incoming page slides IN on top, covering the stationary outgoing page
+      final incomingOffset = isHorizontal
+          ? Offset(1.0 - t, 0)
+          : Offset(0, 1.0 - t);
+
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          // Outgoing stationary page beneath
+          Stack(
             fit: StackFit.expand,
             children: [
-              if (t < 1.0)
-                Positioned(
-                  left: isHorizontal ? (metrics.isForward ? -elevation : null) : 0,
-                  right: isHorizontal ? (!metrics.isForward ? -elevation : null) : 0,
-                  top: !isHorizontal ? (metrics.isForward ? -elevation : null) : 0,
-                  bottom: !isHorizontal ? (!metrics.isForward ? -elevation : null) : 0,
-                  width: isHorizontal ? elevation : null,
-                  height: !isHorizontal ? elevation : null,
+              outgoingPage,
+              if (dimBackground && t > 0)
+                Positioned.fill(
                   child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: isHorizontal
-                            ? LinearGradient(
-                                begin: metrics.isForward
-                                    ? Alignment.centerLeft
-                                    : Alignment.centerRight,
-                                end: metrics.isForward
-                                    ? Alignment.centerRight
-                                    : Alignment.centerLeft,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.22),
-                                ],
-                              )
-                            : LinearGradient(
-                                begin: metrics.isForward
-                                    ? Alignment.topCenter
-                                    : Alignment.bottomCenter,
-                                end: metrics.isForward
-                                    ? Alignment.bottomCenter
-                                    : Alignment.topCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.22),
-                                ],
-                              ),
+                    child: Container(
+                      color: Colors.black.withValues(
+                        alpha: (t * 0.18).clamp(0.0, 1.0),
                       ),
                     ),
                   ),
                 ),
-              incomingPage,
             ],
           ),
-        ),
-      ],
-    );
+
+          // Incoming sheet slides in over outgoing
+          FractionalTranslation(
+            translation: incomingOffset,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (t < 1.0) buildElevationShadow(),
+                incomingPage,
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      // Backward: Outgoing page slides OUT on top to reveal the stationary incoming page beneath
+      final outgoingOffset = isHorizontal
+          ? Offset(t, 0)
+          : Offset(0, t);
+
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          // Incoming page waiting stationary beneath
+          Stack(
+            fit: StackFit.expand,
+            children: [
+              incomingPage,
+              if (dimBackground && t < 1.0)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Container(
+                      color: Colors.black.withValues(
+                        alpha: ((1.0 - t) * 0.18).clamp(0.0, 1.0),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+
+          // Outgoing sheet slides away to reveal the incoming page
+          FractionalTranslation(
+            translation: outgoingOffset,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (t < 1.0) buildElevationShadow(),
+                outgoingPage,
+              ],
+            ),
+          ),
+        ],
+      );
+    }
   }
 }

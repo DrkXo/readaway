@@ -1,9 +1,12 @@
 library;
 
 // Common
+export 'common/reader_auto_scroll_hud.dart';
 export 'common/reader_brightness_overlay.dart';
 export 'common/reader_contrast_overlay.dart';
 export 'common/reader_error_view.dart';
+export '../gestures/reader_gesture_arena.dart';
+export '../controllers/reader_auto_scroll_controller.dart';
 
 // Navigation
 export 'navigation/navigation.dart';

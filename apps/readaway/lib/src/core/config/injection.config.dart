@@ -27,6 +27,10 @@ import '../../features/reader/data/repositories/reader_repository_impl.dart'
     as _i788;
 import '../../features/reader/data/repositories/reader_tts_repository_impl.dart'
     as _i22;
+import '../../features/reader/domain/gestures/edge_swipe_policy.dart' as _i614;
+import '../../features/reader/domain/gestures/reader_gesture_constants.dart'
+    as _i566;
+import '../../features/reader/domain/gestures/tap_zone_policy.dart' as _i657;
 import '../../features/reader/domain/repositories/reader_preferences_repository.dart'
     as _i360;
 import '../../features/reader/domain/repositories/reader_repository.dart'
@@ -107,6 +111,16 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i864.TextChunker>(() => _i864.TextChunker());
     gh.lazySingleton<_i502.FilePickerDataSource>(
       () => _i502.FilePickerDataSource(),
+    );
+    gh.lazySingleton<_i566.ReaderGestureConstants>(
+      () => const _i566.ReaderGestureConstants(),
+    );
+    gh.lazySingleton<_i614.EdgeSwipePolicy>(
+      () =>
+          _i614.EdgeSwipePolicy(constants: gh<_i566.ReaderGestureConstants>()),
+    );
+    gh.lazySingleton<_i657.TapZonePolicy>(
+      () => _i657.TapZonePolicy(constants: gh<_i566.ReaderGestureConstants>()),
     );
     await gh.singletonAsync<_i941.NotificationService>(
       () {

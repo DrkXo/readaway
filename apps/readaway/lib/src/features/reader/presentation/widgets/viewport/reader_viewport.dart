@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 import '../../bloc/reader_bloc.dart';
 import '../../controllers/reader_page_view_controller.dart';
@@ -18,10 +19,18 @@ class ReaderViewport extends StatelessWidget {
     super.key,
     required this.pageViewController,
     required this.prefs,
+    this.onScrollBoundaryChanged,
   });
 
   final ReaderPageViewController pageViewController;
   final ReaderPreferences prefs;
+
+  /// Notified when the current page's inner scroll view reaches or leaves a boundary.
+  ///
+  /// Only fires for reflowable pages in vertical snap-paging mode. The parent uses this
+  /// to decide whether the gesture arena should claim a vertical drag for page-turning.
+  final void Function({required bool atTop, required bool atBottom})?
+      onScrollBoundaryChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +76,11 @@ class ReaderViewport extends StatelessWidget {
         final isContinuous = prefs.scrollDirection == ReaderScrollDirection.vertical &&
             !prefs.pageSnap;
 
+        // The scroll boundary callback is only meaningful in vertical snap-paging mode.
+        // In continuous mode the inner scroll view IS the primary scroller.
+        final isVerticalSnap = prefs.scrollDirection == ReaderScrollDirection.vertical &&
+            prefs.pageSnap;
+
         final Widget view;
         if (isContinuous) {
           view = ReaderContinuousView(
@@ -84,8 +98,15 @@ class ReaderViewport extends StatelessWidget {
             transition: prefs.pageTransition,
             direction: prefs.scrollDirection,
             controller: pageViewController,
-            itemBuilder: (ctx, idx) =>
-                _buildPageItem(ctx, state, idx, isContinuous: false),
+            backgroundColor: context.appColors.readerBackground,
+            itemBuilder: (ctx, idx) => _buildPageItem(
+              ctx,
+              state,
+              idx,
+              isContinuous: false,
+              // Only pass boundary callback in vertical snap mode.
+              onScrollBoundaryChanged: isVerticalSnap ? onScrollBoundaryChanged : null,
+            ),
             onPageChangeRequested: (idx) => _onPageCommitted(context, idx),
           );
         }
@@ -103,6 +124,7 @@ class ReaderViewport extends StatelessWidget {
     ReaderState state,
     int index, {
     bool isContinuous = false,
+    void Function({required bool atTop, required bool atBottom})? onScrollBoundaryChanged,
   }) {
     if (state.isReflowable) {
       return ReflowablePageItem(
@@ -111,6 +133,7 @@ class ReaderViewport extends StatelessWidget {
         prefs: prefs,
         isContinuous: isContinuous,
         onPageChangeRequested: (idx) => _onNavigateRequested(context, idx),
+        onScrollBoundaryChanged: onScrollBoundaryChanged,
       );
     } else {
       return FixedImagePageItem(
@@ -123,11 +146,17 @@ class ReaderViewport extends StatelessWidget {
   }
 
   void _onNavigateRequested(BuildContext context, int index) {
-    final state = context.read<ReaderBloc>().state;
-    if (state.pageCount <= 0) return;
-    final clamped = index.clamp(0, state.pageCount - 1);
-    if (clamped == state.currentPage) return;
-    pageViewController.goToPage(clamped);
+    final bloc = context.read<ReaderBloc>();
+    if (bloc.state.pageCount <= 0) return;
+    final clamped = index.clamp(0, bloc.state.pageCount - 1);
+    if (clamped == bloc.state.currentPage) return;
+
+    if ((clamped - bloc.state.currentPage).abs() > 1) {
+      bloc.add(ReaderEvent.pageChanged(index: clamped));
+      pageViewController.jumpToPage(clamped);
+    } else {
+      pageViewController.goToPage(clamped);
+    }
   }
 
   void _onPageCommitted(BuildContext context, int index) {

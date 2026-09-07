@@ -196,6 +196,18 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
+  TaskEither<Failure, int> resolveLink(String uri) {
+    return TaskEither.tryCatch(
+      () async => await _muPdfService.resolveUri(uri),
+      (error, stack) => CorruptDocumentFailure(
+        'Failed to resolve link: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
   TaskEither<Failure, Unit> closeDocument() {
     return TaskEither.tryCatch(
       () async {

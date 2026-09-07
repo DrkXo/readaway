@@ -139,6 +139,14 @@ class MuPdfService {
     });
   }
 
+  Future<int> resolveUri(String uri) {
+    return _sendCommand<int>({
+      'id': _generateId(),
+      'type': 'resolveUri',
+      'uri': uri,
+    });
+  }
+
   Future<Map<String, dynamic>?> renderPage(
     int pageIndex, {
     double scaleX = 2.0,
@@ -258,6 +266,10 @@ class MuPdfService {
             final index = message['index'] as int;
             if (doc == null) throw Exception('No document open');
             mainSendPort.send({'id': id, 'result': doc!.pageLinks(index)});
+          } else if (type == 'resolveUri') {
+            final uri = message['uri'] as String;
+            if (doc == null) throw Exception('No document open');
+            mainSendPort.send({'id': id, 'result': doc!.resolveUri(uri)});
           } else if (type == 'renderPage') {
             if (doc == null) throw Exception('No document open');
             final pageIndex = message['pageIndex'] as int;

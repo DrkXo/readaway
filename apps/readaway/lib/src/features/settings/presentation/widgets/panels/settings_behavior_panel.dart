@@ -157,10 +157,6 @@ class _PageTransitionRow extends StatelessWidget {
               value: ReaderPageTransition.cover,
               label: 'Cover',
             ),
-            SettingsSelectEntry(
-              value: ReaderPageTransition.curl,
-              label: 'Curl / Flip',
-            ),
           ],
           onChanged: (transition) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(pageTransition: transition),

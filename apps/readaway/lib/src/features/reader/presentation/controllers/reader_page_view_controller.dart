@@ -28,6 +28,15 @@ class ReaderPageViewController extends ChangeNotifier {
   /// Delegate for instantaneous jump provided by the active viewport widget.
   void Function(int targetPage)? jumpToPageDelegate;
 
+  /// Delegates for interactive page dragging provided by the active viewport widget.
+  void Function()? dragStartDelegate;
+  void Function(double primaryDelta, double normalizedDelta)? dragUpdateDelegate;
+  void Function(double velocity)? dragEndDelegate;
+  void Function()? dragCancelDelegate;
+
+  /// The active scroll controller when the viewport is in continuous scrolling mode.
+  ScrollController? attachedScrollController;
+
   /// Set by the owner (ReaderPage / ReaderControllerMixin) to notify BLoC of page changes.
   void Function(int index)? onNavigate;
 
@@ -103,6 +112,11 @@ class ReaderPageViewController extends ChangeNotifier {
     }
   }
 
+  /// Requests instantaneous jump to [index] without animations.
+  void jumpToPage(int index) {
+    goToPage(index, animated: false);
+  }
+
   /// Navigates to the next page.
   Future<void> nextPage({Duration? duration, Curve? curve}) async {
     final next = _currentPage + 1;
@@ -144,10 +158,28 @@ class ReaderPageViewController extends ChangeNotifier {
     }
   }
 
+  /// Called by the gesture arena when an interactive page drag begins.
+  void handleDragStart() => dragStartDelegate?.call();
+
+  /// Called by the gesture arena when an interactive page drag updates.
+  void handleDragUpdate(double primaryDelta, double normalizedDelta) =>
+      dragUpdateDelegate?.call(primaryDelta, normalizedDelta);
+
+  /// Called by the gesture arena when an interactive page drag ends.
+  void handleDragEnd(double velocity) => dragEndDelegate?.call(velocity);
+
+  /// Called by the gesture arena when an interactive page drag is cancelled.
+  void handleDragCancel() => dragCancelDelegate?.call();
+
   @override
   void dispose() {
     animateToPageDelegate = null;
     jumpToPageDelegate = null;
+    dragStartDelegate = null;
+    dragUpdateDelegate = null;
+    dragEndDelegate = null;
+    dragCancelDelegate = null;
+    attachedScrollController = null;
     onNavigate = null;
     super.dispose();
   }

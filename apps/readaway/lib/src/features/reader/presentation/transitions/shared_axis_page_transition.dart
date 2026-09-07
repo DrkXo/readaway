@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'reader_page_transition_strategy.dart';
 
-/// Material 3 Shared Axis page transition: combined subtle translation, scale, and fade.
+/// Material 3 Shared Axis page transition: directional fade-through with subtle offset and scale.
 class SharedAxisPageTransitionStrategy extends ReaderPageTransitionStrategy {
-  const SharedAxisPageTransitionStrategy();
+  const SharedAxisPageTransitionStrategy({
+    this.translationDistance,
+  });
+
+  /// The subtle translation distance in logical pixels along the transition axis.
+  final double? translationDistance;
 
   @override
   Widget buildTransition({
@@ -17,20 +22,23 @@ class SharedAxisPageTransitionStrategy extends ReaderPageTransitionStrategy {
     final t = progress.clamp(0.0, 1.0);
     final sign = metrics.isForward ? 1.0 : -1.0;
     final isHorizontal = metrics.isHorizontal;
+    final distance = translationDistance ?? 48.0;
 
-    // Outgoing parameters: fades out and slightly scales up / slides away
+    // Outgoing parameters: shifts slightly back (-sign * distance * t), scales 1.0 -> 0.94, fades out over [0.0, 0.38]
+    final outgoingTranslation = -sign * distance * t;
     final outgoingOffset = isHorizontal
-        ? Offset(-sign * t * 0.3, 0)
-        : Offset(0, -sign * t * 0.3);
-    final outgoingScale = 1.0 + (0.04 * t);
-    final outgoingOpacity = (1.0 - (t * 1.5)).clamp(0.0, 1.0);
+        ? Offset(outgoingTranslation, 0)
+        : Offset(0, outgoingTranslation);
+    final outgoingScale = 1.0 - (0.06 * t);
+    final outgoingOpacity = (1.0 - (t / 0.38)).clamp(0.0, 1.0);
 
-    // Incoming parameters: fades in, scales from 0.96 to 1.0, slides in from 0.3 offset
+    // Incoming parameters: shifts into place from (sign * distance * (1.0 - t)), scales 0.94 -> 1.0, fades in over [0.22, 1.0]
+    final incomingTranslation = sign * distance * (1.0 - t);
     final incomingOffset = isHorizontal
-        ? Offset(sign * (1.0 - t) * 0.3, 0)
-        : Offset(0, sign * (1.0 - t) * 0.3);
-    final incomingScale = 0.96 + (0.04 * t);
-    final incomingOpacity = ((t - 0.2) * 1.25).clamp(0.0, 1.0);
+        ? Offset(incomingTranslation, 0)
+        : Offset(0, incomingTranslation);
+    final incomingScale = 0.94 + (0.06 * t);
+    final incomingOpacity = ((t - 0.22) / 0.78).clamp(0.0, 1.0);
 
     return Stack(
       fit: StackFit.expand,
@@ -40,22 +48,23 @@ class SharedAxisPageTransitionStrategy extends ReaderPageTransitionStrategy {
             opacity: outgoingOpacity,
             child: Transform.scale(
               scale: outgoingScale,
-              child: FractionalTranslation(
-                translation: outgoingOffset,
+              child: Transform.translate(
+                offset: outgoingOffset,
                 child: outgoingPage,
               ),
             ),
           ),
-        Opacity(
-          opacity: incomingOpacity,
-          child: Transform.scale(
-            scale: incomingScale,
-            child: FractionalTranslation(
-              translation: incomingOffset,
-              child: incomingPage,
+        if (incomingOpacity > 0.0)
+          Opacity(
+            opacity: incomingOpacity,
+            child: Transform.scale(
+              scale: incomingScale,
+              child: Transform.translate(
+                offset: incomingOffset,
+                child: incomingPage,
+              ),
             ),
           ),
-        ),
       ],
     );
   }

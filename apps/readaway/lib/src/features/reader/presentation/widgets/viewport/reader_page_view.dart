@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 import '../../controllers/reader_page_view_controller.dart';
 import '../../transitions/transitions.dart';
@@ -10,7 +11,7 @@ import '../../transitions/transitions.dart';
 /// Features:
 /// - 1:1 Interactive finger tracking (finger drag moves the page in real time).
 /// - Physics-based snapping and fling velocity completion.
-/// - Pluggable [ReaderPageTransitionStrategy] support (Slide, Cover, Fade, Shared Axis, Curl, None).
+/// - Pluggable [ReaderPageTransitionStrategy] support (Slide, Cover, Fade, Shared Axis, None).
 /// - RepaintBoundary isolation to avoid repainting complex DOM/rich-text subtrees during animations.
 /// - Full coordination with [ReaderPageViewController] for programmatic and keyboard navigation.
 class ReaderPageView extends StatefulWidget {
@@ -24,7 +25,12 @@ class ReaderPageView extends StatefulWidget {
     required this.onPageChangeRequested,
     this.controller,
     this.duration = const Duration(milliseconds: 320),
+    this.backgroundColor,
   });
+
+  /// Background color of pages and transition canvas.
+  /// If omitted, falls back to `context.appColors.readerBackground`.
+  final Color? backgroundColor;
 
   /// Current 0-based page index.
   final int currentPage;
@@ -90,6 +96,10 @@ class _ReaderPageViewState extends State<ReaderPageView>
       c.updatePageCount(widget.pageCount);
       c.animateToPageDelegate = _animateToPage;
       c.jumpToPageDelegate = _jumpToPage;
+      c.dragStartDelegate = _handleExternalDragStart;
+      c.dragUpdateDelegate = _handleExternalDragUpdate;
+      c.dragEndDelegate = _handleExternalDragEnd;
+      c.dragCancelDelegate = _handleDragCancel;
     }
   }
 
@@ -97,6 +107,10 @@ class _ReaderPageViewState extends State<ReaderPageView>
     if (c != null) {
       c.animateToPageDelegate = null;
       c.jumpToPageDelegate = null;
+      c.dragStartDelegate = null;
+      c.dragUpdateDelegate = null;
+      c.dragEndDelegate = null;
+      c.dragCancelDelegate = null;
     }
   }
 
@@ -236,7 +250,7 @@ class _ReaderPageViewState extends State<ReaderPageView>
 
   // --- Interactive Drag Handling ---
 
-  void _handleDragStart(DragStartDetails details) {
+  void _handleExternalDragStart() {
     if (_animController.isAnimating) {
       _animController.stop();
     }
@@ -245,28 +259,16 @@ class _ReaderPageViewState extends State<ReaderPageView>
     widget.controller?.setInteractionState(isDragging: true);
   }
 
-  void _handleDragUpdate(
-    DragUpdateDetails details,
-    Size viewportSize, {
-    bool isHorizontalDrag = true,
-  }) {
+  void _handleExternalDragUpdate(double primaryDelta, double normalizedDelta) {
     if (widget.pageCount <= 1) return;
 
-    final primaryDelta = details.primaryDelta ?? 0.0;
-    final dimension = isHorizontalDrag ? viewportSize.width : viewportSize.height;
-    if (dimension <= 0) return;
-
-    // Moving left/up means delta < 0 -> advancing to next page (forward)
-    // Moving right/down means delta > 0 -> going to previous page (backward)
-    final deltaNormalized = -primaryDelta / dimension;
-    _rawDragProgress += deltaNormalized;
+    _rawDragProgress += normalizedDelta;
 
     final targetForward = _rawDragProgress >= 0;
     final potentialTarget = targetForward ? _currentPage + 1 : _currentPage - 1;
 
     // Check boundary limit
     if (potentialTarget < 0 || potentialTarget >= widget.pageCount) {
-      // Apply rubber band dampening at ends
       _rawDragProgress *= 0.85;
       return;
     }
@@ -283,36 +285,31 @@ class _ReaderPageViewState extends State<ReaderPageView>
     widget.controller?.setInteractionState(dragProgress: visualProgress);
   }
 
-  void _handleDragEnd(
-    DragEndDetails details,
-    Size viewportSize, {
-    bool isHorizontalDrag = true,
-  }) {
+  void _handleExternalDragEnd(double velocity) {
     if (!_isInteractive || _targetPage == null) {
       _isInteractive = false;
       return;
     }
 
-    final velocity = -(details.primaryVelocity ?? 0.0);
-
     final currentProgress = _animController.value;
-    final movingInTargetDirection = (_isForward && velocity > 0) || (!_isForward && velocity < 0);
-    final isFling = movingInTargetDirection && velocity.abs() > 300.0;
+    final movingInTargetDirection =
+        (_isForward && velocity < 0) || (!_isForward && velocity > 0);
+    final isFling = movingInTargetDirection && velocity.abs() > 250.0;
     final passedThreshold = currentProgress >= 0.3;
 
     final commit = isFling || passedThreshold;
 
     if (commit) {
-      // Complete to 1.0
       _curvedAnim.curve = Curves.easeOutCubic;
       final remaining = (1.0 - currentProgress).clamp(0.05, 1.0);
-      final durationMs = (widget.duration.inMilliseconds * remaining).round().clamp(100, 400);
+      final durationMs =
+          (widget.duration.inMilliseconds * remaining).round().clamp(100, 400);
       _animController.duration = Duration(milliseconds: durationMs);
       _animController.forward(from: currentProgress);
     } else {
-      // Snap back to 0.0
       _curvedAnim.curve = Curves.easeOutCubic;
-      final durationMs = (widget.duration.inMilliseconds * currentProgress).round().clamp(80, 300);
+      final durationMs =
+          (widget.duration.inMilliseconds * currentProgress).round().clamp(80, 300);
       _animController.duration = Duration(milliseconds: durationMs);
       _animController.reverse(from: currentProgress);
     }
@@ -356,9 +353,24 @@ class _ReaderPageViewState extends State<ReaderPageView>
     }
   }
 
+  Widget _buildPageLayer(
+    BuildContext context,
+    int pageIndex,
+    Color backgroundColor,
+  ) {
+    return ColoredBox(
+      color: backgroundColor,
+      child: SizedBox.expand(
+        child: widget.itemBuilder(context, pageIndex),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final horizontal = widget.direction == ReaderScrollDirection.horizontal;
+    final effectiveBgColor = widget.backgroundColor ??
+        Theme.of(context).extension<AppColors>()?.readerBackground ??
+        Theme.of(context).scaffoldBackgroundColor;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -369,7 +381,7 @@ class _ReaderPageViewState extends State<ReaderPageView>
           // Static single page when idle: zero transition overhead
           content = RepaintBoundary(
             key: ValueKey<int>(_currentPage),
-            child: widget.itemBuilder(context, _currentPage),
+            child: _buildPageLayer(context, _currentPage, effectiveBgColor),
           );
         } else {
           // Active transition rendering with isolated RepaintBoundaries
@@ -382,12 +394,12 @@ class _ReaderPageViewState extends State<ReaderPageView>
 
           final outgoingWidget = RepaintBoundary(
             key: ValueKey<int>(_currentPage),
-            child: widget.itemBuilder(context, _currentPage),
+            child: _buildPageLayer(context, _currentPage, effectiveBgColor),
           );
 
           final incomingWidget = RepaintBoundary(
             key: ValueKey<int>(_targetPage!),
-            child: widget.itemBuilder(context, _targetPage!),
+            child: _buildPageLayer(context, _targetPage!, effectiveBgColor),
           );
 
           content = AnimatedBuilder(
@@ -408,44 +420,16 @@ class _ReaderPageViewState extends State<ReaderPageView>
           );
         }
 
+        // Mouse-wheel scroll events are handled here; touch drag gestures flow
+        // exclusively through the ReaderGestureArena's external delegate callbacks
+        // (_handleExternalDragStart/Update/End) to avoid double-driving the animation.
         return Semantics(
           label: 'Page ${_currentPage + 1} of ${widget.pageCount}',
           child: Listener(
+            behavior: HitTestBehavior.translucent,
             onPointerSignal: _handlePointerSignal,
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onHorizontalDragStart: horizontal ? _handleDragStart : null,
-              onHorizontalDragUpdate: horizontal
-                  ? (d) => _handleDragUpdate(
-                        d,
-                        viewportSize,
-                        isHorizontalDrag: true,
-                      )
-                  : null,
-              onHorizontalDragEnd: horizontal
-                  ? (d) => _handleDragEnd(
-                        d,
-                        viewportSize,
-                        isHorizontalDrag: true,
-                      )
-                  : null,
-              onHorizontalDragCancel: horizontal ? _handleDragCancel : null,
-              onVerticalDragStart: !horizontal ? _handleDragStart : null,
-              onVerticalDragUpdate: !horizontal
-                  ? (d) => _handleDragUpdate(
-                        d,
-                        viewportSize,
-                        isHorizontalDrag: false,
-                      )
-                  : null,
-              onVerticalDragEnd: !horizontal
-                  ? (d) => _handleDragEnd(
-                        d,
-                        viewportSize,
-                        isHorizontalDrag: false,
-                      )
-                  : null,
-              onVerticalDragCancel: !horizontal ? _handleDragCancel : null,
+            child: ColoredBox(
+              color: effectiveBgColor,
               child: ClipRect(child: content),
             ),
           ),

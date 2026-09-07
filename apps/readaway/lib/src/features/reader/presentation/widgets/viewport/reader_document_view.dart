@@ -5,6 +5,7 @@ import '../../../../../core/models/reader/reader_block.dart';
 import '../../../../../core/models/reader/reader_document.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../extensions/reader_block_list_extension.dart';
+import '../../gestures/reader_gesture_arena.dart';
 
 /// Renders a [ReaderDocument] structure as a list of styled, laid-out block widgets.
 class ReaderDocumentView extends StatefulWidget {
@@ -151,7 +152,10 @@ class ReaderLinkHandlers {
   TapGestureRecognizer? recognizerFor(String href) {
     return _byHref.putIfAbsent(href, () {
       final recognizer = TapGestureRecognizer();
-      recognizer.onTap = () => onTapUrl?.call(href);
+      recognizer.onTap = () {
+        ReaderGestureArena.suppressNextTap();
+        onTapUrl?.call(href);
+      };
       return recognizer;
     });
   }

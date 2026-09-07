@@ -52,6 +52,7 @@ class _ReaderContinuousViewState extends State<ReaderContinuousView> {
       c.updatePageCount(widget.pageCount);
       c.animateToPageDelegate = _animateToPage;
       c.jumpToPageDelegate = _jumpToPage;
+      c.attachedScrollController = _scrollController;
     }
   }
 
@@ -59,6 +60,9 @@ class _ReaderContinuousViewState extends State<ReaderContinuousView> {
     if (c != null) {
       c.animateToPageDelegate = null;
       c.jumpToPageDelegate = null;
+      if (c.attachedScrollController == _scrollController) {
+        c.attachedScrollController = null;
+      }
     }
   }
 

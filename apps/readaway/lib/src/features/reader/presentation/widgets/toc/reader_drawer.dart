@@ -23,7 +23,10 @@ class ReaderDrawer extends StatelessWidget {
         ),
         child: SafeArea(
           child: ReaderTocContent(
-            onJumpToPage: onJumpToPage,
+            onJumpToPage: (page) {
+              Navigator.of(context).pop();
+              onJumpToPage(page);
+            },
             headerAction: AppIconButton(
               icon: LucideIcons.x,
               tooltip: 'Close',

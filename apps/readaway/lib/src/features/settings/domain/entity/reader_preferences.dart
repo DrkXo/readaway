@@ -9,7 +9,6 @@ enum ReaderPageTransition {
   slide,
   sharedAxis,
   cover,
-  curl,
 }
 
 enum ReaderScrollDirection {
@@ -39,7 +38,8 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     @Default(true) bool pageSnap,
     @Default(ReaderScrollDirection.horizontal)
     ReaderScrollDirection scrollDirection,
-    @Default(ReaderPageTransition.sharedAxis)
+    @Default(ReaderPageTransition.slide)
+    @JsonKey(unknownEnumValue: ReaderPageTransition.slide)
     ReaderPageTransition pageTransition,
     @Default(0.0) double brightnessOverlay,
     @Default(0.0) double contrastOverlay,

@@ -675,6 +675,32 @@ class MuPdfDocument {
     }
   }
 
+  /// Resolves an internal destination URI (e.g. from an EPUB table of contents or anchor)
+  /// to a flat page index. Returns -1 if the URI is external or could not be resolved.
+  int resolveUri(String uri) {
+    if (uri.isEmpty) return -1;
+    final ctx = _ctx.cast<MupdfContextHandle>().ref.inner;
+    final uriNative = uri.toNativeUtf8();
+    final xPtr = calloc<Float>();
+    final yPtr = calloc<Float>();
+    try {
+      final loc = fzResolveLink(ctx, _doc, uriNative, xPtr, yPtr);
+      if (loc.chapter >= 0 || loc.page >= 0) {
+        final effectiveLoc = calloc<FzLocation>();
+        effectiveLoc.ref.chapter = loc.chapter >= 0 ? loc.chapter : 0;
+        effectiveLoc.ref.page = loc.page >= 0 ? loc.page : 0;
+        final pageNum = fzPageNumberFromLocation(ctx, _doc, effectiveLoc.ref);
+        calloc.free(effectiveLoc);
+        if (pageNum >= 0) return pageNum;
+      }
+      return -1;
+    } finally {
+      calloc.free(xPtr);
+      calloc.free(yPtr);
+      calloc.free(uriNative);
+    }
+  }
+
   void dispose() {
     _lib.mupdf_drop_document(_ctx, _doc);
     _lib.mupdf_drop_context(_ctx);

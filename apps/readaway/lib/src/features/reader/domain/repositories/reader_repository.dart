@@ -31,6 +31,9 @@ abstract interface class ReaderRepository {
   /// Requests notification/foreground permissions required for background audio playback.
   TaskEither<Failure, bool> requestAudioPermissions();
 
+  /// Resolves an internal document destination URI to a 0-based flat page index.
+  TaskEither<Failure, int> resolveLink(String uri);
+
   /// Closes the currently opened document.
   TaskEither<Failure, Unit> closeDocument();
 }

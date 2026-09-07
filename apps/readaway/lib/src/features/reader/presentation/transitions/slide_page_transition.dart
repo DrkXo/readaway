@@ -2,23 +2,16 @@ import 'package:flutter/material.dart';
 
 import 'reader_page_transition_strategy.dart';
 
-/// Smooth sliding page transition with edge shadow and outgoing parallax.
+/// Classic 1:1 side-by-side push conveyor page transition.
+///
+/// Pages move in unison pinned edge-to-edge as in standard e-readers and carousels.
 class SlidePageTransitionStrategy extends ReaderPageTransitionStrategy {
   const SlidePageTransitionStrategy({
-    this.parallaxFactor = 0.25,
     this.showShadow = true,
-    this.showScrim = true,
   });
 
-  /// Parallax speed factor for the outgoing page (0.0 = static, 1.0 = moves with incoming).
-  final double parallaxFactor;
-
-  /// Whether to render an elevation shadow on the incoming page edge.
+  /// Whether to render a subtle boundary shadow on the incoming page edge.
   final bool showShadow;
-
-  /// Whether to dim the outgoing page as it recedes.
-  final double scrimMaxOpacity = 0.2;
-  final bool showScrim;
 
   @override
   Widget buildTransition({
@@ -37,33 +30,18 @@ class SlidePageTransitionStrategy extends ReaderPageTransitionStrategy {
         ? Offset(sign * (1.0 - t), 0)
         : Offset(0, sign * (1.0 - t));
 
-    // Outgoing translation: starts at 0.0 and recedes with parallax to -sign * parallaxFactor
+    // Outgoing translation: full 1:1 push from 0.0 to -sign * 1.0 (side-by-side conveyor)
     final outgoingOffset = isHorizontal
-        ? Offset(-sign * t * parallaxFactor, 0)
-        : Offset(0, -sign * t * parallaxFactor);
+        ? Offset(-sign * t, 0)
+        : Offset(0, -sign * t);
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Outgoing page layer (underneath)
+        // Outgoing page layer (pushes off)
         FractionalTranslation(
           translation: outgoingOffset,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              outgoingPage,
-              if (showScrim && t > 0)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Container(
-                      color: Colors.black.withValues(
-                        alpha: (t * scrimMaxOpacity).clamp(0.0, 1.0),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          child: outgoingPage,
         ),
 
         // Incoming page layer (on top, slides in)
