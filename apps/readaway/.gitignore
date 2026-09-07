@@ -190,4 +190,5 @@ docs/_build/
 # FVM Version Cache
 .fvm/
 test/**/*.config.dart
-
+appimage-build
+AppDir
