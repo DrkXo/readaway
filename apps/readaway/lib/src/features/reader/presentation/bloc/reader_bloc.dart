@@ -49,6 +49,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_TtsClose>(_onTtsClose);
     on<_ConsumeFeedback>(_onConsumeFeedback);
     on<_TtsErrorOccurred>(_onTtsErrorOccurred);
+    on<_JumpToTtsPage>(_onJumpToTtsPage);
+    on<_TtsPageAdvanced>(_onTtsPageAdvanced);
 
     // Auto-advance or report errors when TTS reports state updates
     _ttsStateSub = ttsRepository.playbackState.listen((event) {
@@ -73,8 +75,30 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     }
   }
 
+  Timer? _progressDebounceTimer;
+
+  void _scheduleProgressSync(int page) {
+    _progressDebounceTimer?.cancel();
+    _progressDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _flushProgress(page);
+    });
+  }
+
+  void _flushProgress([int? page]) {
+    final targetPage = page ?? state.currentPage;
+    final path = state.documentPath;
+    if (path == null || state.pageCount <= 0) return;
+    readerRepository.updateReadingProgress(
+      path: path,
+      page: targetPage,
+      pageCount: state.pageCount,
+    ).run();
+  }
+
   @override
   Future<void> close() async {
+    _progressDebounceTimer?.cancel();
+    _flushProgress();
     _disposeImages();
     await _ttsStateSub?.cancel();
     await ttsRepository.stopPipeline().run();
@@ -123,6 +147,12 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         final count = info.pageCount;
         final reflowable = info.isReflowable;
 
+        final lastPageResult = await readerRepository
+            .getLastReadPage(event.path)
+            .run();
+        final rawLastPage = lastPageResult.getOrElse((_) => 0);
+        final initialPage = count > 0 ? rawLastPage.clamp(0, count - 1) : 0;
+
         emit(
           state.copyWith(
             documentPath: event.path,
@@ -133,7 +163,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
                 ? List<ReaderDocument?>.filled(count, null)
                 : null,
             pageImages: reflowable ? null : List<ui.Image?>.filled(count, null),
-            currentPage: 0,
+            currentPage: initialPage,
+            ttsCurrentPage: null,
             outline: info.outline,
             bookTitle: info.title,
             loading: false,
@@ -142,8 +173,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           ),
         );
 
-        add(const ReaderEvent.loadPage(index: 0));
-        _precachePages(0);
+        add(ReaderEvent.loadPage(index: initialPage));
+        _precachePages(initialPage);
+        _scheduleProgressSync(initialPage);
 
         await readerRepository.updateWindowTitle(info.title).run();
 
@@ -162,6 +194,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   void _onPageChanged(_PageChanged event, Emitter<ReaderState> emit) {
     emit(state.copyWith(currentPage: event.index));
     _precachePages(event.index);
+    _scheduleProgressSync(event.index);
   }
 
   Future<void> _onLoadPage(_LoadPage event, Emitter<ReaderState> emit) async {
@@ -229,6 +262,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _CloseDocument event,
     Emitter<ReaderState> emit,
   ) {
+    _progressDebounceTimer?.cancel();
+    _flushProgress();
     _disposeImages();
     _coverUri = null;
     readerRepository.closeDocument().run();
@@ -251,6 +286,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       emit(
         state.copyWith(
           ttsActive: false,
+          ttsCurrentPage: null,
           transientFeedback: UiFeedback(
             failure: const NotificationPermissionDeniedFailure(
               message:
@@ -269,6 +305,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       emit(
         state.copyWith(
           ttsActive: false,
+          ttsCurrentPage: null,
           transientFeedback: UiFeedback(
             failure: prepFailure,
             actionLabel: 'TTS Settings',
@@ -279,7 +316,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       return;
     }
 
-    emit(state.copyWith(ttsActive: true));
+    emit(state.copyWith(ttsActive: true, ttsCurrentPage: state.currentPage));
     await _beginPageTts(state.currentPage, emit);
   }
 
@@ -296,6 +333,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         emit(
           state.copyWith(
             ttsActive: false,
+            ttsCurrentPage: null,
             transientFeedback: UiFeedback(
               failure: prepFailure,
               actionLabel: 'TTS Settings',
@@ -331,10 +369,17 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       _coverUri = coverResult.getRight().toNullable();
     }
 
+    if (emit != null) {
+      emit(state.copyWith(ttsCurrentPage: pageIndex));
+    } else {
+      add(ReaderEvent.ttsPageAdvanced(pageIndex: pageIndex));
+    }
+
     ttsRepository.start();
     final playResult = await ttsRepository
         .playText(
           text,
+          pageIndex: pageIndex,
           tag: MediaItem(
             id: 'page-${pageIndex + 1}',
             title: 'Page ${pageIndex + 1}',
@@ -353,6 +398,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         emit(
           state.copyWith(
             ttsActive: false,
+            ttsCurrentPage: null,
             transientFeedback: UiFeedback(
               failure: playFailure,
               actionLabel: playFailure is TtsNoVoiceSelectedFailure
@@ -371,28 +417,51 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   /// Called when [ReaderTtsRepository] reports a genuine page-end.
+  /// Decoupled: advances the spoken audio page in the background WITHOUT
+  /// forcefully changing the user's viewport page.
   Future<void> _onPageTtsCompleted() async {
     if (_autoAdvancing) return;
     if (!state.isReflowable || !state.ttsActive) return;
-    if (state.currentPage >= state.pageCount - 1) return;
+
+    final basePage = state.ttsCurrentPage ?? state.currentPage;
+    if (basePage >= state.pageCount - 1) return;
 
     _autoAdvancing = true;
     try {
       int? next;
-      for (var i = state.currentPage + 1; i < state.pageCount; i++) {
+      for (var i = basePage + 1; i < state.pageCount; i++) {
         final textResult = await readerRepository.extractPageText(i).run();
         final text = textResult.getOrElse((_) => '');
-        if (text.isNotEmpty) {
+        if (text.trim().isNotEmpty) {
           next = i;
           break;
         }
       }
       if (next == null) return;
 
-      add(ReaderEvent.pageChanged(index: next));
+      add(ReaderEvent.ttsPageAdvanced(pageIndex: next));
       await _beginPageTts(next);
     } finally {
       _autoAdvancing = false;
+    }
+  }
+
+  void _onTtsPageAdvanced(
+    _TtsPageAdvanced event,
+    Emitter<ReaderState> emit,
+  ) {
+    emit(state.copyWith(ttsCurrentPage: event.pageIndex));
+  }
+
+  void _onJumpToTtsPage(
+    _JumpToTtsPage event,
+    Emitter<ReaderState> emit,
+  ) {
+    final target = state.ttsCurrentPage;
+    if (target != null && target >= 0 && target < state.pageCount) {
+      emit(state.copyWith(currentPage: target));
+      _precachePages(target);
+      _scheduleProgressSync(target);
     }
   }
 
@@ -402,7 +471,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     Emitter<ReaderState> emit,
   ) async {
     await ttsRepository.stop().run();
-    emit(state.copyWith(ttsActive: false));
+    emit(state.copyWith(ttsActive: false, ttsCurrentPage: null));
   }
 
   void _onConsumeFeedback(
@@ -419,6 +488,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     emit(
       state.copyWith(
         ttsActive: false,
+        ttsCurrentPage: null,
         transientFeedback: UiFeedback(
           failure: TtsSynthesisFailure(event.message),
           actionLabel: 'TTS Settings',

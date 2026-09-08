@@ -104,6 +104,10 @@ class StorageResetFailure extends StorageFailure {
   const StorageResetFailure(super.message, {super.cause, super.stackTrace});
 }
 
+class DatabaseFailure extends StorageFailure {
+  const DatabaseFailure(super.message, {super.cause, super.stackTrace});
+}
+
 // ---------------------------------------------------------------------------
 // Network Failures
 // ---------------------------------------------------------------------------

@@ -11,8 +11,6 @@ import '../../../../core/routes/routes.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
-import '../../../library/domain/entity/reading_status.dart';
-import '../../../library/domain/repositories/library_repository.dart';
 import '../../../settings/domain/entity/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../domain/gestures/reader_gestures.dart';
@@ -276,6 +274,12 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                       },
                                     );
                                   },
+                                ),
+
+                                // 3b. Floating Back-to-TTS Jump Pill
+                                ReaderBackToTtsPill(
+                                  topOffset: isChromeVisible ? 76.0 : 24.0,
+                                  onJumpToTtsPage: jumpToPage,
                                 ),
 
                                 // 4. Floating Top Bar (Animated Slide + Fade)

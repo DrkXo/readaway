@@ -40,6 +40,16 @@ abstract interface class ReaderRepository {
   /// Resolves an internal document destination URI to a 0-based flat page index.
   TaskEither<Failure, int> resolveLink(String uri);
 
+  /// Updates saved reading progress for the document at [path].
+  TaskEither<Failure, Unit> updateReadingProgress({
+    required String path,
+    required int page,
+    required int pageCount,
+  });
+
+  /// Retrieves the saved last read page index for the document at [path].
+  TaskEither<Failure, int> getLastReadPage(String path);
+
   /// Closes the currently opened document.
   TaskEither<Failure, Unit> closeDocument();
 }

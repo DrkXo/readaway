@@ -63,12 +63,68 @@ class ReaderTtsFullPlayerView extends StatelessWidget {
                         onPressed: onClose,
                         size: AppIconButtonSize.medium,
                       ),
-                      const Expanded(
-                        child: AppText(
-                          'Sentences',
-                          variant: AppTextVariant.title,
-                          textAlign: TextAlign.center,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: BlocBuilder<ReaderBloc, ReaderState>(
+                          buildWhen: (prev, curr) =>
+                              prev.ttsCurrentPage != curr.ttsCurrentPage ||
+                              prev.pageCount != curr.pageCount ||
+                              prev.currentPage != curr.currentPage,
+                          builder: (context, state) {
+                            final ttsPage = state.ttsCurrentPage;
+                            final canJump = state.canJumpToTtsPage;
+
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                AppText(
+                                  ttsPage != null
+                                      ? 'Page ${ttsPage + 1} of ${state.pageCount}'
+                                      : 'Sentences',
+                                  variant: AppTextVariant.title,
+                                  textAlign: TextAlign.center,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                if (canJump) ...[
+                                  const SizedBox(height: 2),
+                                  InkWell(
+                                    onTap: () {
+                                      context.read<ReaderBloc>().add(
+                                        const ReaderEvent.jumpToTtsPage(),
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            LucideIcons.arrowRight,
+                                            size: 12,
+                                            color: scheme.primary,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Jump to this page',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelSmall
+                                                ?.copyWith(
+                                                  color: scheme.primary,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            );
+                          },
                         ),
                       ),
                       AppIconButton(

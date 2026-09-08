@@ -10,6 +10,8 @@ import '../../../../core/services/document_cover_service.dart';
 import '../../../../core/services/mupdf_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/window_service.dart';
+import '../../../library/domain/entity/reading_status.dart';
+import '../../../library/domain/repositories/library_repository.dart';
 import '../../domain/entity/reader_link.dart';
 import '../../domain/repositories/reader_repository.dart';
 import '../../domain/services/document_parser.dart';
@@ -21,6 +23,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
   final WindowService _windowService;
   final NotificationService _notificationService;
   final DocumentCoverService _coverService;
+  final LibraryRepository _libraryRepository;
 
   ReaderRepositoryImpl(
     this._muPdfService,
@@ -28,6 +31,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
     this._windowService,
     this._notificationService,
     this._coverService,
+    this._libraryRepository,
   );
 
   @override
@@ -201,6 +205,55 @@ class ReaderRepositoryImpl implements ReaderRepository {
       () async => await _muPdfService.resolveUri(uri),
       (error, stack) => CorruptDocumentFailure(
         'Failed to resolve link: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  TaskEither<Failure, Unit> updateReadingProgress({
+    required String path,
+    required int page,
+    required int pageCount,
+  }) {
+    return TaskEither.tryCatch(
+      () async {
+        final docsResult = await _libraryRepository.getRecentDocuments().run();
+        final docs = docsResult.getOrElse((_) => []);
+        final doc = docs.where((d) => d.path == path).firstOrNull;
+        if (doc != null) {
+          final isFinished = pageCount > 0 && page >= pageCount - 1;
+          final updated = doc.copyWith(
+            lastReadPage: page,
+            pageCount: pageCount,
+            lastOpened: DateTime.now(),
+            readingStatus:
+                isFinished ? ReadingStatus.finished : ReadingStatus.reading,
+          );
+          await _libraryRepository.saveRecentDocument(updated).run();
+        }
+        return unit;
+      },
+      (error, stack) => DatabaseFailure(
+        'Failed to update reading progress: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  TaskEither<Failure, int> getLastReadPage(String path) {
+    return TaskEither.tryCatch(
+      () async {
+        final docsResult = await _libraryRepository.getRecentDocuments().run();
+        final docs = docsResult.getOrElse((_) => []);
+        final doc = docs.where((d) => d.path == path).firstOrNull;
+        return doc?.lastReadPage ?? 0;
+      },
+      (error, stack) => DatabaseFailure(
+        'Failed to get last read page: $error',
         cause: error,
         stackTrace: stack,
       ),

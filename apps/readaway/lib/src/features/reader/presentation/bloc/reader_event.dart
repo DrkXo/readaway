@@ -14,4 +14,7 @@ abstract class ReaderEvent with _$ReaderEvent {
   const factory ReaderEvent.consumeFeedback() = _ConsumeFeedback;
   const factory ReaderEvent.ttsErrorOccurred(String message) =
       _TtsErrorOccurred;
+  const factory ReaderEvent.jumpToTtsPage() = _JumpToTtsPage;
+  const factory ReaderEvent.ttsPageAdvanced({required int pageIndex}) =
+      _TtsPageAdvanced;
 }

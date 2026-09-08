@@ -63,6 +63,10 @@ class TtsControllerService {
   int _currentIndex = -1;
   int _lastKnownIndex = 0;
   int _pipelineStartIndex = 0;
+  int? _currentPageIndex;
+  int? get currentPageIndex => _currentPageIndex;
+  final _pageIndexController = BehaviorSubject<int?>.seeded(null);
+  ValueStream<int?> get currentPageIndexStream => _pageIndexController.stream;
 
   int _activeSessionId = 0;
   MediaItem? _baseTag;
@@ -283,7 +287,13 @@ class TtsControllerService {
     int startAtChunkIndex = 0,
     void Function()? onPlaybackStarted,
     MediaItem? tag,
+    int? pageIndex,
   }) => _pipelineMutex.protect(() async {
+    _currentPageIndex = pageIndex;
+    if (!_pageIndexController.isClosed) {
+      _pageIndexController.add(pageIndex);
+    }
+
     if (_voice == null) {
       if (!_stateController.isClosed) {
         _stateController.add(
@@ -639,6 +649,10 @@ class TtsControllerService {
 
   void _resetPlaybackState() {
     _currentIndex = -1;
+    _currentPageIndex = null;
+    if (!_pageIndexController.isClosed) {
+      _pageIndexController.add(null);
+    }
     if (!_stateController.isClosed) {
       _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.stopped));
     }
@@ -770,5 +784,6 @@ class TtsControllerService {
     await _rateController.close();
     await _pitchController.close();
     await _waveformController.close();
+    await _pageIndexController.close();
   }
 }

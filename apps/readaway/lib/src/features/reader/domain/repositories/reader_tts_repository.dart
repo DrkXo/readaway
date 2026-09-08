@@ -77,11 +77,17 @@ abstract interface class ReaderTtsRepository {
   /// Prepares engine and worker isolates for playback on demand.
   TaskEither<Failure, Unit> prepareForPlayback();
 
+  /// Index of the document page currently being read aloud by TTS, if any.
+  int? get currentPageIndex;
+
+  /// Stream emitting the index of the document page currently being read aloud.
+  Stream<int?> get currentPageIndexStream;
+
   /// Releases worker isolates and unloads models when leaving the reader.
   TaskEither<Failure, Unit> releaseResources();
 
-  /// Enqueues and begins speaking [text] with optional notification [tag].
-  TaskEither<Failure, Unit> playText(String text, {MediaItem? tag});
+  /// Enqueues and begins speaking [text] with optional notification [tag] and [pageIndex].
+  TaskEither<Failure, Unit> playText(String text, {MediaItem? tag, int? pageIndex});
 
   /// Pauses playback.
   TaskEither<Failure, Unit> pause();

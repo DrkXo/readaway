@@ -19,9 +19,18 @@ abstract class ReaderState with _$ReaderState {
     String? documentPath,
     UiFeedback? transientFeedback,
     @Default(false) bool ttsActive,
+    int? ttsCurrentPage,
   }) = _ReaderState;
 
   const ReaderState._();
 
   bool get hasDocument => documentPages != null || pageImages != null;
+
+  /// Whether the reader's viewport is currently looking at the page being read aloud by TTS.
+  bool get isViewingTtsPage =>
+      ttsActive && ttsCurrentPage != null && currentPage == ttsCurrentPage;
+
+  /// Whether the user has navigated away from the active TTS playback page and can jump back to it.
+  bool get canJumpToTtsPage =>
+      ttsActive && ttsCurrentPage != null && currentPage != ttsCurrentPage;
 }

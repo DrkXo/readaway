@@ -29,6 +29,7 @@ export 'toc/reader_toc_panel.dart';
 
 // TTS
 export 'tts/live_speech_waveform.dart';
+export 'tts/reader_back_to_tts_pill.dart';
 export 'tts/reader_tts_full_player_view.dart';
 export 'tts/reader_tts_mini_player_bar.dart';
 export 'tts/reader_tts_player_overlay.dart';

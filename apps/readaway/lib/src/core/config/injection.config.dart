@@ -291,15 +291,6 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i820.ReaderRepository>(
-      () => _i788.ReaderRepositoryImpl(
-        gh<_i16.MuPdfService>(),
-        gh<_i428.DocumentParser<String>>(),
-        gh<_i516.WindowService>(),
-        gh<_i941.NotificationService>(),
-        gh<_i69.DocumentCoverService>(),
-      ),
-    );
     gh.lazySingleton<_i779.ReaderTtsRepository>(
       () => _i22.ReaderTtsRepositoryImpl(gh<_i573.TtsControllerService>()),
     );
@@ -320,6 +311,16 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i395.LibraryBloc>(
       () => _i395.LibraryBloc(gh<_i810.LibraryRepository>()),
+    );
+    gh.lazySingleton<_i820.ReaderRepository>(
+      () => _i788.ReaderRepositoryImpl(
+        gh<_i16.MuPdfService>(),
+        gh<_i428.DocumentParser<String>>(),
+        gh<_i516.WindowService>(),
+        gh<_i941.NotificationService>(),
+        gh<_i69.DocumentCoverService>(),
+        gh<_i810.LibraryRepository>(),
+      ),
     );
     gh.factory<_i523.ReaderBloc>(
       () => _i523.ReaderBloc(

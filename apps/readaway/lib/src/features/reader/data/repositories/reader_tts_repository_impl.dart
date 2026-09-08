@@ -78,6 +78,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
       _ttsController.getInstalledVoices();
 
   @override
+  int? get currentPageIndex => _ttsController.currentPageIndex;
+
+  @override
+  Stream<int?> get currentPageIndexStream => _ttsController.currentPageIndexStream;
+
+  @override
   MediaItem? get baseTag => _ttsController.baseTag;
 
   @override
@@ -126,7 +132,11 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> playText(String text, {MediaItem? tag}) {
+  TaskEither<Failure, Unit> playText(
+    String text, {
+    MediaItem? tag,
+    int? pageIndex,
+  }) {
     return TaskEither.tryCatch(
       () async {
         if (_ttsController.currentVoice == null) {
@@ -134,7 +144,7 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
             'No voice model is selected or installed.',
           );
         }
-        await _ttsController.playText(text, tag: tag);
+        await _ttsController.playText(text, tag: tag, pageIndex: pageIndex);
         return unit;
       },
       (error, stack) {

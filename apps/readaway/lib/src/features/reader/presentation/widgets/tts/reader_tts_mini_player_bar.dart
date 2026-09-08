@@ -167,29 +167,73 @@ class _MiniPlayerText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        StreamBuilder<TtsChunk>(
-          stream: tts.currentChunk,
-          builder: (context, snapshot) {
-            final text = snapshot.data?.text ?? 'Preparing…';
-            return AppText(
-              text,
-              variant: AppTextVariant.title,
+    return BlocBuilder<ReaderBloc, ReaderState>(
+      buildWhen: (prev, curr) =>
+          prev.ttsCurrentPage != curr.ttsCurrentPage ||
+          prev.currentPage != curr.currentPage,
+      builder: (context, readerState) {
+        final ttsPage = readerState.ttsCurrentPage;
+        final isOtherPage = readerState.canJumpToTtsPage;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (ttsPage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isOtherPage
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'P.${ttsPage + 1}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isOtherPage
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Expanded(
+                  child: StreamBuilder<TtsChunk>(
+                    stream: tts.currentChunk,
+                    builder: (context, snapshot) {
+                      final text = snapshot.data?.text ?? 'Preparing…';
+                      return AppText(
+                        text,
+                        variant: AppTextVariant.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            AppCaption(
+              isOtherPage
+                  ? 'Playing on Page ${(ttsPage ?? 0) + 1} • Tap to open'
+                  : 'Drag ↑ / ↓ • Tap to open • Swipe ←/→ skip',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-            );
-          },
-        ),
-        const SizedBox(height: 2),
-        AppCaption(
-          'Drag ↑ / ↓ • Tap to open • Swipe ←/→ skip',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
