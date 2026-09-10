@@ -4,7 +4,6 @@ export 'audio/audio_player_service.dart';
 export 'document_cover_service.dart';
 export 'file_open_service.dart';
 export 'font_service.dart';
-export 'html_document_parser.dart';
 export 'http/http_service.dart';
 export 'isolate_service.dart';
 export 'logging_service.dart';

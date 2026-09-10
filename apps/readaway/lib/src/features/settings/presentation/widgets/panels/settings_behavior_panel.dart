@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../domain/entity/reader_preferences.dart';
-
 import '../../bloc/settings/settings_bloc.dart';
 import '../settings_bloc_x.dart';
 import '../widgets.dart';
@@ -126,39 +126,47 @@ class _ScrollDirectionRow extends StatelessWidget {
 class _PageTransitionRow extends StatelessWidget {
   const _PageTransitionRow();
 
+  static const _allEntries = [
+    SettingsSelectEntry(
+      value: ReaderPageTransition.none,
+      label: 'None',
+    ),
+    SettingsSelectEntry(
+      value: ReaderPageTransition.fade,
+      label: 'Fade',
+    ),
+    SettingsSelectEntry(
+      value: ReaderPageTransition.slide,
+      label: 'Slide',
+    ),
+    SettingsSelectEntry(
+      value: ReaderPageTransition.sharedAxis,
+      label: 'Shared axis',
+    ),
+    SettingsSelectEntry(
+      value: ReaderPageTransition.cover,
+      label: 'Cover',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
           prev.globalReaderPrefs.pageTransition !=
-          curr.globalReaderPrefs.pageTransition,
+              curr.globalReaderPrefs.pageTransition ||
+          prev.globalReaderPrefs.scrollDirection !=
+              curr.globalReaderPrefs.scrollDirection,
       builder: (context, state) {
         final prefs = state.globalReaderPrefs;
+        // Only show transitions supported by the current scroll direction.
+        final entries = _allEntries
+            .where((e) => e.value.isSupportedFor(prefs.scrollDirection))
+            .toList();
         return SettingsSelectRow<ReaderPageTransition>(
           label: 'Page transition',
           value: prefs.pageTransition,
-          entries: const [
-            SettingsSelectEntry(
-              value: ReaderPageTransition.none,
-              label: 'None',
-            ),
-            SettingsSelectEntry(
-              value: ReaderPageTransition.fade,
-              label: 'Fade',
-            ),
-            SettingsSelectEntry(
-              value: ReaderPageTransition.slide,
-              label: 'Slide',
-            ),
-            SettingsSelectEntry(
-              value: ReaderPageTransition.sharedAxis,
-              label: 'Shared axis',
-            ),
-            SettingsSelectEntry(
-              value: ReaderPageTransition.cover,
-              label: 'Cover',
-            ),
-          ],
+          entries: entries,
           onChanged: (transition) =>
               context.read<SettingsBloc>().updateReaderPrefs(
                 (p) => p.copyWith(pageTransition: transition),

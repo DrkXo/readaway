@@ -9,13 +9,13 @@ import 'package:injectable/injectable.dart';
 import 'package:mupdf/mupdf.dart';
 
 import '../../../../core/error/failures.dart';
-import '../../../../core/models/reader/reader_document.dart';
 import '../../../../core/models/ui_feedback.dart';
 import '../../../../core/routes/routes.dart';
 import '../../../../core/services/logging_service.dart';
 import '../../../../core/services/tts/tts_models.dart';
 import '../../../../core/utils/reader/reader_html_utils.dart';
 import '../../../../core/utils/reader/reader_image_utils.dart';
+import '../../domain/entity/reader_link.dart';
 import '../../domain/repositories/reader_repository.dart';
 import '../../domain/repositories/reader_tts_repository.dart';
 
@@ -88,11 +88,13 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     final targetPage = page ?? state.currentPage;
     final path = state.documentPath;
     if (path == null || state.pageCount <= 0) return;
-    readerRepository.updateReadingProgress(
-      path: path,
-      page: targetPage,
-      pageCount: state.pageCount,
-    ).run();
+    readerRepository
+        .updateReadingProgress(
+          path: path,
+          page: targetPage,
+          pageCount: state.pageCount,
+        )
+        .run();
   }
 
   @override
@@ -121,7 +123,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         error: null,
         documentPath: event.path,
         fileName: initialFileName,
-        documentPages: null,
+        pageHtmls: null,
         pageImages: null,
       ),
     );
@@ -159,8 +161,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
             fileName: initialFileName,
             pageCount: count,
             isReflowable: reflowable,
-            documentPages: reflowable
-                ? List<ReaderDocument?>.filled(count, null)
+            pageHtmls: reflowable ? List<String?>.filled(count, null) : null,
+            pageLinks: reflowable
+                ? List<List<ReaderLink>?>.filled(count, null)
                 : null,
             pageImages: reflowable ? null : List<ui.Image?>.filled(count, null),
             currentPage: initialPage,
@@ -202,8 +205,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     if (index < 0 || index >= state.pageCount) return;
 
     if (state.isReflowable) {
-      if (state.documentPages == null ||
-          state.documentPages![index] != null ||
+      if (state.pageHtmls == null ||
+          state.pageHtmls![index] != null ||
           state.loadingPages.contains(index)) {
         return;
       }
@@ -232,11 +235,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       },
       (pageData) async {
         if (state.isReflowable) {
-          final pages = List<ReaderDocument?>.from(state.documentPages!);
-          pages[index] = pageData.document;
+          final htmlPages = List<String?>.from(state.pageHtmls!);
+          final linkPages = List<List<ReaderLink>?>.from(state.pageLinks!);
+          htmlPages[index] = pageData.html;
+          linkPages[index] = pageData.links;
           emit(
             state.copyWith(
-              documentPages: pages,
+              pageHtmls: htmlPages,
+              pageLinks: linkPages,
               loadingPages: {...state.loadingPages}..remove(index),
             ),
           );
@@ -499,7 +505,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   void _precachePages(int currentIndex) {
-    final pages = state.isReflowable ? state.documentPages : state.pageImages;
+    final pages = state.isReflowable ? state.pageHtmls : state.pageImages;
     if (pages == null) return;
 
     for (final idx in precacheCandidates(currentIndex, state.pageCount)) {

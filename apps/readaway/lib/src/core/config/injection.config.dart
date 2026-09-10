@@ -37,7 +37,6 @@ import '../../features/reader/domain/repositories/reader_repository.dart'
     as _i820;
 import '../../features/reader/domain/repositories/reader_tts_repository.dart'
     as _i779;
-import '../../features/reader/domain/services/document_parser.dart' as _i428;
 import '../../features/reader/presentation/bloc/reader_bloc.dart' as _i523;
 import '../../features/settings/data/repositories/settings_repository_impl.dart'
     as _i955;
@@ -55,7 +54,6 @@ import '../services/audio/audio_player_service.dart' as _i370;
 import '../services/document_cover_service.dart' as _i69;
 import '../services/file_open_service.dart' as _i156;
 import '../services/font_service.dart' as _i662;
-import '../services/html_document_parser.dart' as _i865;
 import '../services/http/http_service.dart' as _i920;
 import '../services/isolate_service.dart' as _i548;
 import '../services/logging_service.dart' as _i520;
@@ -145,9 +143,6 @@ extension GetItInjectableX on _i174.GetIt {
       ],
       preResolve: true,
       dispose: (i) => i.dispose(),
-    );
-    gh.lazySingleton<_i428.DocumentParser<String>>(
-      () => const _i865.HtmlDocumentParser(),
     );
     gh.factory<_i155.HiveConfigService>(
       () => _i155.HiveConfigService(gh<_i145.AppPathService>()),
@@ -315,7 +310,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i820.ReaderRepository>(
       () => _i788.ReaderRepositoryImpl(
         gh<_i16.MuPdfService>(),
-        gh<_i428.DocumentParser<String>>(),
         gh<_i516.WindowService>(),
         gh<_i941.NotificationService>(),
         gh<_i69.DocumentCoverService>(),

@@ -22,6 +22,21 @@ class MupdfBindings {
     ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) lookup,
   ) : _lookup = lookup;
 
+  void mupdf_abort_cookie(
+    mupdf_cookie cookie,
+  ) {
+    return _mupdf_abort_cookie(
+      cookie,
+    );
+  }
+
+  late final _mupdf_abort_cookiePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(mupdf_cookie)>>(
+        'mupdf_abort_cookie',
+      );
+  late final _mupdf_abort_cookie = _mupdf_abort_cookiePtr
+      .asFunction<void Function(mupdf_cookie)>();
+
   int mupdf_authenticate_password(
     mupdf_context ctx,
     mupdf_document doc,
@@ -44,6 +59,21 @@ class MupdfBindings {
       .asFunction<
         int Function(mupdf_context, mupdf_document, ffi.Pointer<ffi.Char>)
       >();
+
+  mupdf_context mupdf_clone_context(
+    mupdf_context ctx,
+  ) {
+    return _mupdf_clone_context(
+      ctx,
+    );
+  }
+
+  late final _mupdf_clone_contextPtr =
+      _lookup<ffi.NativeFunction<mupdf_context Function(mupdf_context)>>(
+        'mupdf_clone_context',
+      );
+  late final _mupdf_clone_context = _mupdf_clone_contextPtr
+      .asFunction<mupdf_context Function(mupdf_context)>();
 
   int mupdf_count_chapter_pages(
     mupdf_context ctx,
@@ -115,6 +145,38 @@ class MupdfBindings {
   late final _mupdf_drop_context = _mupdf_drop_contextPtr
       .asFunction<void Function(mupdf_context)>();
 
+  void mupdf_drop_cookie(
+    mupdf_cookie cookie,
+  ) {
+    return _mupdf_drop_cookie(
+      cookie,
+    );
+  }
+
+  late final _mupdf_drop_cookiePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(mupdf_cookie)>>(
+        'mupdf_drop_cookie',
+      );
+  late final _mupdf_drop_cookie = _mupdf_drop_cookiePtr
+      .asFunction<void Function(mupdf_cookie)>();
+
+  void mupdf_drop_display_list(
+    mupdf_context ctx,
+    mupdf_display_list list,
+  ) {
+    return _mupdf_drop_display_list(
+      ctx,
+      list,
+    );
+  }
+
+  late final _mupdf_drop_display_listPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Void Function(mupdf_context, mupdf_display_list)>
+      >('mupdf_drop_display_list');
+  late final _mupdf_drop_display_list = _mupdf_drop_display_listPtr
+      .asFunction<void Function(mupdf_context, mupdf_display_list)>();
+
   void mupdf_drop_document(
     mupdf_context ctx,
     mupdf_document doc,
@@ -185,6 +247,29 @@ class MupdfBindings {
   late final _mupdf_extract_html = _mupdf_extract_htmlPtr
       .asFunction<ffi.Pointer<ffi.Char> Function(mupdf_context, mupdf_page)>();
 
+  ffi.Pointer<ffi.Char> mupdf_extract_html_options(
+    mupdf_context ctx,
+    mupdf_page page,
+    int preserve_images,
+  ) {
+    return _mupdf_extract_html_options(
+      ctx,
+      page,
+      preserve_images,
+    );
+  }
+
+  late final _mupdf_extract_html_optionsPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(mupdf_context, mupdf_page, ffi.Int)
+        >
+      >('mupdf_extract_html_options');
+  late final _mupdf_extract_html_options = _mupdf_extract_html_optionsPtr
+      .asFunction<
+        ffi.Pointer<ffi.Char> Function(mupdf_context, mupdf_page, int)
+      >();
+
   ffi.Pointer<ffi.Char> mupdf_extract_text(
     mupdf_context ctx,
     mupdf_page page,
@@ -219,6 +304,25 @@ class MupdfBindings {
   late final _mupdf_free_floats = _mupdf_free_floatsPtr
       .asFunction<void Function(ffi.Pointer<ffi.Float>)>();
 
+  void mupdf_free_links(
+    ffi.Pointer<mupdf_link_item> items,
+    int count,
+  ) {
+    return _mupdf_free_links(
+      items,
+      count,
+    );
+  }
+
+  late final _mupdf_free_linksPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<mupdf_link_item>, ffi.Int)
+        >
+      >('mupdf_free_links');
+  late final _mupdf_free_links = _mupdf_free_linksPtr
+      .asFunction<void Function(ffi.Pointer<mupdf_link_item>, int)>();
+
   void mupdf_free_string(
     mupdf_context ctx,
     ffi.Pointer<ffi.Char> str,
@@ -237,6 +341,25 @@ class MupdfBindings {
       >('mupdf_free_string');
   late final _mupdf_free_string = _mupdf_free_stringPtr
       .asFunction<void Function(mupdf_context, ffi.Pointer<ffi.Char>)>();
+
+  void mupdf_free_words(
+    ffi.Pointer<mupdf_word_item> words,
+    int count,
+  ) {
+    return _mupdf_free_words(
+      words,
+      count,
+    );
+  }
+
+  late final _mupdf_free_wordsPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<mupdf_word_item>, ffi.Int)
+        >
+      >('mupdf_free_words');
+  late final _mupdf_free_words = _mupdf_free_wordsPtr
+      .asFunction<void Function(ffi.Pointer<mupdf_word_item>, int)>();
 
   int mupdf_has_permission(
     mupdf_context ctx,
@@ -370,6 +493,84 @@ class MupdfBindings {
   late final _mupdf_load_page = _mupdf_load_pagePtr
       .asFunction<mupdf_page Function(mupdf_context, mupdf_document, int)>();
 
+  int mupdf_location_from_page(
+    mupdf_context ctx,
+    mupdf_document doc,
+    int page_number,
+    ffi.Pointer<ffi.Int> chapter,
+    ffi.Pointer<ffi.Int> page,
+  ) {
+    return _mupdf_location_from_page(
+      ctx,
+      doc,
+      page_number,
+      chapter,
+      page,
+    );
+  }
+
+  late final _mupdf_location_from_pagePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            mupdf_context,
+            mupdf_document,
+            ffi.Int,
+            ffi.Pointer<ffi.Int>,
+            ffi.Pointer<ffi.Int>,
+          )
+        >
+      >('mupdf_location_from_page');
+  late final _mupdf_location_from_page = _mupdf_location_from_pagePtr
+      .asFunction<
+        int Function(
+          mupdf_context,
+          mupdf_document,
+          int,
+          ffi.Pointer<ffi.Int>,
+          ffi.Pointer<ffi.Int>,
+        )
+      >();
+
+  int mupdf_lookup_bookmark(
+    mupdf_context ctx,
+    mupdf_document doc,
+    int bookmark,
+    ffi.Pointer<ffi.Int> chapter,
+    ffi.Pointer<ffi.Int> page,
+  ) {
+    return _mupdf_lookup_bookmark(
+      ctx,
+      doc,
+      bookmark,
+      chapter,
+      page,
+    );
+  }
+
+  late final _mupdf_lookup_bookmarkPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            mupdf_context,
+            mupdf_document,
+            ffi.Int64,
+            ffi.Pointer<ffi.Int>,
+            ffi.Pointer<ffi.Int>,
+          )
+        >
+      >('mupdf_lookup_bookmark');
+  late final _mupdf_lookup_bookmark = _mupdf_lookup_bookmarkPtr
+      .asFunction<
+        int Function(
+          mupdf_context,
+          mupdf_document,
+          int,
+          ffi.Pointer<ffi.Int>,
+          ffi.Pointer<ffi.Int>,
+        )
+      >();
+
   int mupdf_lookup_metadata(
     mupdf_context ctx,
     mupdf_document doc,
@@ -409,6 +610,29 @@ class MupdfBindings {
         )
       >();
 
+  int mupdf_make_bookmark(
+    mupdf_context ctx,
+    mupdf_document doc,
+    int chapter,
+    int page,
+  ) {
+    return _mupdf_make_bookmark(
+      ctx,
+      doc,
+      chapter,
+      page,
+    );
+  }
+
+  late final _mupdf_make_bookmarkPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int64 Function(mupdf_context, mupdf_document, ffi.Int, ffi.Int)
+        >
+      >('mupdf_make_bookmark');
+  late final _mupdf_make_bookmark = _mupdf_make_bookmarkPtr
+      .asFunction<int Function(mupdf_context, mupdf_document, int, int)>();
+
   int mupdf_needs_password(
     mupdf_context ctx,
     mupdf_document doc,
@@ -436,6 +660,35 @@ class MupdfBindings {
       );
   late final _mupdf_new_context = _mupdf_new_contextPtr
       .asFunction<mupdf_context Function()>();
+
+  mupdf_cookie mupdf_new_cookie() {
+    return _mupdf_new_cookie();
+  }
+
+  late final _mupdf_new_cookiePtr =
+      _lookup<ffi.NativeFunction<mupdf_cookie Function()>>('mupdf_new_cookie');
+  late final _mupdf_new_cookie = _mupdf_new_cookiePtr
+      .asFunction<mupdf_cookie Function()>();
+
+  mupdf_display_list mupdf_new_display_list_from_page(
+    mupdf_context ctx,
+    mupdf_page page,
+  ) {
+    return _mupdf_new_display_list_from_page(
+      ctx,
+      page,
+    );
+  }
+
+  late final _mupdf_new_display_list_from_pagePtr =
+      _lookup<
+        ffi.NativeFunction<
+          mupdf_display_list Function(mupdf_context, mupdf_page)
+        >
+      >('mupdf_new_display_list_from_page');
+  late final _mupdf_new_display_list_from_page =
+      _mupdf_new_display_list_from_pagePtr
+          .asFunction<mupdf_display_list Function(mupdf_context, mupdf_page)>();
 
   mupdf_pixmap mupdf_new_pixmap_from_page(
     mupdf_context ctx,
@@ -469,6 +722,54 @@ class MupdfBindings {
       .asFunction<
         mupdf_pixmap Function(mupdf_context, mupdf_page, double, double, int)
       >();
+
+  mupdf_pixmap mupdf_new_pixmap_from_page_cookie(
+    mupdf_context ctx,
+    mupdf_page page,
+    double scale_x,
+    double scale_y,
+    int alpha,
+    int cs,
+    mupdf_cookie cookie,
+  ) {
+    return _mupdf_new_pixmap_from_page_cookie(
+      ctx,
+      page,
+      scale_x,
+      scale_y,
+      alpha,
+      cs,
+      cookie,
+    );
+  }
+
+  late final _mupdf_new_pixmap_from_page_cookiePtr =
+      _lookup<
+        ffi.NativeFunction<
+          mupdf_pixmap Function(
+            mupdf_context,
+            mupdf_page,
+            ffi.Float,
+            ffi.Float,
+            ffi.Int,
+            ffi.Int,
+            mupdf_cookie,
+          )
+        >
+      >('mupdf_new_pixmap_from_page_cookie');
+  late final _mupdf_new_pixmap_from_page_cookie =
+      _mupdf_new_pixmap_from_page_cookiePtr
+          .asFunction<
+            mupdf_pixmap Function(
+              mupdf_context,
+              mupdf_page,
+              double,
+              double,
+              int,
+              int,
+              mupdf_cookie,
+            )
+          >();
 
   mupdf_pixmap mupdf_new_pixmap_from_page_cs(
     mupdf_context ctx,
@@ -646,6 +947,64 @@ class MupdfBindings {
         )
       >();
 
+  int mupdf_page_extract_words(
+    mupdf_context ctx,
+    mupdf_page page,
+    ffi.Pointer<ffi.Pointer<mupdf_word_item>> words,
+    ffi.Pointer<ffi.Int> word_count,
+  ) {
+    return _mupdf_page_extract_words(
+      ctx,
+      page,
+      words,
+      word_count,
+    );
+  }
+
+  late final _mupdf_page_extract_wordsPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            mupdf_context,
+            mupdf_page,
+            ffi.Pointer<ffi.Pointer<mupdf_word_item>>,
+            ffi.Pointer<ffi.Int>,
+          )
+        >
+      >('mupdf_page_extract_words');
+  late final _mupdf_page_extract_words = _mupdf_page_extract_wordsPtr
+      .asFunction<
+        int Function(
+          mupdf_context,
+          mupdf_page,
+          ffi.Pointer<ffi.Pointer<mupdf_word_item>>,
+          ffi.Pointer<ffi.Int>,
+        )
+      >();
+
+  int mupdf_page_from_location(
+    mupdf_context ctx,
+    mupdf_document doc,
+    int chapter,
+    int page,
+  ) {
+    return _mupdf_page_from_location(
+      ctx,
+      doc,
+      chapter,
+      page,
+    );
+  }
+
+  late final _mupdf_page_from_locationPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(mupdf_context, mupdf_document, ffi.Int, ffi.Int)
+        >
+      >('mupdf_page_from_location');
+  late final _mupdf_page_from_location = _mupdf_page_from_locationPtr
+      .asFunction<int Function(mupdf_context, mupdf_document, int, int)>();
+
   double mupdf_page_height(
     mupdf_context ctx,
     mupdf_page page,
@@ -691,6 +1050,133 @@ class MupdfBindings {
   late final _mupdf_page_label = _mupdf_page_labelPtr
       .asFunction<
         int Function(mupdf_context, mupdf_page, ffi.Pointer<ffi.Char>, int)
+      >();
+
+  int mupdf_page_links(
+    mupdf_context ctx,
+    mupdf_document doc,
+    mupdf_page page,
+    ffi.Pointer<ffi.Pointer<mupdf_link_item>> items,
+  ) {
+    return _mupdf_page_links(
+      ctx,
+      doc,
+      page,
+      items,
+    );
+  }
+
+  late final _mupdf_page_linksPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            mupdf_context,
+            mupdf_document,
+            mupdf_page,
+            ffi.Pointer<ffi.Pointer<mupdf_link_item>>,
+          )
+        >
+      >('mupdf_page_links');
+  late final _mupdf_page_links = _mupdf_page_linksPtr
+      .asFunction<
+        int Function(
+          mupdf_context,
+          mupdf_document,
+          mupdf_page,
+          ffi.Pointer<ffi.Pointer<mupdf_link_item>>,
+        )
+      >();
+
+  int mupdf_page_rotation(
+    mupdf_context ctx,
+    mupdf_page page,
+  ) {
+    return _mupdf_page_rotation(
+      ctx,
+      page,
+    );
+  }
+
+  late final _mupdf_page_rotationPtr =
+      _lookup<ffi.NativeFunction<ffi.Int Function(mupdf_context, mupdf_page)>>(
+        'mupdf_page_rotation',
+      );
+  late final _mupdf_page_rotation = _mupdf_page_rotationPtr
+      .asFunction<int Function(mupdf_context, mupdf_page)>();
+
+  int mupdf_page_select_text(
+    mupdf_context ctx,
+    mupdf_page page,
+    double ax,
+    double ay,
+    double bx,
+    double by,
+    int mode,
+    ffi.Pointer<ffi.Float> snapped_ax,
+    ffi.Pointer<ffi.Float> snapped_ay,
+    ffi.Pointer<ffi.Float> snapped_bx,
+    ffi.Pointer<ffi.Float> snapped_by,
+    ffi.Pointer<ffi.Pointer<ffi.Float>> quads,
+    ffi.Pointer<ffi.Int> quad_count,
+    ffi.Pointer<ffi.Pointer<ffi.Char>> selected_text,
+  ) {
+    return _mupdf_page_select_text(
+      ctx,
+      page,
+      ax,
+      ay,
+      bx,
+      by,
+      mode,
+      snapped_ax,
+      snapped_ay,
+      snapped_bx,
+      snapped_by,
+      quads,
+      quad_count,
+      selected_text,
+    );
+  }
+
+  late final _mupdf_page_select_textPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            mupdf_context,
+            mupdf_page,
+            ffi.Float,
+            ffi.Float,
+            ffi.Float,
+            ffi.Float,
+            ffi.Int,
+            ffi.Pointer<ffi.Float>,
+            ffi.Pointer<ffi.Float>,
+            ffi.Pointer<ffi.Float>,
+            ffi.Pointer<ffi.Float>,
+            ffi.Pointer<ffi.Pointer<ffi.Float>>,
+            ffi.Pointer<ffi.Int>,
+            ffi.Pointer<ffi.Pointer<ffi.Char>>,
+          )
+        >
+      >('mupdf_page_select_text');
+  late final _mupdf_page_select_text = _mupdf_page_select_textPtr
+      .asFunction<
+        int Function(
+          mupdf_context,
+          mupdf_page,
+          double,
+          double,
+          double,
+          double,
+          int,
+          ffi.Pointer<ffi.Float>,
+          ffi.Pointer<ffi.Float>,
+          ffi.Pointer<ffi.Float>,
+          ffi.Pointer<ffi.Float>,
+          ffi.Pointer<ffi.Pointer<ffi.Float>>,
+          ffi.Pointer<ffi.Int>,
+          ffi.Pointer<ffi.Pointer<ffi.Char>>,
+        )
       >();
 
   double mupdf_page_width(
@@ -799,6 +1285,140 @@ class MupdfBindings {
   late final _mupdf_pixmap_width = _mupdf_pixmap_widthPtr
       .asFunction<int Function(mupdf_context, mupdf_pixmap)>();
 
+  mupdf_pixmap mupdf_render_display_list(
+    mupdf_context ctx,
+    mupdf_display_list list,
+    double scale_x,
+    double scale_y,
+    int alpha,
+    int cs,
+    mupdf_cookie cookie,
+  ) {
+    return _mupdf_render_display_list(
+      ctx,
+      list,
+      scale_x,
+      scale_y,
+      alpha,
+      cs,
+      cookie,
+    );
+  }
+
+  late final _mupdf_render_display_listPtr =
+      _lookup<
+        ffi.NativeFunction<
+          mupdf_pixmap Function(
+            mupdf_context,
+            mupdf_display_list,
+            ffi.Float,
+            ffi.Float,
+            ffi.Int,
+            ffi.Int,
+            mupdf_cookie,
+          )
+        >
+      >('mupdf_render_display_list');
+  late final _mupdf_render_display_list = _mupdf_render_display_listPtr
+      .asFunction<
+        mupdf_pixmap Function(
+          mupdf_context,
+          mupdf_display_list,
+          double,
+          double,
+          int,
+          int,
+          mupdf_cookie,
+        )
+      >();
+
+  mupdf_pixmap mupdf_render_display_list_rect(
+    mupdf_context ctx,
+    mupdf_display_list list,
+    double scale_x,
+    double scale_y,
+    double x0,
+    double y0,
+    double x1,
+    double y1,
+    int alpha,
+    int cs,
+    mupdf_cookie cookie,
+  ) {
+    return _mupdf_render_display_list_rect(
+      ctx,
+      list,
+      scale_x,
+      scale_y,
+      x0,
+      y0,
+      x1,
+      y1,
+      alpha,
+      cs,
+      cookie,
+    );
+  }
+
+  late final _mupdf_render_display_list_rectPtr =
+      _lookup<
+        ffi.NativeFunction<
+          mupdf_pixmap Function(
+            mupdf_context,
+            mupdf_display_list,
+            ffi.Float,
+            ffi.Float,
+            ffi.Float,
+            ffi.Float,
+            ffi.Float,
+            ffi.Float,
+            ffi.Int,
+            ffi.Int,
+            mupdf_cookie,
+          )
+        >
+      >('mupdf_render_display_list_rect');
+  late final _mupdf_render_display_list_rect =
+      _mupdf_render_display_list_rectPtr
+          .asFunction<
+            mupdf_pixmap Function(
+              mupdf_context,
+              mupdf_display_list,
+              double,
+              double,
+              double,
+              double,
+              double,
+              double,
+              int,
+              int,
+              mupdf_cookie,
+            )
+          >();
+
+  int mupdf_resolve_uri(
+    mupdf_context ctx,
+    mupdf_document doc,
+    ffi.Pointer<ffi.Char> uri,
+  ) {
+    return _mupdf_resolve_uri(
+      ctx,
+      doc,
+      uri,
+    );
+  }
+
+  late final _mupdf_resolve_uriPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(mupdf_context, mupdf_document, ffi.Pointer<ffi.Char>)
+        >
+      >('mupdf_resolve_uri');
+  late final _mupdf_resolve_uri = _mupdf_resolve_uriPtr
+      .asFunction<
+        int Function(mupdf_context, mupdf_document, ffi.Pointer<ffi.Char>)
+      >();
+
   int mupdf_search_page(
     mupdf_context ctx,
     mupdf_page page,
@@ -868,6 +1488,55 @@ class MupdfBindings {
           ffi.Pointer<ffi.Int>,
         )
       >();
+
+  void mupdf_set_user_css(
+    mupdf_context ctx,
+    ffi.Pointer<ffi.Char> user_css,
+  ) {
+    return _mupdf_set_user_css(
+      ctx,
+      user_css,
+    );
+  }
+
+  late final _mupdf_set_user_cssPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(mupdf_context, ffi.Pointer<ffi.Char>)
+        >
+      >('mupdf_set_user_css');
+  late final _mupdf_set_user_css = _mupdf_set_user_cssPtr
+      .asFunction<void Function(mupdf_context, ffi.Pointer<ffi.Char>)>();
+
+  int mupdf_style_document(
+    mupdf_context ctx,
+    mupdf_document doc,
+    int use_publisher_css,
+    ffi.Pointer<ffi.Char> user_css,
+  ) {
+    return _mupdf_style_document(
+      ctx,
+      doc,
+      use_publisher_css,
+      user_css,
+    );
+  }
+
+  late final _mupdf_style_documentPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            mupdf_context,
+            mupdf_document,
+            ffi.Int,
+            ffi.Pointer<ffi.Char>,
+          )
+        >
+      >('mupdf_style_document');
+  late final _mupdf_style_document = _mupdf_style_documentPtr
+      .asFunction<
+        int Function(mupdf_context, mupdf_document, int, ffi.Pointer<ffi.Char>)
+      >();
 }
 
 const int MUPDF_ERR_FORMAT = 4;
@@ -882,8 +1551,56 @@ const int MUPDF_ERR_PASSWORD = 5;
 
 const int MUPDF_OK = 0;
 
+const int MUPDF_SELECT_CHARS = 0;
+
+const int MUPDF_SELECT_LINES = 2;
+
+const int MUPDF_SELECT_WORDS = 1;
+
 typedef mupdf_context = ffi.Pointer<ffi.Void>;
+typedef mupdf_cookie = ffi.Pointer<ffi.Void>;
+typedef mupdf_display_list = ffi.Pointer<ffi.Void>;
 typedef mupdf_document = ffi.Pointer<ffi.Void>;
+
+final class mupdf_link_item extends ffi.Struct {
+  @ffi.Float()
+  external double x0;
+
+  @ffi.Float()
+  external double y0;
+
+  @ffi.Float()
+  external double x1;
+
+  @ffi.Float()
+  external double y1;
+
+  external ffi.Pointer<ffi.Char> uri;
+
+  @ffi.Int()
+  external int is_external;
+
+  @ffi.Int()
+  external int page_number;
+
+  static ffi.Pointer<mupdf_link_item> $allocate(
+    ffi.Allocator $allocator, {
+    required double x0,
+    required double y0,
+    required double x1,
+    required double y1,
+    required ffi.Pointer<ffi.Char> uri,
+    required int is_external,
+    required int page_number,
+  }) => $allocator<mupdf_link_item>()
+    ..ref.x0 = x0
+    ..ref.y0 = y0
+    ..ref.x1 = x1
+    ..ref.y1 = y1
+    ..ref.uri = uri
+    ..ref.is_external = is_external
+    ..ref.page_number = page_number;
+}
 
 final class mupdf_outline_item extends ffi.Struct {
   external ffi.Pointer<ffi.Char> title;
@@ -921,3 +1638,33 @@ final class mupdf_outline_item extends ffi.Struct {
 
 typedef mupdf_page = ffi.Pointer<ffi.Void>;
 typedef mupdf_pixmap = ffi.Pointer<ffi.Void>;
+
+final class mupdf_word_item extends ffi.Struct {
+  @ffi.Float()
+  external double x0;
+
+  @ffi.Float()
+  external double y0;
+
+  @ffi.Float()
+  external double x1;
+
+  @ffi.Float()
+  external double y1;
+
+  external ffi.Pointer<ffi.Char> text;
+
+  static ffi.Pointer<mupdf_word_item> $allocate(
+    ffi.Allocator $allocator, {
+    required double x0,
+    required double y0,
+    required double x1,
+    required double y1,
+    required ffi.Pointer<ffi.Char> text,
+  }) => $allocator<mupdf_word_item>()
+    ..ref.x0 = x0
+    ..ref.y0 = y0
+    ..ref.x1 = x1
+    ..ref.y1 = y1
+    ..ref.text = text;
+}

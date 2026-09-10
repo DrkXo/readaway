@@ -4,8 +4,6 @@ import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import '../../../flavors.dart';
-
 @lazySingleton
 class AppPathService {
   Directory? _appDir;
@@ -23,7 +21,8 @@ class AppPathService {
   Future<Directory> get appDirectory async {
     if (_appDir != null) return _appDir!;
     final docs = await documentsDirectory;
-    final dir = Directory(p.join(docs.path, '.${F.name}'));
+    // final dir = Directory(p.join(docs.path, '.${F.name}'));
+    final dir = Directory(docs.path);
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

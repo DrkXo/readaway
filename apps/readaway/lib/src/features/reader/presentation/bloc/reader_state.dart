@@ -10,7 +10,8 @@ abstract class ReaderState with _$ReaderState {
     @Default(false) bool isReflowable,
     @Default(0) int pageCount,
     @Default(0) int currentPage,
-    List<ReaderDocument?>? documentPages,
+    List<String?>? pageHtmls,
+    List<List<ReaderLink>?>? pageLinks,
     List<ui.Image?>? pageImages,
     @Default(<int>{}) Set<int> loadingPages,
     List<OutlineItem>? outline,
@@ -24,7 +25,7 @@ abstract class ReaderState with _$ReaderState {
 
   const ReaderState._();
 
-  bool get hasDocument => documentPages != null || pageImages != null;
+  bool get hasDocument => pageHtmls != null || pageImages != null;
 
   /// Whether the reader's viewport is currently looking at the page being read aloud by TTS.
   bool get isViewingTtsPage =>

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
+import 'package:readaway/src/core/services/logging_service.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/reader/supported_document_formats.dart';
@@ -14,12 +15,10 @@ import '../../../library/domain/entity/reading_status.dart';
 import '../../../library/domain/repositories/library_repository.dart';
 import '../../domain/entity/reader_link.dart';
 import '../../domain/repositories/reader_repository.dart';
-import '../../domain/services/document_parser.dart';
 
 @LazySingleton(as: ReaderRepository)
 class ReaderRepositoryImpl implements ReaderRepository {
   final MuPdfService _muPdfService;
-  final DocumentParser<String> _documentParser;
   final WindowService _windowService;
   final NotificationService _notificationService;
   final DocumentCoverService _coverService;
@@ -27,7 +26,6 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
   ReaderRepositoryImpl(
     this._muPdfService,
-    this._documentParser,
     this._windowService,
     this._notificationService,
     this._coverService,
@@ -104,12 +102,13 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
         if (isReflowable) {
           final html = (await _muPdfService.extractPageHtml(pageIndex)) ?? '';
-          final document = _documentParser.parse(html, links: pageLinks);
+
+          logger.d('Extracted HTML for page $pageIndex: $html');
 
           return ReaderPageData(
             pageIndex: pageIndex,
-            document: document,
             links: domainLinks,
+            html: html,
           );
         } else {
           final rendered = await _muPdfService.renderPage(pageIndex);
@@ -228,8 +227,9 @@ class ReaderRepositoryImpl implements ReaderRepository {
             lastReadPage: page,
             pageCount: pageCount,
             lastOpened: DateTime.now(),
-            readingStatus:
-                isFinished ? ReadingStatus.finished : ReadingStatus.reading,
+            readingStatus: isFinished
+                ? ReadingStatus.finished
+                : ReadingStatus.reading,
           );
           await _libraryRepository.saveRecentDocument(updated).run();
         }

@@ -3,17 +3,19 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'reader_preferences.freezed.dart';
 part 'reader_preferences.g.dart';
 
-enum ReaderPageTransition {
-  none,
-  fade,
-  slide,
-  sharedAxis,
-  cover,
-}
+enum ReaderPageTransition { none, fade, slide, sharedAxis, cover }
 
 enum ReaderScrollDirection {
   horizontal,
   vertical,
+}
+
+/// Whether a [ReaderPageTransition] is available for a given scroll direction.
+extension ReaderPageTransitionSupport on ReaderPageTransition {
+  /// The page-flip curl effect is inherently horizontal.
+  bool isSupportedFor(ReaderScrollDirection direction) {
+    return true;
+  }
 }
 
 @freezed

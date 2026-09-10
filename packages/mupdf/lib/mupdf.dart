@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:ffi';
 import 'dart:typed_data';
 
@@ -7,7 +6,7 @@ import 'package:ffi/ffi.dart';
 import 'src/library.dart';
 import 'src/mupdf_bindings_generated.dart';
 
-/// Colorspace constants for [MuPdfPage.render].
+/// Colorspace constants for [MuPdfPage.render] and [MuPdfDisplayList.render].
 const int csRgb = 0;
 const int csGray = 1;
 const int csCmyk = 2;
@@ -84,136 +83,193 @@ class PageLink {
   bool get isInternal => pageNumber >= 0;
 }
 
-// --- Direct MuPDF link access ---
-//
-// The wrapper links libmupdf.a with --whole-archive, so MuPDF's own C API
-// stays exported from libmupdf_wrapper.so. Link extraction needs no glue
-// code: these hand-written bindings call fz_load_links & friends directly.
+/// A document location identifying a specific chapter and page within that chapter.
+class MuPdfLocation {
+  final int chapter;
+  final int page;
+  const MuPdfLocation({required this.chapter, required this.page});
 
-final class FzRect extends Struct {
-  @Float()
-  external double x0;
-  @Float()
-  external double y0;
-  @Float()
-  external double x1;
-  @Float()
-  external double y1;
+  @override
+  String toString() => 'MuPdfLocation(chapter: $chapter, page: $page)';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MuPdfLocation &&
+          runtimeType == other.runtimeType &&
+          chapter == other.chapter &&
+          page == other.page;
+
+  @override
+  int get hashCode => Object.hash(chapter, page);
 }
 
-/// Mirrors fz_link; trailing callback members omitted (never read here and
-/// they sit after every field we need).
-final class FzLink extends Struct {
-  @Int()
-  external int refs;
+/// Selection modes for [MuPdfPage.selectText].
+enum MuPdfSelectMode {
+  chars(0),
+  words(1),
+  lines(2);
 
-  external Pointer<FzLink> next;
-
-  external FzRect rect;
-
-  external Pointer<Utf8> uri;
+  final int value;
+  const MuPdfSelectMode(this.value);
 }
 
-/// Mirrors fz_location (returned/passed by value).
-final class FzLocation extends Struct {
-  @Int32()
-  external int chapter;
-  @Int32()
-  external int page;
+/// A 2D point with coordinates in page space.
+class MuPdfPoint {
+  final double x;
+  final double y;
+  const MuPdfPoint(this.x, this.y);
+
+  @override
+  String toString() => 'MuPdfPoint($x, $y)';
 }
 
-typedef FzLoadLinksNative = Pointer<FzLink> Function(mupdf_context, mupdf_page);
-typedef FzLoadLinksDart = Pointer<FzLink> Function(mupdf_context, mupdf_page);
+/// The result of an interactive text selection on a page.
+class MuPdfTextSelection {
+  final String text;
+  final List<SearchHit> quads;
+  final MuPdfPoint snappedStart;
+  final MuPdfPoint snappedEnd;
 
-typedef FzDropLinkNative = Void Function(mupdf_context, Pointer<FzLink>);
-typedef FzDropLinkDart = void Function(mupdf_context, Pointer<FzLink>);
+  const MuPdfTextSelection({
+    required this.text,
+    required this.quads,
+    required this.snappedStart,
+    required this.snappedEnd,
+  });
 
-typedef FzResolveLinkNative =
-    FzLocation Function(
-      mupdf_context,
-      mupdf_document,
-      Pointer<Utf8>,
-      Pointer<Float>,
-      Pointer<Float>,
-    );
-typedef FzResolveLinkDart =
-    FzLocation Function(
-      mupdf_context,
-      mupdf_document,
-      Pointer<Utf8>,
-      Pointer<Float>,
-      Pointer<Float>,
-    );
-
-typedef FzPageNumberFromLocationNative =
-    Int32 Function(mupdf_context, mupdf_document, FzLocation);
-typedef FzPageNumberFromLocationDart =
-    int Function(mupdf_context, mupdf_document, FzLocation);
-
-typedef FzIsExternalLinkNative = Int32 Function(mupdf_context, Pointer<Utf8>);
-typedef FzIsExternalLinkDart = int Function(mupdf_context, Pointer<Utf8>);
-
-final class FzMatrix extends Struct {
-  @Float()
-  external double a;
-  @Float()
-  external double b;
-  @Float()
-  external double c;
-  @Float()
-  external double d;
-  @Float()
-  external double e;
-  @Float()
-  external double f;
+  bool get isEmpty => text.isEmpty;
+  bool get isNotEmpty => text.isNotEmpty;
 }
 
-typedef FzNewBufferFromPageWithFormatNative =
-    Pointer<Void> Function(
-      Pointer<Void>,
-      Pointer<Void>,
-      Pointer<Utf8>,
-      Pointer<Utf8>,
-      FzMatrix,
-      Pointer<Void>,
-    );
-typedef FzNewBufferFromPageWithFormatDart =
-    Pointer<Void> Function(
-      Pointer<Void>,
-      Pointer<Void>,
-      Pointer<Utf8>,
-      Pointer<Utf8>,
-      FzMatrix,
-      Pointer<Void>,
-    );
+/// A single extracted word with its bounding box in page coordinates.
+class MuPdfWord {
+  final double x0, y0, x1, y1;
+  final String text;
 
-typedef FzBufferStorageNative =
-    Size Function(
-      Pointer<Void>,
-      Pointer<Void>,
-      Pointer<Pointer<Uint8>>,
-    );
-typedef FzBufferStorageDart =
-    int Function(
-      Pointer<Void>,
-      Pointer<Void>,
-      Pointer<Pointer<Uint8>>,
-    );
+  const MuPdfWord({
+    required this.x0,
+    required this.y0,
+    required this.x1,
+    required this.y1,
+    required this.text,
+  });
 
-typedef FzDropBufferNative = Void Function(Pointer<Void>, Pointer<Void>);
-typedef FzDropBufferDart = void Function(Pointer<Void>, Pointer<Void>);
+  double get width => x1 - x0;
+  double get height => y1 - y0;
 
-/// The wrapper hands out handles to
-/// `struct mupdf_context_s { fz_context* ctx; char last_error[256]; }`;
-/// direct fz_* calls need the inner fz_context*, not the handle.
-final class MupdfContextHandle extends Struct {
-  external mupdf_context inner;
+  @override
+  String toString() => 'MuPdfWord("$text" at [$x0, $y0, $x1, $y1])';
+}
+
+/// Cancellation cookie to abort ongoing rendering from another thread or isolate.
+class MuPdfCookie {
+  final mupdf_cookie _cookie;
+  bool _disposed = false;
+
+  MuPdfCookie() : _cookie = _lib.mupdf_new_cookie();
+
+  /// Set the abort flag. Any rendering call using this cookie will abort as soon as possible.
+  void abort() {
+    if (!_disposed) {
+      _lib.mupdf_abort_cookie(_cookie);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _lib.mupdf_drop_cookie(_cookie);
+      _disposed = true;
+    }
+  }
+
+  mupdf_cookie get pointer => _cookie;
+}
+
+/// Pre-recorded vector display list for high-performance zooming, panning, and tile rendering.
+class MuPdfDisplayList {
+  final mupdf_context _ctx;
+  final mupdf_display_list _list;
+  bool _disposed = false;
+
+  MuPdfDisplayList._(this._ctx, this._list);
+
+  mupdf_display_list get pointer => _list;
+
+  /// Render the entire display list into a pixmap.
+  RenderedPage render({
+    double scaleX = 1.0,
+    double scaleY = 1.0,
+    bool alpha = false,
+    int cs = csRgb,
+    MuPdfCookie? cookie,
+  }) {
+    final pix = _lib.mupdf_render_display_list(
+      _ctx,
+      _list,
+      scaleX,
+      scaleY,
+      alpha ? 1 : 0,
+      cs,
+      cookie?.pointer ?? nullptr,
+    );
+    if (pix == nullptr) throw MuPdfException(_lastErrorCtx(_ctx));
+
+    try {
+      return _buildRenderedPage(_ctx, pix);
+    } finally {
+      _lib.mupdf_drop_pixmap(_ctx, pix);
+    }
+  }
+
+  /// Render a sub-rectangle (tile) of the display list into a pixmap.
+  /// Coordinates [x0, y0, x1, y1] are in page points.
+  RenderedPage renderRect({
+    required double x0,
+    required double y0,
+    required double x1,
+    required double y1,
+    double scaleX = 1.0,
+    double scaleY = 1.0,
+    bool alpha = false,
+    int cs = csRgb,
+    MuPdfCookie? cookie,
+  }) {
+    final pix = _lib.mupdf_render_display_list_rect(
+      _ctx,
+      _list,
+      scaleX,
+      scaleY,
+      x0,
+      y0,
+      x1,
+      y1,
+      alpha ? 1 : 0,
+      cs,
+      cookie?.pointer ?? nullptr,
+    );
+    if (pix == nullptr) throw MuPdfException(_lastErrorCtx(_ctx));
+
+    try {
+      return _buildRenderedPage(_ctx, pix);
+    } finally {
+      _lib.mupdf_drop_pixmap(_ctx, pix);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _lib.mupdf_drop_display_list(_ctx, _list);
+      _disposed = true;
+    }
+  }
 }
 
 /// Renders a document page to raw pixel data via MuPDF.
 class MuPdfPage {
   final mupdf_context _ctx;
   final mupdf_page _page;
+  bool _disposed = false;
 
   MuPdfPage._(this._ctx, this._page);
 
@@ -221,6 +277,9 @@ class MuPdfPage {
 
   double get width => _lib.mupdf_page_width(_ctx, _page);
   double get height => _lib.mupdf_page_height(_ctx, _page);
+
+  /// Rotation angle of the page in degrees (0, 90, 180, 270).
+  int get rotation => _lib.mupdf_page_rotation(_ctx, _page);
 
   /// Returns width and height in a single native call.
   PageBoundBox get boundBox {
@@ -236,43 +295,37 @@ class MuPdfPage {
     }
   }
 
+  /// Create a vector display list from this page for fast zooming, tile rendering, and caching.
+  MuPdfDisplayList toDisplayList() {
+    final list = _lib.mupdf_new_display_list_from_page(_ctx, _page);
+    if (list == nullptr) throw MuPdfException(_lastErrorCtx(_ctx));
+    return MuPdfDisplayList._(_ctx, list);
+  }
+
   /// Render the page at the given scale. Returns RGBA pixel data.
   ///
   /// [cs] selects the output colorspace: [csRgb], [csGray], or [csCmyk].
+  /// [cookie] optional cancellation cookie.
   RenderedPage render({
     double scaleX = 1.0,
     double scaleY = 1.0,
     bool alpha = false,
     int cs = csRgb,
+    MuPdfCookie? cookie,
   }) {
-    final pix = _lib.mupdf_new_pixmap_from_page_cs(
+    final pix = _lib.mupdf_new_pixmap_from_page_cookie(
       _ctx,
       _page,
       scaleX,
       scaleY,
       alpha ? 1 : 0,
       cs,
+      cookie?.pointer ?? nullptr,
     );
     if (pix == nullptr) throw MuPdfException(_lastErrorCtx(_ctx));
 
     try {
-      final w = _lib.mupdf_pixmap_width(_ctx, pix);
-      final h = _lib.mupdf_pixmap_height(_ctx, pix);
-      final stride = _lib.mupdf_pixmap_stride(_ctx, pix);
-      final components = _lib.mupdf_pixmap_components(_ctx, pix);
-      final samples = _lib.mupdf_pixmap_samples(_ctx, pix);
-
-      final totalBytes = h * stride;
-      final pixels = (totalBytes > 0 && samples != nullptr)
-          ? Uint8List.fromList(samples.cast<Uint8>().asTypedList(totalBytes))
-          : Uint8List(0);
-      return RenderedPage(
-        width: w,
-        height: h,
-        stride: stride,
-        components: components,
-        pixels: pixels,
-      );
+      return _buildRenderedPage(_ctx, pix);
     } finally {
       _lib.mupdf_drop_pixmap(_ctx, pix);
     }
@@ -294,55 +347,16 @@ class MuPdfPage {
   /// If [preserveImages] is true (default), images on the page are serialized as
   /// base64 data URIs within the extracted HTML.
   String? extractHtml({bool preserveImages = true}) {
-    if (!preserveImages) {
-      final ptr = _lib.mupdf_extract_html(_ctx, _page);
-      if (ptr == nullptr) return null;
-      try {
-        return ptr.cast<Utf8>().toDartString();
-      } finally {
-        _lib.mupdf_free_string(_ctx, ptr);
-      }
-    }
-
-    final ctxInner = _ctx.cast<MupdfContextHandle>().ref.inner;
-    final formatPtr = 'html'.toNativeUtf8();
-    final optionsPtr = 'preserve-images'.toNativeUtf8();
-    final matrix = calloc<FzMatrix>();
-    matrix.ref.a = 1.0;
-    matrix.ref.b = 0.0;
-    matrix.ref.c = 0.0;
-    matrix.ref.d = 1.0;
-    matrix.ref.e = 0.0;
-    matrix.ref.f = 0.0;
-
-    final dataPtr = calloc<Pointer<Uint8>>();
-    Pointer<Void>? buf;
+    final ptr = _lib.mupdf_extract_html_options(
+      _ctx,
+      _page,
+      preserveImages ? 1 : 0,
+    );
+    if (ptr == nullptr) return null;
     try {
-      buf = fzNewBufferFromPageWithFormat(
-        ctxInner.cast<Void>(),
-        _page.cast<Void>(),
-        formatPtr,
-        optionsPtr,
-        matrix.ref,
-        nullptr,
-      );
-      if (buf == nullptr) return null;
-
-      final len = fzBufferStorage(ctxInner.cast<Void>(), buf, dataPtr);
-      if (len <= 0 || dataPtr.value == nullptr) return null;
-
-      final bytes = dataPtr.value.asTypedList(len);
-      return utf8.decode(bytes, allowMalformed: true);
-    } catch (_) {
-      return null;
+      return ptr.cast<Utf8>().toDartString();
     } finally {
-      if (buf != null && buf != nullptr) {
-        fzDropBuffer(ctxInner.cast<Void>(), buf);
-      }
-      calloc.free(dataPtr);
-      calloc.free(matrix);
-      calloc.free(formatPtr);
-      calloc.free(optionsPtr);
+      _lib.mupdf_free_string(_ctx, ptr);
     }
   }
 
@@ -398,9 +412,161 @@ class MuPdfPage {
     }
   }
 
-  void dispose() {
-    _lib.mupdf_drop_page(_ctx, _page);
+  /// Performs interactive text selection between two touch/mouse points.
+  ///
+  /// The coordinates [a] and [b] are snapped according to [mode] (characters,
+  /// words, or lines). Returns the snapped endpoints, selection quads for
+  /// rendering UI highlights, and the extracted UTF-8 text.
+  MuPdfTextSelection selectText(
+    MuPdfPoint a,
+    MuPdfPoint b, {
+    MuPdfSelectMode mode = MuPdfSelectMode.words,
+  }) {
+    final snappedAxPtr = calloc<Float>();
+    final snappedAyPtr = calloc<Float>();
+    final snappedBxPtr = calloc<Float>();
+    final snappedByPtr = calloc<Float>();
+    final quadsPtr = calloc<Pointer<Float>>();
+    final quadCountPtr = calloc<Int>();
+    final textPtr = calloc<Pointer<Char>>();
+
+    try {
+      final rc = _lib.mupdf_page_select_text(
+        _ctx,
+        _page,
+        a.x,
+        a.y,
+        b.x,
+        b.y,
+        mode.value,
+        snappedAxPtr,
+        snappedAyPtr,
+        snappedBxPtr,
+        snappedByPtr,
+        quadsPtr,
+        quadCountPtr,
+        textPtr,
+      );
+      if (rc != 0) throw MuPdfException(_lastErrorCtx(_ctx));
+
+      final quadCount = quadCountPtr.value;
+      final rawQuads = quadsPtr.value;
+      final hits = <SearchHit>[];
+      if (rawQuads != nullptr && quadCount > 0) {
+        try {
+          for (var i = 0; i < quadCount; i++) {
+            final off = i * 8;
+            hits.add(
+              SearchHit(
+                ulX: rawQuads[off],
+                ulY: rawQuads[off + 1],
+                urX: rawQuads[off + 2],
+                urY: rawQuads[off + 3],
+                llX: rawQuads[off + 4],
+                llY: rawQuads[off + 5],
+                lrX: rawQuads[off + 6],
+                lrY: rawQuads[off + 7],
+              ),
+            );
+          }
+        } finally {
+          _lib.mupdf_free_floats(rawQuads);
+        }
+      }
+
+      String selectedText = '';
+      final rawText = textPtr.value;
+      if (rawText != nullptr) {
+        try {
+          selectedText = rawText.cast<Utf8>().toDartString();
+        } finally {
+          _lib.mupdf_free_string(_ctx, rawText);
+        }
+      }
+
+      return MuPdfTextSelection(
+        text: selectedText,
+        quads: hits,
+        snappedStart: MuPdfPoint(snappedAxPtr.value, snappedAyPtr.value),
+        snappedEnd: MuPdfPoint(snappedBxPtr.value, snappedByPtr.value),
+      );
+    } finally {
+      calloc.free(snappedAxPtr);
+      calloc.free(snappedAyPtr);
+      calloc.free(snappedBxPtr);
+      calloc.free(snappedByPtr);
+      calloc.free(quadsPtr);
+      calloc.free(quadCountPtr);
+      calloc.free(textPtr);
+    }
   }
+
+  /// Extracts structured words with individual bounding boxes from the page.
+  ///
+  /// Useful for text-to-speech (TTS) synchronized highlighting and single-tap
+  /// dictionary lookups.
+  List<MuPdfWord> extractWords() {
+    final wordsPtr = calloc<Pointer<mupdf_word_item>>();
+    final countPtr = calloc<Int>();
+    try {
+      final rc = _lib.mupdf_page_extract_words(_ctx, _page, wordsPtr, countPtr);
+      if (rc != 0) throw MuPdfException(_lastErrorCtx(_ctx));
+      final count = countPtr.value;
+      final rawWords = wordsPtr.value;
+      if (rawWords == nullptr || count <= 0) return [];
+      try {
+        final result = <MuPdfWord>[];
+        for (var i = 0; i < count; i++) {
+          final item = rawWords[i];
+          final text = item.text != nullptr
+              ? item.text.cast<Utf8>().toDartString()
+              : '';
+          result.add(
+            MuPdfWord(
+              x0: item.x0,
+              y0: item.y0,
+              x1: item.x1,
+              y1: item.y1,
+              text: text,
+            ),
+          );
+        }
+        return result;
+      } finally {
+        _lib.mupdf_free_words(rawWords, count);
+      }
+    } finally {
+      calloc.free(wordsPtr);
+      calloc.free(countPtr);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _lib.mupdf_drop_page(_ctx, _page);
+      _disposed = true;
+    }
+  }
+}
+
+RenderedPage _buildRenderedPage(mupdf_context ctx, mupdf_pixmap pix) {
+  final w = _lib.mupdf_pixmap_width(ctx, pix);
+  final h = _lib.mupdf_pixmap_height(ctx, pix);
+  final stride = _lib.mupdf_pixmap_stride(ctx, pix);
+  final components = _lib.mupdf_pixmap_components(ctx, pix);
+  final samples = _lib.mupdf_pixmap_samples(ctx, pix);
+
+  final totalBytes = h * stride;
+  final pixels = (totalBytes > 0 && samples != nullptr)
+      ? Uint8List.fromList(samples.cast<Uint8>().asTypedList(totalBytes))
+      : Uint8List(0);
+  return RenderedPage(
+    width: w,
+    height: h,
+    stride: stride,
+    components: components,
+    pixels: pixels,
+  );
 }
 
 String _lastErrorCtx(mupdf_context ctx) {
@@ -429,8 +595,10 @@ class RenderedPage {
 class MuPdfDocument {
   final mupdf_context _ctx;
   final mupdf_document _doc;
+  final bool _isClone;
+  bool _disposed = false;
 
-  MuPdfDocument._(this._ctx, this._doc);
+  MuPdfDocument._(this._ctx, this._doc, {this._isClone = false});
 
   /// Open a document from a file path.
   factory MuPdfDocument.openFile(String path) {
@@ -465,6 +633,14 @@ class MuPdfDocument {
     } finally {
       calloc.free(dataPtr);
     }
+  }
+
+  /// Creates a thread-safe cloned document handle sharing the underlying Store (caching).
+  /// Perfect for passing to background worker isolates.
+  MuPdfDocument clone() {
+    final clonedCtx = _lib.mupdf_clone_context(_ctx);
+    if (clonedCtx == nullptr) throw MuPdfException('Failed to clone context');
+    return MuPdfDocument._(clonedCtx, _doc, isClone: true);
   }
 
   int get pageCount {
@@ -526,6 +702,41 @@ class MuPdfDocument {
     return result != 0;
   }
 
+  /// Recomputes layout for reflowable documents (EPUB, HTML, FB2).
+  /// [width] and [height] are in points. [em] is font size in points.
+  void layout({required double width, required double height, double em = 12.0}) {
+    final rc = _lib.mupdf_layout_document(_ctx, _doc, width, height, em);
+    if (rc != 0) throw MuPdfException(_lastError());
+  }
+
+  /// Styles reflowable documents (EPUB, HTML, FB2).
+  /// [usePublisherCss]: whether to respect the book's embedded styles.
+  /// [userCss]: custom CSS rules to apply (e.g. font-family, line-height, colors, margins).
+  void style({bool usePublisherCss = true, String? userCss}) {
+    final cssPtr = userCss != null ? userCss.toNativeUtf8() : nullptr;
+    try {
+      final rc = _lib.mupdf_style_document(
+        _ctx,
+        _doc,
+        usePublisherCss ? 1 : 0,
+        cssPtr != nullptr ? cssPtr.cast<Char>() : nullptr,
+      );
+      if (rc != 0) throw MuPdfException(_lastError());
+    } finally {
+      if (cssPtr != nullptr) calloc.free(cssPtr);
+    }
+  }
+
+  /// Sets global user CSS stylesheet on the context for HTML/EPUB rendering.
+  void setUserCss(String css) {
+    final cssPtr = css.toNativeUtf8();
+    try {
+      _lib.mupdf_set_user_css(_ctx, cssPtr.cast<Char>());
+    } finally {
+      calloc.free(cssPtr);
+    }
+  }
+
   /// Number of chapters in the document.
   int get chapterCount {
     final count = _lib.mupdf_count_chapters(_ctx, _doc);
@@ -547,6 +758,72 @@ class MuPdfDocument {
     return MuPdfPage._(_ctx, pg);
   }
 
+  /// Creates an opaque bookmark identifying the current location in the document.
+  ///
+  /// For reflowable documents (EPUB, FB2, HTML), bookmarks remain valid across
+  /// [layout] and [style] changes (font size, margin, orientation), allowing
+  /// the reader position to be faithfully restored via [lookupBookmark].
+  int makeBookmark(MuPdfLocation loc) {
+    final mark = _lib.mupdf_make_bookmark(_ctx, _doc, loc.chapter, loc.page);
+    if (mark == 0) throw MuPdfException(_lastError());
+    return mark;
+  }
+
+  /// Looks up a previously created bookmark and returns its resolved location.
+  ///
+  /// For reflowable documents, this resolves the bookmark to the new chapter
+  /// and page after [layout] or [style] changes.
+  MuPdfLocation lookupBookmark(int bookmark) {
+    final chapterPtr = calloc<Int>();
+    final pagePtr = calloc<Int>();
+    try {
+      final rc = _lib.mupdf_lookup_bookmark(
+        _ctx,
+        _doc,
+        bookmark,
+        chapterPtr,
+        pagePtr,
+      );
+      if (rc != 0) throw MuPdfException(_lastError());
+      return MuPdfLocation(chapter: chapterPtr.value, page: pagePtr.value);
+    } finally {
+      calloc.free(chapterPtr);
+      calloc.free(pagePtr);
+    }
+  }
+
+  /// Converts an absolute (flat) page number to a chapter and page location.
+  MuPdfLocation locationFromPage(int pageNumber) {
+    final chapterPtr = calloc<Int>();
+    final pagePtr = calloc<Int>();
+    try {
+      final rc = _lib.mupdf_location_from_page(
+        _ctx,
+        _doc,
+        pageNumber,
+        chapterPtr,
+        pagePtr,
+      );
+      if (rc != 0) throw MuPdfException(_lastError());
+      return MuPdfLocation(chapter: chapterPtr.value, page: pagePtr.value);
+    } finally {
+      calloc.free(chapterPtr);
+      calloc.free(pagePtr);
+    }
+  }
+
+  /// Converts a chapter and page location to an absolute (flat) page number.
+  int pageFromLocation(MuPdfLocation loc) {
+    final page = _lib.mupdf_page_from_location(
+      _ctx,
+      _doc,
+      loc.chapter,
+      loc.page,
+    );
+    if (page < 0) throw MuPdfException(_lastError());
+    return page;
+  }
+
   /// Check if the document grants a specific permission.
   /// Use [permPrint], [permCopy], [permEdit], [permAnnotate].
   bool hasPermission(int permission) {
@@ -565,42 +842,14 @@ class MuPdfDocument {
       if (items == nullptr) return [];
       try {
         final result = <OutlineItem>[];
-        final ctxInner = _ctx.cast<MupdfContextHandle>().ref.inner;
         for (var i = 0; i < count; i++) {
           final item = items[i];
           int flatPage = -1;
-          // EPUB/reflowable outlines often carry chapter-relative or empty
-          // page numbers. Resolve the item's URI to obtain the real location,
-          // then flatten it to a page index (matches MuPDF's Java/WASM viewers).
           if (item.uri.address != 0) {
-            final uriStr = item.uri.cast<Utf8>().toDartString();
-            final uriNative = uriStr.toNativeUtf8();
-            final xPtr = calloc<Float>();
-            final yPtr = calloc<Float>();
-            try {
-              final loc = fzResolveLink(
-                ctxInner,
-                _doc,
-                uriNative,
-                xPtr,
-                yPtr,
-              );
-              if (loc.page >= 0) {
-                flatPage = fzPageNumberFromLocation(ctxInner, _doc, loc);
-              }
-            } finally {
-              calloc.free(xPtr);
-              calloc.free(yPtr);
-              calloc.free(uriNative);
-            }
+            flatPage = _lib.mupdf_resolve_uri(_ctx, _doc, item.uri);
           }
-          // Fallback: convert chapter/page directly (PDF/XPS).
           if (flatPage < 0) {
-            final loc = calloc<FzLocation>();
-            loc.ref.chapter = item.chapter;
-            loc.ref.page = item.page;
-            flatPage = fzPageNumberFromLocation(ctxInner, _doc, loc.ref);
-            calloc.free(loc);
+            flatPage = item.page >= 0 ? item.page : 0;
           }
           result.add(
             OutlineItem(
@@ -633,42 +882,40 @@ class MuPdfDocument {
   }
 
   /// Loads the interactive links of page [number], resolving internal
-  /// destinations to flat page numbers.
+  /// destinations to flat page numbers with full native exception safety.
   List<PageLink> pageLinks(int number) {
     final page = loadPage(number);
     try {
-      final ctx = _ctx.cast<MupdfContextHandle>().ref.inner;
-      final head = fzLoadLinks(ctx, page._page);
-      if (head == nullptr) return [];
+      final linksPtr = calloc<Pointer<mupdf_link_item>>();
       try {
-        final result = <PageLink>[];
-        for (var ptr = head; ptr != nullptr; ptr = ptr.ref.next) {
-          final link = ptr.ref;
-          final uriPtr = link.uri;
-          final uri = uriPtr == nullptr
-              ? ''
-              : uriPtr.cast<Utf8>().toDartString();
-          var pageNumber = -1;
-          if (uri.isNotEmpty && fzIsExternalLink(ctx, uriPtr) == 0) {
-            final loc = fzResolveLink(ctx, _doc, uriPtr, nullptr, nullptr);
-            if (loc.page >= 0) {
-              pageNumber = fzPageNumberFromLocation(ctx, _doc, loc);
-            }
+        final count = _lib.mupdf_page_links(_ctx, _doc, page._page, linksPtr);
+        if (count <= 0) return [];
+        final items = linksPtr.value;
+        if (items == nullptr) return [];
+        try {
+          final result = <PageLink>[];
+          for (var i = 0; i < count; i++) {
+            final item = items[i];
+            final uri = item.uri.address != 0
+                ? item.uri.cast<Utf8>().toDartString()
+                : '';
+            result.add(
+              PageLink(
+                x0: item.x0,
+                y0: item.y0,
+                x1: item.x1,
+                y1: item.y1,
+                uri: uri,
+                pageNumber: item.page_number,
+              ),
+            );
           }
-          result.add(
-            PageLink(
-              x0: link.rect.x0,
-              y0: link.rect.y0,
-              x1: link.rect.x1,
-              y1: link.rect.y1,
-              uri: uri,
-              pageNumber: pageNumber,
-            ),
-          );
+          return result;
+        } finally {
+          _lib.mupdf_free_links(items, count);
         }
-        return result;
       } finally {
-        fzDropLink(ctx, head);
+        calloc.free(linksPtr);
       }
     } finally {
       page.dispose();
@@ -679,31 +926,22 @@ class MuPdfDocument {
   /// to a flat page index. Returns -1 if the URI is external or could not be resolved.
   int resolveUri(String uri) {
     if (uri.isEmpty) return -1;
-    final ctx = _ctx.cast<MupdfContextHandle>().ref.inner;
     final uriNative = uri.toNativeUtf8();
-    final xPtr = calloc<Float>();
-    final yPtr = calloc<Float>();
     try {
-      final loc = fzResolveLink(ctx, _doc, uriNative, xPtr, yPtr);
-      if (loc.chapter >= 0 || loc.page >= 0) {
-        final effectiveLoc = calloc<FzLocation>();
-        effectiveLoc.ref.chapter = loc.chapter >= 0 ? loc.chapter : 0;
-        effectiveLoc.ref.page = loc.page >= 0 ? loc.page : 0;
-        final pageNum = fzPageNumberFromLocation(ctx, _doc, effectiveLoc.ref);
-        calloc.free(effectiveLoc);
-        if (pageNum >= 0) return pageNum;
-      }
-      return -1;
+      return _lib.mupdf_resolve_uri(_ctx, _doc, uriNative.cast<Char>());
     } finally {
-      calloc.free(xPtr);
-      calloc.free(yPtr);
       calloc.free(uriNative);
     }
   }
 
   void dispose() {
-    _lib.mupdf_drop_document(_ctx, _doc);
-    _lib.mupdf_drop_context(_ctx);
+    if (!_disposed) {
+      if (!_isClone) {
+        _lib.mupdf_drop_document(_ctx, _doc);
+      }
+      _lib.mupdf_drop_context(_ctx);
+      _disposed = true;
+    }
   }
 
   String _lastError() => _lastErrorCtx(_ctx);
@@ -720,34 +958,3 @@ class MuPdfException implements Exception {
 
 final DynamicLibrary _dylib = openMupdfLib();
 final MupdfBindings _lib = MupdfBindings(_dylib);
-
-// Direct MuPDF C API (symbols kept alive by --whole-archive linking).
-final FzLoadLinksDart fzLoadLinks = _dylib
-    .lookupFunction<FzLoadLinksNative, FzLoadLinksDart>('fz_load_links');
-final FzDropLinkDart fzDropLink = _dylib
-    .lookupFunction<FzDropLinkNative, FzDropLinkDart>('fz_drop_link');
-final FzResolveLinkDart fzResolveLink = _dylib
-    .lookupFunction<FzResolveLinkNative, FzResolveLinkDart>(
-      'fz_resolve_link',
-    );
-final FzPageNumberFromLocationDart fzPageNumberFromLocation = _dylib
-    .lookupFunction<
-      FzPageNumberFromLocationNative,
-      FzPageNumberFromLocationDart
-    >('fz_page_number_from_location');
-final FzIsExternalLinkDart fzIsExternalLink = _dylib
-    .lookupFunction<FzIsExternalLinkNative, FzIsExternalLinkDart>(
-      'fz_is_external_link',
-    );
-final FzNewBufferFromPageWithFormatDart fzNewBufferFromPageWithFormat = _dylib
-    .lookupFunction<
-      FzNewBufferFromPageWithFormatNative,
-      FzNewBufferFromPageWithFormatDart
-    >('fz_new_buffer_from_page_with_format');
-final FzBufferStorageDart fzBufferStorage = _dylib
-    .lookupFunction<FzBufferStorageNative, FzBufferStorageDart>(
-      'fz_buffer_storage',
-    );
-final FzDropBufferDart fzDropBuffer = _dylib
-    .lookupFunction<FzDropBufferNative, FzDropBufferDart>('fz_drop_buffer');
-

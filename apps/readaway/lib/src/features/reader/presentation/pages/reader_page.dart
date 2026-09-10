@@ -15,10 +15,10 @@ import '../../../settings/domain/entity/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../domain/gestures/reader_gestures.dart';
 import '../bloc/reader_bloc.dart';
-import '../controllers/reader_page_view_controller.dart';
+import '../controllers/reader_viewport_controller.dart';
 import '../widgets/widgets.dart';
 
-part '../mixins/reader_page_mixins.dart';
+part 'reader_page_mixin.dart';
 
 class ReaderPage extends StatefulWidget {
   const ReaderPage({
@@ -145,17 +145,17 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                 child: CallbackShortcuts(
                   bindings: {
                     const SingleActivator(LogicalKeyboardKey.arrowLeft):
-                        pageViewController.previousPage,
+                        viewportController.previousPage,
                     const SingleActivator(LogicalKeyboardKey.arrowRight):
-                        pageViewController.nextPage,
+                        viewportController.nextPage,
                     const SingleActivator(LogicalKeyboardKey.arrowUp):
-                        pageViewController.previousPage,
+                        viewportController.previousPage,
                     const SingleActivator(LogicalKeyboardKey.arrowDown):
-                        pageViewController.nextPage,
+                        viewportController.nextPage,
                     const SingleActivator(LogicalKeyboardKey.pageUp):
-                        pageViewController.previousPage,
+                        viewportController.previousPage,
                     const SingleActivator(LogicalKeyboardKey.pageDown):
-                        pageViewController.nextPage,
+                        viewportController.nextPage,
                   },
                   child: Focus(
                     autofocus: true,
@@ -192,13 +192,13 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                       autoScrollController.isActive,
                                   onSpeedChange: onSpeedGestureChange,
                                   onPageDragStart:
-                                      pageViewController.handleDragStart,
+                                      viewportController.handleDragStart,
                                   onPageDragUpdate:
-                                      pageViewController.handleDragUpdate,
+                                      viewportController.handleDragUpdate,
                                   onPageDragEnd:
-                                      pageViewController.handleDragEnd,
+                                      viewportController.handleDragEnd,
                                   onPageDragCancel:
-                                      pageViewController.handleDragCancel,
+                                      viewportController.handleDragCancel,
                                   onTapAction: handleTapAction,
                                   child: LayoutBuilder(
                                     builder: (context, constraints) {
@@ -212,8 +212,8 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                             Positioned.fill(
                                               child: SafeArea(
                                                 child: ReaderViewport(
-                                                  pageViewController:
-                                                      pageViewController,
+                                                  viewportController:
+                                                      viewportController,
                                                   prefs: prefs,
                                                   onScrollBoundaryChanged:
                                                       onScrollBoundaryChanged,
@@ -345,11 +345,11 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                               .currentState
                                               ?.openDrawer(),
                                           onPreviousPage:
-                                              pageViewController.previousPage,
+                                              viewportController.previousPage,
                                           onNextPage:
-                                              pageViewController.nextPage,
+                                              viewportController.nextPage,
                                           onSeekToPage:
-                                              pageViewController.goToPage,
+                                              viewportController.goToPage,
                                         ),
                                       ),
                                     ),

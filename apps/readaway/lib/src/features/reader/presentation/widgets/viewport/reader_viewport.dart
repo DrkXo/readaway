@@ -2,28 +2,28 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
+
 import '../../bloc/reader_bloc.dart';
-import '../../controllers/reader_page_view_controller.dart';
+import '../../controllers/reader_viewport_controller.dart';
 import '../common/reader_error_view.dart';
 import '../tts/reader_tts_mini_player_bar.dart';
-import 'items/fixed_image_page_item.dart';
-import 'items/reflowable_page_item.dart';
-import 'reader_continuous_view.dart';
-import 'reader_page_view.dart';
+import 'modes/continuous_reader_view.dart';
+import 'modes/paged_reader_view.dart';
+import 'page_content/fixed_reader_page.dart';
+import 'page_content/reflowable_reader_page.dart';
 
 /// The main viewport widget that coordinates page viewing, transitions, and loading.
 class ReaderViewport extends StatelessWidget {
   const ReaderViewport({
     super.key,
-    required this.pageViewController,
+    required this.viewportController,
     required this.prefs,
     this.onScrollBoundaryChanged,
   });
 
-  final ReaderPageViewController pageViewController;
+  final ReaderViewportController viewportController;
   final ReaderPreferences prefs;
 
   /// Notified when the current page's inner scroll view reaches or leaves a boundary.
@@ -40,8 +40,8 @@ class ReaderViewport extends StatelessWidget {
           prev.currentPage != curr.currentPage ||
           prev.pageCount != curr.pageCount,
       listener: (context, state) {
-        pageViewController.updatePageCount(state.pageCount);
-        pageViewController.setCurrentPage(state.currentPage);
+        viewportController.updatePageCount(state.pageCount);
+        viewportController.setCurrentPage(state.currentPage);
       },
       buildWhen: (prev, curr) =>
           prev.loading != curr.loading ||
@@ -50,7 +50,7 @@ class ReaderViewport extends StatelessWidget {
           prev.pageCount != curr.pageCount ||
           prev.currentPage != curr.currentPage ||
           prev.isReflowable != curr.isReflowable ||
-          prev.documentPages != curr.documentPages ||
+          prev.pageHtmls != curr.pageHtmls ||
           prev.pageImages != curr.pageImages ||
           prev.ttsActive != curr.ttsActive,
       builder: (context, state) {
@@ -91,22 +91,22 @@ class ReaderViewport extends StatelessWidget {
 
         final Widget view;
         if (isContinuous) {
-          view = ReaderContinuousView(
+          view = ContinuousReaderView(
             currentPage: state.currentPage,
             pageCount: state.pageCount,
-            controller: pageViewController,
+            controller: viewportController,
             bottomPadding: miniPlayerPadding,
             itemBuilder: (ctx, idx) =>
                 _buildPageItem(ctx, state, idx, isContinuous: true),
             onPageChangeRequested: (idx) => _onPageCommitted(context, idx),
           );
         } else {
-          view = ReaderPageView(
+          view = PagedReaderView(
             currentPage: state.currentPage,
             pageCount: state.pageCount,
             transition: prefs.pageTransition,
             direction: prefs.scrollDirection,
-            controller: pageViewController,
+            controller: viewportController,
             backgroundColor: context.appColors.readerBackground,
             itemBuilder: (ctx, idx) => _buildPageItem(
               ctx,
@@ -139,7 +139,7 @@ class ReaderViewport extends StatelessWidget {
     onScrollBoundaryChanged,
   }) {
     if (state.isReflowable) {
-      return ReflowablePageItem(
+      return ReflowableReaderPage(
         index: index,
         state: state,
         prefs: prefs,
@@ -148,7 +148,7 @@ class ReaderViewport extends StatelessWidget {
         onScrollBoundaryChanged: onScrollBoundaryChanged,
       );
     } else {
-      return FixedImagePageItem(
+      return FixedReaderPage(
         index: index,
         state: state,
         isContinuous: isContinuous,
@@ -165,9 +165,9 @@ class ReaderViewport extends StatelessWidget {
 
     if ((clamped - bloc.state.currentPage).abs() > 1) {
       bloc.add(ReaderEvent.pageChanged(index: clamped));
-      pageViewController.jumpToPage(clamped);
+      viewportController.jumpToPage(clamped);
     } else {
-      pageViewController.goToPage(clamped);
+      viewportController.goToPage(clamped);
     }
   }
 
@@ -178,6 +178,6 @@ class ReaderViewport extends StatelessWidget {
     if (clamped != bloc.state.currentPage) {
       bloc.add(ReaderEvent.pageChanged(index: clamped));
     }
-    pageViewController.setCurrentPage(clamped);
+    viewportController.setCurrentPage(clamped);
   }
 }
