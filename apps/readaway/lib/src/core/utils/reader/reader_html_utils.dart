@@ -4,20 +4,77 @@ import 'package:html/parser.dart' as html_parser;
 
 import '../../../features/reader/domain/entity/reader_link.dart';
 
-/// Extracts plain text from MuPDF structured-text HTML for TTS playback.
+/// Extracts plain text from document HTML for TTS playback and text analysis.
 ///
-/// Joins each `<p>` block with a newline so sentence chunking preserves
-/// paragraph boundaries, then collapses runs of whitespace.
+/// Traverses all semantic text-bearing block elements (headings, paragraphs, blockquotes,
+/// lists, and leaf divs), joining them with newlines to preserve natural speech phrasing.
 String extractPageText(String html) {
+  if (html.isEmpty) return '';
   final doc = html_parser.parse(html);
   final body = doc.body;
   if (body == null) return '';
-  final paragraphs = body
-      .querySelectorAll('p')
-      .map((e) => e.text.trim())
-      .where((t) => t.isNotEmpty);
-  return paragraphs.join('\n');
+
+  final blocks = <String>[];
+  final visited = <dom.Element>{};
+
+  void processNode(dom.Node node) {
+    if (node is dom.Element) {
+      final tag = node.localName?.toLowerCase();
+      if (tag == 'script' || tag == 'style' || tag == 'noscript' || tag == 'head') {
+        return;
+      }
+
+      const blockTags = {
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'p', 'blockquote', 'li', 'dt', 'dd', 'pre',
+      };
+
+      if (blockTags.contains(tag)) {
+        final text = node.text.trim();
+        if (text.isNotEmpty && !visited.contains(node)) {
+          blocks.add(text);
+          visited.add(node);
+        }
+        return;
+      }
+
+      // Check if container element has block children
+      bool hasBlockChildren = false;
+      for (final child in node.children) {
+        final childTag = child.localName?.toLowerCase();
+        if (blockTags.contains(childTag) ||
+            childTag == 'div' ||
+            childTag == 'article' ||
+            childTag == 'section') {
+          hasBlockChildren = true;
+          break;
+        }
+      }
+
+      if (tag == 'div' && !hasBlockChildren) {
+        final text = node.text.trim();
+        if (text.isNotEmpty && !visited.contains(node)) {
+          blocks.add(text);
+          visited.add(node);
+        }
+        return;
+      }
+
+      for (final child in node.nodes) {
+        processNode(child);
+      }
+    } else if (node is dom.Text) {
+      final text = node.text.trim();
+      if (text.isNotEmpty) {
+        blocks.add(text);
+      }
+    }
+  }
+
+  processNode(body);
+  return blocks.join('\n');
 }
+
 
 /// Indices surrounding [currentIndex] (current, next, previous) that fall
 /// within `[0, pageCount)`, in that order. The caller skips any that are

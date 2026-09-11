@@ -40,11 +40,17 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
   TocTab _activeTab = TocTab.chapters;
 
   /// Index of the outline item covering [currentPage], -1 if none.
-  static int _indexOfCurrent(List<OutlineItem> outline, int currentPage) {
+  static int _indexOfCurrent(
+    List<OutlineItem> outline,
+    int currentPage, {
+    bool isReflowable = false,
+  }) {
     var index = -1;
     for (var i = 0; i < outline.length; i++) {
-      final page = outline[i].page;
-      if (page >= 0 && page <= currentPage) index = i;
+      final target = (isReflowable && outline[i].chapter >= 0)
+          ? outline[i].chapter
+          : outline[i].page;
+      if (target >= 0 && target <= currentPage) index = i;
     }
     return index;
   }
@@ -92,7 +98,11 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
         final effectiveTab = hasOutline ? _activeTab : TocTab.pages;
 
         final currentIndex = hasOutline
-            ? _indexOfCurrent(outline, state.currentPage)
+            ? _indexOfCurrent(
+                outline,
+                state.currentPage,
+                isReflowable: state.isReflowable,
+              )
             : -1;
 
         final targetIndex = effectiveTab == TocTab.chapters
@@ -122,7 +132,9 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AppText(
-                          hasOutline ? 'CONTENTS' : 'PAGES',
+                          hasOutline
+                              ? 'CONTENTS'
+                              : (state.isReflowable ? 'CHAPTERS' : 'PAGES'),
                           variant: AppTextVariant.label,
                           letterSpacing: 1.4,
                           fontWeight: FontWeight.w700,
@@ -150,8 +162,8 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                           hasOutline
                               ? (_activeTab == TocTab.chapters
                                   ? '${outline.where((o) => o.level == 0).length} chapters'
-                                  : '${state.pageCount} pages')
-                              : '${state.pageCount} pages',
+                                  : (state.isReflowable ? '${state.pageCount} chapters' : '${state.pageCount} pages'))
+                              : (state.isReflowable ? '${state.pageCount} chapters' : '${state.pageCount} pages'),
                         ),
                       ],
                     ),
@@ -166,16 +178,16 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                 child: SizedBox(
                   width: double.infinity,
                   child: AppSegmentedControl<TocTab>(
-                    segments: const [
-                      AppSegment(
+                    segments: [
+                      const AppSegment(
                         value: TocTab.chapters,
                         label: 'Chapters',
                         icon: LucideIcons.listTree,
                       ),
                       AppSegment(
                         value: TocTab.pages,
-                        label: 'Pages',
-                        icon: LucideIcons.files,
+                        label: state.isReflowable ? 'All Chapters' : 'Pages',
+                        icon: state.isReflowable ? LucideIcons.bookOpen : LucideIcons.files,
                       ),
                     ],
                     value: _activeTab,
@@ -211,11 +223,15 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                         if (title == null || title.isEmpty) {
                           return const SizedBox.shrink();
                         }
+                        final targetPage = (state.isReflowable && item.chapter >= 0)
+                            ? item.chapter
+                            : item.page;
                         return OutlineItemTile(
                           item: item,
                           isCurrent: index == currentIndex,
+                          isReflowable: state.isReflowable,
                           threadColors: threadColors,
-                          onTap: () => widget.onJumpToPage(item.page),
+                          onTap: () => widget.onJumpToPage(targetPage),
                         );
                       },
                     )
@@ -270,7 +286,7 @@ class _PageItemTile extends StatelessWidget {
     return Semantics(
       button: true,
       selected: isCurrent,
-      label: 'Page $pageNumber',
+      label: isReflowable ? 'Chapter $pageNumber' : 'Page $pageNumber',
       child: Material(
         color: isCurrent
             ? scheme.primaryContainer.withValues(alpha: 0.35)
@@ -293,7 +309,7 @@ class _PageItemTile extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: Icon(
-                    isReflowable ? LucideIcons.fileText : LucideIcons.image,
+                    isReflowable ? LucideIcons.bookOpen : LucideIcons.image,
                     size: 18,
                     color: isCurrent ? scheme.onPrimary : scheme.onSurfaceVariant,
                   ),
@@ -301,7 +317,7 @@ class _PageItemTile extends StatelessWidget {
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
-                    'Page $pageNumber',
+                    isReflowable ? 'Chapter $pageNumber' : 'Page $pageNumber',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
                       color: isCurrent

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -67,8 +68,22 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
         BlocListener<SettingsBloc, SettingsState>(
           listenWhen: (prev, curr) =>
               prev.appSettings.screenWakeLock !=
-              curr.appSettings.screenWakeLock,
-          listener: (context, state) => syncSettings(state),
+                  curr.appSettings.screenWakeLock ||
+              prev.readerPrefs.engineMode !=
+                  curr.readerPrefs.engineMode,
+          listener: (context, state) {
+            syncSettings(state);
+            final bloc = context.read<ReaderBloc>();
+            if (bloc.state.hasDocument &&
+                bloc.state.isReflowable &&
+                bloc.state.engineMode != state.readerPrefs.engineMode) {
+              bloc.add(
+                ReaderEvent.engineModeChanged(
+                  newMode: state.readerPrefs.engineMode,
+                ),
+              );
+            }
+          },
         ),
         BlocListener<ReaderBloc, ReaderState>(
           listenWhen: (prev, curr) =>
@@ -161,15 +176,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                     autofocus: true,
                     child: Scaffold(
                       key: _scaffoldKey,
-                      drawer: ReaderDrawer(
-                        onJumpToPage: (page) {
-                          if (_scaffoldKey.currentState?.isDrawerOpen ??
-                              false) {
-                            _scaffoldKey.currentState?.closeDrawer();
-                          }
-                          jumpToPage(page);
-                        },
-                      ),
+                      drawer: ReaderDrawer(onJumpToPage: jumpToPage),
                       backgroundColor: context.appColors.readerBackground,
                       body: ReaderTtsPlayerOverlay(
                         isChromeVisible: isChromeVisibleNotifier,

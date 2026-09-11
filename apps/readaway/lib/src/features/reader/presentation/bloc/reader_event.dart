@@ -5,7 +5,11 @@ abstract class ReaderEvent with _$ReaderEvent {
   const factory ReaderEvent.openDocument({
     required String path,
     String? fileName,
+    @Default(ReaderEngineMode.customFlow) ReaderEngineMode engineMode,
   }) = _OpenDocument;
+  const factory ReaderEvent.engineModeChanged({
+    required ReaderEngineMode newMode,
+  }) = _EngineModeChanged;
   const factory ReaderEvent.pageChanged({required int index}) = _PageChanged;
   const factory ReaderEvent.loadPage({required int index}) = _LoadPage;
   const factory ReaderEvent.closeDocument() = _CloseDocument;
@@ -17,4 +21,9 @@ abstract class ReaderEvent with _$ReaderEvent {
   const factory ReaderEvent.jumpToTtsPage() = _JumpToTtsPage;
   const factory ReaderEvent.ttsPageAdvanced({required int pageIndex}) =
       _TtsPageAdvanced;
+  const factory ReaderEvent.virtualPageChanged({
+    required int globalPage,
+    required int totalPages,
+    required int chapterIndex,
+  }) = _VirtualPageChanged;
 }

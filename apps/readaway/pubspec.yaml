@@ -58,6 +58,7 @@ dependencies:
   waveform_flutter: ^1.2.0
   fpdart: ^1.1.0
   hyper_render: ^1.9.1
+  xml: ^6.5.0
 
 dev_dependencies:
   flutter_test:

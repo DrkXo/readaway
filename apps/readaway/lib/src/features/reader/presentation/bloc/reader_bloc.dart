@@ -45,12 +45,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_PageChanged>(_onPageChanged);
     on<_LoadPage>(_onLoadPage, transformer: concurrent());
     on<_CloseDocument>(_onCloseDocument);
+    on<_EngineModeChanged>(_onEngineModeChanged);
     on<_TtsStart>(_onTtsStart);
     on<_TtsClose>(_onTtsClose);
     on<_ConsumeFeedback>(_onConsumeFeedback);
     on<_TtsErrorOccurred>(_onTtsErrorOccurred);
     on<_JumpToTtsPage>(_onJumpToTtsPage);
     on<_TtsPageAdvanced>(_onTtsPageAdvanced);
+    on<_VirtualPageChanged>(_onVirtualPageChanged);
 
     // Auto-advance or report errors when TTS reports state updates
     _ttsStateSub = ttsRepository.playbackState.listen((event) {
@@ -129,7 +131,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     );
 
     final openResult = await readerRepository
-        .openDocument(event.path, defaultTitle: event.fileName)
+        .openDocument(
+          event.path,
+          defaultTitle: event.fileName,
+          engineMode: event.engineMode,
+        )
         .run();
 
     await openResult.fold(
@@ -159,6 +165,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           state.copyWith(
             documentPath: event.path,
             fileName: initialFileName,
+            engineMode: event.engineMode,
             pageCount: count,
             isReflowable: reflowable,
             pageHtmls: reflowable ? List<String?>.filled(count, null) : null,
@@ -195,9 +202,39 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   void _onPageChanged(_PageChanged event, Emitter<ReaderState> emit) {
-    emit(state.copyWith(currentPage: event.index));
+    emit(
+      state.copyWith(
+        currentPage: event.index,
+        currentVirtualPage: null,
+        virtualPageCount: null,
+      ),
+    );
     _precachePages(event.index);
     _scheduleProgressSync(event.index);
+  }
+
+  void _onVirtualPageChanged(
+    _VirtualPageChanged event,
+    Emitter<ReaderState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        currentVirtualPage: event.globalPage,
+        virtualPageCount: event.totalPages,
+        currentPage: event.chapterIndex,
+      ),
+    );
+    _precachePages(event.chapterIndex);
+    _scheduleProgressSync(event.globalPage);
+  }
+
+  Future<void> _onEngineModeChanged(
+    _EngineModeChanged event,
+    Emitter<ReaderState> emit,
+  ) async {
+    // Reflowable documents use ReflowableDocumentReader directly and do not rely on MuPDF render engine.
+    if (!state.isReflowable || state.engineMode == event.newMode) return;
+    emit(state.copyWith(engineMode: event.newMode));
   }
 
   Future<void> _onLoadPage(_LoadPage event, Emitter<ReaderState> emit) async {
@@ -221,7 +258,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
 
     final result = await readerRepository
-        .loadPage(index, isReflowable: state.isReflowable)
+        .loadPage(
+          index,
+          isReflowable: state.isReflowable,
+          engineMode: state.engineMode,
+        )
         .run();
 
     await result.fold(

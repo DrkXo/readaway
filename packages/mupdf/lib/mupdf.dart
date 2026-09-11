@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:typed_data';
 
@@ -595,10 +596,12 @@ class RenderedPage {
 class MuPdfDocument {
   final mupdf_context _ctx;
   final mupdf_document _doc;
+  final String? filePath;
   final bool _isClone;
+  MuPdfEpubSpine? _epubSpine;
   bool _disposed = false;
 
-  MuPdfDocument._(this._ctx, this._doc, {this._isClone = false});
+  MuPdfDocument._(this._ctx, this._doc, {this.filePath, this._isClone = false});
 
   /// Open a document from a file path.
   factory MuPdfDocument.openFile(String path) {
@@ -609,7 +612,7 @@ class MuPdfDocument {
     try {
       final doc = _lib.mupdf_open_document(ctx, pathPtr.cast<Char>());
       if (doc == nullptr) throw MuPdfException(_lastErrorCtx(ctx));
-      return MuPdfDocument._(ctx, doc);
+      return MuPdfDocument._(ctx, doc, filePath: path);
     } finally {
       calloc.free(pathPtr);
     }
@@ -640,7 +643,7 @@ class MuPdfDocument {
   MuPdfDocument clone() {
     final clonedCtx = _lib.mupdf_clone_context(_ctx);
     if (clonedCtx == nullptr) throw MuPdfException('Failed to clone context');
-    return MuPdfDocument._(clonedCtx, _doc, isClone: true);
+    return MuPdfDocument._(clonedCtx, _doc, filePath: filePath, isClone: true);
   }
 
   int get pageCount {
@@ -934,8 +937,32 @@ class MuPdfDocument {
     }
   }
 
+  /// Direct access to the EPUB spine and chapter XHTML extraction.
+  MuPdfEpubSpine? get epubSpine {
+    if (_disposed) throw StateError('MuPdfDocument is disposed');
+    if (_epubSpine != null) return _epubSpine;
+    if (filePath != null && isReflowable) {
+      try {
+        _epubSpine = MuPdfEpubSpine.openFile(filePath!);
+      } catch (_) {}
+    }
+    return _epubSpine;
+  }
+
+  /// Reads raw XHTML source for the given chapter from the EPUB container.
+  String? readChapterXhtml(int chapter) {
+    return epubSpine?.readChapterXhtml(chapter);
+  }
+
+  /// Reads raw asset bytes (image, font, css) from the EPUB container.
+  Uint8List? readAsset(String name) {
+    return epubSpine?.readAsset(name);
+  }
+
   void dispose() {
     if (!_disposed) {
+      _epubSpine?.dispose();
+      _epubSpine = null;
       if (!_isClone) {
         _lib.mupdf_drop_document(_ctx, _doc);
       }
@@ -945,6 +972,221 @@ class MuPdfDocument {
   }
 
   String _lastError() => _lastErrorCtx(_ctx);
+}
+
+/// A spine item in an EPUB document.
+class MuPdfSpineItem {
+  final int index;
+  final String id;
+  final String path;
+  final String mediaType;
+
+  const MuPdfSpineItem({
+    required this.index,
+    required this.id,
+    required this.path,
+    required this.mediaType,
+  });
+
+  @override
+  String toString() =>
+      'MuPdfSpineItem(index: $index, id: $id, path: $path, mediaType: $mediaType)';
+}
+
+/// High-performance native EPUB spine and chapter XHTML reader.
+///
+/// Bypasses Fitz SText layout flattening and extracts pure, semantic XHTML
+/// directly from the EPUB ZIP container in native C via MuPDF's Fitz archive engine.
+class MuPdfEpubSpine {
+  final mupdf_context _ctx;
+  final mupdf_epub_spine _spine;
+  bool _disposed = false;
+
+  MuPdfEpubSpine._(this._ctx, this._spine);
+
+  /// Opens the EPUB file at [path] and parses its container and OPF package document.
+  factory MuPdfEpubSpine.openFile(String path) {
+    final ctx = _lib.mupdf_new_context();
+    if (ctx == nullptr) throw MuPdfException('Failed to create MuPDF context');
+
+    final pathPtr = path.toNativeUtf8();
+    try {
+      final spine = _lib.mupdf_open_epub_spine(ctx, pathPtr.cast<Char>());
+      if (spine == nullptr) throw MuPdfException(_lastErrorCtx(ctx));
+      return MuPdfEpubSpine._(ctx, spine);
+    } finally {
+      calloc.free(pathPtr);
+    }
+  }
+
+  /// Total number of spine items (chapters) in the EPUB.
+  int get count {
+    _checkDisposed();
+    return _lib.mupdf_epub_spine_count(_spine);
+  }
+
+  /// Ordered list of spine items.
+  List<MuPdfSpineItem> get items {
+    _checkDisposed();
+    final n = count;
+    final list = <MuPdfSpineItem>[];
+    for (var i = 0; i < n; i++) {
+      final pathPtr = _lib.mupdf_epub_spine_path(_spine, i);
+      final idPtr = _lib.mupdf_epub_spine_id(_spine, i);
+      final mtPtr = _lib.mupdf_epub_spine_media_type(_spine, i);
+      list.add(
+        MuPdfSpineItem(
+          index: i,
+          id: idPtr != nullptr ? idPtr.cast<Utf8>().toDartString() : '',
+          path: pathPtr != nullptr ? pathPtr.cast<Utf8>().toDartString() : '',
+          mediaType: mtPtr != nullptr
+              ? mtPtr.cast<Utf8>().toDartString()
+              : 'application/xhtml+xml',
+        ),
+      );
+    }
+    return list;
+  }
+
+  /// Reads raw XHTML string for the spine item at [chapter].
+  String readChapterXhtml(int chapter) {
+    _checkDisposed();
+    final lenPtr = calloc<Int64>();
+    try {
+      final ptr =
+          _lib.mupdf_epub_read_chapter_xhtml(_ctx, _spine, chapter, lenPtr);
+      if (ptr == nullptr) throw MuPdfException(_lastErrorCtx(_ctx));
+      try {
+        final len = lenPtr.value;
+        if (len <= 0) return '';
+        final bytes = ptr.cast<Uint8>().asTypedList(len);
+        return utf8.decode(bytes, allowMalformed: true);
+      } finally {
+        _lib.mupdf_free(ptr.cast());
+      }
+    } finally {
+      calloc.free(lenPtr);
+    }
+  }
+
+  /// Reads raw asset bytes (images, fonts, stylesheets) from the EPUB container.
+  Uint8List? readAsset(String name) {
+    _checkDisposed();
+    final namePtr = name.toNativeUtf8();
+    final lenPtr = calloc<Int64>();
+    try {
+      final ptr =
+          _lib.mupdf_epub_read_asset(_ctx, _spine, namePtr.cast<Char>(), lenPtr);
+      if (ptr == nullptr) return null;
+      try {
+        final len = lenPtr.value;
+        if (len <= 0) return Uint8List(0);
+        return Uint8List.fromList(ptr.cast<Uint8>().asTypedList(len));
+      } finally {
+        _lib.mupdf_free(ptr.cast());
+      }
+    } finally {
+      calloc.free(namePtr);
+      calloc.free(lenPtr);
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('MuPdfEpubSpine is already disposed');
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _lib.mupdf_drop_epub_spine(_ctx, _spine);
+      _lib.mupdf_drop_context(_ctx);
+      _disposed = true;
+    }
+  }
+}
+
+/// Native archive reader (ZIP, CBZ, EPUB, etc.) powered by MuPDF's Fitz archive engine.
+class MuPdfArchive {
+  final mupdf_context _ctx;
+  final mupdf_archive _arch;
+  bool _disposed = false;
+
+  MuPdfArchive._(this._ctx, this._arch);
+
+  /// Opens an archive file at [path].
+  factory MuPdfArchive.openFile(String path) {
+    final ctx = _lib.mupdf_new_context();
+    if (ctx == nullptr) throw MuPdfException('Failed to create MuPDF context');
+
+    final pathPtr = path.toNativeUtf8();
+    try {
+      final arch = _lib.mupdf_open_archive(ctx, pathPtr.cast<Char>());
+      if (arch == nullptr) throw MuPdfException(_lastErrorCtx(ctx));
+      return MuPdfArchive._(ctx, arch);
+    } finally {
+      calloc.free(pathPtr);
+    }
+  }
+
+  /// Number of entries in the archive.
+  int get count {
+    _checkDisposed();
+    final c = _lib.mupdf_count_archive_entries(_ctx, _arch);
+    if (c < 0) throw MuPdfException(_lastErrorCtx(_ctx));
+    return c;
+  }
+
+  /// Returns the name of the archive entry at index [idx].
+  String? listEntry(int idx) {
+    _checkDisposed();
+    final ptr = _lib.mupdf_list_archive_entry(_ctx, _arch, idx);
+    if (ptr == nullptr) return null;
+    return ptr.cast<Utf8>().toDartString();
+  }
+
+  /// Checks if an entry with [name] exists in the archive.
+  bool hasEntry(String name) {
+    _checkDisposed();
+    final namePtr = name.toNativeUtf8();
+    try {
+      return _lib.mupdf_has_archive_entry(_ctx, _arch, namePtr.cast<Char>()) != 0;
+    } finally {
+      calloc.free(namePtr);
+    }
+  }
+
+  /// Reads all bytes in the named archive entry.
+  Uint8List? readEntry(String name) {
+    _checkDisposed();
+    final namePtr = name.toNativeUtf8();
+    final lenPtr = calloc<Int64>();
+    try {
+      final ptr =
+          _lib.mupdf_read_archive_entry(_ctx, _arch, namePtr.cast<Char>(), lenPtr);
+      if (ptr == nullptr) return null;
+      try {
+        final len = lenPtr.value;
+        if (len <= 0) return Uint8List(0);
+        return Uint8List.fromList(ptr.cast<Uint8>().asTypedList(len));
+      } finally {
+        _lib.mupdf_free(ptr.cast());
+      }
+    } finally {
+      calloc.free(namePtr);
+      calloc.free(lenPtr);
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('MuPdfArchive is already disposed');
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _lib.mupdf_drop_archive(_ctx, _arch);
+      _lib.mupdf_drop_context(_ctx);
+      _disposed = true;
+    }
+  }
 }
 
 class MuPdfException implements Exception {
