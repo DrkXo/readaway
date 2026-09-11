@@ -7,7 +7,6 @@ import 'package:get_it/get_it.dart';
 import '../../../../../../core/services/services.dart';
 import '../../../../../../core/theme/theme.dart';
 import '../../../../../../core/utils/reader/reader_html_utils.dart';
-import '../../../../../settings/domain/entity/reader_preferences.dart';
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../../gestures/reader_gesture_arena.dart';
@@ -142,6 +141,7 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
                   links ?? const [],
                   linkColor: context.appColors.scheme.primary,
                 ),
+                prefs: widget.prefs,
                 onLinkTap: (url) => _onTapUrl(context, url),
               ),
             ],

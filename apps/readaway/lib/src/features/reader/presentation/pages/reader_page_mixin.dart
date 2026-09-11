@@ -89,6 +89,7 @@ mixin ReaderControllerMixin on State<ReaderPage> {
         ReaderEvent.openDocument(
           path: widget.initialPath!,
           fileName: widget.initialFileName,
+          engineMode: settingsBloc.state.readerPrefs.engineMode,
         ),
       );
     }

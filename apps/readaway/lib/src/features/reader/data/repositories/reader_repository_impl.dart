@@ -8,11 +8,13 @@ import 'package:readaway/src/core/services/logging_service.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/reader/supported_document_formats.dart';
 import '../../../../core/services/document_cover_service.dart';
+import '../../../../core/services/epub/epub_spine_reader.dart';
 import '../../../../core/services/mupdf_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/window_service.dart';
 import '../../../library/domain/entity/reading_status.dart';
 import '../../../library/domain/repositories/library_repository.dart';
+import '../../../../core/utils/reader/reader_html_utils.dart' as reader_html_utils;
 import '../../domain/entity/reader_link.dart';
 import '../../domain/repositories/reader_repository.dart';
 
@@ -23,6 +25,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
   final NotificationService _notificationService;
   final DocumentCoverService _coverService;
   final LibraryRepository _libraryRepository;
+  EpubSpineReader? _spineReader;
 
   ReaderRepositoryImpl(
     this._muPdfService,
@@ -36,6 +39,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, ReaderDocumentInfo> openDocument(
     String path, {
     String? defaultTitle,
+    ReaderEngineMode engineMode = ReaderEngineMode.customFlow,
   }) {
     return TaskEither.tryCatch(
       () async {
@@ -51,10 +55,27 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
         await _muPdfService.openDocument(path);
 
-        final pageCount = await _muPdfService.getPageCount();
         final isReflowable = await _muPdfService.isReflowable();
         final outline = await _muPdfService.getOutLine();
         final metaTitle = await _muPdfService.getMetaData('info:Title');
+
+        if (isReflowable && path.toLowerCase().endsWith('.epub')) {
+          try {
+            _spineReader = await EpubSpineReader.fromFile(path);
+          } catch (e) {
+            logger.w('Failed to initialize EpubSpineReader, falling back to MuPDF: $e');
+            _spineReader = null;
+          }
+        } else {
+          _spineReader = null;
+        }
+
+        final int pageCount;
+        if (isReflowable && engineMode == ReaderEngineMode.customFlow && _spineReader != null) {
+          pageCount = _spineReader!.spineCount;
+        } else {
+          pageCount = await _muPdfService.getPageCount();
+        }
 
         final title = (metaTitle != null && metaTitle.isNotEmpty)
             ? metaTitle
@@ -83,9 +104,23 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, ReaderPageData> loadPage(
     int pageIndex, {
     required bool isReflowable,
+    ReaderEngineMode engineMode = ReaderEngineMode.customFlow,
   }) {
     return TaskEither.tryCatch(
       () async {
+        // Mode B: Custom Flow on reflowable EPUB
+        if (isReflowable && engineMode == ReaderEngineMode.customFlow && _spineReader != null) {
+          if (pageIndex >= 0 && pageIndex < _spineReader!.spineCount) {
+            final html = _spineReader!.loadSpineHtml(pageIndex);
+            return ReaderPageData(
+              pageIndex: pageIndex,
+              links: const [],
+              html: html,
+            );
+          }
+        }
+
+        // Mode A: Publisher Fidelity (or PDF)
         final pageLinks = await _muPdfService.getPageLinks(pageIndex);
         final domainLinks = pageLinks
             .map(
@@ -100,25 +135,12 @@ class ReaderRepositoryImpl implements ReaderRepository {
             )
             .toList();
 
-        if (isReflowable) {
-          final html = (await _muPdfService.extractPageHtml(pageIndex)) ?? '';
-
-          logger.d('Extracted HTML for page $pageIndex: $html');
-
-          return ReaderPageData(
-            pageIndex: pageIndex,
-            links: domainLinks,
-            html: html,
-          );
-        } else {
-          final rendered = await _muPdfService.renderPage(pageIndex);
-
-          return ReaderPageData(
-            pageIndex: pageIndex,
-            links: domainLinks,
-            renderedData: rendered,
-          );
-        }
+        final rendered = await _muPdfService.renderPage(pageIndex);
+        return ReaderPageData(
+          pageIndex: pageIndex,
+          links: domainLinks,
+          renderedData: rendered,
+        );
       },
       (error, stack) => DocumentParseFailure(
         'Failed to load page $pageIndex: $error',
@@ -129,9 +151,65 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
+  TaskEither<Failure, int> convertPagePosition({
+    required int currentPage,
+    required ReaderEngineMode fromMode,
+    required ReaderEngineMode toMode,
+  }) {
+    return TaskEither.tryCatch(
+      () async {
+        if (fromMode == toMode || _spineReader == null) {
+          return currentPage;
+        }
+
+        if (fromMode == ReaderEngineMode.customFlow &&
+            toMode == ReaderEngineMode.publisherFidelity) {
+          final clampedSpine = currentPage.clamp(0, _spineReader!.spineCount - 1);
+          final mupdfPage = await _muPdfService.pageFromLocation(
+            MuPdfLocation(chapter: clampedSpine, page: 0),
+          );
+          return mupdfPage >= 0 ? mupdfPage : 0;
+        } else if (fromMode == ReaderEngineMode.publisherFidelity &&
+            toMode == ReaderEngineMode.customFlow) {
+          final loc = await _muPdfService.locationFromPage(currentPage);
+          return loc.chapter.clamp(0, _spineReader!.spineCount - 1);
+        }
+
+        return currentPage;
+      },
+      (error, stack) => DocumentParseFailure(
+        'Failed to convert page position: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  TaskEither<Failure, int> getPageCountForMode(ReaderEngineMode engineMode) {
+    return TaskEither.tryCatch(
+      () async {
+        if (_spineReader != null && engineMode == ReaderEngineMode.customFlow) {
+          return _spineReader!.spineCount;
+        }
+        return await _muPdfService.getPageCount();
+      },
+      (error, stack) => DocumentParseFailure(
+        'Failed to get page count for mode $engineMode: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
   TaskEither<Failure, String> extractPageText(int pageIndex) {
     return TaskEither.tryCatch(
       () async {
+        if (_spineReader != null && pageIndex >= 0 && pageIndex < _spineReader!.spineCount) {
+          final html = _spineReader!.loadSpineHtml(pageIndex);
+          return reader_html_utils.extractPageText(html);
+        }
         final text = await _muPdfService.extractPageText(pageIndex);
         return text ?? '';
       },

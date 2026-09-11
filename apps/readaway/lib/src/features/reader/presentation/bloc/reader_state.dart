@@ -21,11 +21,15 @@ abstract class ReaderState with _$ReaderState {
     UiFeedback? transientFeedback,
     @Default(false) bool ttsActive,
     int? ttsCurrentPage,
+    @Default(ReaderEngineMode.customFlow) ReaderEngineMode engineMode,
   }) = _ReaderState;
 
   const ReaderState._();
 
   bool get hasDocument => pageHtmls != null || pageImages != null;
+
+  /// Whether this document is currently displayed via HyperRender custom flow reflow.
+  bool get isUsingCustomFlow => isReflowable && engineMode == ReaderEngineMode.customFlow;
 
   /// Whether the reader's viewport is currently looking at the page being read aloud by TTS.
   bool get isViewingTtsPage =>

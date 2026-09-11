@@ -67,8 +67,22 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
         BlocListener<SettingsBloc, SettingsState>(
           listenWhen: (prev, curr) =>
               prev.appSettings.screenWakeLock !=
-              curr.appSettings.screenWakeLock,
-          listener: (context, state) => syncSettings(state),
+                  curr.appSettings.screenWakeLock ||
+              prev.readerPrefs.engineMode !=
+                  curr.readerPrefs.engineMode,
+          listener: (context, state) {
+            syncSettings(state);
+            final bloc = context.read<ReaderBloc>();
+            if (bloc.state.hasDocument &&
+                bloc.state.isReflowable &&
+                bloc.state.engineMode != state.readerPrefs.engineMode) {
+              bloc.add(
+                ReaderEvent.engineModeChanged(
+                  newMode: state.readerPrefs.engineMode,
+                ),
+              );
+            }
+          },
         ),
         BlocListener<ReaderBloc, ReaderState>(
           listenWhen: (prev, curr) =>

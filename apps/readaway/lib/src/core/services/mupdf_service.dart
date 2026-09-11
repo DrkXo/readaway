@@ -107,11 +107,71 @@ class MuPdfService {
     });
   }
 
-  Future<bool> authenticatePassword(String pass) {
-    return _sendCommand<bool>({
+  Future<void> layoutReflowable({
+    required double width,
+    required double height,
+    double em = 12.0,
+  }) {
+    return _sendCommand({
       'id': _generateId(),
-      'type': 'authenticatePassword',
-      'pass': pass,
+      'type': 'layoutReflowable',
+      'width': width,
+      'height': height,
+      'em': em,
+    });
+  }
+
+  Future<void> styleReflowable({
+    bool usePublisherCss = true,
+    String? userCss,
+  }) {
+    return _sendCommand({
+      'id': _generateId(),
+      'type': 'styleReflowable',
+      'usePublisherCss': usePublisherCss,
+      'userCss': userCss,
+    });
+  }
+
+  Future<void> setUserCss(String css) {
+    return _sendCommand({
+      'id': _generateId(),
+      'type': 'setUserCss',
+      'css': css,
+    });
+  }
+
+  Future<int> makeBookmark({required int chapter, required int page}) {
+    return _sendCommand<int>({
+      'id': _generateId(),
+      'type': 'makeBookmark',
+      'chapter': chapter,
+      'page': page,
+    });
+  }
+
+  Future<MuPdfLocation> lookupBookmark(int bookmark) {
+    return _sendCommand<MuPdfLocation>({
+      'id': _generateId(),
+      'type': 'lookupBookmark',
+      'bookmark': bookmark,
+    });
+  }
+
+  Future<MuPdfLocation> locationFromPage(int pageNumber) {
+    return _sendCommand<MuPdfLocation>({
+      'id': _generateId(),
+      'type': 'locationFromPage',
+      'pageNumber': pageNumber,
+    });
+  }
+
+  Future<int> pageFromLocation(MuPdfLocation loc) {
+    return _sendCommand<int>({
+      'id': _generateId(),
+      'type': 'pageFromLocation',
+      'chapter': loc.chapter,
+      'page': loc.page,
     });
   }
 
@@ -244,6 +304,46 @@ class MuPdfService {
               'id': id,
               'result': doc!.authenticatePassword(pass),
             });
+          } else if (type == 'layoutReflowable') {
+            if (doc == null) throw Exception('No document open');
+            final width = (message['width'] as num).toDouble();
+            final height = (message['height'] as num).toDouble();
+            final em = (message['em'] as num?)?.toDouble() ?? 12.0;
+            doc!.layout(width: width, height: height, em: em);
+            mainSendPort.send({'id': id, 'result': null});
+          } else if (type == 'styleReflowable') {
+            if (doc == null) throw Exception('No document open');
+            final usePublisherCss = message['usePublisherCss'] as bool? ?? true;
+            final userCss = message['userCss'] as String?;
+            doc!.style(usePublisherCss: usePublisherCss, userCss: userCss);
+            mainSendPort.send({'id': id, 'result': null});
+          } else if (type == 'setUserCss') {
+            if (doc == null) throw Exception('No document open');
+            final css = message['css'] as String;
+            doc!.setUserCss(css);
+            mainSendPort.send({'id': id, 'result': null});
+          } else if (type == 'makeBookmark') {
+            if (doc == null) throw Exception('No document open');
+            final chapter = message['chapter'] as int;
+            final page = message['page'] as int;
+            final mark = doc!.makeBookmark(MuPdfLocation(chapter: chapter, page: page));
+            mainSendPort.send({'id': id, 'result': mark});
+          } else if (type == 'lookupBookmark') {
+            if (doc == null) throw Exception('No document open');
+            final bookmark = message['bookmark'] as int;
+            final loc = doc!.lookupBookmark(bookmark);
+            mainSendPort.send({'id': id, 'result': loc});
+          } else if (type == 'locationFromPage') {
+            if (doc == null) throw Exception('No document open');
+            final pageNumber = message['pageNumber'] as int;
+            final loc = doc!.locationFromPage(pageNumber);
+            mainSendPort.send({'id': id, 'result': loc});
+          } else if (type == 'pageFromLocation') {
+            if (doc == null) throw Exception('No document open');
+            final chapter = message['chapter'] as int;
+            final page = message['page'] as int;
+            final p = doc!.pageFromLocation(MuPdfLocation(chapter: chapter, page: page));
+            mainSendPort.send({'id': id, 'result': p});
           } else if (type == 'extractHtml') {
             final index = message['index'] as int;
             if (doc == null) {

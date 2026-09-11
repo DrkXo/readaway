@@ -45,6 +45,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_PageChanged>(_onPageChanged);
     on<_LoadPage>(_onLoadPage, transformer: concurrent());
     on<_CloseDocument>(_onCloseDocument);
+    on<_EngineModeChanged>(_onEngineModeChanged);
     on<_TtsStart>(_onTtsStart);
     on<_TtsClose>(_onTtsClose);
     on<_ConsumeFeedback>(_onConsumeFeedback);
@@ -129,7 +130,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     );
 
     final openResult = await readerRepository
-        .openDocument(event.path, defaultTitle: event.fileName)
+        .openDocument(
+          event.path,
+          defaultTitle: event.fileName,
+          engineMode: event.engineMode,
+        )
         .run();
 
     await openResult.fold(
@@ -148,6 +153,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       (info) async {
         final count = info.pageCount;
         final reflowable = info.isReflowable;
+        final isCustomFlow = reflowable && event.engineMode == ReaderEngineMode.customFlow;
 
         final lastPageResult = await readerRepository
             .getLastReadPage(event.path)
@@ -159,13 +165,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           state.copyWith(
             documentPath: event.path,
             fileName: initialFileName,
+            engineMode: event.engineMode,
             pageCount: count,
             isReflowable: reflowable,
-            pageHtmls: reflowable ? List<String?>.filled(count, null) : null,
-            pageLinks: reflowable
+            pageHtmls: isCustomFlow ? List<String?>.filled(count, null) : null,
+            pageLinks: isCustomFlow
                 ? List<List<ReaderLink>?>.filled(count, null)
                 : null,
-            pageImages: reflowable ? null : List<ui.Image?>.filled(count, null),
+            pageImages: isCustomFlow ? null : List<ui.Image?>.filled(count, null),
             currentPage: initialPage,
             ttsCurrentPage: null,
             outline: info.outline,
@@ -200,11 +207,58 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _scheduleProgressSync(event.index);
   }
 
+  Future<void> _onEngineModeChanged(
+    _EngineModeChanged event,
+    Emitter<ReaderState> emit,
+  ) async {
+    if (!state.isReflowable || state.engineMode == event.newMode) return;
+
+    final oldMode = state.engineMode;
+    final newMode = event.newMode;
+
+    final convertedPageResult = await readerRepository
+        .convertPagePosition(
+          currentPage: state.currentPage,
+          fromMode: oldMode,
+          toMode: newMode,
+        )
+        .run();
+    final newPage = convertedPageResult.getOrElse((_) => 0);
+
+    final countResult = await readerRepository
+        .getPageCountForMode(newMode)
+        .run();
+    final newPageCount = countResult.getOrElse((_) => state.pageCount);
+
+    _disposeImages();
+
+    final isCustomFlow = newMode == ReaderEngineMode.customFlow;
+    final clampedPage = newPage.clamp(0, newPageCount > 0 ? newPageCount - 1 : 0);
+
+    emit(
+      state.copyWith(
+        engineMode: newMode,
+        pageCount: newPageCount,
+        currentPage: clampedPage,
+        pageHtmls: isCustomFlow ? List<String?>.filled(newPageCount, null) : null,
+        pageLinks: isCustomFlow ? List<List<ReaderLink>?>.filled(newPageCount, null) : null,
+        pageImages: isCustomFlow ? null : List<ui.Image?>.filled(newPageCount, null),
+        loadingPages: <int>{},
+      ),
+    );
+
+    add(ReaderEvent.loadPage(index: clampedPage));
+    _precachePages(clampedPage);
+    _scheduleProgressSync(clampedPage);
+  }
+
   Future<void> _onLoadPage(_LoadPage event, Emitter<ReaderState> emit) async {
     final index = event.index;
     if (index < 0 || index >= state.pageCount) return;
 
-    if (state.isReflowable) {
+    final isCustomFlow = state.isReflowable && state.engineMode == ReaderEngineMode.customFlow;
+
+    if (isCustomFlow) {
       if (state.pageHtmls == null ||
           state.pageHtmls![index] != null ||
           state.loadingPages.contains(index)) {
@@ -221,7 +275,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
 
     final result = await readerRepository
-        .loadPage(index, isReflowable: state.isReflowable)
+        .loadPage(
+          index,
+          isReflowable: state.isReflowable,
+          engineMode: state.engineMode,
+        )
         .run();
 
     await result.fold(
@@ -234,7 +292,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         );
       },
       (pageData) async {
-        if (state.isReflowable) {
+        if (isCustomFlow) {
           final htmlPages = List<String?>.from(state.pageHtmls!);
           final linkPages = List<List<ReaderLink>?>.from(state.pageLinks!);
           htmlPages[index] = pageData.html;
