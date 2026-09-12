@@ -124,7 +124,9 @@ class ReaderStyleResolver {
     }
 
     return TextStyle(
-      fontFamily: prefs.overrideFont ? (prefs.fontFamily ?? prefs.serifFont) : null,
+      fontFamily: prefs.overrideFont
+          ? (prefs.fontFamily ?? prefs.serifFont)
+          : null,
       fontSize: prefs.fontSize,
       height: prefs.lineHeight,
       letterSpacing: prefs.letterSpacing != 0.0 ? prefs.letterSpacing : null,

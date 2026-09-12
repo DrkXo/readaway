@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-/// Decodes a MuPDF `renderPage` result map into a Flutter [ui.Image].
+/// Decodes a raw RGB(A) pixel map into a Flutter [ui.Image].
 ///
-/// MuPDF renders pixels as RGB(A); Flutter's [ui.Image] wants RGBA. This
+/// The source renders pixels as RGB(A); Flutter's [ui.Image] wants RGBA. This
 /// reorders the channels one pixel at a time, writing alpha to 255 when the
 /// source was 3-component (no alpha).
 Future<ui.Image> decodeRenderedPage(Map<String, dynamic> rendered) {
@@ -14,7 +14,7 @@ Future<ui.Image> decodeRenderedPage(Map<String, dynamic> rendered) {
   final comps = rendered['components'] as int;
   final src = rendered['pixels'] as Uint8List;
 
-  // mupdf renders RGB(A); Flutter needs RGBA.
+  // Source renders RGB(A); Flutter needs RGBA.
   final rgba = Uint8List(w * h * 4);
   for (var y = 0; y < h; y++) {
     var s = y * stride;

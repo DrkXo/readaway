@@ -78,7 +78,6 @@ mixin ReaderControllerMixin on State<ReaderPage> {
         ReaderEvent.openDocument(
           path: widget.initialPath!,
           fileName: widget.initialFileName,
-          engineMode: settingsBloc.state.readerPrefs.engineMode,
         ),
       );
     }
@@ -99,31 +98,30 @@ mixin ReaderControllerMixin on State<ReaderPage> {
   }
 
   void jumpToPage(int page) {
-    if (readerBloc.state.isReflowable) {
-      final isContinuous =
-          settingsBloc.state.readerPrefs.scrollDirection ==
-                  ReaderScrollDirection.vertical &&
-              !settingsBloc.state.readerPrefs.pageSnap;
+    final isContinuous =
+        settingsBloc.state.readerPrefs.scrollDirection ==
+            ReaderScrollDirection.vertical &&
+        !settingsBloc.state.readerPrefs.pageSnap;
 
-      if (!isContinuous &&
-          GetIt.I.isRegistered<ReflowablePaginationCoordinator>()) {
-        final coordinator = GetIt.I<ReflowablePaginationCoordinator>();
-        // If 'page' is a chapter index from TOC (< chapterCount), map to its first global page
-        final globalPage = (page < coordinator.chapterCount)
-            ? coordinator.getGlobalPageForChapter(page)
-            : page.clamp(0, math.max(0, coordinator.totalPageCount - 1)).toInt();
+    if (!isContinuous && GetIt.I.isRegistered<PaginationCoordinator>()) {
+      final coordinator = GetIt.I<PaginationCoordinator>();
+      // If 'page' is a chapter index from TOC (< chapterCount), map to its first global page
+      final globalPage = (page < coordinator.chapterCount)
+          ? coordinator.getGlobalPageForChapter(page)
+          : page
+                .clamp(0, math.max(0, coordinator.currentState.totalPages - 1))
+                .toInt();
 
-        final coord = coordinator.coordinateFromGlobalPage(globalPage);
-        readerBloc.add(
-          ReaderEvent.virtualPageChanged(
-            globalPage: globalPage,
-            totalPages: coordinator.totalPageCount,
-            chapterIndex: coord.chapterIndex,
-          ),
-        );
-        viewportController.jumpToPage(globalPage);
-        return;
-      }
+      final coord = coordinator.coordinateFromGlobalPage(globalPage);
+      readerBloc.add(
+        ReaderEvent.virtualPageChanged(
+          globalPage: globalPage,
+          totalPages: coordinator.currentState.totalPages,
+          chapterIndex: coord.chapterIndex,
+        ),
+      );
+      viewportController.jumpToPage(globalPage);
+      return;
     }
 
     final count = readerBloc.state.pageCount;

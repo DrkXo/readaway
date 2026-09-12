@@ -54,7 +54,6 @@ class ReaderTopBar extends StatelessWidget implements PreferredSizeWidget {
           prev.fileName != curr.fileName ||
           prev.displayCurrentPage != curr.displayCurrentPage ||
           prev.displayPageCount != curr.displayPageCount ||
-          prev.isReflowable != curr.isReflowable ||
           prev.ttsActive != curr.ttsActive,
       builder: (context, state) {
         if (!state.hasDocument) return const SizedBox.shrink();

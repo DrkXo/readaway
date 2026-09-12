@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hyper_render/hyper_render.dart';
+import 'package:readaway_core/readaway_core.dart';
 
-import '../../../../../../core/services/reader/reflowable_pagination_coordinator.dart';
 import '../../../../../../core/theme/theme.dart';
 import '../../../../../settings/domain/entity/reader_preferences.dart';
 import '../../../bloc/reader_bloc.dart';
@@ -33,7 +34,7 @@ class ReflowableVirtualPage extends StatefulWidget {
   final int globalPageIndex;
   final ReaderState state;
   final ReaderPreferences prefs;
-  final ReflowablePaginationCoordinator coordinator;
+  final PaginationCoordinator coordinator;
   final Future<List<int>?> Function(String src)? onResolveAssetBytes;
   final void Function(String) onLinkTap;
 
@@ -44,11 +45,14 @@ class ReflowableVirtualPage extends StatefulWidget {
 class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   final GlobalKey _contentKey = GlobalKey();
   Size? _lastConstraints;
+  StreamSubscription<PaginationState>? _coordinatorSubscription;
 
   @override
   void initState() {
     super.initState();
-    widget.coordinator.addListener(_onCoordinatorUpdated);
+    _coordinatorSubscription = widget.coordinator.state.listen(
+      (_) => _onCoordinatorUpdated(),
+    );
     _scheduleMeasurement();
   }
 
@@ -60,8 +64,10 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   void didUpdateWidget(ReflowableVirtualPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.coordinator != widget.coordinator) {
-      oldWidget.coordinator.removeListener(_onCoordinatorUpdated);
-      widget.coordinator.addListener(_onCoordinatorUpdated);
+      _coordinatorSubscription?.cancel();
+      _coordinatorSubscription = widget.coordinator.state.listen(
+        (_) => _onCoordinatorUpdated(),
+      );
     }
     if (oldWidget.chapterIndex != widget.chapterIndex ||
         oldWidget.prefs != widget.prefs ||
@@ -73,7 +79,7 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
 
   @override
   void dispose() {
-    widget.coordinator.removeListener(_onCoordinatorUpdated);
+    _coordinatorSubscription?.cancel();
     super.dispose();
   }
 
@@ -112,8 +118,8 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
     }
 
     widget.coordinator.registerChapterHeight(
-      widget.chapterIndex,
-      contentHeight,
+      chapterIndex: widget.chapterIndex,
+      contentHeight: contentHeight,
       lineBounds: lineBounds,
     );
   }
@@ -131,7 +137,8 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
 
   @override
   Widget build(BuildContext context) {
-    final html = (widget.state.pageHtmls != null &&
+    final html =
+        (widget.state.pageHtmls != null &&
             widget.chapterIndex < widget.state.pageHtmls!.length)
         ? widget.state.pageHtmls![widget.chapterIndex]
         : null;
@@ -151,7 +158,7 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
 
     final Color bgColor =
         Theme.of(context).extension<AppColors>()?.readerBackground ??
-            context.appColors.readerBackground;
+        context.appColors.readerBackground;
 
     return ColoredBox(
       color: bgColor,
@@ -161,7 +168,8 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
           final viewportHeight = constraints.maxHeight;
 
           final currentConstraints = Size(viewportWidth, viewportHeight);
-          if (_lastConstraints != null && _lastConstraints != currentConstraints) {
+          if (_lastConstraints != null &&
+              _lastConstraints != currentConstraints) {
             _lastConstraints = currentConstraints;
             _scheduleMeasurement();
           } else {
@@ -179,8 +187,9 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
           );
 
           // Get calculated page offsets from the coordinator
-          final offsets =
-              widget.coordinator.getChapterPageOffsets(widget.chapterIndex);
+          final offsets = widget.coordinator.getChapterPageOffsets(
+            widget.chapterIndex,
+          );
           final sliceTop = (widget.pageInChapter < offsets.length)
               ? offsets[widget.pageInChapter]
               : (widget.pageInChapter * availableHeight);

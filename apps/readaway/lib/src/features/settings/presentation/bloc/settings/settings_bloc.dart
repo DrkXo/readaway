@@ -63,8 +63,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
     _settingsSub = settingsRepository.watchSettings().listen((settings) {
       final voice = settings.globalViewSettings.ttsVoice;
-      final modelId =
-          voice != null && voice.contains('@') ? voice.split('@').first : voice;
+      final modelId = voice != null && voice.contains('@')
+          ? voice.split('@').first
+          : voice;
       if (modelId != state.ttsActiveModelId && !isClosed) {
         add(const _RefreshTts());
       }

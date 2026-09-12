@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 
-import '../../../../../../core/services/services.dart';
 import '../../../../../../core/theme/theme.dart';
+import '../../../../../../features/settings/domain/entity/reader_preferences.dart';
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../../gestures/reader_gesture_arena.dart';
@@ -276,29 +276,14 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
     }
 
     // Try resolving cross-chapter link in reflowable document
-    final reflowRes = await GetIt.I<ReaderRepository>().resolveReflowableLink(url).run();
+    final reflowRes = await GetIt.I<ReaderRepository>()
+        .resolveReflowableLink(url)
+        .run();
     final targetSection = reflowRes.getRight().toNullable();
     if (targetSection != null && targetSection >= 0) {
       if (!context.mounted) return;
       final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;
       widget.onPageChangeRequested(targetSection.clamp(0, maxIndex));
-      return;
     }
-
-    // Fallback to MuPDF link resolution
-    final res = await GetIt.I<ReaderRepository>().resolveLink(url).run();
-    res.fold(
-      (failure) => logger.d('Could not resolve link: $url ($failure)'),
-      (page) {
-        if (page >= 0) {
-          if (!context.mounted) return;
-          final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;
-          widget.onPageChangeRequested(page.clamp(0, maxIndex));
-        } else {
-          logger.d('Link resolved to invalid page $page: $url');
-        }
-      },
-    );
   }
 }
-

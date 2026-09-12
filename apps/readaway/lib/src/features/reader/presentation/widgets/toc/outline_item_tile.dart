@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mupdf/mupdf.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 class OutlineItemTile extends StatelessWidget {
   const OutlineItemTile({
@@ -8,19 +8,17 @@ class OutlineItemTile extends StatelessWidget {
     required this.isCurrent,
     required this.threadColors,
     required this.onTap,
-    this.isReflowable = false,
   });
 
   final OutlineItem item;
   final bool isCurrent;
   final List<Color> threadColors;
   final VoidCallback onTap;
-  final bool isReflowable;
 
   @override
   Widget build(BuildContext context) {
     final title = item.title;
-    if (title == null || title.isEmpty) return const SizedBox.shrink();
+    if (title.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
     final color = threadColors[item.level % threadColors.length];
@@ -29,9 +27,9 @@ class OutlineItemTile extends StatelessWidget {
     return Semantics(
       button: true,
       selected: isCurrent,
-      label: isReflowable && item.chapter >= 0
-          ? '$title, Chapter ${item.chapter + 1}'
-          : '$title, Page ${item.page + 1}',
+      label: item.chapterIndex != null
+          ? '$title, Chapter ${item.chapterIndex! + 1}'
+          : title,
       child: Material(
         color: isCurrent
             ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35)
@@ -97,7 +95,9 @@ class OutlineItemTile extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.15,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(

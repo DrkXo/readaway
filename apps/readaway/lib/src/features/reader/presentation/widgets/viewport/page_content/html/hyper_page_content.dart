@@ -73,7 +73,8 @@ class _HyperPageContentState extends State<HyperPageContent> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final appColors = Theme.of(context).extension<AppColors>() ??
+    final appColors =
+        Theme.of(context).extension<AppColors>() ??
         (Theme.of(context).brightness == Brightness.dark
             ? AppColors.dark
             : AppColors.light);
@@ -157,7 +158,9 @@ class _HyperPageContentState extends State<HyperPageContent> {
         for (final m in imgMatches) {
           final src = m.group(1);
           if (src != null && src.isNotEmpty) {
-            buffer.write('<img src="$src" style="max-width: 100%; height: auto;" />');
+            buffer.write(
+              '<img src="$src" style="max-width: 100%; height: auto;" />',
+            );
           }
         }
         return buffer.toString();
@@ -187,7 +190,9 @@ class _HyperPageContentState extends State<HyperPageContent> {
     );
 
     return HyperSelectionOverlay(
-      key: ValueKey('hyper_page_${_document.hashCode}_${widget.prefs.hashCode}'),
+      key: ValueKey(
+        'hyper_page_${_document.hashCode}_${widget.prefs.hashCode}',
+      ),
       document: _document,
       selectable: true,
       config: const HyperRenderConfig(extraLinkSchemes: {''}),
@@ -426,10 +431,12 @@ class _HyperReflowableImageState extends State<_HyperReflowableImage> {
     return Container(
       color: const Color(0x0D000000),
       child: const Center(
-        child: Icon(Icons.broken_image_outlined, size: 28, color: Color(0x66000000)),
+        child: Icon(
+          Icons.broken_image_outlined,
+          size: 28,
+          color: Color(0x66000000),
+        ),
       ),
     );
   }
 }
-
-

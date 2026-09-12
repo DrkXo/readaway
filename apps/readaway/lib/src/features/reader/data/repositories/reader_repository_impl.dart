@@ -5,53 +5,37 @@ import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 import 'package:readaway/src/core/services/logging_service.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/reader/supported_document_formats.dart';
 import '../../../../core/services/document_cover_service.dart';
-import '../../../../core/services/mupdf_service.dart';
 import '../../../../core/services/notification_service.dart';
-import '../../../../core/services/reader/reflowable_document_reader.dart';
 import '../../../../core/services/window_service.dart';
-import '../../../../core/utils/reader/reader_html_utils.dart'
-    as reader_html_utils;
 import '../../../library/domain/entity/reading_status.dart';
 import '../../../library/domain/repositories/library_repository.dart';
-import '../../domain/entity/reader_link.dart';
 import '../../domain/repositories/reader_repository.dart';
 
 @LazySingleton(as: ReaderRepository)
 class ReaderRepositoryImpl implements ReaderRepository {
-  final MuPdfService _muPdfService;
   final WindowService _windowService;
   final NotificationService _notificationService;
   final DocumentCoverService _coverService;
   final LibraryRepository _libraryRepository;
   ReflowableDocumentReader? _reflowReader;
-  String? _currentDocumentPath;
-  bool _isMuPdfOpen = false;
   final Map<String, Uint8List> _assetCache = {};
 
   ReaderRepositoryImpl(
-    this._muPdfService,
     this._windowService,
     this._notificationService,
     this._coverService,
     this._libraryRepository,
   );
 
-  Future<void> _ensureMuPdfOpen() async {
-    if (!_isMuPdfOpen && _currentDocumentPath != null) {
-      await _muPdfService.openDocument(_currentDocumentPath!);
-      _isMuPdfOpen = true;
-    }
-  }
-
   @override
   TaskEither<Failure, ReaderDocumentInfo> openDocument(
     String path, {
     String? defaultTitle,
-    ReaderEngineMode engineMode = ReaderEngineMode.customFlow,
   }) {
     return TaskEither.tryCatch(
       () async {
@@ -68,45 +52,30 @@ class ReaderRepositoryImpl implements ReaderRepository {
         _reflowReader?.dispose();
         _reflowReader = null;
         _assetCache.clear();
-        if (_isMuPdfOpen) {
-          await _muPdfService.closeDocument();
-          _isMuPdfOpen = false;
+
+        final DocumentReader reader;
+        try {
+          reader = await DocumentReaderFactory().open(path);
+        } on UnsupportedFormatException {
+          final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
+          throw UnsupportedDocumentFormatFailure(ext.isEmpty ? 'unknown' : ext);
         }
-
-        _currentDocumentPath = path;
-
-        final format = SupportedDocumentFormats.findFormat(path);
-        final isReflowable = format?.isReflowable ?? false;
-
-        final List<OutlineItem> outline;
-        final String title;
-        final int pageCount;
-
-        if (isReflowable) {
-          _reflowReader = await ReflowableDocumentReader.fromFile(path);
-          outline = _reflowReader!.outline;
-          final metaTitle = _reflowReader!.title;
-          title = (metaTitle != null && metaTitle.isNotEmpty)
-              ? metaTitle
-              : (defaultTitle ?? file.uri.pathSegments.last);
-          pageCount = _reflowReader!.sectionCount;
-        } else {
-          _reflowReader = null;
-          await _ensureMuPdfOpen();
-          outline = await _muPdfService.getOutLine();
-          final metaTitle = await _muPdfService.getMetaData('info:Title');
-          title = (metaTitle != null && metaTitle.isNotEmpty)
-              ? metaTitle
-              : (defaultTitle ?? file.uri.pathSegments.last);
-          pageCount = await _muPdfService.getPageCount();
+        if (reader is! ReflowableDocumentReader) {
+          final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
+          throw UnsupportedDocumentFormatFailure(ext.isEmpty ? 'unknown' : ext);
         }
+        _reflowReader = reader;
+
+        final metaTitle = reader.title;
+        final title = (metaTitle != null && metaTitle.isNotEmpty)
+            ? metaTitle
+            : (defaultTitle ?? file.uri.pathSegments.last);
 
         return ReaderDocumentInfo(
           path: path,
           title: title,
-          pageCount: pageCount,
-          isReflowable: isReflowable,
-          outline: outline,
+          pageCount: reader.sectionCount,
+          outline: reader.outline,
         );
       },
       (error, stack) {
@@ -121,90 +90,23 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, ReaderPageData> loadPage(
-    int pageIndex, {
-    required bool isReflowable,
-    ReaderEngineMode engineMode = ReaderEngineMode.customFlow,
-  }) {
+  TaskEither<Failure, ReaderPageData> loadPage(int pageIndex) {
     return TaskEither.tryCatch(
       () async {
-        // Reflowable document -> HyperRender from semantic HTML
-        if (isReflowable) {
-          if (_reflowReader != null &&
-              pageIndex >= 0 &&
-              pageIndex < _reflowReader!.sectionCount) {
-            final html = _reflowReader!.loadSectionHtml(pageIndex);
-            return ReaderPageData(
-              pageIndex: pageIndex,
-              links: const [],
-              html: html,
-            );
-          }
-          throw DocumentParseFailure('Invalid section index: $pageIndex');
+        if (_reflowReader != null &&
+            pageIndex >= 0 &&
+            pageIndex < _reflowReader!.sectionCount) {
+          final html = _reflowReader!.loadSectionHtml(pageIndex);
+          return ReaderPageData(
+            pageIndex: pageIndex,
+            links: const [],
+            html: html,
+          );
         }
-
-        // Non-reflowable document (PDF, XPS, CBZ) -> MuPDF Native C
-        await _ensureMuPdfOpen();
-        final pageLinks = await _muPdfService.getPageLinks(pageIndex);
-        final domainLinks = pageLinks
-            .map(
-              (l) => ReaderLink(
-                x0: l.x0,
-                y0: l.y0,
-                x1: l.x1,
-                y1: l.y1,
-                uri: l.uri,
-                pageNumber: l.pageNumber,
-              ),
-            )
-            .toList();
-
-        final rendered = await _muPdfService.renderPage(pageIndex);
-        return ReaderPageData(
-          pageIndex: pageIndex,
-          links: domainLinks,
-          renderedData: rendered,
-        );
+        throw DocumentParseFailure('Invalid section index: $pageIndex');
       },
       (error, stack) => DocumentParseFailure(
         'Failed to load page $pageIndex: $error',
-        cause: error,
-        stackTrace: stack,
-      ),
-    );
-  }
-
-  @override
-  TaskEither<Failure, int> convertPagePosition({
-    required int currentPage,
-    required ReaderEngineMode fromMode,
-    required ReaderEngineMode toMode,
-  }) {
-    return TaskEither.tryCatch(
-      () async {
-        // Reflowable documents do not use MuPDF render engine; position is section index.
-        return currentPage;
-      },
-      (error, stack) => DocumentParseFailure(
-        'Failed to convert page position: $error',
-        cause: error,
-        stackTrace: stack,
-      ),
-    );
-  }
-
-  @override
-  TaskEither<Failure, int> getPageCountForMode(ReaderEngineMode engineMode) {
-    return TaskEither.tryCatch(
-      () async {
-        if (_reflowReader != null) {
-          return _reflowReader!.sectionCount;
-        }
-        await _ensureMuPdfOpen();
-        return await _muPdfService.getPageCount();
-      },
-      (error, stack) => DocumentParseFailure(
-        'Failed to get page count for mode $engineMode: $error',
         cause: error,
         stackTrace: stack,
       ),
@@ -218,12 +120,9 @@ class ReaderRepositoryImpl implements ReaderRepository {
         if (_reflowReader != null &&
             pageIndex >= 0 &&
             pageIndex < _reflowReader!.sectionCount) {
-          final html = _reflowReader!.loadSectionHtml(pageIndex);
-          return reader_html_utils.extractPageText(html);
+          return _reflowReader!.extractSectionText(pageIndex);
         }
-        await _ensureMuPdfOpen();
-        final text = await _muPdfService.extractPageText(pageIndex);
-        return text ?? '';
+        throw DocumentParseFailure('Invalid section index: $pageIndex');
       },
       (error, stack) => DocumentParseFailure(
         'Failed to extract text from page $pageIndex: $error',
@@ -289,25 +188,6 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, int> resolveLink(String uri) {
-    return TaskEither.tryCatch(
-      () async {
-        if (_reflowReader != null) {
-          final resolved = _reflowReader!.resolveSectionIndex(uri);
-          if (resolved != null) return resolved;
-        }
-        await _ensureMuPdfOpen();
-        return await _muPdfService.resolveUri(uri);
-      },
-      (error, stack) => CorruptDocumentFailure(
-        'Failed to resolve link: $error',
-        cause: error,
-        stackTrace: stack,
-      ),
-    );
-  }
-
-  @override
   TaskEither<Failure, Uint8List?> loadAssetBytes(
     String assetPath, {
     int? pageIndex,
@@ -323,9 +203,14 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
         final cleanPath = assetPath.split('?').first.split('#').first;
         final decoded = Uri.decodeComponent(cleanPath);
-        final cacheKey = pageIndex != null ? '$pageIndex:$cleanPath' : cleanPath;
+        final cacheKey = pageIndex != null
+            ? '$pageIndex:$cleanPath'
+            : cleanPath;
 
-        final cached = _assetCache[cacheKey] ?? _assetCache[decoded] ?? _assetCache[cleanPath];
+        final cached =
+            _assetCache[cacheKey] ??
+            _assetCache[decoded] ??
+            _assetCache[cleanPath];
         if (cached != null) return cached;
 
         void cache(Uint8List b) {
@@ -337,7 +222,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         // 1. If pageIndex is provided, resolve relative to that section/chapter
         if (pageIndex != null && pageIndex >= 0) {
           final resolved = _reflowReader!.resolveAssetPath(pageIndex, decoded);
-          final bytes = _reflowReader!.loadAssetBytes(resolved);
+          final bytes = _reflowReader!.loadAsset(resolved);
           if (bytes != null && bytes.isNotEmpty) {
             cache(bytes);
             return bytes;
@@ -345,7 +230,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
 
         // 2. Try direct decoded path
-        var bytes = _reflowReader!.loadAssetBytes(decoded);
+        var bytes = _reflowReader!.loadAsset(decoded);
         if (bytes != null && bytes.isNotEmpty) {
           cache(bytes);
           return bytes;
@@ -353,7 +238,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
         // 3. Try raw path
         if (cleanPath != decoded) {
-          bytes = _reflowReader!.loadAssetBytes(cleanPath);
+          bytes = _reflowReader!.loadAsset(cleanPath);
           if (bytes != null && bytes.isNotEmpty) {
             cache(bytes);
             return bytes;
@@ -365,7 +250,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
             ? decoded.substring(1)
             : decoded;
         if (noSlash != decoded) {
-          bytes = _reflowReader!.loadAssetBytes(noSlash);
+          bytes = _reflowReader!.loadAsset(noSlash);
           if (bytes != null && bytes.isNotEmpty) {
             cache(bytes);
             return bytes;
@@ -374,7 +259,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
         // 5. Try basename fallback
         final base = p.posix.basename(decoded);
-        bytes = _reflowReader!.loadAssetBytes(base);
+        bytes = _reflowReader!.loadAsset(base);
         if (bytes != null && bytes.isNotEmpty) {
           cache(bytes);
           return bytes;
@@ -469,11 +354,6 @@ class ReaderRepositoryImpl implements ReaderRepository {
         _reflowReader?.dispose();
         _reflowReader = null;
         _assetCache.clear();
-        if (_isMuPdfOpen) {
-          await _muPdfService.closeDocument();
-          _isMuPdfOpen = false;
-        }
-        _currentDocumentPath = null;
         return unit;
       },
       (error, stack) => UnexpectedFailure(

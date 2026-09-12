@@ -87,7 +87,11 @@ abstract interface class ReaderTtsRepository {
   TaskEither<Failure, Unit> releaseResources();
 
   /// Enqueues and begins speaking [text] with optional notification [tag] and [pageIndex].
-  TaskEither<Failure, Unit> playText(String text, {MediaItem? tag, int? pageIndex});
+  TaskEither<Failure, Unit> playText(
+    String text, {
+    MediaItem? tag,
+    int? pageIndex,
+  });
 
   /// Pauses playback.
   TaskEither<Failure, Unit> pause();

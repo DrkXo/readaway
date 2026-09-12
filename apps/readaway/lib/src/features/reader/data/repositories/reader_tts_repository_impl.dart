@@ -81,7 +81,8 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   int? get currentPageIndex => _ttsController.currentPageIndex;
 
   @override
-  Stream<int?> get currentPageIndexStream => _ttsController.currentPageIndexStream;
+  Stream<int?> get currentPageIndexStream =>
+      _ttsController.currentPageIndexStream;
 
   @override
   MediaItem? get baseTag => _ttsController.baseTag;

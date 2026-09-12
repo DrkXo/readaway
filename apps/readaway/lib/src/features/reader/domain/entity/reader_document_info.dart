@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:mupdf/mupdf.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 part 'reader_document_info.freezed.dart';
 
@@ -10,7 +10,6 @@ abstract class ReaderDocumentInfo with _$ReaderDocumentInfo {
     required String path,
     required String title,
     required int pageCount,
-    required bool isReflowable,
     required List<OutlineItem> outline,
   }) = _ReaderDocumentInfo;
 }

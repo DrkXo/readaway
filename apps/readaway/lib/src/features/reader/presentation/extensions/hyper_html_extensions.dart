@@ -58,7 +58,9 @@ extension UDTNodeExtensions on UDTNode {
 
         if (isParagraph || isBlockquote) {
           // Text alignment / Justification
-          final align = prefs.fullJustification ? HyperTextAlign.justify : HyperTextAlign.left;
+          final align = prefs.fullJustification
+              ? HyperTextAlign.justify
+              : HyperTextAlign.left;
           node.style.textAlign = align;
           node.style.markExplicitlySet('text-align');
 
@@ -70,7 +72,8 @@ extension UDTNodeExtensions on UDTNode {
         }
 
         // 3. Font override or default propagation
-        final effectiveFontSize = (node.style.isExplicitlySet('font-size') && !prefs.overrideFont)
+        final effectiveFontSize =
+            (node.style.isExplicitlySet('font-size') && !prefs.overrideFont)
             ? node.style.fontSize
             : prefs.fontSize;
 
@@ -98,8 +101,13 @@ extension UDTNodeExtensions on UDTNode {
             }
             return true;
           }).toList();
-          final isImageOnly = nonWhitespaceChildren.isNotEmpty &&
-              nonWhitespaceChildren.every((c) => c is AtomicNode && (c.tagName == 'img' || c.tagName == 'svg'));
+          final isImageOnly =
+              nonWhitespaceChildren.isNotEmpty &&
+              nonWhitespaceChildren.every(
+                (c) =>
+                    c is AtomicNode &&
+                    (c.tagName == 'img' || c.tagName == 'svg'),
+              );
 
           if (isImageOnly) {
             node.style.textIndent = 0.0;
@@ -110,8 +118,6 @@ extension UDTNodeExtensions on UDTNode {
         }
       }
     } else if (currentBlock != null) {
-
-
       // Child inline/text nodes: synchronize inheritable layout properties
       // so line-breaker / RenderHyperBoxLayout fragments directly receive the block's values.
       if (currentBlock.style.isExplicitlySet('text-align')) {
@@ -168,4 +174,3 @@ extension UDTNodeExtensions on UDTNode {
     }
   }
 }
-

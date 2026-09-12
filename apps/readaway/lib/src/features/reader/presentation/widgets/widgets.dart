@@ -28,7 +28,6 @@ export 'tts/waveform_scrubber.dart';
 // Viewport
 export 'viewport/modes/continuous_reader_view.dart';
 export 'viewport/modes/paged_reader_view.dart';
-export 'viewport/page_content/fixed_reader_page.dart';
 export 'viewport/page_content/html/hyper_page_content.dart';
 export 'viewport/page_content/reflowable_reader_page.dart';
 export 'viewport/reader_viewport.dart';

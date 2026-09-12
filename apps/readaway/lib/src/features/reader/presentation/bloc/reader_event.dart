@@ -5,11 +5,7 @@ abstract class ReaderEvent with _$ReaderEvent {
   const factory ReaderEvent.openDocument({
     required String path,
     String? fileName,
-    @Default(ReaderEngineMode.customFlow) ReaderEngineMode engineMode,
   }) = _OpenDocument;
-  const factory ReaderEvent.engineModeChanged({
-    required ReaderEngineMode newMode,
-  }) = _EngineModeChanged;
   const factory ReaderEvent.pageChanged({required int index}) = _PageChanged;
   const factory ReaderEvent.loadPage({required int index}) = _LoadPage;
   const factory ReaderEvent.closeDocument() = _CloseDocument;

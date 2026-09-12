@@ -10,15 +10,6 @@ enum ReaderScrollDirection {
   vertical,
 }
 
-/// The reading engine mode: publisher original design vs user-customized reflow.
-enum ReaderEngineMode {
-  /// Mode A: MuPDF native C Fitz rendering (100% publisher fidelity, vector zoom).
-  publisherFidelity,
-
-  /// Mode B: HyperRender pure flow layout (full user typography and theme customization).
-  customFlow,
-}
-
 /// Whether a [ReaderPageTransition] is available for a given scroll direction.
 extension ReaderPageTransitionSupport on ReaderPageTransition {
   /// The page-flip curl effect is inherently horizontal.
@@ -30,9 +21,6 @@ extension ReaderPageTransitionSupport on ReaderPageTransition {
 @freezed
 abstract class ReaderPreferences with _$ReaderPreferences {
   const factory ReaderPreferences({
-    @Default(ReaderEngineMode.customFlow)
-    @JsonKey(unknownEnumValue: ReaderEngineMode.customFlow)
-    ReaderEngineMode engineMode,
     String? fontFamily,
     @Default('Noto Serif') String serifFont,
     @Default('Noto Sans') String sansSerifFont,

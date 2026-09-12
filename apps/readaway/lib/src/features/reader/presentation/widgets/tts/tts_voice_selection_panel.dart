@@ -49,14 +49,18 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrentVoice());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _scrollToCurrentVoice(),
+    );
   }
 
   @override
   void didUpdateWidget(TtsVoiceSelectionPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentVoice != widget.currentVoice) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrentVoice());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _scrollToCurrentVoice(),
+      );
     }
   }
 
@@ -98,24 +102,30 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
   }
 
   List<TtsVoiceOption> get _filteredVoices {
-    return widget.availableVoices.where((v) {
-      if (_selectedLanguageFilter != null && _selectedLanguageFilter != 'ALL') {
-        if ((v.languageCode?.toUpperCase() ?? '') != _selectedLanguageFilter) {
-          return false;
-        }
-      }
-      if (_searchQuery.isNotEmpty) {
-        final label = v.label.toLowerCase();
-        final lang = (v.languageCode ?? '').toLowerCase();
-        final id = v.id.toLowerCase();
-        final speaker = v.sherpaSpeakerId != null ? 'speaker ${v.sherpaSpeakerId}' : '';
-        return label.contains(_searchQuery) ||
-            lang.contains(_searchQuery) ||
-            id.contains(_searchQuery) ||
-            speaker.contains(_searchQuery);
-      }
-      return true;
-    }).toList(growable: false);
+    return widget.availableVoices
+        .where((v) {
+          if (_selectedLanguageFilter != null &&
+              _selectedLanguageFilter != 'ALL') {
+            if ((v.languageCode?.toUpperCase() ?? '') !=
+                _selectedLanguageFilter) {
+              return false;
+            }
+          }
+          if (_searchQuery.isNotEmpty) {
+            final label = v.label.toLowerCase();
+            final lang = (v.languageCode ?? '').toLowerCase();
+            final id = v.id.toLowerCase();
+            final speaker = v.sherpaSpeakerId != null
+                ? 'speaker ${v.sherpaSpeakerId}'
+                : '';
+            return label.contains(_searchQuery) ||
+                lang.contains(_searchQuery) ||
+                id.contains(_searchQuery) ||
+                speaker.contains(_searchQuery);
+          }
+          return true;
+        })
+        .toList(growable: false);
   }
 
   Set<String> get _availableLanguages {
@@ -272,7 +282,9 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                   suffixIconConstraints: const BoxConstraints(minWidth: 28),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                   filled: true,
-                  fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  fillColor: scheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -300,14 +312,16 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                     _buildLangChip(
                       label: 'All',
                       isSelected: _selectedLanguageFilter == null,
-                      onTap: () => setState(() => _selectedLanguageFilter = null),
+                      onTap: () =>
+                          setState(() => _selectedLanguageFilter = null),
                       scheme: scheme,
                     ),
                     for (final lang in languages)
                       _buildLangChip(
                         label: lang,
                         isSelected: _selectedLanguageFilter == lang,
-                        onTap: () => setState(() => _selectedLanguageFilter = lang),
+                        onTap: () =>
+                            setState(() => _selectedLanguageFilter = lang),
                         scheme: scheme,
                       ),
                   ],
@@ -450,7 +464,10 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
             label: const Text('Download Voices'),
             style: FilledButton.styleFrom(
               visualDensity: VisualDensity.compact,
-              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -476,7 +493,8 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
           separatorBuilder: (_, _) => const SizedBox(height: 6),
           itemBuilder: (context, index) {
             final voice = voices[index];
-            final isSelected = widget.currentVoice == voice ||
+            final isSelected =
+                widget.currentVoice == voice ||
                 (widget.currentVoice != null &&
                     voice.matchesKey(widget.currentVoice!.storageKey));
 
@@ -489,7 +507,10 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 constraints: const BoxConstraints(minHeight: 46),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? scheme.primaryContainer.withValues(alpha: 0.35)
@@ -507,7 +528,9 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                     Icon(
                       isSelected ? LucideIcons.circleCheck : LucideIcons.circle,
                       size: 18,
-                      color: isSelected ? scheme.primary : scheme.outlineVariant,
+                      color: isSelected
+                          ? scheme.primary
+                          : scheme.outlineVariant,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -521,8 +544,12 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected ? scheme.primary : scheme.onSurface,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? scheme.primary
+                                  : scheme.onSurface,
                             ),
                           ),
                           if (voice.languageCode != null) ...[
@@ -538,7 +565,9 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                                     color: scheme.surfaceContainerLow,
                                     borderRadius: BorderRadius.circular(4),
                                     border: Border.all(
-                                      color: scheme.outlineVariant.withValues(alpha: 0.3),
+                                      color: scheme.outlineVariant.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       width: 0.5,
                                     ),
                                   ),
@@ -569,7 +598,10 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                     ),
                     if (isSelected)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: scheme.primary,
                           borderRadius: BorderRadius.circular(8),

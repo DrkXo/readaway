@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mupdf/mupdf.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/toc/outline_item_tile.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 void main() {
   const threadColors = [Colors.blue, Colors.green, Colors.purple];
 
   group('OutlineItemTile Widget Tests', () {
-    testWidgets('renders outline title and handles tap correctly', (tester) async {
+    testWidgets('renders outline title and handles tap correctly', (
+      tester,
+    ) async {
       var tapped = false;
       final item = OutlineItem(
         title: 'Prologue',
-        uri: 'OEBPS/intro.xhtml',
-        chapter: 0,
-        page: 0,
+        href: 'OEBPS/intro.xhtml',
+        chapterIndex: 0,
         level: 0,
-        isOpen: false,
       );
 
       await tester.pumpWidget(
@@ -25,7 +25,6 @@ void main() {
               item: item,
               isCurrent: false,
               threadColors: threadColors,
-              isReflowable: true,
               onTap: () => tapped = true,
             ),
           ),
@@ -39,14 +38,14 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('displays Current badge and semantic Chapter label for reflowable docs', (tester) async {
+    testWidgets('displays Current badge and semantic Chapter label', (
+      tester,
+    ) async {
       final item = OutlineItem(
         title: 'Chapter 1: The Heart of a Demon',
-        uri: 'OEBPS/c1.xhtml',
-        chapter: 1,
-        page: 16,
+        href: 'OEBPS/c1.xhtml',
+        chapterIndex: 1,
         level: 0,
-        isOpen: false,
       );
 
       await tester.pumpWidget(
@@ -56,7 +55,6 @@ void main() {
               item: item,
               isCurrent: true,
               threadColors: threadColors,
-              isReflowable: true,
               onTap: () {},
             ),
           ),
@@ -70,13 +68,12 @@ void main() {
       expect(semantics.label, contains('Chapter 2'));
     });
 
-    testWidgets('displays Page label for fixed-layout (PDF) docs', (tester) async {
+    testWidgets('falls back to plain title when chapterIndex is null', (
+      tester,
+    ) async {
       final item = OutlineItem(
         title: 'Introduction to Algorithms',
-        chapter: -1,
-        page: 15,
         level: 0,
-        isOpen: false,
       );
 
       await tester.pumpWidget(
@@ -86,7 +83,6 @@ void main() {
               item: item,
               isCurrent: false,
               threadColors: threadColors,
-              isReflowable: false,
               onTap: () {},
             ),
           ),
@@ -94,7 +90,8 @@ void main() {
       );
 
       final semantics = tester.getSemantics(find.byType(OutlineItemTile));
-      expect(semantics.label, contains('Page 16'));
+      expect(semantics.label, contains('Introduction to Algorithms'));
+      expect(semantics.label, isNot(contains('Chapter')));
     });
   });
 }

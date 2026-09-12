@@ -70,7 +70,6 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
     return BlocBuilder<ReaderBloc, ReaderState>(
       buildWhen: (prev, curr) =>
           prev.hasDocument != curr.hasDocument ||
-          prev.isReflowable != curr.isReflowable ||
           prev.ttsActive != curr.ttsActive,
       builder: (context, readerState) {
         if (!readerState.hasDocument) return const SizedBox.shrink();
@@ -132,31 +131,23 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
                 // 4. Font Resizing
                 AppIconButton(
                   icon: LucideIcons.type,
-                  tooltip: readerState.isReflowable
-                      ? 'Font size'
-                      : 'Font resizing (Reflowable only)',
+                  tooltip: 'Font size',
                   size: AppIconButtonSize.medium,
                   selected: activePanel == ReaderBottomPanel.fontSize,
                   semanticLabel: 'Font size adjustment',
-                  onPressed: readerState.isReflowable
-                      ? () => togglePanel(ReaderBottomPanel.fontSize)
-                      : null,
+                  onPressed: () => togglePanel(ReaderBottomPanel.fontSize),
                 ),
 
                 // 5. TTS (Text to Speech)
                 AppIconButton(
                   icon: LucideIcons.audioLines,
-                  tooltip: readerState.isReflowable
-                      ? (readerState.ttsActive
-                            ? 'Close TTS player'
-                            : 'Listen (TTS player)')
-                      : 'TTS (Reflowable only)',
+                  tooltip: readerState.ttsActive
+                      ? 'Close TTS player'
+                      : 'Listen (TTS player)',
                   size: AppIconButtonSize.medium,
                   selected: readerState.ttsActive,
                   semanticLabel: 'Text to speech player toggle',
-                  onPressed: readerState.isReflowable
-                      ? () => handleTtsTap(readerState)
-                      : null,
+                  onPressed: () => handleTtsTap(readerState),
                 ),
               ],
             ),
