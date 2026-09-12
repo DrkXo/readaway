@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -6,7 +7,6 @@ import 'package:get_it/get_it.dart';
 
 import '../../../../../../core/services/services.dart';
 import '../../../../../../core/theme/theme.dart';
-import '../../../../../../core/utils/reader/reader_html_utils.dart';
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../../gestures/reader_gesture_arena.dart';
@@ -100,11 +100,6 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
             widget.index < widget.state.pageHtmls!.length
         ? widget.state.pageHtmls![widget.index]
         : null;
-    final links =
-        widget.state.pageLinks != null &&
-            widget.index < widget.state.pageLinks!.length
-        ? widget.state.pageLinks![widget.index]
-        : null;
 
     if (html == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -136,12 +131,9 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               HyperPageContent(
-                html: injectLinksIntoHtml(
-                  html,
-                  links ?? const [],
-                  linkColor: context.appColors.scheme.primary,
-                ),
+                html: html,
                 prefs: widget.prefs,
+                onResolveAssetBytes: _resolveAssetBytes,
                 onLinkTap: (url) => _onTapUrl(context, url),
               ),
             ],
@@ -194,8 +186,48 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
     );
   }
 
+  Future<List<int>?> _resolveAssetBytes(String src) async {
+    if (src.isEmpty) return null;
+
+    // 1. Inline data URI (e.g. data:image/png;base64,...)
+    if (src.startsWith('data:')) {
+      final commaIndex = src.indexOf(',');
+      if (commaIndex != -1) {
+        try {
+          return base64Decode(src.substring(commaIndex + 1));
+        } catch (_) {}
+      }
+      return null;
+    }
+
+    // 2. HTTP / HTTPS external URLs (handled by default Flutter network loaders if permitted)
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      return null;
+    }
+
+    final res = await GetIt.I<ReaderRepository>()
+        .loadAssetBytes(src, pageIndex: widget.index)
+        .run();
+    return res.fold(
+      (failure) {
+        debugPrint('[ReflowableReaderPage] Failed to load asset "$src" for page ${widget.index}: $failure');
+        return null;
+      },
+      (bytes) {
+        if (bytes != null && bytes.isNotEmpty) {
+          debugPrint('[ReflowableReaderPage] Successfully loaded asset "$src" (${bytes.length} bytes)');
+        } else {
+          debugPrint('[ReflowableReaderPage] Asset "$src" returned null or empty for page ${widget.index}');
+        }
+        return bytes;
+      },
+    );
+  }
+
   void _onTapUrl(BuildContext context, String url) async {
     ReaderGestureArena.suppressNextTap();
+    if (url.isEmpty) return;
+
     final match = RegExp(r'^#page=(\d+)$').firstMatch(url);
     if (match != null) {
       final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;
@@ -205,7 +237,22 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
       return;
     }
 
-    // Resolve internal EPUB/document destination link via ReaderRepository
+    if (url.startsWith('#')) {
+      // Intra-chapter anchor: handled in-page
+      return;
+    }
+
+    // Try resolving cross-chapter link in reflowable document
+    final reflowRes = await GetIt.I<ReaderRepository>().resolveReflowableLink(url).run();
+    final targetSection = reflowRes.getRight().toNullable();
+    if (targetSection != null && targetSection >= 0) {
+      if (!context.mounted) return;
+      final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;
+      widget.onPageChangeRequested(targetSection.clamp(0, maxIndex));
+      return;
+    }
+
+    // Fallback to MuPDF link resolution
     final res = await GetIt.I<ReaderRepository>().resolveLink(url).run();
     res.fold(
       (failure) => logger.d('Could not resolve link: $url ($failure)'),
@@ -221,3 +268,4 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
     );
   }
 }
+

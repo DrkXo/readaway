@@ -8,12 +8,14 @@ class OutlineItemTile extends StatelessWidget {
     required this.isCurrent,
     required this.threadColors,
     required this.onTap,
+    this.isReflowable = false,
   });
 
   final OutlineItem item;
   final bool isCurrent;
   final List<Color> threadColors;
   final VoidCallback onTap;
+  final bool isReflowable;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +29,9 @@ class OutlineItemTile extends StatelessWidget {
     return Semantics(
       button: true,
       selected: isCurrent,
-      label: '$title, Chapter level ${item.level + 1}',
+      label: isReflowable && item.chapter >= 0
+          ? '$title, Chapter ${item.chapter + 1}'
+          : '$title, Page ${item.page + 1}',
       child: Material(
         color: isCurrent
             ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35)
@@ -60,7 +64,7 @@ class OutlineItemTile extends StatelessWidget {
                   ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(right: 20),
+                    padding: EdgeInsets.only(right: isCurrent ? 8.0 : 20.0),
                     child: Text(
                       title,
                       maxLines: 2,
@@ -84,6 +88,27 @@ class OutlineItemTile extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (isCurrent)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Current',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
@@ -8,13 +9,14 @@ import 'package:readaway/src/core/services/logging_service.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/reader/supported_document_formats.dart';
 import '../../../../core/services/document_cover_service.dart';
-import '../../../../core/services/epub/epub_spine_reader.dart';
 import '../../../../core/services/mupdf_service.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/reader/reflowable_document_reader.dart';
 import '../../../../core/services/window_service.dart';
+import '../../../../core/utils/reader/reader_html_utils.dart'
+    as reader_html_utils;
 import '../../../library/domain/entity/reading_status.dart';
 import '../../../library/domain/repositories/library_repository.dart';
-import '../../../../core/utils/reader/reader_html_utils.dart' as reader_html_utils;
 import '../../domain/entity/reader_link.dart';
 import '../../domain/repositories/reader_repository.dart';
 
@@ -25,7 +27,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
   final NotificationService _notificationService;
   final DocumentCoverService _coverService;
   final LibraryRepository _libraryRepository;
-  EpubSpineReader? _spineReader;
+  ReflowableDocumentReader? _reflowReader;
 
   ReaderRepositoryImpl(
     this._muPdfService,
@@ -56,25 +58,63 @@ class ReaderRepositoryImpl implements ReaderRepository {
         await _muPdfService.openDocument(path);
 
         final isReflowable = await _muPdfService.isReflowable();
-        final outline = await _muPdfService.getOutLine();
+        final rawOutline = await _muPdfService.getOutLine();
         final metaTitle = await _muPdfService.getMetaData('info:Title');
 
-        if (isReflowable && path.toLowerCase().endsWith('.epub')) {
+        if (isReflowable) {
           try {
-            _spineReader = await EpubSpineReader.fromFile(path);
+            _reflowReader = await ReflowableDocumentReader.fromFile(path);
           } catch (e) {
-            logger.w('Failed to initialize EpubSpineReader, falling back to MuPDF: $e');
-            _spineReader = null;
+            logger.w('Failed to initialize ReflowableDocumentReader: $e');
+            _reflowReader = null;
           }
         } else {
-          _spineReader = null;
+          _reflowReader = null;
         }
 
         final int pageCount;
-        if (isReflowable && engineMode == ReaderEngineMode.customFlow && _spineReader != null) {
-          pageCount = _spineReader!.spineCount;
+        if (isReflowable &&
+            engineMode == ReaderEngineMode.customFlow &&
+            _reflowReader != null) {
+          pageCount = _reflowReader!.sectionCount;
         } else {
           pageCount = await _muPdfService.getPageCount();
+        }
+
+        final List<OutlineItem> outline;
+        if (isReflowable && _reflowReader != null) {
+          if (rawOutline.isNotEmpty) {
+            outline = rawOutline.map((item) {
+              var chapter = item.chapter;
+              if (chapter < 0 && item.uri != null && item.uri!.isNotEmpty) {
+                final resolved = _reflowReader!.resolveSectionIndex(item.uri!);
+                if (resolved != null) {
+                  chapter = resolved;
+                }
+              }
+              return OutlineItem(
+                title: item.title,
+                uri: item.uri,
+                chapter: chapter,
+                page: item.page,
+                level: item.level,
+                isOpen: item.isOpen,
+              );
+            }).toList();
+          } else {
+            outline = _reflowReader!.sections.map((sec) {
+              return OutlineItem(
+                title: sec.title ?? 'Chapter ${sec.index + 1}',
+                uri: sec.href,
+                chapter: sec.index,
+                page: sec.index,
+                level: 0,
+                isOpen: false,
+              );
+            }).toList();
+          }
+        } else {
+          outline = rawOutline;
         }
 
         final title = (metaTitle != null && metaTitle.isNotEmpty)
@@ -108,10 +148,12 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }) {
     return TaskEither.tryCatch(
       () async {
-        // Mode B: Custom Flow on reflowable EPUB
-        if (isReflowable && engineMode == ReaderEngineMode.customFlow && _spineReader != null) {
-          if (pageIndex >= 0 && pageIndex < _spineReader!.spineCount) {
-            final html = _spineReader!.loadSpineHtml(pageIndex);
+        // Reflowable document in Custom Flow mode -> HyperRender
+        if (isReflowable &&
+            engineMode == ReaderEngineMode.customFlow &&
+            _reflowReader != null) {
+          if (pageIndex >= 0 && pageIndex < _reflowReader!.sectionCount) {
+            final html = _reflowReader!.loadSectionHtml(pageIndex);
             return ReaderPageData(
               pageIndex: pageIndex,
               links: const [],
@@ -120,7 +162,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
           }
         }
 
-        // Mode A: Publisher Fidelity (or PDF)
+        // Non-reflowable document (PDF, XPS, CBZ) or Publisher Fidelity -> MuPDF Native C
         final pageLinks = await _muPdfService.getPageLinks(pageIndex);
         final domainLinks = pageLinks
             .map(
@@ -158,13 +200,16 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }) {
     return TaskEither.tryCatch(
       () async {
-        if (fromMode == toMode || _spineReader == null) {
+        if (fromMode == toMode || _reflowReader == null) {
           return currentPage;
         }
 
         if (fromMode == ReaderEngineMode.customFlow &&
             toMode == ReaderEngineMode.publisherFidelity) {
-          final clampedSpine = currentPage.clamp(0, _spineReader!.spineCount - 1);
+          final clampedSpine = currentPage.clamp(
+            0,
+            _reflowReader!.sectionCount - 1,
+          );
           final mupdfPage = await _muPdfService.pageFromLocation(
             MuPdfLocation(chapter: clampedSpine, page: 0),
           );
@@ -172,7 +217,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         } else if (fromMode == ReaderEngineMode.publisherFidelity &&
             toMode == ReaderEngineMode.customFlow) {
           final loc = await _muPdfService.locationFromPage(currentPage);
-          return loc.chapter.clamp(0, _spineReader!.spineCount - 1);
+          return loc.chapter.clamp(0, _reflowReader!.sectionCount - 1);
         }
 
         return currentPage;
@@ -189,8 +234,9 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, int> getPageCountForMode(ReaderEngineMode engineMode) {
     return TaskEither.tryCatch(
       () async {
-        if (_spineReader != null && engineMode == ReaderEngineMode.customFlow) {
-          return _spineReader!.spineCount;
+        if (_reflowReader != null &&
+            engineMode == ReaderEngineMode.customFlow) {
+          return _reflowReader!.sectionCount;
         }
         return await _muPdfService.getPageCount();
       },
@@ -206,8 +252,10 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, String> extractPageText(int pageIndex) {
     return TaskEither.tryCatch(
       () async {
-        if (_spineReader != null && pageIndex >= 0 && pageIndex < _spineReader!.spineCount) {
-          final html = _spineReader!.loadSpineHtml(pageIndex);
+        if (_reflowReader != null &&
+            pageIndex >= 0 &&
+            pageIndex < _reflowReader!.sectionCount) {
+          final html = _reflowReader!.loadSectionHtml(pageIndex);
           return reader_html_utils.extractPageText(html);
         }
         final text = await _muPdfService.extractPageText(pageIndex);
@@ -289,6 +337,73 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
+  TaskEither<Failure, Uint8List?> loadAssetBytes(String assetPath, {int? pageIndex}) {
+    return TaskEither.tryCatch(
+      () async {
+        if (_reflowReader == null) {
+          logger.w('[ReaderRepository] loadAssetBytes: _reflowReader is null for asset: $assetPath');
+          return null;
+        }
+
+        final cleanPath = assetPath.split('?').first.split('#').first;
+        final decoded = Uri.decodeComponent(cleanPath);
+
+        // 1. If pageIndex is provided, resolve relative to that section/chapter
+        if (pageIndex != null && pageIndex >= 0) {
+          final resolved = _reflowReader!.resolveAssetPath(pageIndex, decoded);
+          final bytes = _reflowReader!.loadAssetBytes(resolved);
+          if (bytes != null && bytes.isNotEmpty) return bytes;
+        }
+
+        // 2. Try direct decoded path
+        var bytes = _reflowReader!.loadAssetBytes(decoded);
+        if (bytes != null && bytes.isNotEmpty) return bytes;
+
+        // 3. Try raw path
+        if (cleanPath != decoded) {
+          bytes = _reflowReader!.loadAssetBytes(cleanPath);
+          if (bytes != null && bytes.isNotEmpty) return bytes;
+        }
+
+        // 4. Try path without leading slash
+        final noSlash = decoded.startsWith('/') ? decoded.substring(1) : decoded;
+        if (noSlash != decoded) {
+          bytes = _reflowReader!.loadAssetBytes(noSlash);
+          if (bytes != null && bytes.isNotEmpty) return bytes;
+        }
+
+        // 5. Try basename fallback
+        final base = p.posix.basename(decoded);
+        bytes = _reflowReader!.loadAssetBytes(base);
+        if (bytes != null && bytes.isNotEmpty) return bytes;
+
+        logger.w('[ReaderRepository] loadAssetBytes: could not resolve asset "$assetPath" (page: $pageIndex)');
+        return null;
+      },
+      (error, stack) {
+        logger.e('[ReaderRepository] loadAssetBytes error: $error', error, stack);
+        return StorageReadFailure(
+          assetPath,
+          cause: error,
+          stackTrace: stack,
+        );
+      },
+    );
+  }
+
+  @override
+  TaskEither<Failure, int?> resolveReflowableLink(String uri) {
+    return TaskEither.tryCatch(
+      () async => _reflowReader?.resolveSectionIndex(uri),
+      (error, stack) => CorruptDocumentFailure(
+        'Failed to resolve reflowable link: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
   TaskEither<Failure, Unit> updateReadingProgress({
     required String path,
     required int page,
@@ -342,6 +457,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, Unit> closeDocument() {
     return TaskEither.tryCatch(
       () async {
+        _reflowReader?.dispose();
+        _reflowReader = null;
         await _muPdfService.closeDocument();
         return unit;
       },

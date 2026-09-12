@@ -75,6 +75,23 @@ class MupdfBindings {
   late final _mupdf_clone_context = _mupdf_clone_contextPtr
       .asFunction<mupdf_context Function(mupdf_context)>();
 
+  int mupdf_count_archive_entries(
+    mupdf_context ctx,
+    mupdf_archive arch,
+  ) {
+    return _mupdf_count_archive_entries(
+      ctx,
+      arch,
+    );
+  }
+
+  late final _mupdf_count_archive_entriesPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(mupdf_context, mupdf_archive)>
+      >('mupdf_count_archive_entries');
+  late final _mupdf_count_archive_entries = _mupdf_count_archive_entriesPtr
+      .asFunction<int Function(mupdf_context, mupdf_archive)>();
+
   int mupdf_count_chapter_pages(
     mupdf_context ctx,
     mupdf_document doc,
@@ -129,6 +146,23 @@ class MupdfBindings {
       >('mupdf_count_pages');
   late final _mupdf_count_pages = _mupdf_count_pagesPtr
       .asFunction<int Function(mupdf_context, mupdf_document)>();
+
+  void mupdf_drop_archive(
+    mupdf_context ctx,
+    mupdf_archive arch,
+  ) {
+    return _mupdf_drop_archive(
+      ctx,
+      arch,
+    );
+  }
+
+  late final _mupdf_drop_archivePtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Void Function(mupdf_context, mupdf_archive)>
+      >('mupdf_drop_archive');
+  late final _mupdf_drop_archive = _mupdf_drop_archivePtr
+      .asFunction<void Function(mupdf_context, mupdf_archive)>();
 
   void mupdf_drop_context(
     mupdf_context ctx,
@@ -194,6 +228,23 @@ class MupdfBindings {
   late final _mupdf_drop_document = _mupdf_drop_documentPtr
       .asFunction<void Function(mupdf_context, mupdf_document)>();
 
+  void mupdf_drop_epub_spine(
+    mupdf_context ctx,
+    mupdf_epub_spine spine,
+  ) {
+    return _mupdf_drop_epub_spine(
+      ctx,
+      spine,
+    );
+  }
+
+  late final _mupdf_drop_epub_spinePtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Void Function(mupdf_context, mupdf_epub_spine)>
+      >('mupdf_drop_epub_spine');
+  late final _mupdf_drop_epub_spine = _mupdf_drop_epub_spinePtr
+      .asFunction<void Function(mupdf_context, mupdf_epub_spine)>();
+
   void mupdf_drop_page(
     mupdf_context ctx,
     mupdf_page page,
@@ -227,6 +278,148 @@ class MupdfBindings {
       >('mupdf_drop_pixmap');
   late final _mupdf_drop_pixmap = _mupdf_drop_pixmapPtr
       .asFunction<void Function(mupdf_context, mupdf_pixmap)>();
+
+  ffi.Pointer<ffi.Uint8> mupdf_epub_read_asset(
+    mupdf_context ctx,
+    mupdf_epub_spine spine,
+    ffi.Pointer<ffi.Char> name,
+    ffi.Pointer<ffi.Int64> out_len,
+  ) {
+    return _mupdf_epub_read_asset(
+      ctx,
+      spine,
+      name,
+      out_len,
+    );
+  }
+
+  late final _mupdf_epub_read_assetPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Uint8> Function(
+            mupdf_context,
+            mupdf_epub_spine,
+            ffi.Pointer<ffi.Char>,
+            ffi.Pointer<ffi.Int64>,
+          )
+        >
+      >('mupdf_epub_read_asset');
+  late final _mupdf_epub_read_asset = _mupdf_epub_read_assetPtr
+      .asFunction<
+        ffi.Pointer<ffi.Uint8> Function(
+          mupdf_context,
+          mupdf_epub_spine,
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Int64>,
+        )
+      >();
+
+  ffi.Pointer<ffi.Char> mupdf_epub_read_chapter_xhtml(
+    mupdf_context ctx,
+    mupdf_epub_spine spine,
+    int chapter,
+    ffi.Pointer<ffi.Int64> out_len,
+  ) {
+    return _mupdf_epub_read_chapter_xhtml(
+      ctx,
+      spine,
+      chapter,
+      out_len,
+    );
+  }
+
+  late final _mupdf_epub_read_chapter_xhtmlPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+            mupdf_context,
+            mupdf_epub_spine,
+            ffi.Int,
+            ffi.Pointer<ffi.Int64>,
+          )
+        >
+      >('mupdf_epub_read_chapter_xhtml');
+  late final _mupdf_epub_read_chapter_xhtml = _mupdf_epub_read_chapter_xhtmlPtr
+      .asFunction<
+        ffi.Pointer<ffi.Char> Function(
+          mupdf_context,
+          mupdf_epub_spine,
+          int,
+          ffi.Pointer<ffi.Int64>,
+        )
+      >();
+
+  int mupdf_epub_spine_count(
+    mupdf_epub_spine spine,
+  ) {
+    return _mupdf_epub_spine_count(
+      spine,
+    );
+  }
+
+  late final _mupdf_epub_spine_countPtr =
+      _lookup<ffi.NativeFunction<ffi.Int Function(mupdf_epub_spine)>>(
+        'mupdf_epub_spine_count',
+      );
+  late final _mupdf_epub_spine_count = _mupdf_epub_spine_countPtr
+      .asFunction<int Function(mupdf_epub_spine)>();
+
+  ffi.Pointer<ffi.Char> mupdf_epub_spine_id(
+    mupdf_epub_spine spine,
+    int chapter,
+  ) {
+    return _mupdf_epub_spine_id(
+      spine,
+      chapter,
+    );
+  }
+
+  late final _mupdf_epub_spine_idPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(mupdf_epub_spine, ffi.Int)
+        >
+      >('mupdf_epub_spine_id');
+  late final _mupdf_epub_spine_id = _mupdf_epub_spine_idPtr
+      .asFunction<ffi.Pointer<ffi.Char> Function(mupdf_epub_spine, int)>();
+
+  ffi.Pointer<ffi.Char> mupdf_epub_spine_media_type(
+    mupdf_epub_spine spine,
+    int chapter,
+  ) {
+    return _mupdf_epub_spine_media_type(
+      spine,
+      chapter,
+    );
+  }
+
+  late final _mupdf_epub_spine_media_typePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(mupdf_epub_spine, ffi.Int)
+        >
+      >('mupdf_epub_spine_media_type');
+  late final _mupdf_epub_spine_media_type = _mupdf_epub_spine_media_typePtr
+      .asFunction<ffi.Pointer<ffi.Char> Function(mupdf_epub_spine, int)>();
+
+  ffi.Pointer<ffi.Char> mupdf_epub_spine_path(
+    mupdf_epub_spine spine,
+    int chapter,
+  ) {
+    return _mupdf_epub_spine_path(
+      spine,
+      chapter,
+    );
+  }
+
+  late final _mupdf_epub_spine_pathPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(mupdf_epub_spine, ffi.Int)
+        >
+      >('mupdf_epub_spine_path');
+  late final _mupdf_epub_spine_path = _mupdf_epub_spine_pathPtr
+      .asFunction<ffi.Pointer<ffi.Char> Function(mupdf_epub_spine, int)>();
 
   ffi.Pointer<ffi.Char> mupdf_extract_html(
     mupdf_context ctx,
@@ -288,6 +481,21 @@ class MupdfBindings {
       >('mupdf_extract_text');
   late final _mupdf_extract_text = _mupdf_extract_textPtr
       .asFunction<ffi.Pointer<ffi.Char> Function(mupdf_context, mupdf_page)>();
+
+  void mupdf_free(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _mupdf_free(
+      ptr,
+    );
+  }
+
+  late final _mupdf_freePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'mupdf_free',
+      );
+  late final _mupdf_free = _mupdf_freePtr
+      .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void mupdf_free_floats(
     ffi.Pointer<ffi.Float> ptr,
@@ -360,6 +568,29 @@ class MupdfBindings {
       >('mupdf_free_words');
   late final _mupdf_free_words = _mupdf_free_wordsPtr
       .asFunction<void Function(ffi.Pointer<mupdf_word_item>, int)>();
+
+  int mupdf_has_archive_entry(
+    mupdf_context ctx,
+    mupdf_archive arch,
+    ffi.Pointer<ffi.Char> name,
+  ) {
+    return _mupdf_has_archive_entry(
+      ctx,
+      arch,
+      name,
+    );
+  }
+
+  late final _mupdf_has_archive_entryPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(mupdf_context, mupdf_archive, ffi.Pointer<ffi.Char>)
+        >
+      >('mupdf_has_archive_entry');
+  late final _mupdf_has_archive_entry = _mupdf_has_archive_entryPtr
+      .asFunction<
+        int Function(mupdf_context, mupdf_archive, ffi.Pointer<ffi.Char>)
+      >();
 
   int mupdf_has_permission(
     mupdf_context ctx,
@@ -445,6 +676,29 @@ class MupdfBindings {
   late final _mupdf_layout_document = _mupdf_layout_documentPtr
       .asFunction<
         int Function(mupdf_context, mupdf_document, double, double, double)
+      >();
+
+  ffi.Pointer<ffi.Char> mupdf_list_archive_entry(
+    mupdf_context ctx,
+    mupdf_archive arch,
+    int idx,
+  ) {
+    return _mupdf_list_archive_entry(
+      ctx,
+      arch,
+      idx,
+    );
+  }
+
+  late final _mupdf_list_archive_entryPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(mupdf_context, mupdf_archive, ffi.Int)
+        >
+      >('mupdf_list_archive_entry');
+  late final _mupdf_list_archive_entry = _mupdf_list_archive_entryPtr
+      .asFunction<
+        ffi.Pointer<ffi.Char> Function(mupdf_context, mupdf_archive, int)
       >();
 
   mupdf_page mupdf_load_chapter_page(
@@ -814,6 +1068,27 @@ class MupdfBindings {
         )
       >();
 
+  mupdf_archive mupdf_open_archive(
+    mupdf_context ctx,
+    ffi.Pointer<ffi.Char> filename,
+  ) {
+    return _mupdf_open_archive(
+      ctx,
+      filename,
+    );
+  }
+
+  late final _mupdf_open_archivePtr =
+      _lookup<
+        ffi.NativeFunction<
+          mupdf_archive Function(mupdf_context, ffi.Pointer<ffi.Char>)
+        >
+      >('mupdf_open_archive');
+  late final _mupdf_open_archive = _mupdf_open_archivePtr
+      .asFunction<
+        mupdf_archive Function(mupdf_context, ffi.Pointer<ffi.Char>)
+      >();
+
   mupdf_document mupdf_open_document(
     mupdf_context ctx,
     ffi.Pointer<ffi.Char> filename,
@@ -860,6 +1135,27 @@ class MupdfBindings {
   late final _mupdf_open_document_from_data = _mupdf_open_document_from_dataPtr
       .asFunction<
         mupdf_document Function(mupdf_context, ffi.Pointer<ffi.Uint8>, int)
+      >();
+
+  mupdf_epub_spine mupdf_open_epub_spine(
+    mupdf_context ctx,
+    ffi.Pointer<ffi.Char> filename,
+  ) {
+    return _mupdf_open_epub_spine(
+      ctx,
+      filename,
+    );
+  }
+
+  late final _mupdf_open_epub_spinePtr =
+      _lookup<
+        ffi.NativeFunction<
+          mupdf_epub_spine Function(mupdf_context, ffi.Pointer<ffi.Char>)
+        >
+      >('mupdf_open_epub_spine');
+  late final _mupdf_open_epub_spine = _mupdf_open_epub_spinePtr
+      .asFunction<
+        mupdf_epub_spine Function(mupdf_context, ffi.Pointer<ffi.Char>)
       >();
 
   int mupdf_outline_flatten(
@@ -1285,6 +1581,41 @@ class MupdfBindings {
   late final _mupdf_pixmap_width = _mupdf_pixmap_widthPtr
       .asFunction<int Function(mupdf_context, mupdf_pixmap)>();
 
+  ffi.Pointer<ffi.Uint8> mupdf_read_archive_entry(
+    mupdf_context ctx,
+    mupdf_archive arch,
+    ffi.Pointer<ffi.Char> name,
+    ffi.Pointer<ffi.Int64> out_len,
+  ) {
+    return _mupdf_read_archive_entry(
+      ctx,
+      arch,
+      name,
+      out_len,
+    );
+  }
+
+  late final _mupdf_read_archive_entryPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Uint8> Function(
+            mupdf_context,
+            mupdf_archive,
+            ffi.Pointer<ffi.Char>,
+            ffi.Pointer<ffi.Int64>,
+          )
+        >
+      >('mupdf_read_archive_entry');
+  late final _mupdf_read_archive_entry = _mupdf_read_archive_entryPtr
+      .asFunction<
+        ffi.Pointer<ffi.Uint8> Function(
+          mupdf_context,
+          mupdf_archive,
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Int64>,
+        )
+      >();
+
   mupdf_pixmap mupdf_render_display_list(
     mupdf_context ctx,
     mupdf_display_list list,
@@ -1557,10 +1888,12 @@ const int MUPDF_SELECT_LINES = 2;
 
 const int MUPDF_SELECT_WORDS = 1;
 
+typedef mupdf_archive = ffi.Pointer<ffi.Void>;
 typedef mupdf_context = ffi.Pointer<ffi.Void>;
 typedef mupdf_cookie = ffi.Pointer<ffi.Void>;
 typedef mupdf_display_list = ffi.Pointer<ffi.Void>;
 typedef mupdf_document = ffi.Pointer<ffi.Void>;
+typedef mupdf_epub_spine = ffi.Pointer<ffi.Void>;
 
 final class mupdf_link_item extends ffi.Struct {
   @ffi.Float()

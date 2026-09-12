@@ -1291,3 +1291,539 @@ const char* mupdf_last_error(mupdf_context handle) {
     if (!handle) return "";
     return CTX(handle)->last_error;
 }
+
+/* ---- Archive ---- */
+
+struct mupdf_archive_s {
+    fz_archive* zip;
+};
+
+mupdf_archive mupdf_open_archive(mupdf_context handle, const char* filename) {
+    if (!handle || !filename) return NULL;
+    struct mupdf_context_s* c = CTX(handle);
+    struct mupdf_archive_s* arch = NULL;
+    fz_archive* zip = NULL;
+    fz_var(arch);
+    fz_var(zip);
+
+    fz_try(c->ctx) {
+        zip = fz_open_archive(c->ctx, filename);
+        if (zip) {
+            arch = calloc(1, sizeof(*arch));
+            if (!arch) {
+                fz_throw(c->ctx, FZ_ERROR_SYSTEM, "Out of memory allocating archive handle");
+            }
+            arch->zip = zip;
+        }
+    }
+    fz_catch(c->ctx) {
+        set_error(c, fz_caught_message(c->ctx));
+        if (arch) {
+            free(arch);
+            arch = NULL;
+        }
+        if (zip) {
+            fz_drop_archive(c->ctx, zip);
+        }
+    }
+    return arch;
+}
+
+void mupdf_drop_archive(mupdf_context handle, mupdf_archive arch) {
+    if (!arch) return;
+    struct mupdf_context_s* c = handle ? CTX(handle) : NULL;
+    struct mupdf_archive_s* a = (struct mupdf_archive_s*)arch;
+    if (a->zip && c && c->ctx) {
+        fz_try(c->ctx) {
+            fz_drop_archive(c->ctx, a->zip);
+        }
+        fz_catch(c->ctx) {
+            /* ignore */
+        }
+    }
+    free(a);
+}
+
+int mupdf_count_archive_entries(mupdf_context handle, mupdf_archive arch) {
+    if (!handle || !arch) return -1;
+    struct mupdf_context_s* c = CTX(handle);
+    struct mupdf_archive_s* a = (struct mupdf_archive_s*)arch;
+    int count = -1;
+    fz_try(c->ctx) {
+        count = fz_count_archive_entries(c->ctx, a->zip);
+    }
+    fz_catch(c->ctx) {
+        set_error(c, fz_caught_message(c->ctx));
+        count = -1;
+    }
+    return count;
+}
+
+const char* mupdf_list_archive_entry(mupdf_context handle, mupdf_archive arch, int idx) {
+    if (!handle || !arch) return NULL;
+    struct mupdf_context_s* c = CTX(handle);
+    struct mupdf_archive_s* a = (struct mupdf_archive_s*)arch;
+    const char* name = NULL;
+    fz_try(c->ctx) {
+        name = fz_list_archive_entry(c->ctx, a->zip, idx);
+    }
+    fz_catch(c->ctx) {
+        set_error(c, fz_caught_message(c->ctx));
+        name = NULL;
+    }
+    return name;
+}
+
+int mupdf_has_archive_entry(mupdf_context handle, mupdf_archive arch, const char* name) {
+    if (!handle || !arch || !name) return 0;
+    struct mupdf_context_s* c = CTX(handle);
+    struct mupdf_archive_s* a = (struct mupdf_archive_s*)arch;
+    int has = 0;
+    fz_try(c->ctx) {
+        has = fz_has_archive_entry(c->ctx, a->zip, name);
+    }
+    fz_catch(c->ctx) {
+        set_error(c, fz_caught_message(c->ctx));
+        has = 0;
+    }
+    return has;
+}
+
+uint8_t* mupdf_read_archive_entry(mupdf_context handle, mupdf_archive arch, const char* name, int64_t* out_len) {
+    if (!handle || !arch || !name) return NULL;
+    struct mupdf_context_s* c = CTX(handle);
+    struct mupdf_archive_s* a = (struct mupdf_archive_s*)arch;
+    uint8_t* result = NULL;
+    fz_buffer* buf = NULL;
+    fz_var(result);
+    fz_var(buf);
+
+    fz_try(c->ctx) {
+        buf = fz_read_archive_entry(c->ctx, a->zip, name);
+        if (buf) {
+            unsigned char* data = NULL;
+            size_t len = fz_buffer_storage(c->ctx, buf, &data);
+            result = malloc(len > 0 ? len : 1);
+            if (!result) {
+                fz_throw(c->ctx, FZ_ERROR_SYSTEM, "Out of memory allocating buffer for archive entry");
+            }
+            if (len > 0 && data) {
+                memcpy(result, data, len);
+            }
+            if (out_len) *out_len = (int64_t)len;
+        }
+    }
+    fz_always(c->ctx) {
+        if (buf) fz_drop_buffer(c->ctx, buf);
+    }
+    fz_catch(c->ctx) {
+        set_error(c, fz_caught_message(c->ctx));
+        if (result) {
+            free(result);
+            result = NULL;
+        }
+        if (out_len) *out_len = 0;
+    }
+    return result;
+}
+
+/* ---- EPUB Spine & Chapter Extraction ---- */
+
+typedef struct mupdf_epub_spine_item_s {
+    int index;
+    char* id;
+    char* path;
+    char* media_type;
+} mupdf_epub_spine_item_s;
+
+struct mupdf_epub_spine_s {
+    fz_archive* zip;
+    char* opf_dir;
+    int count;
+    mupdf_epub_spine_item_s* items;
+};
+
+static fz_buffer* read_epub_container_and_prefix(fz_context* ctx, fz_archive* zip, char* prefix, size_t prefix_len) {
+    int n = fz_count_archive_entries(ctx, zip);
+    int i;
+    prefix[0] = 0;
+
+    for (i = 0; i < n; i++) {
+        const char* p = fz_list_archive_entry(ctx, zip, i);
+        if (p && !strcmp(p, "META-INF/container.xml"))
+            return fz_read_archive_entry(ctx, zip, "META-INF/container.xml");
+    }
+
+    for (i = 0; i < n; i++) {
+        const char* p = fz_list_archive_entry(ctx, zip, i);
+        if (!p) continue;
+        size_t z = strlen(p);
+        size_t z0 = sizeof("META-INF/container.xml") - 1;
+        if (z < z0) continue;
+        if (!strcmp(p + z - z0, "META-INF/container.xml")) {
+            if (z - z0 >= prefix_len) continue;
+            memcpy(prefix, p, z - z0);
+            prefix[z - z0] = 0;
+            return fz_read_archive_entry(ctx, zip, p);
+        }
+    }
+
+    return fz_read_archive_entry(ctx, zip, "META-INF/container.xml");
+}
+
+static const char* epub_rel_path_from_idref(fz_xml* manifest, const char* idref) {
+    fz_xml* item;
+    if (!idref || !manifest) return NULL;
+    item = fz_xml_find_down(manifest, "item");
+    while (item) {
+        const char* id = fz_xml_att(item, "id");
+        if (id && !strcmp(id, idref))
+            return fz_xml_att(item, "href");
+        item = fz_xml_find_next(item, "item");
+    }
+    return NULL;
+}
+
+static const char* epub_media_type_from_idref(fz_xml* manifest, const char* idref) {
+    fz_xml* item;
+    if (!idref || !manifest) return "application/xhtml+xml";
+    item = fz_xml_find_down(manifest, "item");
+    while (item) {
+        const char* id = fz_xml_att(item, "id");
+        if (id && !strcmp(id, idref)) {
+            const char* mt = fz_xml_att(item, "media-type");
+            return mt ? mt : "application/xhtml+xml";
+        }
+        item = fz_xml_find_next(item, "item");
+    }
+    return "application/xhtml+xml";
+}
+
+static const char* epub_path_from_idref(char* path, fz_xml* manifest, const char* base_uri, const char* idref, int n) {
+    const char* rel_path = epub_rel_path_from_idref(manifest, idref);
+    if (!rel_path) {
+        path[0] = 0;
+        return NULL;
+    }
+    if (base_uri && base_uri[0] != '\0') {
+        fz_strlcpy(path, base_uri, n);
+        fz_strlcat(path, "/", n);
+        fz_strlcat(path, rel_path, n);
+    } else {
+        fz_strlcpy(path, rel_path, n);
+    }
+    fz_urldecode(path);
+    fz_cleanname(path);
+    if (path[0] == '/') {
+        memmove(path, path + 1, strlen(path));
+    }
+    return path;
+}
+
+mupdf_epub_spine mupdf_open_epub_spine(mupdf_context handle, const char* filename) {
+    if (!handle || !filename) return NULL;
+    struct mupdf_context_s* c = CTX(handle);
+    struct mupdf_epub_spine_s* spine = NULL;
+    fz_archive* zip = NULL;
+    fz_buffer* buf = NULL;
+    fz_xml_doc* container_xml = NULL;
+    fz_xml_doc* content_opf = NULL;
+    char* prefixed_full_path = NULL;
+
+    fz_var(spine);
+    fz_var(zip);
+    fz_var(buf);
+    fz_var(container_xml);
+    fz_var(content_opf);
+    fz_var(prefixed_full_path);
+
+    fz_try(c->ctx) {
+        zip = fz_open_archive(c->ctx, filename);
+        if (!zip) {
+            fz_throw(c->ctx, FZ_ERROR_GENERIC, "Failed to open archive: %s", filename);
+        }
+
+        spine = calloc(1, sizeof(*spine));
+        if (!spine) {
+            fz_throw(c->ctx, FZ_ERROR_SYSTEM, "Out of memory allocating epub_spine");
+        }
+        spine->zip = zip;
+
+        char base_uri[2048];
+        buf = read_epub_container_and_prefix(c->ctx, zip, base_uri, sizeof(base_uri));
+        container_xml = fz_parse_xml(c->ctx, buf, 0);
+        fz_drop_buffer(c->ctx, buf);
+        buf = NULL;
+
+        size_t prefix_len = strlen(base_uri);
+        fz_xml* container = fz_xml_find(fz_xml_root(container_xml), "container");
+        fz_xml* rootfiles = fz_xml_find_down(container, "rootfiles");
+        fz_xml* rootfile = fz_xml_find_down(rootfiles, "rootfile");
+        const char* full_path = fz_xml_att(rootfile, "full-path");
+        if (!full_path) {
+            fz_throw(c->ctx, FZ_ERROR_FORMAT, "Cannot find rootfile full-path in EPUB container");
+        }
+
+        fz_dirname(base_uri + prefix_len, full_path, sizeof(base_uri) - prefix_len);
+        spine->opf_dir = strdup(base_uri);
+
+        prefixed_full_path = fz_malloc(c->ctx, strlen(full_path) + prefix_len + 1);
+        memcpy(prefixed_full_path, base_uri, prefix_len);
+        strcpy(prefixed_full_path + prefix_len, full_path);
+
+        buf = fz_read_archive_entry(c->ctx, zip, prefixed_full_path);
+        content_opf = fz_parse_xml(c->ctx, buf, 0);
+        fz_drop_buffer(c->ctx, buf);
+        buf = NULL;
+
+        fz_xml* package = fz_xml_find(fz_xml_root(content_opf), "package");
+        fz_xml* manifest = fz_xml_find_down(package, "manifest");
+        fz_xml* spine_xml = fz_xml_find_down(package, "spine");
+
+        // Count spine items
+        int count = 0;
+        fz_xml* itemref = fz_xml_find_down(spine_xml, "itemref");
+        char s[2048];
+        while (itemref) {
+            const char* idref = fz_xml_att(itemref, "idref");
+            if (epub_path_from_idref(s, manifest, base_uri, idref, sizeof(s))) {
+                count++;
+            }
+            itemref = fz_xml_find_next(itemref, "itemref");
+        }
+
+        spine->count = count;
+        if (count > 0) {
+            spine->items = calloc(count, sizeof(mupdf_epub_spine_item_s));
+            if (!spine->items) {
+                fz_throw(c->ctx, FZ_ERROR_SYSTEM, "Out of memory allocating spine items");
+            }
+
+            int idx = 0;
+            itemref = fz_xml_find_down(spine_xml, "itemref");
+            while (itemref && idx < count) {
+                const char* idref = fz_xml_att(itemref, "idref");
+                if (epub_path_from_idref(s, manifest, base_uri, idref, sizeof(s))) {
+                    spine->items[idx].index = idx;
+                    spine->items[idx].id = idref ? strdup(idref) : NULL;
+                    spine->items[idx].path = strdup(s);
+                    const char* mt = epub_media_type_from_idref(manifest, idref);
+                    spine->items[idx].media_type = strdup(mt ? mt : "application/xhtml+xml");
+                    idx++;
+                }
+                itemref = fz_xml_find_next(itemref, "itemref");
+            }
+            spine->count = idx;
+        }
+    }
+    fz_always(c->ctx) {
+        if (content_opf) fz_drop_xml(c->ctx, content_opf);
+        if (container_xml) fz_drop_xml(c->ctx, container_xml);
+        if (buf) fz_drop_buffer(c->ctx, buf);
+        if (prefixed_full_path) fz_free(c->ctx, prefixed_full_path);
+    }
+    fz_catch(c->ctx) {
+        set_error(c, fz_caught_message(c->ctx));
+        if (spine) {
+            if (spine->items) {
+                for (int i = 0; i < spine->count; i++) {
+                    free(spine->items[i].id);
+                    free(spine->items[i].path);
+                    free(spine->items[i].media_type);
+                }
+                free(spine->items);
+            }
+            free(spine->opf_dir);
+            if (zip) fz_drop_archive(c->ctx, zip);
+            free(spine);
+            spine = NULL;
+        } else if (zip) {
+            fz_drop_archive(c->ctx, zip);
+        }
+    }
+
+    return spine;
+}
+
+void mupdf_drop_epub_spine(mupdf_context handle, mupdf_epub_spine spine) {
+    if (!spine) return;
+    struct mupdf_context_s* c = handle ? CTX(handle) : NULL;
+    struct mupdf_epub_spine_s* sp = (struct mupdf_epub_spine_s*)spine;
+
+    if (sp->items) {
+        for (int i = 0; i < sp->count; i++) {
+            free(sp->items[i].id);
+            free(sp->items[i].path);
+            free(sp->items[i].media_type);
+        }
+        free(sp->items);
+    }
+    free(sp->opf_dir);
+    if (sp->zip && c && c->ctx) {
+        fz_try(c->ctx) {
+            fz_drop_archive(c->ctx, sp->zip);
+        }
+        fz_catch(c->ctx) {
+            /* ignore */
+        }
+    }
+    free(sp);
+}
+
+int mupdf_epub_spine_count(mupdf_epub_spine spine) {
+    if (!spine) return 0;
+    return ((struct mupdf_epub_spine_s*)spine)->count;
+}
+
+const char* mupdf_epub_spine_path(mupdf_epub_spine spine, int chapter) {
+    if (!spine) return NULL;
+    struct mupdf_epub_spine_s* sp = (struct mupdf_epub_spine_s*)spine;
+    if (chapter < 0 || chapter >= sp->count) return NULL;
+    return sp->items[chapter].path;
+}
+
+const char* mupdf_epub_spine_id(mupdf_epub_spine spine, int chapter) {
+    if (!spine) return NULL;
+    struct mupdf_epub_spine_s* sp = (struct mupdf_epub_spine_s*)spine;
+    if (chapter < 0 || chapter >= sp->count) return NULL;
+    return sp->items[chapter].id;
+}
+
+const char* mupdf_epub_spine_media_type(mupdf_epub_spine spine, int chapter) {
+    if (!spine) return NULL;
+    struct mupdf_epub_spine_s* sp = (struct mupdf_epub_spine_s*)spine;
+    if (chapter < 0 || chapter >= sp->count) return NULL;
+    return sp->items[chapter].media_type;
+}
+
+char* mupdf_epub_read_chapter_xhtml(mupdf_context handle, mupdf_epub_spine spine, int chapter, int64_t* out_len) {
+    if (!handle || !spine) return NULL;
+    struct mupdf_context_s* c = CTX(handle);
+    struct mupdf_epub_spine_s* sp = (struct mupdf_epub_spine_s*)spine;
+    if (chapter < 0 || chapter >= sp->count) {
+        set_error(c, "Chapter index out of range");
+        return NULL;
+    }
+
+    const char* path = sp->items[chapter].path;
+    if (!path) {
+        set_error(c, "Chapter path is null");
+        return NULL;
+    }
+
+    char* result = NULL;
+    fz_buffer* buf = NULL;
+    fz_var(result);
+    fz_var(buf);
+
+    fz_try(c->ctx) {
+        buf = fz_read_archive_entry(c->ctx, sp->zip, path);
+        if (!buf) {
+            fz_throw(c->ctx, FZ_ERROR_GENERIC, "Failed to read entry: %s", path);
+        }
+        unsigned char* data = NULL;
+        size_t len = fz_buffer_storage(c->ctx, buf, &data);
+        result = malloc(len + 1);
+        if (!result) {
+            fz_throw(c->ctx, FZ_ERROR_SYSTEM, "Out of memory copying chapter xhtml");
+        }
+        if (len > 0 && data) {
+            memcpy(result, data, len);
+        }
+        result[len] = '\0';
+        if (out_len) *out_len = (int64_t)len;
+    }
+    fz_always(c->ctx) {
+        if (buf) fz_drop_buffer(c->ctx, buf);
+    }
+    fz_catch(c->ctx) {
+        set_error(c, fz_caught_message(c->ctx));
+        if (result) {
+            free(result);
+            result = NULL;
+        }
+        if (out_len) *out_len = 0;
+    }
+
+    return result;
+}
+
+uint8_t* mupdf_epub_read_asset(mupdf_context handle, mupdf_epub_spine spine, const char* name, int64_t* out_len) {
+    if (!handle || !spine || !name) return NULL;
+    struct mupdf_context_s* c = CTX(handle);
+    struct mupdf_epub_spine_s* sp = (struct mupdf_epub_spine_s*)spine;
+
+    uint8_t* result = NULL;
+    fz_buffer* buf = NULL;
+    fz_var(result);
+    fz_var(buf);
+
+    const char* clean_name = name;
+    while (clean_name[0] == '/') clean_name++;
+
+    fz_try(c->ctx) {
+        buf = fz_try_read_archive_entry(c->ctx, sp->zip, clean_name);
+        if (!buf && sp->opf_dir && sp->opf_dir[0]) {
+            char resolved[2048];
+            fz_strlcpy(resolved, sp->opf_dir, sizeof(resolved));
+            fz_strlcat(resolved, "/", sizeof(resolved));
+            fz_strlcat(resolved, clean_name, sizeof(resolved));
+            fz_cleanname(resolved);
+            buf = fz_try_read_archive_entry(c->ctx, sp->zip, resolved);
+        }
+        if (!buf) {
+            char normalized[2048];
+            fz_strlcpy(normalized, clean_name, sizeof(normalized));
+            fz_cleanname(normalized);
+            buf = fz_try_read_archive_entry(c->ctx, sp->zip, normalized);
+        }
+        if (!buf) {
+            // Basename / case-insensitive search across archive entries
+            const char* base = strrchr(clean_name, '/');
+            base = base ? base + 1 : clean_name;
+            int n = fz_count_archive_entries(c->ctx, sp->zip);
+            for (int i = 0; i < n; i++) {
+                const char* entry = fz_list_archive_entry(c->ctx, sp->zip, i);
+                if (!entry) continue;
+                const char* entry_base = strrchr(entry, '/');
+                entry_base = entry_base ? entry_base + 1 : entry;
+                if (strcasecmp(entry, clean_name) == 0 || strcasecmp(entry_base, base) == 0) {
+                    buf = fz_try_read_archive_entry(c->ctx, sp->zip, entry);
+                    if (buf) break;
+                }
+            }
+        }
+        if (!buf) {
+            fz_throw(c->ctx, FZ_ERROR_GENERIC, "Asset not found in epub: %s", name);
+        }
+        unsigned char* data = NULL;
+        size_t len = fz_buffer_storage(c->ctx, buf, &data);
+        result = malloc(len > 0 ? len : 1);
+        if (!result) {
+            fz_throw(c->ctx, FZ_ERROR_SYSTEM, "Out of memory copying asset");
+        }
+        if (len > 0 && data) {
+            memcpy(result, data, len);
+        }
+        if (out_len) *out_len = (int64_t)len;
+    }
+    fz_always(c->ctx) {
+        if (buf) fz_drop_buffer(c->ctx, buf);
+    }
+    fz_catch(c->ctx) {
+        set_error(c, fz_caught_message(c->ctx));
+        if (result) {
+            free(result);
+            result = NULL;
+        }
+        if (out_len) *out_len = 0;
+    }
+
+    return result;
+}
+
+/* Generic free */
+void mupdf_free(void* ptr) {
+    if (ptr) free(ptr);
+}
+

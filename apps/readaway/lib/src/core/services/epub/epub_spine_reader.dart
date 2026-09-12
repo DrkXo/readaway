@@ -1,7 +1,9 @@
+// ignore_for_file: prefer_initializing_formals
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
+import 'package:mupdf/mupdf.dart';
 import 'package:path/path.dart' as p;
 import 'package:xml/xml.dart';
 
@@ -25,23 +27,54 @@ class EpubSpineItem {
   String toString() => 'EpubSpineItem(index: $index, id: $id, href: $href)';
 }
 
-/// Fast, lightweight EPUB spine and asset extractor built on `package:archive`.
+/// Fast, lightweight EPUB spine and asset extractor.
+///
+/// Backed natively by MuPDF's Fitz archive engine when opened from a file,
+/// with fallback to pure Dart package:archive for in-memory byte buffers.
 ///
 /// Designed to extract raw, semantic XHTML for fluid reflow engines (e.g. HyperRender)
 /// without altering author markup or injecting fixed pixel coordinates.
 class EpubSpineReader {
   final List<EpubSpineItem> _spineItems;
-  final Map<String, ArchiveFile> _fileByPath;
+  final MuPdfEpubSpine? _nativeSpine;
+  final Map<String, ArchiveFile>? _fileByPath;
+  bool _disposed = false;
 
-  const EpubSpineReader._({
+  EpubSpineReader._native({
     required this._spineItems,
-    required this._fileByPath,
-  });
+    required MuPdfEpubSpine nativeSpine,
+  })  : _nativeSpine = nativeSpine,
+        _fileByPath = null;
 
-  /// Opens an EPUB file at [filePath] and parses its container and OPF package document.
+  EpubSpineReader._fallback({
+    required this._spineItems,
+    required Map<String, ArchiveFile> fileByPath,
+  })  : _nativeSpine = null,
+        _fileByPath = fileByPath;
+
+  /// Opens an EPUB file at [filePath] using native MuPDF Fitz archive engine.
   static Future<EpubSpineReader> fromFile(String filePath) async {
-    final bytes = await File(filePath).readAsBytes();
-    return fromBytes(bytes);
+    try {
+      final nativeSpine = MuPdfEpubSpine.openFile(filePath);
+      final items = nativeSpine.items
+          .map(
+            (item) => EpubSpineItem(
+              index: item.index,
+              id: item.id,
+              href: item.path,
+              mediaType: item.mediaType,
+            ),
+          )
+          .toList();
+      return EpubSpineReader._native(
+        spineItems: items,
+        nativeSpine: nativeSpine,
+      );
+    } catch (_) {
+      // Fallback to pure Dart archive if native fails
+      final bytes = await File(filePath).readAsBytes();
+      return fromBytes(bytes);
+    }
   }
 
   /// Opens an EPUB from in-memory [bytes].
@@ -118,7 +151,7 @@ class EpubSpineReader {
       }
     }
 
-    return EpubSpineReader._(
+    return EpubSpineReader._fallback(
       spineItems: spineItems,
       fileByPath: fileByPath,
     );
@@ -132,11 +165,17 @@ class EpubSpineReader {
 
   /// Retrieves the raw XHTML string for the spine item at [index].
   String loadSpineHtml(int index) {
+    if (_disposed) throw StateError('EpubSpineReader is disposed');
     if (index < 0 || index >= _spineItems.length) {
       throw RangeError.range(index, 0, _spineItems.length - 1, 'index');
     }
+
+    if (_nativeSpine != null) {
+      return _nativeSpine.readChapterXhtml(index);
+    }
+
     final item = _spineItems[index];
-    final file = _fileByPath[item.href];
+    final file = _fileByPath?[item.href];
     if (file == null) {
       throw StateError('Spine file "${item.href}" not found in EPUB archive');
     }
@@ -145,8 +184,48 @@ class EpubSpineReader {
 
   /// Retrieves raw binary content for an asset (e.g. image, font, stylesheet) at [assetPath].
   List<int>? loadAssetBytes(String assetPath) {
+    if (_disposed) throw StateError('EpubSpineReader is disposed');
     final cleanPath = assetPath.startsWith('/') ? assetPath.substring(1) : assetPath;
-    return _fileByPath[cleanPath]?.content as List<int>?;
+    final stripped = cleanPath.split('?').first.split('#').first;
+    final decoded = Uri.decodeComponent(stripped);
+
+    if (_nativeSpine != null) {
+      var bytes = _nativeSpine.readAsset(cleanPath);
+      if (bytes != null && bytes.isNotEmpty) return bytes;
+
+      if (decoded != cleanPath) {
+        bytes = _nativeSpine.readAsset(decoded);
+        if (bytes != null && bytes.isNotEmpty) return bytes;
+      }
+
+      final normalized = p.posix.normalize(decoded);
+      if (normalized != decoded) {
+        bytes = _nativeSpine.readAsset(normalized);
+        if (bytes != null && bytes.isNotEmpty) return bytes;
+      }
+    }
+
+    if (_fileByPath != null) {
+      if (_fileByPath.containsKey(cleanPath)) {
+        return _fileByPath[cleanPath]?.content as List<int>?;
+      }
+      if (_fileByPath.containsKey(decoded)) {
+        return _fileByPath[decoded]?.content as List<int>?;
+      }
+      final normalized = p.posix.normalize(decoded);
+      if (_fileByPath.containsKey(normalized)) {
+        return _fileByPath[normalized]?.content as List<int>?;
+      }
+      // Basename search across archive files
+      final base = p.posix.basename(decoded).toLowerCase();
+      for (final entry in _fileByPath.entries) {
+        if (p.posix.basename(entry.key).toLowerCase() == base) {
+          return entry.value.content as List<int>?;
+        }
+      }
+    }
+
+    return null;
   }
 
   /// Resolves an asset path relative to a spine item.
@@ -154,8 +233,25 @@ class EpubSpineReader {
     if (spineIndex < 0 || spineIndex >= _spineItems.length) {
       return relativeHref;
     }
+    var cleanHref = relativeHref.split('?').first.split('#').first;
+    cleanHref = Uri.decodeComponent(cleanHref);
+    while (cleanHref.startsWith('/')) {
+      cleanHref = cleanHref.substring(1);
+    }
+
     final spineHref = _spineItems[spineIndex].href;
     final spineDir = p.posix.dirname(spineHref);
-    return p.posix.normalize(p.posix.join(spineDir, relativeHref));
+    if (spineDir == '.' || spineDir.isEmpty) {
+      return p.posix.normalize(cleanHref);
+    }
+    return p.posix.normalize(p.posix.join(spineDir, cleanHref));
+  }
+
+  /// Releases native C Fitz resources.
+  void dispose() {
+    if (!_disposed) {
+      _nativeSpine?.dispose();
+      _disposed = true;
+    }
   }
 }

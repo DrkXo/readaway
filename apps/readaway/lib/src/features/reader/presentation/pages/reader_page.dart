@@ -175,15 +175,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                     autofocus: true,
                     child: Scaffold(
                       key: _scaffoldKey,
-                      drawer: ReaderDrawer(
-                        onJumpToPage: (page) {
-                          if (_scaffoldKey.currentState?.isDrawerOpen ??
-                              false) {
-                            _scaffoldKey.currentState?.closeDrawer();
-                          }
-                          jumpToPage(page);
-                        },
-                      ),
+                      drawer: ReaderDrawer(onJumpToPage: jumpToPage),
                       backgroundColor: context.appColors.readerBackground,
                       body: ReaderTtsPlayerOverlay(
                         isChromeVisible: isChromeVisibleNotifier,

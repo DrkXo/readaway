@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/failures.dart';
@@ -55,6 +57,15 @@ abstract interface class ReaderRepository {
 
   /// Resolves an internal document destination URI to a 0-based flat page index.
   TaskEither<Failure, int> resolveLink(String uri);
+
+  /// Retrieves raw binary content for an embedded asset at [assetPath] (e.g. image, font).
+  ///
+  /// Optionally supply [pageIndex] to resolve relative URIs against the chapter/section.
+  TaskEither<Failure, Uint8List?> loadAssetBytes(String assetPath, {int? pageIndex});
+
+  /// Resolves an internal link or chapter href to a section/chapter index in a reflowable document.
+  TaskEither<Failure, int?> resolveReflowableLink(String uri);
+
 
   /// Updates saved reading progress for the document at [path].
   TaskEither<Failure, Unit> updateReadingProgress({

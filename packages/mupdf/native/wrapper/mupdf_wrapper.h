@@ -184,6 +184,31 @@ void mupdf_outline_free(mupdf_outline_item* items, int count);
 /* Last error message (valid until next mupdf call on same context) */
 const char* mupdf_last_error(mupdf_context ctx);
 
+/* Archive (ZIP/EPUB container) access */
+typedef void* mupdf_archive;
+
+mupdf_archive mupdf_open_archive(mupdf_context ctx, const char* filename);
+void mupdf_drop_archive(mupdf_context ctx, mupdf_archive arch);
+int mupdf_count_archive_entries(mupdf_context ctx, mupdf_archive arch);
+const char* mupdf_list_archive_entry(mupdf_context ctx, mupdf_archive arch, int idx);
+int mupdf_has_archive_entry(mupdf_context ctx, mupdf_archive arch, const char* name);
+uint8_t* mupdf_read_archive_entry(mupdf_context ctx, mupdf_archive arch, const char* name, int64_t* out_len);
+
+/* EPUB Spine & Chapter XHTML extraction */
+typedef void* mupdf_epub_spine;
+
+mupdf_epub_spine mupdf_open_epub_spine(mupdf_context ctx, const char* filename);
+void mupdf_drop_epub_spine(mupdf_context ctx, mupdf_epub_spine spine);
+int mupdf_epub_spine_count(mupdf_epub_spine spine);
+const char* mupdf_epub_spine_path(mupdf_epub_spine spine, int chapter);
+const char* mupdf_epub_spine_id(mupdf_epub_spine spine, int chapter);
+const char* mupdf_epub_spine_media_type(mupdf_epub_spine spine, int chapter);
+char* mupdf_epub_read_chapter_xhtml(mupdf_context ctx, mupdf_epub_spine spine, int chapter, int64_t* out_len);
+uint8_t* mupdf_epub_read_asset(mupdf_context ctx, mupdf_epub_spine spine, const char* name, int64_t* out_len);
+
+/* Generic deallocation for pointers returned by wrapper */
+void mupdf_free(void* ptr);
+
 #ifdef __cplusplus
 }
 #endif

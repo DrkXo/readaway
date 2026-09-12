@@ -30,14 +30,25 @@ DynamicLibrary openMupdfLib() {
         return DynamicLibrary.open(candidate);
       } catch (_) {}
     }
-    // Try resolving relative to Platform.script
+    // Try resolving relative to Platform.script and Platform.resolvedExecutable
     final scriptDir = File(Platform.script.toFilePath()).parent;
-    final searchDirs = [scriptDir, scriptDir.parent, scriptDir.parent.parent];
+    final exeDir = File(Platform.resolvedExecutable).parent;
+    final searchDirs = [
+      scriptDir,
+      scriptDir.parent,
+      scriptDir.parent.parent,
+      exeDir,
+      Directory('${exeDir.path}/lib'),
+    ];
     for (final dir in searchDirs) {
       final subCandidates = [
+        '${dir.path}/packages/mupdf/native/libmupdf_wrapper.so',
         '${dir.path}/packages/mupdf/native/mupdf_wrapper.so',
+        '${dir.path}/native/libmupdf_wrapper.so',
         '${dir.path}/native/mupdf_wrapper.so',
+        '${dir.path}/libmupdf_wrapper.so',
         '${dir.path}/mupdf_wrapper.so',
+        '${dir.path}/lib/libmupdf_wrapper.so',
       ];
       for (final path in subCandidates) {
         if (File(path).existsSync()) {

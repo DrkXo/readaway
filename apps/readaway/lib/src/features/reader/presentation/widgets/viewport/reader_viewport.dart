@@ -138,10 +138,7 @@ class ReaderViewport extends StatelessWidget {
     void Function({required bool atTop, required bool atBottom})?
     onScrollBoundaryChanged,
   }) {
-    final isCustomFlow =
-        state.isReflowable && prefs.engineMode == ReaderEngineMode.customFlow;
-
-    if (isCustomFlow) {
+    if (state.isReflowable) {
       return ReflowableReaderPage(
         index: index,
         state: state,

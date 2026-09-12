@@ -8,7 +8,12 @@ import '../../../flavors.dart';
 export 'package:logging/logging.dart';
 
 /// Global accessor for the app logger.
-Logger get logger => GetIt.I<LoggingService>().logger;
+Logger get logger {
+  if (GetIt.I.isRegistered<LoggingService>()) {
+    return GetIt.I<LoggingService>().logger;
+  }
+  return Logger.root;
+}
 
 @singleton
 class LoggingService {

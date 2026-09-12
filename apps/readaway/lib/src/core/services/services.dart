@@ -29,5 +29,10 @@ export 'tts/tts_chunker_service.dart';
 export 'tts/tts_controller_service.dart';
 export 'tts/tts_engine.dart';
 export 'tts/tts_models.dart';
+export 'reader/epub_document_reader.dart';
+export 'reader/plain_text_document_reader.dart';
+export 'reader/reflowable_document_reader.dart';
+export 'reader/single_html_document_reader.dart';
 export 'wakelock_service.dart';
 export 'window_service.dart';
+

@@ -153,7 +153,6 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       (info) async {
         final count = info.pageCount;
         final reflowable = info.isReflowable;
-        final isCustomFlow = reflowable && event.engineMode == ReaderEngineMode.customFlow;
 
         final lastPageResult = await readerRepository
             .getLastReadPage(event.path)
@@ -168,11 +167,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
             engineMode: event.engineMode,
             pageCount: count,
             isReflowable: reflowable,
-            pageHtmls: isCustomFlow ? List<String?>.filled(count, null) : null,
-            pageLinks: isCustomFlow
+            pageHtmls: reflowable ? List<String?>.filled(count, null) : null,
+            pageLinks: reflowable
                 ? List<List<ReaderLink>?>.filled(count, null)
                 : null,
-            pageImages: isCustomFlow ? null : List<ui.Image?>.filled(count, null),
+            pageImages: reflowable ? null : List<ui.Image?>.filled(count, null),
             currentPage: initialPage,
             ttsCurrentPage: null,
             outline: info.outline,
@@ -256,9 +255,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     final index = event.index;
     if (index < 0 || index >= state.pageCount) return;
 
-    final isCustomFlow = state.isReflowable && state.engineMode == ReaderEngineMode.customFlow;
-
-    if (isCustomFlow) {
+    if (state.isReflowable) {
       if (state.pageHtmls == null ||
           state.pageHtmls![index] != null ||
           state.loadingPages.contains(index)) {
@@ -292,7 +289,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         );
       },
       (pageData) async {
-        if (isCustomFlow) {
+        if (state.isReflowable) {
           final htmlPages = List<String?>.from(state.pageHtmls!);
           final linkPages = List<List<ReaderLink>?>.from(state.pageLinks!);
           htmlPages[index] = pageData.html;

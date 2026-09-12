@@ -148,6 +148,7 @@ void main(List<String> args) async {
       if (!await libFile.exists()) {
         stderr.writeln('Building MuPDF from source...');
         final result = await Process.run('make', [
+          'libs',
           '-j${Platform.numberOfProcessors}',
           'XCFLAGS=-fPIC -Wl,-z,max-page-size=16384',
         ], workingDirectory: mupdfDir);

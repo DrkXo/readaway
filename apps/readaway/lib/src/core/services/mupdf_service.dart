@@ -1,4 +1,5 @@
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:injectable/injectable.dart';
 import 'package:mupdf/mupdf.dart';
@@ -67,6 +68,29 @@ class MuPdfService {
     return _sendCommand<int>({
       'id': _generateId(),
       'type': 'getChapterCount',
+    });
+  }
+
+  Future<int> getSpineCount() {
+    return _sendCommand<int>({
+      'id': _generateId(),
+      'type': 'getSpineCount',
+    });
+  }
+
+  Future<String?> loadChapterSource(int chapter) {
+    return _sendCommand<String?>({
+      'id': _generateId(),
+      'type': 'loadChapterSource',
+      'chapter': chapter,
+    });
+  }
+
+  Future<Uint8List?> loadChapterAsset(String assetPath) {
+    return _sendCommand<Uint8List?>({
+      'id': _generateId(),
+      'type': 'loadChapterAsset',
+      'path': assetPath,
     });
   }
 
@@ -275,6 +299,19 @@ class MuPdfService {
           } else if (type == 'getChapterCount') {
             if (doc == null) throw Exception('No document open');
             mainSendPort.send({'id': id, 'result': doc!.chapterCount});
+          } else if (type == 'getSpineCount') {
+            if (doc == null) throw Exception('No document open');
+            mainSendPort.send({'id': id, 'result': doc!.epubSpine?.count ?? doc!.chapterCount});
+          } else if (type == 'loadChapterSource') {
+            if (doc == null) throw Exception('No document open');
+            final chapter = message['chapter'] as int;
+            final html = doc!.readChapterXhtml(chapter);
+            mainSendPort.send({'id': id, 'result': html});
+          } else if (type == 'loadChapterAsset') {
+            if (doc == null) throw Exception('No document open');
+            final assetPath = message['path'] as String;
+            final bytes = doc!.readAsset(assetPath);
+            mainSendPort.send({'id': id, 'result': bytes});
           } else if (type == 'getChapterPageCount') {
             if (doc == null) throw Exception('No document open');
             final chapter = message['chapter'] as int;
