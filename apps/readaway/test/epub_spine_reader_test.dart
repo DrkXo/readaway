@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mupdf/mupdf.dart';
-import 'package:readaway/src/core/services/epub/epub_spine_reader.dart';
+import 'package:readaway/src/core/services/reader/epub_document_reader.dart';
 
 void main() {
   const epubPath =

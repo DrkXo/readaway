@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hyper_render/hyper_render.dart';
-import 'package:readaway/src/core/services/epub/epub_spine_reader.dart';
+import 'package:readaway/src/core/services/reader/epub_document_reader.dart';
 import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_extensions.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/viewport/page_content/html/reader_style_resolver.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
