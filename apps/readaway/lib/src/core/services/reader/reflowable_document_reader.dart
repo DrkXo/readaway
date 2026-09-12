@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:mupdf/mupdf.dart';
 import 'package:path/path.dart' as p;
 
 import 'epub_document_reader.dart';
@@ -37,6 +38,12 @@ abstract class ReflowableDocumentReader {
 
   /// Ordered list of document sections.
   List<ReflowableSectionItem> get sections;
+
+  /// Document title extracted from metadata or content, if available.
+  String? get title;
+
+  /// Hierarchical or linear table of contents / outline.
+  List<OutlineItem> get outline;
 
   /// Retrieves the raw XHTML/HTML content for section at [index].
   String loadSectionHtml(int index);

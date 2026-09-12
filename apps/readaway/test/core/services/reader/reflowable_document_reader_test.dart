@@ -37,6 +37,9 @@ Third paragraph.
       expect(html, contains('<p>First paragraph of the story.<br/>With a second line.</p>'));
       expect(html, contains('<p>Second paragraph after double newline.</p>'));
       expect(html, contains('<p>Third paragraph.</p>'));
+      expect(reader.title, equals('First paragraph of the story.'));
+      expect(reader.outline.length, equals(1));
+      expect(reader.outline.first.title, equals('First paragraph of the story.'));
 
       reader.dispose();
     });
@@ -45,6 +48,7 @@ Third paragraph.
       final reader = await ReflowableDocumentReader.fromFile(textFile.path);
       expect(reader, isA<PlainTextDocumentReader>());
       expect(reader.sectionCount, equals(1));
+      expect(reader.title, equals('First paragraph of the story.'));
       reader.dispose();
     });
   });
@@ -60,6 +64,7 @@ Third paragraph.
       await htmlFile.writeAsString('''
 <!DOCTYPE html>
 <html>
+<head><title>My Test Article</title></head>
 <body>
   <h1>Article Title</h1>
   <img src="images/photo.png" />
@@ -81,6 +86,9 @@ Third paragraph.
     test('loads HTML content and resolves local filesystem assets', () async {
       final reader = await SingleHtmlDocumentReader.fromFile(htmlFile.path);
       expect(reader.sectionCount, equals(1));
+      expect(reader.title, equals('My Test Article'));
+      expect(reader.outline.length, equals(1));
+      expect(reader.outline.first.title, equals('My Test Article'));
 
       final html = reader.loadSectionHtml(0);
       expect(html, contains('Article Title'));
@@ -97,6 +105,8 @@ Third paragraph.
     test('auto-detects .html format via ReflowableDocumentReader.fromFile', () async {
       final reader = await ReflowableDocumentReader.fromFile(htmlFile.path);
       expect(reader, isA<SingleHtmlDocumentReader>());
+      expect(reader.sectionCount, equals(1));
+      expect(reader.title, equals('My Test Article'));
       reader.dispose();
     });
   });
@@ -113,6 +123,9 @@ Third paragraph.
 
       final reader = await EpubDocumentReader.fromFile(epubPath);
       expect(reader.sectionCount, equals(504));
+      expect(reader.title, equals('Reverend Insanity'));
+      expect(reader.outline.length, greaterThan(400));
+      expect(reader.outline.first.title, isNotEmpty);
 
       // Read Chapter 1 (index 3, usually title / prologue / c1)
       final ch0 = reader.loadSectionHtml(0);

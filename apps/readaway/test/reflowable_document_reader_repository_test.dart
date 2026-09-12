@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:readaway/src/core/services/document_cover_service.dart';
-import 'package:readaway/src/core/services/isolate_service.dart';
-import 'package:readaway/src/core/services/logging_service.dart';
 import 'package:readaway/src/core/services/mupdf_service.dart';
 import 'package:readaway/src/core/services/notification_service.dart';
 import 'package:readaway/src/core/services/window_service.dart';
@@ -18,7 +16,7 @@ class MockWindowService extends Mock implements WindowService {}
 class MockNotificationService extends Mock implements NotificationService {}
 class MockDocumentCoverService extends Mock implements DocumentCoverService {}
 class MockLibraryRepository extends Mock implements LibraryRepository {}
-class MockLoggingService extends Mock implements LoggingService {}
+class MockMuPdfService extends Mock implements MuPdfService {}
 
 void main() {
   const epubPath =
@@ -98,22 +96,16 @@ void main() {
     });
   });
 
-  group('Dual-Engine Reader Repository Integration Tests', () {
-    late MuPdfService muPdfService;
+  group('Reflowable Document Reader Repository Tests', () {
+    late MockMuPdfService mockMuPdfService;
     late ReaderRepository repository;
 
     setUpAll(() async {
       final file = File(epubPath);
       if (!await file.exists()) return;
 
-      final loggingService = MockLoggingService();
-      when(() => loggingService.logger).thenReturn(Logger.detached('test'));
-      final isolateService = IsolateService(loggingService: loggingService);
-
-      muPdfService = MuPdfService(
-        isolateService: isolateService,
-        loggingService: loggingService,
-      );
+      mockMuPdfService = MockMuPdfService();
+      when(() => mockMuPdfService.closeDocument()).thenAnswer((_) async {});
 
       final windowService = MockWindowService();
       when(() => windowService.setTitle(any())).thenAnswer((_) async {});
@@ -124,7 +116,7 @@ void main() {
       final libRepo = MockLibraryRepository();
 
       repository = ReaderRepositoryImpl(
-        muPdfService,
+        mockMuPdfService,
         windowService,
         notifService,
         coverService,
@@ -134,28 +126,38 @@ void main() {
 
     tearDownAll(() async {
       await repository.closeDocument().run();
-      await muPdfService.dispose();
     });
 
-    test('opens EPUB in Mode B (customFlow) with 504 chapters', () async {
+    test('opens EPUB with ReflowableDocumentReader without opening MuPdfService', () async {
       final file = File(epubPath);
       if (!await file.exists()) return;
 
       final openResult = await repository
-          .openDocument(epubPath, engineMode: ReaderEngineMode.customFlow)
+          .openDocument(epubPath)
           .run();
 
       expect(openResult.isRight(), isTrue);
       final info = openResult.getRight().toNullable()!;
       expect(info.isReflowable, isTrue);
       expect(info.pageCount, equals(504));
+      expect(info.title, equals('Reverend Insanity'));
+      expect(info.outline.length, greaterThan(400));
+      expect(info.outline.first.title, isNotEmpty);
 
-      // Load chapter 0 in Mode B
+      // Verify MuPdfService was never opened for reflowable documents!
+      verifyNever(() => mockMuPdfService.openDocument(any()));
+      verifyNever(() => mockMuPdfService.getOutLine());
+      verifyNever(() => mockMuPdfService.getMetaData(any()));
+    });
+
+    test('loads chapter HTML directly without MuPdfService render engine', () async {
+      final file = File(epubPath);
+      if (!await file.exists()) return;
+
       final pageDataResult = await repository
           .loadPage(
             0,
             isReflowable: true,
-            engineMode: ReaderEngineMode.customFlow,
           )
           .run();
 
@@ -164,64 +166,33 @@ void main() {
       expect(pageData.html, isNotNull);
       expect(pageData.html, isNotEmpty);
       expect(pageData.html!.contains('position: absolute'), isFalse);
+
+      verifyNever(() => mockMuPdfService.renderPage(any()));
     });
 
-    test('switches to Mode A (publisherFidelity) with MuPDF pixmaps', () async {
+    test('extracts text from section HTML directly without MuPdfService', () async {
       final file = File(epubPath);
       if (!await file.exists()) return;
 
-      // Check page count in publisherFidelity
-      final countResult = await repository
-          .getPageCountForMode(ReaderEngineMode.publisherFidelity)
-          .run();
-      expect(countResult.isRight(), isTrue);
-      final mupdfPageCount = countResult.getRight().toNullable()!;
-      expect(mupdfPageCount, greaterThan(1000));
+      // Section 0 is the front cover image, section 1 has text content
+      final textResult = await repository.extractPageText(1).run();
+      expect(textResult.isRight(), isTrue);
+      final text = textResult.getRight().toNullable()!;
+      expect(text, isNotEmpty);
+      expect(text, contains('Reverend Insanity'));
 
-      // Load page 0 in Mode A
-      final pageDataResult = await repository
-          .loadPage(
-            0,
-            isReflowable: true,
-            engineMode: ReaderEngineMode.publisherFidelity,
-          )
-          .run();
-
-      expect(pageDataResult.isRight(), isTrue);
-      final pageData = pageDataResult.getRight().toNullable()!;
-      expect(pageData.renderedData, isNotNull);
-      expect(pageData.renderedData!['pixels'], isNotNull);
+      verifyNever(() => mockMuPdfService.extractPageText(any()));
     });
 
-    test('bidirectional position conversion between spine chapter and MuPDF page', () async {
+    test('resolves asset bytes from EPUB archive directly', () async {
       final file = File(epubPath);
       if (!await file.exists()) return;
 
-      // 1. Chapter 5 to MuPDF page
-      final toMupdfResult = await repository
-          .convertPagePosition(
-            currentPage: 5,
-            fromMode: ReaderEngineMode.customFlow,
-            toMode: ReaderEngineMode.publisherFidelity,
-          )
-          .run();
-
-      expect(toMupdfResult.isRight(), isTrue);
-      final mupdfPage = toMupdfResult.getRight().toNullable()!;
-      expect(mupdfPage, isNonNegative);
-
-      // 2. Convert back to Chapter
-      final backToSpineResult = await repository
-          .convertPagePosition(
-            currentPage: mupdfPage,
-            fromMode: ReaderEngineMode.publisherFidelity,
-            toMode: ReaderEngineMode.customFlow,
-          )
-          .run();
-
-      expect(backToSpineResult.isRight(), isTrue);
-      final spineChapter = backToSpineResult.getRight().toNullable()!;
-      expect(spineChapter, equals(5));
+      final bytesResult = await repository.loadAssetBytes('mimetype').run();
+      expect(bytesResult.isRight(), isTrue);
+      final bytes = bytesResult.getRight().toNullable();
+      expect(bytes, isNotNull);
+      expect(String.fromCharCodes(bytes!), contains('application/epub+zip'));
     });
   });
 }

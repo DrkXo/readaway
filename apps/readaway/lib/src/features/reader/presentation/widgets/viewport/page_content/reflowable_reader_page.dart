@@ -53,6 +53,8 @@ class ReflowableReaderPage extends StatefulWidget {
 class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   late final ScrollController _scrollController;
   late final ReflowableScrollCoordinator _scrollCoordinator;
+  final Map<String, List<int>> _assetCache = {};
+  final Map<String, Future<List<int>?>> _inFlightAssetRequests = {};
 
   @override
   void initState() {
@@ -189,12 +191,18 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   Future<List<int>?> _resolveAssetBytes(String src) async {
     if (src.isEmpty) return null;
 
+    if (_assetCache.containsKey(src)) {
+      return _assetCache[src];
+    }
+
     // 1. Inline data URI (e.g. data:image/png;base64,...)
     if (src.startsWith('data:')) {
       final commaIndex = src.indexOf(',');
       if (commaIndex != -1) {
         try {
-          return base64Decode(src.substring(commaIndex + 1));
+          final decoded = base64Decode(src.substring(commaIndex + 1));
+          _assetCache[src] = decoded;
+          return decoded;
         } catch (_) {}
       }
       return null;
@@ -205,19 +213,44 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
       return null;
     }
 
+    // 3. Deduplicate concurrent in-flight requests for the same asset
+    if (_inFlightAssetRequests.containsKey(src)) {
+      return await _inFlightAssetRequests[src];
+    }
+
+    final future = _loadAssetBytes(src);
+    _inFlightAssetRequests[src] = future;
+    try {
+      final bytes = await future;
+      if (bytes != null && bytes.isNotEmpty) {
+        _assetCache[src] = bytes;
+      }
+      return bytes;
+    } finally {
+      _inFlightAssetRequests.remove(src);
+    }
+  }
+
+  Future<List<int>?> _loadAssetBytes(String src) async {
     final res = await GetIt.I<ReaderRepository>()
         .loadAssetBytes(src, pageIndex: widget.index)
         .run();
     return res.fold(
       (failure) {
-        debugPrint('[ReflowableReaderPage] Failed to load asset "$src" for page ${widget.index}: $failure');
+        debugPrint(
+          '[ReflowableReaderPage] Failed to load asset "$src" for page ${widget.index}: $failure',
+        );
         return null;
       },
       (bytes) {
         if (bytes != null && bytes.isNotEmpty) {
-          debugPrint('[ReflowableReaderPage] Successfully loaded asset "$src" (${bytes.length} bytes)');
+          debugPrint(
+            '[ReflowableReaderPage] Successfully loaded asset "$src" (${bytes.length} bytes)',
+          );
         } else {
-          debugPrint('[ReflowableReaderPage] Asset "$src" returned null or empty for page ${widget.index}');
+          debugPrint(
+            '[ReflowableReaderPage] Asset "$src" returned null or empty for page ${widget.index}',
+          );
         }
         return bytes;
       },

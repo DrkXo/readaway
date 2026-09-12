@@ -89,7 +89,7 @@ void main() {
       final reader = await EpubDocumentReader.fromFile(epubPath);
       final html = reader.loadSectionHtml(0);
 
-      var resolvedCalled = false;
+      var resolveCount = 0;
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(
@@ -101,7 +101,7 @@ void main() {
               prefs: const ReaderPreferences(),
               onLinkTap: (_) {},
               onResolveAssetBytes: (src) async {
-                resolvedCalled = true;
+                resolveCount++;
                 final res = await repository.loadAssetBytes(src, pageIndex: 0).run();
                 return res.getRight().toNullable();
               },
@@ -113,7 +113,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(resolvedCalled, isTrue);
+      expect(resolveCount, equals(1));
       expect(find.byType(Image), findsOneWidget);
       expect(find.byIcon(Icons.broken_image), findsNothing);
       expect(find.byIcon(Icons.broken_image_outlined), findsNothing);

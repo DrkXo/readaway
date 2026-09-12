@@ -210,45 +210,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _EngineModeChanged event,
     Emitter<ReaderState> emit,
   ) async {
+    // Reflowable documents use ReflowableDocumentReader directly and do not rely on MuPDF render engine.
     if (!state.isReflowable || state.engineMode == event.newMode) return;
-
-    final oldMode = state.engineMode;
-    final newMode = event.newMode;
-
-    final convertedPageResult = await readerRepository
-        .convertPagePosition(
-          currentPage: state.currentPage,
-          fromMode: oldMode,
-          toMode: newMode,
-        )
-        .run();
-    final newPage = convertedPageResult.getOrElse((_) => 0);
-
-    final countResult = await readerRepository
-        .getPageCountForMode(newMode)
-        .run();
-    final newPageCount = countResult.getOrElse((_) => state.pageCount);
-
-    _disposeImages();
-
-    final isCustomFlow = newMode == ReaderEngineMode.customFlow;
-    final clampedPage = newPage.clamp(0, newPageCount > 0 ? newPageCount - 1 : 0);
-
-    emit(
-      state.copyWith(
-        engineMode: newMode,
-        pageCount: newPageCount,
-        currentPage: clampedPage,
-        pageHtmls: isCustomFlow ? List<String?>.filled(newPageCount, null) : null,
-        pageLinks: isCustomFlow ? List<List<ReaderLink>?>.filled(newPageCount, null) : null,
-        pageImages: isCustomFlow ? null : List<ui.Image?>.filled(newPageCount, null),
-        loadingPages: <int>{},
-      ),
-    );
-
-    add(ReaderEvent.loadPage(index: clampedPage));
-    _precachePages(clampedPage);
-    _scheduleProgressSync(clampedPage);
+    emit(state.copyWith(engineMode: event.newMode));
   }
 
   Future<void> _onLoadPage(_LoadPage event, Emitter<ReaderState> emit) async {

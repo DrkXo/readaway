@@ -39,6 +39,36 @@ class _HyperPageContentState extends State<HyperPageContent> {
   final ReaderStyleResolver _styleResolver = const ReaderStyleResolver();
   final HtmlAdapter _htmlAdapter = HtmlAdapter();
   final Map<String, Uint8List> _assetBytesCache = {};
+  final Map<String, Future<Uint8List?>> _inFlightAssetRequests = {};
+
+  Future<Uint8List?> _resolveAssetBytes(String src) {
+    final cached = _assetBytesCache[src];
+    if (cached != null) return Future.value(cached);
+
+    final inFlight = _inFlightAssetRequests[src];
+    if (inFlight != null) return inFlight;
+
+    if (widget.onResolveAssetBytes == null) {
+      return Future.value(null);
+    }
+
+    final future = () async {
+      try {
+        final raw = await widget.onResolveAssetBytes!(src);
+        if (raw != null && raw.isNotEmpty) {
+          final bytes = raw is Uint8List ? raw : Uint8List.fromList(raw);
+          _assetBytesCache[src] = bytes;
+          return bytes;
+        }
+        return null;
+      } finally {
+        _inFlightAssetRequests.remove(src);
+      }
+    }();
+
+    _inFlightAssetRequests[src] = future;
+    return future;
+  }
 
   @override
   void didChangeDependencies() {
@@ -180,10 +210,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
         key: ValueKey('hyper_img_${node.hashCode}_$src'),
         node: node,
         initialBytes: _assetBytesCache[src],
-        onResolveAssetBytes: widget.onResolveAssetBytes,
-        onBytesResolved: (bytes) {
-          _assetBytesCache[src] = bytes;
-        },
+        onResolveBytes: () => _resolveAssetBytes(src),
       );
     }
     return null;
@@ -205,15 +232,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
       return;
     }
     try {
-      Uint8List? bytes = _assetBytesCache[src];
-      if (bytes == null) {
-        final raw = await widget.onResolveAssetBytes!(src);
-        if (raw != null && raw.isNotEmpty) {
-          bytes = raw is Uint8List ? raw : Uint8List.fromList(raw);
-          _assetBytesCache[src] = bytes;
-        }
-      }
-
+      final bytes = await _resolveAssetBytes(src);
       if (bytes != null && bytes.isNotEmpty) {
         final codec = await ui.instantiateImageCodec(bytes);
         final frame = await codec.getNextFrame();
@@ -233,15 +252,13 @@ class _HyperReflowableImage extends StatefulWidget {
   const _HyperReflowableImage({
     super.key,
     required this.node,
+    required this.onResolveBytes,
     this.initialBytes,
-    this.onResolveAssetBytes,
-    this.onBytesResolved,
   });
 
   final AtomicNode node;
   final Uint8List? initialBytes;
-  final Future<List<int>?> Function(String src)? onResolveAssetBytes;
-  final void Function(Uint8List bytes)? onBytesResolved;
+  final Future<Uint8List?> Function() onResolveBytes;
 
   @override
   State<_HyperReflowableImage> createState() => _HyperReflowableImageState();
@@ -296,7 +313,6 @@ class _HyperReflowableImageState extends State<_HyperReflowableImage> {
           if (mounted) {
             setState(() => _bytes = uint8);
           }
-          widget.onBytesResolved?.call(uint8);
           return;
         } catch (_) {
           if (mounted) setState(() => _hasError = true);
@@ -306,21 +322,14 @@ class _HyperReflowableImageState extends State<_HyperReflowableImage> {
     }
 
     // 3. Document / EPUB container asset
-    if (widget.onResolveAssetBytes == null) {
-      setState(() => _hasError = true);
-      return;
-    }
-
     try {
-      final raw = await widget.onResolveAssetBytes!(src);
-      if (raw != null && raw.isNotEmpty) {
-        final uint8 = raw is Uint8List ? raw : Uint8List.fromList(raw);
+      final bytes = await widget.onResolveBytes();
+      if (bytes != null && bytes.isNotEmpty) {
         if (mounted) {
           setState(() {
-            _bytes = uint8;
+            _bytes = bytes;
           });
         }
-        widget.onBytesResolved?.call(uint8);
       } else {
         if (mounted) {
           setState(() {

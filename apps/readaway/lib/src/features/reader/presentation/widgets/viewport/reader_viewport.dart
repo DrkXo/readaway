@@ -140,6 +140,7 @@ class ReaderViewport extends StatelessWidget {
   }) {
     if (state.isReflowable) {
       return ReflowableReaderPage(
+        key: ValueKey('reflow_page_$index'),
         index: index,
         state: state,
         prefs: prefs,
@@ -149,6 +150,7 @@ class ReaderViewport extends StatelessWidget {
       );
     } else {
       return FixedReaderPage(
+        key: ValueKey('fixed_page_$index'),
         index: index,
         state: state,
         isContinuous: isContinuous,

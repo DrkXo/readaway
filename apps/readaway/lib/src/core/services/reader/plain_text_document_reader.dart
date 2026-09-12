@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:mupdf/mupdf.dart';
 import 'package:path/path.dart' as p;
 
 import 'reflowable_document_reader.dart';
@@ -12,10 +13,12 @@ import 'reflowable_document_reader.dart';
 class PlainTextDocumentReader implements ReflowableDocumentReader {
   final String _filePath;
   final String _htmlContent;
+  final String _rawText;
 
   PlainTextDocumentReader._({
     required this._filePath,
     required this._htmlContent,
+    required this._rawText,
   });
 
   /// Opens a plain text document from [filePath].
@@ -26,6 +29,7 @@ class PlainTextDocumentReader implements ReflowableDocumentReader {
     return PlainTextDocumentReader._(
       filePath: filePath,
       htmlContent: html,
+      rawText: rawText,
     );
   }
 
@@ -56,6 +60,30 @@ class PlainTextDocumentReader implements ReflowableDocumentReader {
           id: 'section_0',
           href: p.basename(_filePath),
           mediaType: 'text/plain',
+        ),
+      ];
+
+  @override
+  String? get title {
+    final firstLine = _rawText.split('\n').map((l) => l.trim()).firstWhere(
+      (l) => l.isNotEmpty,
+      orElse: () => '',
+    );
+    if (firstLine.isNotEmpty) {
+      return firstLine.length > 60 ? '${firstLine.substring(0, 57)}...' : firstLine;
+    }
+    return p.basenameWithoutExtension(_filePath);
+  }
+
+  @override
+  List<OutlineItem> get outline => [
+        OutlineItem(
+          title: title ?? p.basenameWithoutExtension(_filePath),
+          uri: p.basename(_filePath),
+          chapter: 0,
+          page: 0,
+          level: 0,
+          isOpen: false,
         ),
       ];
 

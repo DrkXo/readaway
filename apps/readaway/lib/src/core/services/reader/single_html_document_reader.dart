@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:mupdf/mupdf.dart';
 import 'package:path/path.dart' as p;
 
 import 'reflowable_document_reader.dart';
@@ -40,6 +41,30 @@ class SingleHtmlDocumentReader implements ReflowableDocumentReader {
           id: 'section_0',
           href: p.basename(_filePath),
           mediaType: 'text/html',
+        ),
+      ];
+
+  @override
+  String? get title {
+    final match = RegExp(
+      r'<title[^>]*>(.*?)</title>',
+      caseSensitive: false,
+      dotAll: true,
+    ).firstMatch(_htmlContent);
+    final raw = match?.group(1)?.trim();
+    if (raw != null && raw.isNotEmpty) return raw;
+    return p.basenameWithoutExtension(_filePath);
+  }
+
+  @override
+  List<OutlineItem> get outline => [
+        OutlineItem(
+          title: title ?? p.basenameWithoutExtension(_filePath),
+          uri: p.basename(_filePath),
+          chapter: 0,
+          page: 0,
+          level: 0,
+          isOpen: false,
         ),
       ];
 
