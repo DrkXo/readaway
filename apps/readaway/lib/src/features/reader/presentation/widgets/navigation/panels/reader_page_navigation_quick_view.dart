@@ -27,11 +27,11 @@ class ReaderPageNavigationQuickView extends StatelessWidget {
 
     return BlocBuilder<ReaderBloc, ReaderState>(
       buildWhen: (prev, curr) =>
-          prev.currentPage != curr.currentPage ||
-          prev.pageCount != curr.pageCount,
+          prev.displayCurrentPage != curr.displayCurrentPage ||
+          prev.displayPageCount != curr.displayPageCount,
       builder: (context, readerState) {
-        final pageCount = readerState.pageCount;
-        final currentPage = readerState.currentPage;
+        final pageCount = readerState.displayPageCount;
+        final currentPage = readerState.displayCurrentPage;
         final percent = pageCount > 0
             ? ((currentPage / (pageCount - 1)) * 100).round()
             : 0;

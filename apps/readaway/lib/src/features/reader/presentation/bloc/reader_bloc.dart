@@ -52,6 +52,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_TtsErrorOccurred>(_onTtsErrorOccurred);
     on<_JumpToTtsPage>(_onJumpToTtsPage);
     on<_TtsPageAdvanced>(_onTtsPageAdvanced);
+    on<_VirtualPageChanged>(_onVirtualPageChanged);
 
     // Auto-advance or report errors when TTS reports state updates
     _ttsStateSub = ttsRepository.playbackState.listen((event) {
@@ -201,9 +202,30 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   void _onPageChanged(_PageChanged event, Emitter<ReaderState> emit) {
-    emit(state.copyWith(currentPage: event.index));
+    emit(
+      state.copyWith(
+        currentPage: event.index,
+        currentVirtualPage: null,
+        virtualPageCount: null,
+      ),
+    );
     _precachePages(event.index);
     _scheduleProgressSync(event.index);
+  }
+
+  void _onVirtualPageChanged(
+    _VirtualPageChanged event,
+    Emitter<ReaderState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        currentVirtualPage: event.globalPage,
+        virtualPageCount: event.totalPages,
+        currentPage: event.chapterIndex,
+      ),
+    );
+    _precachePages(event.chapterIndex);
+    _scheduleProgressSync(event.globalPage);
   }
 
   Future<void> _onEngineModeChanged(

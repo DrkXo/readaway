@@ -62,6 +62,8 @@ import '../services/mupdf_service.dart' as _i16;
 import '../services/notification_service.dart' as _i941;
 import '../services/package_info_service.dart' as _i313;
 import '../services/path_service.dart' as _i145;
+import '../services/reader/reflowable_page_slicer.dart' as _i800;
+import '../services/reader/reflowable_pagination_coordinator.dart' as _i1002;
 import '../services/services.dart' as _i264;
 import '../services/settings_service.dart' as _i114;
 import '../services/storage/hive/app_storage_service.dart' as _i1024;
@@ -105,6 +107,9 @@ extension GetItInjectableX on _i174.GetIt {
       dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i145.AppPathService>(() => _i145.AppPathService());
+    gh.lazySingleton<_i800.ReflowablePageSlicer>(
+      () => const _i800.ReflowablePageSlicer(),
+    );
     gh.lazySingleton<_i427.ToastService>(() => _i427.ToastService());
     gh.lazySingleton<_i864.TextChunker>(() => _i864.TextChunker());
     gh.lazySingleton<_i502.FilePickerDataSource>(
@@ -143,6 +148,11 @@ extension GetItInjectableX on _i174.GetIt {
       ],
       preResolve: true,
       dispose: (i) => i.dispose(),
+    );
+    gh.lazySingleton<_i1002.ReflowablePaginationCoordinator>(
+      () => _i1002.ReflowablePaginationCoordinator(
+        slicer: gh<_i800.ReflowablePageSlicer>(),
+      ),
     );
     gh.factory<_i155.HiveConfigService>(
       () => _i155.HiveConfigService(gh<_i145.AppPathService>()),

@@ -22,26 +22,15 @@ mixin ReaderControllerMixin on State<ReaderPage> {
       ? GetIt.I<ReaderGestureConstants>()
       : const ReaderGestureConstants();
 
-  // Live scroll boundary state for the current page's inner scroll view.
-  // Used by the gesture arena to decide whether to claim a vertical drag
-  // for page-turning or let the inner scroll view handle it.
-  bool _pageAtTop = true;
-  bool _pageAtBottom = false;
-
   /// Called by [ReaderViewport] whenever the visible page's scroll boundary changes.
-  void onScrollBoundaryChanged({required bool atTop, required bool atBottom}) {
-    _pageAtTop = atTop;
-    _pageAtBottom = atBottom;
-  }
+  void onScrollBoundaryChanged({required bool atTop, required bool atBottom}) {}
 
   /// Synchronous closure passed to [ReaderGestureArena.isAtScrollBoundary].
   ///
-  /// Returns true when the inner scroll view is at the boundary in the drag direction,
-  /// meaning the arena should take over and flip to the next/previous page.
+  /// In paged mode, all pages (ReflowableVirtualPage and FixedReaderPage) are
+  /// discrete non-scrolling screen pages, so vertical drags should always claim and flip pages.
   bool isAtScrollBoundary(bool atEnd) {
-    // atEnd = true  → dragging up  → going to next page → check atBottom
-    // atEnd = false → dragging down → going to prev page → check atTop
-    return atEnd ? _pageAtBottom : _pageAtTop;
+    return true;
   }
 
   void initReaderState() {
@@ -110,9 +99,36 @@ mixin ReaderControllerMixin on State<ReaderPage> {
   }
 
   void jumpToPage(int page) {
+    if (readerBloc.state.isReflowable) {
+      final isContinuous =
+          settingsBloc.state.readerPrefs.scrollDirection ==
+                  ReaderScrollDirection.vertical &&
+              !settingsBloc.state.readerPrefs.pageSnap;
+
+      if (!isContinuous &&
+          GetIt.I.isRegistered<ReflowablePaginationCoordinator>()) {
+        final coordinator = GetIt.I<ReflowablePaginationCoordinator>();
+        // If 'page' is a chapter index from TOC (< chapterCount), map to its first global page
+        final globalPage = (page < coordinator.chapterCount)
+            ? coordinator.getGlobalPageForChapter(page)
+            : page.clamp(0, math.max(0, coordinator.totalPageCount - 1)).toInt();
+
+        final coord = coordinator.coordinateFromGlobalPage(globalPage);
+        readerBloc.add(
+          ReaderEvent.virtualPageChanged(
+            globalPage: globalPage,
+            totalPages: coordinator.totalPageCount,
+            chapterIndex: coord.chapterIndex,
+          ),
+        );
+        viewportController.jumpToPage(globalPage);
+        return;
+      }
+    }
+
     final count = readerBloc.state.pageCount;
     if (count <= 0) return;
-    final clamped = page.clamp(0, count - 1);
+    final clamped = page.clamp(0, count - 1).toInt();
     readerBloc.add(ReaderEvent.pageChanged(index: clamped));
     viewportController.jumpToPage(clamped);
   }
