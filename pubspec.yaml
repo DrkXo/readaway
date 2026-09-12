@@ -6,6 +6,7 @@ environment:
 workspace:
   - apps/readaway
   - packages/mupdf
+  - packages/readaway_core
 
 dev_dependencies:
   melos: ^8.0.0

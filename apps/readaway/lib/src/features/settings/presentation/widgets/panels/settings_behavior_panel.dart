@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../domain/entity/reader_preferences.dart';
 import '../../bloc/settings/settings_bloc.dart';
+import '../reader_prefs_scope.dart';
 import '../settings_bloc_x.dart';
 import '../widgets.dart';
 
@@ -12,6 +13,7 @@ class SettingsBehaviorPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
           prev.globalReaderPrefs != curr.globalReaderPrefs ||
@@ -26,6 +28,7 @@ class SettingsBehaviorPanel extends StatelessWidget {
               pageTransition: ReaderPageTransition.slide,
               pageSnap: true,
             ),
+            documentPath: path,
           );
         }
 
@@ -50,6 +53,7 @@ class SettingsBehaviorPanel extends StatelessWidget {
           );
           context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(showStatusBar: true),
+            documentPath: path,
           );
         }
 
@@ -94,12 +98,12 @@ class _ScrollDirectionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.scrollDirection !=
-          curr.globalReaderPrefs.scrollDirection,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final prefs = state.globalReaderPrefs;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSelectRow<ReaderScrollDirection>(
           label: 'Scroll direction',
           value: prefs.scrollDirection,
@@ -116,6 +120,7 @@ class _ScrollDirectionRow extends StatelessWidget {
           onChanged: (direction) =>
               context.read<SettingsBloc>().updateReaderPrefs(
                 (p) => p.copyWith(scrollDirection: direction),
+                documentPath: path,
               ),
         );
       },
@@ -151,14 +156,12 @@ class _PageTransitionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.pageTransition !=
-              curr.globalReaderPrefs.pageTransition ||
-          prev.globalReaderPrefs.scrollDirection !=
-              curr.globalReaderPrefs.scrollDirection,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final prefs = state.globalReaderPrefs;
+        final prefs = state.effectiveReaderPrefs(path);
         // Only show transitions supported by the current scroll direction.
         final entries = _allEntries
             .where((e) => e.value.isSupportedFor(prefs.scrollDirection))
@@ -170,6 +173,7 @@ class _PageTransitionRow extends StatelessWidget {
           onChanged: (transition) =>
               context.read<SettingsBloc>().updateReaderPrefs(
                 (p) => p.copyWith(pageTransition: transition),
+                documentPath: path,
               ),
         );
       },
@@ -182,17 +186,19 @@ class _PageSnapRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.pageSnap != curr.globalReaderPrefs.pageSnap,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final prefs = state.globalReaderPrefs;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSwitchRow(
           label: 'Snap to page',
           description: 'Settle on page boundaries while scrolling',
           value: prefs.pageSnap,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(pageSnap: v),
+            documentPath: path,
           ),
         );
       },
@@ -233,18 +239,19 @@ class _ShowStatusBarRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.showStatusBar !=
-          curr.globalReaderPrefs.showStatusBar,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final prefs = state.globalReaderPrefs;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSwitchRow(
           label: 'Show status bar',
           description: 'Progress indicator at the top of the reader',
           value: prefs.showStatusBar,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(showStatusBar: v),
+            documentPath: path,
           ),
         );
       },

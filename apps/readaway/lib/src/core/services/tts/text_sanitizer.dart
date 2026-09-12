@@ -16,7 +16,7 @@ class TextSanitizer {
     unicode: true,
   );
 
-  /// Inline reading annotations / furigana heuristics (similar to Readest inlineAnnotations):
+  /// Inline reading annotations / furigana heuristics
   /// e.g. 漢字（かんじ）, 漢(かん), 漢《かん》
   static final RegExp _inlineReadingPattern = RegExp(
     r'([\p{Unified_Ideograph}\u3005\u3006\u3007\u303b])(?:（[\p{Unified_Ideograph}\u3005\u3006\u3007\u303bぁ-ゖ゛-ゟァ-ヿ]+）|\([\p{Unified_Ideograph}\u3005\u3006\u3007\u303bぁ-ゖ゛-ゟァ-ヿ]+\)|《[\p{Unified_Ideograph}\u3005\u3006\u3007\u303bぁ-ゖ゛-ゟァ-ヿ]+》)',

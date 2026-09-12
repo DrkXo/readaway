@@ -10,13 +10,19 @@ enum ReaderScrollDirection {
   vertical,
 }
 
-/// The reading engine mode: publisher original design vs user-customized reflow.
-enum ReaderEngineMode {
-  /// Mode A: MuPDF native C Fitz rendering (100% publisher fidelity, vector zoom).
-  publisherFidelity,
+/// Text alignment for reflowable content (CSS `text-align`).
+enum ReaderTextAlign {
+  left,
+  center,
+  right,
+  justify,
+}
 
-  /// Mode B: HyperRender pure flow layout (full user typography and theme customization).
-  customFlow,
+/// Which built-in font family is used when no explicit [ReaderPreferences.fontFamily]
+/// override is set.
+enum ReaderDefaultFont {
+  serif,
+  sansSerif,
 }
 
 /// Whether a [ReaderPageTransition] is available for a given scroll direction.
@@ -30,24 +36,33 @@ extension ReaderPageTransitionSupport on ReaderPageTransition {
 @freezed
 abstract class ReaderPreferences with _$ReaderPreferences {
   const factory ReaderPreferences({
-    @Default(ReaderEngineMode.customFlow)
-    @JsonKey(unknownEnumValue: ReaderEngineMode.customFlow)
-    ReaderEngineMode engineMode,
     String? fontFamily,
     @Default('Noto Serif') String serifFont,
     @Default('Noto Sans') String sansSerifFont,
     @Default('Fira Code') String monospaceFont,
+    @Default('Source Han Sans') String defaultCjkFont,
+    @Default(ReaderDefaultFont.serif)
+    @JsonKey(unknownEnumValue: ReaderDefaultFont.serif)
+    ReaderDefaultFont defaultFont,
     @Default('normal') String fontWeight,
+    @Default('') String userStylesheet,
     @Default(false) bool overrideFont,
     @Default(true) bool overrideLayout,
     @Default(false) bool overrideColor,
     @Default(16.0) double fontSize,
+    @Default(0.0) double minimumFontSize,
     @Default(1.5) double lineHeight,
     @Default(0.0) double letterSpacing,
     @Default(0.0) double wordSpacing,
     @Default(0.0) double textIndent,
     @Default(0.5) double paragraphMargin,
-    @Default(true) bool fullJustification,
+    @Deprecated('Use [textAlign] instead. Kept for JSON back-compat.')
+    @Default(true)
+    bool fullJustification,
+    @Default(ReaderTextAlign.justify)
+    @JsonKey(unknownEnumValue: ReaderTextAlign.justify)
+    ReaderTextAlign textAlign,
+    @Default(false) bool keepTextAlignment,
     @Default(16.0) double marginHorizontal,
     @Default(16.0) double marginTop,
     @Default(16.0) double marginBottom,
@@ -66,4 +81,24 @@ abstract class ReaderPreferences with _$ReaderPreferences {
 
   factory ReaderPreferences.fromJson(Map<String, dynamic> json) =>
       _$ReaderPreferencesFromJson(json);
+
+  /// Deserializes persisted preferences, migrating the legacy
+  /// `fullJustification` bool onto the new 4-way [textAlign] when the newer
+  /// field is absent from the stored JSON.
+  ///
+  /// Kept as a separate static helper (rather than a custom `fromJson`
+  /// factory) because a custom factory on a freezed class breaks
+  /// json_serializable's `toJson` generation for fields of this type.
+  static ReaderPreferences fromStoredJson(Map<String, dynamic> json) {
+    final prefs = _$ReaderPreferencesFromJson(json);
+    if (!json.containsKey('textAlign') &&
+        json.containsKey('fullJustification')) {
+      return prefs.copyWith(
+        textAlign: json['fullJustification'] == true
+            ? ReaderTextAlign.justify
+            : ReaderTextAlign.left,
+      );
+    }
+    return prefs;
+  }
 }

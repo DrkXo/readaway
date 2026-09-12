@@ -22,6 +22,10 @@ abstract interface class ReaderPreferencesRepository {
     ReaderPreferences prefs,
   );
 
+  /// Removes document-specific reading preferences so the document falls back
+  /// to the global preferences.
+  TaskEither<Failure, Unit> clearDocumentPreferences(String path);
+
   /// Resets all reading preferences in storage.
   TaskEither<Failure, Unit> resetAllPreferences();
 

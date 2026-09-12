@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../settings/domain/entity/reader_preferences.dart';
 import '../../bloc/settings/settings_bloc.dart';
+import '../reader_prefs_scope.dart';
 import '../settings_bloc_x.dart';
 import '../widgets.dart';
 
@@ -10,6 +12,7 @@ class SettingsLayoutPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
@@ -21,6 +24,7 @@ class SettingsLayoutPanel extends StatelessWidget {
               marginTop: 16,
               marginBottom: 16,
             ),
+            documentPath: path,
           ),
           rows: const [
             _MarginPresetRow(),
@@ -34,13 +38,16 @@ class SettingsLayoutPanel extends StatelessWidget {
             (p) => p.copyWith(
               paragraphMargin: 0.5,
               textIndent: 0,
-              fullJustification: true,
+              textAlign: ReaderTextAlign.justify,
+              keepTextAlignment: false,
             ),
+            documentPath: path,
           ),
           rows: const [
             _ParagraphSpacingRow(),
             _TextIndentRow(),
-            _FullJustificationRow(),
+            _TextAlignRow(),
+            _KeepTextAlignmentRow(),
           ],
         ),
         const SizedBox(height: 24),
@@ -52,6 +59,7 @@ class SettingsLayoutPanel extends StatelessWidget {
               letterSpacing: 0,
               wordSpacing: 0,
             ),
+            documentPath: path,
           ),
           rows: const [
             _LineHeightRow(),
@@ -75,12 +83,12 @@ class _MarginPresetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.marginHorizontal !=
-          curr.globalReaderPrefs.marginHorizontal,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final current = state.globalReaderPrefs.marginHorizontal;
+        final current = state.effectiveReaderPrefs(path).marginHorizontal;
         final selected = _presets
             .where((p) => p.value == current)
             .map((p) => p.value)
@@ -102,6 +110,7 @@ class _MarginPresetRow extends StatelessWidget {
                   marginTop: s.first,
                   marginBottom: s.first,
                 ),
+                documentPath: path,
               );
             },
           ),
@@ -116,16 +125,12 @@ class _MarginSliderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.marginHorizontal !=
-              curr.globalReaderPrefs.marginHorizontal ||
-          prev.globalReaderPrefs.marginTop !=
-              curr.globalReaderPrefs.marginTop ||
-          prev.globalReaderPrefs.marginBottom !=
-              curr.globalReaderPrefs.marginBottom,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final prefs = state.globalReaderPrefs;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSliderRow(
           label: 'Page margin',
           value: prefs.marginHorizontal,
@@ -139,6 +144,7 @@ class _MarginSliderRow extends StatelessWidget {
               marginTop: v,
               marginBottom: v,
             ),
+            documentPath: path,
           ),
         );
       },
@@ -151,12 +157,12 @@ class _ParagraphSpacingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.paragraphMargin !=
-          curr.globalReaderPrefs.paragraphMargin,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final margin = state.globalReaderPrefs.paragraphMargin;
+        final margin = state.effectiveReaderPrefs(path).paragraphMargin;
         return SettingsSliderRow(
           label: 'Paragraph spacing',
           value: margin,
@@ -166,6 +172,7 @@ class _ParagraphSpacingRow extends StatelessWidget {
           format: (v) => v.toStringAsFixed(1),
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(paragraphMargin: v),
+            documentPath: path,
           ),
         );
       },
@@ -178,12 +185,12 @@ class _TextIndentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.textIndent !=
-          curr.globalReaderPrefs.textIndent,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final indent = state.globalReaderPrefs.textIndent;
+        final indent = state.effectiveReaderPrefs(path).textIndent;
         return SettingsSliderRow(
           label: 'Text indent',
           value: indent,
@@ -193,6 +200,7 @@ class _TextIndentRow extends StatelessWidget {
           format: (v) => '${v.toStringAsFixed(1)} em',
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(textIndent: v),
+            documentPath: path,
           ),
         );
       },
@@ -200,22 +208,86 @@ class _TextIndentRow extends StatelessWidget {
   }
 }
 
-class _FullJustificationRow extends StatelessWidget {
-  const _FullJustificationRow();
+class _TextAlignRow extends StatelessWidget {
+  const _TextAlignRow();
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.fullJustification !=
-          curr.globalReaderPrefs.fullJustification,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final enabled = state.globalReaderPrefs.fullJustification;
+        final current = state.effectiveReaderPrefs(path).textAlign;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text('Text alignment'),
+              ),
+              SegmentedButton<ReaderTextAlign>(
+                segments: const [
+                  ButtonSegment(
+                    value: ReaderTextAlign.left,
+                    icon: Icon(Icons.format_align_left),
+                    tooltip: 'Left',
+                  ),
+                  ButtonSegment(
+                    value: ReaderTextAlign.center,
+                    icon: Icon(Icons.format_align_center),
+                    tooltip: 'Center',
+                  ),
+                  ButtonSegment(
+                    value: ReaderTextAlign.right,
+                    icon: Icon(Icons.format_align_right),
+                    tooltip: 'Right',
+                  ),
+                  ButtonSegment(
+                    value: ReaderTextAlign.justify,
+                    icon: Icon(Icons.format_align_justify),
+                    tooltip: 'Justify',
+                  ),
+                ],
+                selected: {current},
+                onSelectionChanged: (s) {
+                  if (s.isEmpty) return;
+                  context.read<SettingsBloc>().updateReaderPrefs(
+                    (p) => p.copyWith(textAlign: s.first),
+                    documentPath: path,
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _KeepTextAlignmentRow extends StatelessWidget {
+  const _KeepTextAlignmentRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final enabled = state.effectiveReaderPrefs(path).keepTextAlignment;
         return SettingsSwitchRow(
-          label: 'Full justification',
+          label: 'Keep book text alignment',
+          description:
+              'Preserve the book\'s own alignment (e.g. centered poetry) '
+              'instead of overriding it.',
           value: enabled,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            (p) => p.copyWith(fullJustification: v),
+            (p) => p.copyWith(keepTextAlignment: v),
+            documentPath: path,
           ),
         );
       },
@@ -228,12 +300,12 @@ class _LineHeightRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.lineHeight !=
-          curr.globalReaderPrefs.lineHeight,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final lineHeight = state.globalReaderPrefs.lineHeight;
+        final lineHeight = state.effectiveReaderPrefs(path).lineHeight;
         return SettingsSliderRow(
           label: 'Line height',
           value: lineHeight,
@@ -243,6 +315,7 @@ class _LineHeightRow extends StatelessWidget {
           format: (v) => v.toStringAsFixed(2),
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(lineHeight: v),
+            documentPath: path,
           ),
         );
       },
@@ -255,12 +328,12 @@ class _LetterSpacingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.letterSpacing !=
-          curr.globalReaderPrefs.letterSpacing,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final spacing = state.globalReaderPrefs.letterSpacing;
+        final spacing = state.effectiveReaderPrefs(path).letterSpacing;
         return SettingsSliderRow(
           label: 'Letter spacing',
           value: spacing,
@@ -270,6 +343,7 @@ class _LetterSpacingRow extends StatelessWidget {
           format: (v) => v.toStringAsFixed(2),
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(letterSpacing: v),
+            documentPath: path,
           ),
         );
       },
@@ -282,12 +356,12 @@ class _WordSpacingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.wordSpacing !=
-          curr.globalReaderPrefs.wordSpacing,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final spacing = state.globalReaderPrefs.wordSpacing;
+        final spacing = state.effectiveReaderPrefs(path).wordSpacing;
         return SettingsSliderRow(
           label: 'Word spacing',
           value: spacing,
@@ -297,6 +371,7 @@ class _WordSpacingRow extends StatelessWidget {
           format: (v) => '${v.round()} px',
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(wordSpacing: v),
+            documentPath: path,
           ),
         );
       },

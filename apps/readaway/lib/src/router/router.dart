@@ -150,12 +150,16 @@ class AppRouter {
             'tts' => SettingsTab.tts,
             _ => SettingsTab.font,
           };
+          final documentPath = state.uri.queryParameters['documentPath'];
 
           return ModalPage(
             key: state.pageKey,
             isScrollControlled: true,
             showDragHandle: false,
-            builder: (context) => SettingsPage(initialTab: initialTab),
+            builder: (context) => SettingsPage(
+              initialTab: initialTab,
+              documentPath: documentPath,
+            ),
           );
         },
         routes: [

@@ -54,8 +54,9 @@ class TtsControllerService {
   ValueStream<TtsVoiceOption?> get currentVoiceOption =>
       _voiceController.stream;
 
-  final _voicesController =
-      BehaviorSubject<List<TtsVoiceOption>>.seeded(const []);
+  final _voicesController = BehaviorSubject<List<TtsVoiceOption>>.seeded(
+    const [],
+  );
   ValueStream<List<TtsVoiceOption>> get availableVoicesStream =>
       _voicesController.stream;
 
@@ -113,10 +114,9 @@ class TtsControllerService {
             : null);
   TtsVoiceOption? get currentVoice => _voice;
   List<TtsVoiceOption> _cachedInstalledVoices = const [];
-  List<TtsVoiceOption> get availableVoices =>
-      _voicesController.value.isNotEmpty
-          ? _voicesController.value
-          : _cachedInstalledVoices;
+  List<TtsVoiceOption> get availableVoices => _voicesController.value.isNotEmpty
+      ? _voicesController.value
+      : _cachedInstalledVoices;
 
   void _onSettingsChanged(Settings settings) {
     final gvs = settings.globalViewSettings;
@@ -153,8 +153,9 @@ class TtsControllerService {
     } else {
       unawaited(() async {
         final voices = await getInstalledVoices();
-        final match =
-            voices.where((v) => v.matchesKey(targetVoiceKey)).firstOrNull;
+        final match = voices
+            .where((v) => v.matchesKey(targetVoiceKey))
+            .firstOrNull;
         if (match != null) {
           await setVoice(match);
         }
@@ -167,12 +168,14 @@ class TtsControllerService {
     await _chunkingService.start();
     final voices = await getInstalledVoices();
 
-    final targetVoiceKey = _settingsService.settings.globalViewSettings.ttsVoice;
+    final targetVoiceKey =
+        _settingsService.settings.globalViewSettings.ttsVoice;
     TtsVoiceOption? resolvedVoice;
 
     if (targetVoiceKey != null && targetVoiceKey.isNotEmpty) {
-      resolvedVoice =
-          voices.where((v) => v.matchesKey(targetVoiceKey)).firstOrNull;
+      resolvedVoice = voices
+          .where((v) => v.matchesKey(targetVoiceKey))
+          .firstOrNull;
     }
 
     resolvedVoice ??= _voice ?? voices.firstOrNull;
@@ -389,8 +392,9 @@ class TtsControllerService {
             _settingsService.settings.globalViewSettings.ttsVoice;
         TtsVoiceOption? resolvedVoice;
         if (targetVoiceKey != null && targetVoiceKey.isNotEmpty) {
-          resolvedVoice =
-              voices.where((v) => v.matchesKey(targetVoiceKey)).firstOrNull;
+          resolvedVoice = voices
+              .where((v) => v.matchesKey(targetVoiceKey))
+              .firstOrNull;
         }
         resolvedVoice ??= voices.firstOrNull;
 

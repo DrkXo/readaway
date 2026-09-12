@@ -1,50 +1,39 @@
 // ignore_for_file: avoid_print
-import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hyper_render/hyper_render.dart';
-import 'package:mupdf/mupdf.dart';
 
 void main() {
-  const epubPath =
-      '/home/drkxo/Documents/Ebooks/Reverend Insanity/Reverend Insanity [c1-500].epub';
-
-  late String mupdfSampleHtml;
+  late String sampleHtml;
 
   setUpAll(() {
-    if (File(epubPath).existsSync()) {
-      final doc = MuPdfDocument.openFile(epubPath);
-      doc.layout(width: 400, height: 800, em: 14);
-      final page = doc.loadPage(10);
-      mupdfSampleHtml = page.extractHtml(preserveImages: false) ?? '';
-      page.dispose();
-      doc.dispose();
-    } else {
-      mupdfSampleHtml = '''
-        <!DOCTYPE html>
-        <html>
-        <head><style>p{position:absolute;margin:0}</style></head>
-        <body>
-        <div id="page1" style="width:400pt;height:800pt">
-          <p style="top:40pt;left:50pt;line-height:14pt">
-            <span style="font-family:Charis SIL;font-size:14pt;color:#333333">Chapter 1: The heart of a demon</span>
-          </p>
-        </div>
-        </body>
-        </html>
-      ''';
-    }
+    sampleHtml = '''
+      <!DOCTYPE html>
+      <html>
+      <head><style>p{position:absolute;margin:0}</style></head>
+      <body>
+      <div id="page1" style="width:400pt;height:800pt">
+        <p style="top:40pt;left:50pt;line-height:14pt">
+          <span style="font-family:Charis SIL;font-size:14pt;color:#333333">Chapter 1: The heart of a demon</span>
+        </p>
+      </div>
+      </body>
+      </html>
+    ''';
   });
 
   group('HyperRender - Unified Document Tree (UDT) & Adapter Analysis', () {
-    test('HtmlAdapter parses MuPDF extracted HTML into UDT correctly', () {
+    test('HtmlAdapter parses HTML into UDT correctly', () {
       final sw = Stopwatch()..start();
       final adapter = HtmlAdapter();
-      final docNode = adapter.parse(mupdfSampleHtml);
+      final docNode = adapter.parse(sampleHtml);
       final elapsedMs = sw.elapsedMilliseconds;
 
-      print('[Benchmark] Parsed MuPDF HTML (${mupdfSampleHtml.length} chars) in ${elapsedMs}ms');
+      print(
+        '[Benchmark] Parsed HTML (${sampleHtml.length} chars) in ${elapsedMs}ms',
+      );
       expect(docNode, isNotNull);
       expect(docNode.type, equals(NodeType.document));
       expect(docNode.children, isNotEmpty);
@@ -63,7 +52,9 @@ void main() {
       print('    Blocks: $blockCount');
       print('    Inlines: $inlineCount');
       print('    TextNodes: $textCount');
-      print('    Total text extracted from UDT: ${docNode.textContent.length} chars');
+      print(
+        '    Total text extracted from UDT: ${docNode.textContent.length} chars',
+      );
 
       expect(blockCount, greaterThan(0));
       expect(textCount, greaterThan(0));
@@ -100,12 +91,17 @@ void main() {
       expect(titleNode!.style.color, equals(const Color(0xFF1E88E5)));
 
       expect(highlightNode, isNotNull);
-      expect(highlightNode!.style.backgroundColor, equals(const Color(0xFFFFF9C4)));
+      expect(
+        highlightNode!.style.backgroundColor,
+        equals(const Color(0xFFFFF9C4)),
+      );
     });
   });
 
   group('HyperRender - Extensibility Architecture', () {
-    testWidgets('HyperPluginRegistry intercepts custom tags (Block & Inline)', (tester) async {
+    testWidgets('HyperPluginRegistry intercepts custom tags (Block & Inline)', (
+      tester,
+    ) async {
       // Custom block plugin: Callout / Note box
       final registry = HyperPluginRegistry()
         ..register(_TestCalloutPlugin())
@@ -138,40 +134,49 @@ void main() {
       expect(find.text('VIP'), findsOneWidget);
     });
 
-    testWidgets('widgetBuilder allows granular node interception without plugins', (tester) async {
-      const htmlWithAudio = '''
+    testWidgets(
+      'widgetBuilder allows granular node interception without plugins',
+      (tester) async {
+        const htmlWithAudio = '''
         <p>Listen to pronunciation:</p>
         <audio src="audio/test.mp3" controls></audio>
       ''';
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: HyperViewer(
-              html: htmlWithAudio,
-              widgetBuilder: (node) {
-                if (node is AtomicNode && node.tagName == 'audio') {
-                  return Container(
-                    key: const Key('custom_audio_player'),
-                    child: Text('Custom Audio: ${node.attributes['src']}'),
-                  );
-                }
-                return null; // Fall back to default
-              },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: HyperViewer(
+                html: htmlWithAudio,
+                widgetBuilder: (node) {
+                  if (node is AtomicNode && node.tagName == 'audio') {
+                    return Container(
+                      key: const Key('custom_audio_player'),
+                      child: Text('Custom Audio: ${node.attributes['src']}'),
+                    );
+                  }
+                  return null; // Fall back to default
+                },
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('custom_audio_player')), findsOneWidget);
-      expect(find.text('Custom Audio: audio/test.mp3'), findsOneWidget);
-    });
+        expect(find.byKey(const Key('custom_audio_player')), findsOneWidget);
+        expect(find.text('Custom Audio: audio/test.mp3'), findsOneWidget);
+      },
+    );
 
-    testWidgets('HyperImageLoader hooks image decoding from custom source', (tester) async {
-      // Mock custom image loader (e.g. for EPUB archive memory zip or MuPDF pixmaps)
+    testWidgets('HyperImageLoader hooks image decoding from custom source', (
+      tester,
+    ) async {
+      // Mock custom image loader (e.g. for EPUB archive memory zip)
       var customLoaderCalled = false;
-      void customLoader(String src, void Function(ui.Image) onLoad, void Function(Object) onError) {
+      void customLoader(
+        String src,
+        void Function(ui.Image) onLoad,
+        void Function(Object) onError,
+      ) {
         customLoaderCalled = true;
       }
 
@@ -190,10 +195,12 @@ void main() {
       expect(customLoaderCalled, isTrue);
     });
 
-    testWidgets('HyperViewerController drives scroll to ID / anchor and TOC extraction', (tester) async {
-      final controller = HyperViewerController();
+    testWidgets(
+      'HyperViewerController drives scroll to ID / anchor and TOC extraction',
+      (tester) async {
+        final controller = HyperViewerController();
 
-      const docWithAnchors = '''
+        const docWithAnchors = '''
         <h1 id="top">Title</h1>
         <p>Paragraph 1</p>
         <h2 id="sec-1">Section 1</h2>
@@ -202,35 +209,44 @@ void main() {
         <p>Content of section 2</p>
       ''';
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: HyperViewer(
-              html: docWithAnchors,
-              controller: controller,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: HyperViewer(
+                html: docWithAnchors,
+                controller: controller,
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Heading anchors extracted
-      final headings = controller.headings;
-      print('Extracted headings via HyperViewerController: ${headings.length}');
-      for (final h in headings) {
-        print('  Level ${h.level}: cssId="${h.cssId}", text="${h.text}"');
-      }
+        // Heading anchors extracted
+        final headings = controller.headings;
+        print(
+          'Extracted headings via HyperViewerController: ${headings.length}',
+        );
+        for (final h in headings) {
+          print('  Level ${h.level}: cssId="${h.cssId}", text="${h.text}"');
+        }
 
-      expect(headings.length, greaterThanOrEqualTo(3));
-      expect(headings.map((h) => h.cssId), containsAll(['top', 'sec-1', 'sec-2']));
-    });
+        expect(headings.length, greaterThanOrEqualTo(3));
+        expect(
+          headings.map((h) => h.cssId),
+          containsAll(['top', 'sec-1', 'sec-2']),
+        );
+      },
+    );
 
-    testWidgets('HyperPageController controls paged mode navigation', (tester) async {
+    testWidgets('HyperPageController controls paged mode navigation', (
+      tester,
+    ) async {
       final pageCtrl = HyperPageController();
 
       final chaptersHtml = List.generate(
         5,
-        (i) => '<div id="ch-$i"><h1>Chapter $i</h1><p>Content for page $i</p></div>',
+        (i) =>
+            '<div id="ch-$i"><h1>Chapter $i</h1><p>Content for page $i</p></div>',
       ).join('<hr>');
 
       await tester.pumpWidget(
@@ -241,7 +257,8 @@ void main() {
               mode: HyperRenderMode.paged,
               pageController: pageCtrl,
               renderConfig: const HyperRenderConfig(useMicrotaskParsing: true),
-              placeholderBuilder: (_) => const SizedBox(key: Key('placeholder')),
+              placeholderBuilder: (_) =>
+                  const SizedBox(key: Key('placeholder')),
             ),
           ),
         ),
@@ -261,36 +278,43 @@ void main() {
   });
 
   group('HyperRender - Security & Heuristics', () {
-    test('HtmlSanitizer strips scripts, onload, and dangerous javascript URIs', () {
-      const maliciousHtml = '''
+    test(
+      'HtmlSanitizer strips scripts, onload, and dangerous javascript URIs',
+      () {
+        const maliciousHtml = '''
         <p>Normal text</p>
         <script>alert("XSS")</script>
         <img src="valid.jpg" onerror="stealCookies()" />
         <a href="javascript:doEvil()">Click me</a>
       ''';
 
-      final sanitized = HtmlSanitizer.sanitize(maliciousHtml);
-      expect(sanitized, isNot(contains('<script>')));
-      expect(sanitized, isNot(contains('onerror')));
-      expect(sanitized, isNot(contains('javascript:')));
-      expect(sanitized, contains('<p>Normal text</p>'));
-      expect(sanitized, contains('<img src="valid.jpg">'));
-    });
+        final sanitized = HtmlSanitizer.sanitize(maliciousHtml);
+        expect(sanitized, isNot(contains('<script>')));
+        expect(sanitized, isNot(contains('onerror')));
+        expect(sanitized, isNot(contains('javascript:')));
+        expect(sanitized, contains('<p>Normal text</p>'));
+        expect(sanitized, contains('<img src="valid.jpg">'));
+      },
+    );
 
-    test('HtmlHeuristics detects complexity (unsupported CSS, forms, tables)', () {
-      const simple = '<p>Simple text</p>';
-      expect(HtmlHeuristics.isComplex(simple), isFalse);
+    test(
+      'HtmlHeuristics detects complexity (unsupported CSS, forms, tables)',
+      () {
+        const simple = '<p>Simple text</p>';
+        expect(HtmlHeuristics.isComplex(simple), isFalse);
 
-      // MuPDF HTML uses position:absolute, which is detected by hasUnsupportedCss
-      const mupdfAbsoluteHtml = '<p style="position:absolute;margin:0">Page text</p>';
-      expect(HtmlHeuristics.hasUnsupportedCss(mupdfAbsoluteHtml), isTrue);
-      expect(HtmlHeuristics.isComplex(mupdfAbsoluteHtml), isTrue);
+        // HTML with position:absolute is detected by hasUnsupportedCss
+        const absoluteHtml =
+            '<p style="position:absolute;margin:0">Page text</p>';
+        expect(HtmlHeuristics.hasUnsupportedCss(absoluteHtml), isTrue);
+        expect(HtmlHeuristics.isComplex(absoluteHtml), isTrue);
 
-      const formHtml = '<form><input type="text" /></form>';
-      expect(HtmlHeuristics.hasForms(formHtml), isTrue);
-      expect(HtmlHeuristics.hasUnsupportedElements(formHtml), isTrue);
-      expect(HtmlHeuristics.isComplex(formHtml), isTrue);
-    });
+        const formHtml = '<form><input type="text" /></form>';
+        expect(HtmlHeuristics.hasForms(formHtml), isTrue);
+        expect(HtmlHeuristics.hasUnsupportedElements(formHtml), isTrue);
+        expect(HtmlHeuristics.isComplex(formHtml), isTrue);
+      },
+    );
   });
 }
 

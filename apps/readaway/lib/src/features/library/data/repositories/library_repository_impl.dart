@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/services/document_cover_service.dart';
-import '../../../../core/services/mupdf_service.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
 import '../../domain/repositories/library_repository.dart';
@@ -17,13 +17,11 @@ class LibraryRepositoryImpl implements LibraryRepository {
   final LibraryLocalDataSource _localDataSource;
   final FilePickerDataSource _filePickerDataSource;
   final DocumentCoverService _coverService;
-  final MuPdfService _muPdfService;
 
   LibraryRepositoryImpl(
     this._localDataSource,
     this._filePickerDataSource,
     this._coverService,
-    this._muPdfService,
   );
 
   @override
@@ -134,16 +132,19 @@ class LibraryRepositoryImpl implements LibraryRepository {
     int pageCount = 0;
 
     try {
-      await _muPdfService.openDocument(doc.path);
-      final metaTitle = await _muPdfService.getMetaData('info:Title');
+      final reader = await DocumentReaderFactory().open(doc.path);
+      final metaTitle = reader.title;
       if (metaTitle != null && metaTitle.trim().isNotEmpty) {
         title = metaTitle.trim();
       }
-      final metaAuthor = await _muPdfService.getMetaData('info:Author');
+      final metaAuthor = reader.metadata?.creator;
       if (metaAuthor != null && metaAuthor.trim().isNotEmpty) {
         author = metaAuthor.trim();
       }
-      pageCount = await _muPdfService.getPageCount();
+      if (reader is ReflowableDocumentReader) {
+        pageCount = reader.sectionCount;
+      }
+      reader.dispose();
     } catch (_) {
       // Non-critical if metadata extraction fails for picked file
     }

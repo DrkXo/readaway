@@ -127,7 +127,7 @@ class AppStorageService {
     if (value == null) return const ReaderPreferences();
     try {
       final decoded = jsonDecode(value) as Map<String, dynamic>;
-      return ReaderPreferences.fromJson(decoded);
+      return ReaderPreferences.fromStoredJson(decoded);
     } catch (e) {
       logger.e('Failed to parse reader global prefs: $e');
       return const ReaderPreferences();
@@ -149,7 +149,7 @@ class AppStorageService {
     if (value == null) return null;
     try {
       final decoded = jsonDecode(value) as Map<String, dynamic>;
-      return ReaderPreferences.fromJson(decoded);
+      return ReaderPreferences.fromStoredJson(decoded);
     } catch (e) {
       logger.e('Failed to parse reader doc prefs for $path: $e');
       return null;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../controllers/reader_viewport_controller.dart';
 import 'continuous_scroll_coordinator.dart';
@@ -13,6 +14,9 @@ class ContinuousReaderView extends StatefulWidget {
     required this.onPageChangeRequested,
     this.controller,
     this.bottomPadding = 0.0,
+    this.restoreAnchor,
+    this.onAnchorChanged,
+    this.onRestoreComplete,
   });
 
   final int currentPage;
@@ -21,6 +25,15 @@ class ContinuousReaderView extends StatefulWidget {
   final ValueChanged<int> onPageChangeRequested;
   final ReaderViewportController? controller;
   final double bottomPadding;
+
+  /// Saved reading position to restore to on first layout.
+  final ReadingAnchor? restoreAnchor;
+
+  /// Called whenever the reading position (chapter + progression) changes.
+  final ValueChanged<ReadingAnchor>? onAnchorChanged;
+
+  /// Called once the [restoreAnchor] has been applied.
+  final VoidCallback? onRestoreComplete;
 
   @override
   State<ContinuousReaderView> createState() => _ContinuousReaderViewState();
@@ -38,14 +51,20 @@ class _ContinuousReaderViewState extends State<ContinuousReaderView> {
       scrollController: _scrollController,
       pageCount: widget.pageCount,
       onPageChanged: widget.onPageChangeRequested,
+      onAnchorChanged: widget.onAnchorChanged,
+      onRestoreComplete: widget.onRestoreComplete,
     );
     _bindController();
 
-    if (widget.currentPage > 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _scrollCoordinator.jumpToPage(widget.currentPage);
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final anchor = widget.restoreAnchor;
+      if (anchor != null) {
+        _scrollCoordinator.restoreToAnchor(anchor);
+      } else if (widget.currentPage > 0) {
+        _scrollCoordinator.jumpToPage(widget.currentPage);
+      }
+    });
   }
 
   void _bindController() {
@@ -79,7 +98,16 @@ class _ContinuousReaderViewState extends State<ContinuousReaderView> {
     }
 
     _scrollCoordinator.updatePageCount(widget.pageCount);
-    if (widget.currentPage != _scrollCoordinator.lastReportedPage &&
+    if (widget.restoreAnchor != null) {
+      // While a restore is pending, don't jump to the (legacy) current page.
+      if (widget.restoreAnchor != oldWidget.restoreAnchor) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _scrollCoordinator.restoreToAnchor(widget.restoreAnchor!);
+          }
+        });
+      }
+    } else if (widget.currentPage != _scrollCoordinator.lastReportedPage &&
         !_scrollCoordinator.isProgrammaticScroll) {
       _scrollCoordinator.jumpToPage(widget.currentPage);
     }
@@ -100,6 +128,9 @@ class _ContinuousReaderViewState extends State<ContinuousReaderView> {
         if (notification is ScrollUpdateNotification ||
             notification is ScrollEndNotification) {
           _scrollCoordinator.detectVisiblePage();
+          if (notification is ScrollEndNotification) {
+            _scrollCoordinator.reportAnchor();
+          }
         }
         return false;
       },

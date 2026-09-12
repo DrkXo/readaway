@@ -54,7 +54,6 @@ class ReaderTopBar extends StatelessWidget implements PreferredSizeWidget {
           prev.fileName != curr.fileName ||
           prev.displayCurrentPage != curr.displayCurrentPage ||
           prev.displayPageCount != curr.displayPageCount ||
-          prev.isReflowable != curr.isReflowable ||
           prev.ttsActive != curr.ttsActive,
       builder: (context, state) {
         if (!state.hasDocument) return const SizedBox.shrink();
@@ -75,6 +74,15 @@ class ReaderTopBar extends StatelessWidget implements PreferredSizeWidget {
           titleText: title,
           subtitleText: progress,
           settingsTooltip: 'Reader options',
+          onSettingsPressed: () {
+            final path = state.documentPath;
+            appRouter.push(
+              path != null
+                  ? '${appRoutes.settings.path}'
+                        '?documentPath=${Uri.encodeComponent(path)}'
+                  : appRoutes.settings.path,
+            );
+          },
           actions: [],
         );
       },

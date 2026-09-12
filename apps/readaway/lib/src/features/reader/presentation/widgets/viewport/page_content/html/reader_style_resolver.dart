@@ -22,7 +22,11 @@ class ReaderStyleResolver {
     final textHex = colorToHex(textColor);
     final linkHex = colorToHex(linkColor);
 
-    final resolvedFont = prefs.fontFamily ?? prefs.serifFont;
+    final resolvedFont =
+        prefs.fontFamily ??
+        (prefs.defaultFont == ReaderDefaultFont.serif
+            ? prefs.serifFont
+            : prefs.sansSerifFont);
     final fontOverride = prefs.overrideFont ? ' !important' : '';
     final layoutOverride = prefs.overrideLayout ? ' !important' : '';
 
@@ -33,6 +37,7 @@ class ReaderStyleResolver {
       html, body {
         font-family: "$resolvedFont", serif$fontOverride;
         font-size: ${prefs.fontSize}px$fontOverride;
+        font-weight: ${prefs.fontWeight}$fontOverride;
         color: $textHex;
         background-color: transparent;
       }
@@ -42,6 +47,7 @@ class ReaderStyleResolver {
       buffer.writeln('''
         p, div, li, span, blockquote, dd, dt, h1, h2, h3, h4, h5, h6 {
           font-family: "$resolvedFont", serif !important;
+          font-weight: ${prefs.fontWeight} !important;
         }
         pre, code, kbd, samp {
           font-family: "${prefs.monospaceFont}", monospace !important;
@@ -50,14 +56,17 @@ class ReaderStyleResolver {
     }
 
     // 2. Paragraph & Layout styles
-    final textAlign = prefs.fullJustification ? 'justify' : 'left';
+    // NOTE: `text-align` is intentionally NOT emitted here — it is applied
+    // directly on the AST in `applyReaderPreferences` so that authored
+    // alignment (poetry, centered headings, etc.) can be preserved when
+    // `keepTextAlignment` is enabled. Emitting it in CSS would mark every
+    // paragraph's text-align as explicitly set, defeating that check.
     buffer.writeln('''
       p, li, dd, blockquote {
         line-height: ${prefs.lineHeight}$layoutOverride;
         word-spacing: ${prefs.wordSpacing}px$layoutOverride;
         letter-spacing: ${prefs.letterSpacing}px$layoutOverride;
         text-indent: ${prefs.textIndent}em$layoutOverride;
-        text-align: $textAlign$layoutOverride;
         margin-top: ${prefs.paragraphMargin}em$layoutOverride;
         margin-bottom: ${prefs.paragraphMargin}em$layoutOverride;
       }
@@ -70,7 +79,6 @@ class ReaderStyleResolver {
         line-height: 1.25;
         margin-top: 1.2em;
         margin-bottom: 0.6em;
-        text-align: ${prefs.fullJustification ? 'justify' : 'left'};
       }
       blockquote {
         margin-left: 1.5em;
@@ -124,7 +132,9 @@ class ReaderStyleResolver {
     }
 
     return TextStyle(
-      fontFamily: prefs.overrideFont ? (prefs.fontFamily ?? prefs.serifFont) : null,
+      fontFamily: prefs.overrideFont
+          ? (prefs.fontFamily ?? prefs.serifFont)
+          : null,
       fontSize: prefs.fontSize,
       height: prefs.lineHeight,
       letterSpacing: prefs.letterSpacing != 0.0 ? prefs.letterSpacing : null,

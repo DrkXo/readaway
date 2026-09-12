@@ -42,8 +42,7 @@ extension UDTNodeExtensions on UDTNode {
 
     // 3. Font override
     if (prefs.overrideFont) {
-      final font = prefs.fontFamily ?? prefs.serifFont;
-      node.style.fontFamily = font;
+      node.style.fontFamily = prefs.resolvedFont;
       node.style.markExplicitlySet('font-family');
     }
 
@@ -55,12 +54,16 @@ extension UDTNodeExtensions on UDTNode {
       if (prefs.overrideLayout) {
         final isParagraph = node.tagName == 'p' || node.tagName == 'dd';
         final isBlockquote = node.tagName == 'blockquote';
+        final isListItem = node.tagName == 'li';
 
-        if (isParagraph || isBlockquote) {
-          // Text alignment / Justification
-          final align = prefs.fullJustification ? HyperTextAlign.justify : HyperTextAlign.left;
-          node.style.textAlign = align;
-          node.style.markExplicitlySet('text-align');
+        if (isParagraph || isBlockquote || isListItem) {
+          // Text alignment: apply the user's chosen alignment unless the book
+          // explicitly set one AND keepTextAlignment is enabled.
+          if (!prefs.keepTextAlignment ||
+              !node.style.isExplicitlySet('text-align')) {
+            node.style.textAlign = prefs.textAlign.toHyperTextAlign();
+            node.style.markExplicitlySet('text-align');
+          }
 
           // Line height, word spacing, letter spacing
           node.style.lineHeight = prefs.lineHeight;
@@ -70,15 +73,25 @@ extension UDTNodeExtensions on UDTNode {
         }
 
         // 3. Font override or default propagation
-        final effectiveFontSize = (node.style.isExplicitlySet('font-size') && !prefs.overrideFont)
+        final effectiveFontSize =
+            (node.style.isExplicitlySet('font-size') && !prefs.overrideFont)
             ? node.style.fontSize
             : prefs.fontSize;
 
         if (prefs.overrideFont) {
-          final font = prefs.fontFamily ?? prefs.serifFont;
-          node.style.fontFamily = font;
+          node.style.fontFamily = prefs.resolvedFont;
           node.style.markExplicitlySet('font-family');
           node.style.fontSize = effectiveFontSize;
+          node.style.markExplicitlySet('font-size');
+          node.style.fontWeight = _fontWeightFromString(prefs.fontWeight);
+          node.style.markExplicitlySet('font-weight');
+        }
+
+        // Minimum font size clamp: never render body text smaller than the
+        // user's floor, even when the book specifies a tiny font-size.
+        if (prefs.minimumFontSize > 0 &&
+            node.style.fontSize < prefs.minimumFontSize) {
+          node.style.fontSize = prefs.minimumFontSize;
           node.style.markExplicitlySet('font-size');
         }
 
@@ -98,8 +111,13 @@ extension UDTNodeExtensions on UDTNode {
             }
             return true;
           }).toList();
-          final isImageOnly = nonWhitespaceChildren.isNotEmpty &&
-              nonWhitespaceChildren.every((c) => c is AtomicNode && (c.tagName == 'img' || c.tagName == 'svg'));
+          final isImageOnly =
+              nonWhitespaceChildren.isNotEmpty &&
+              nonWhitespaceChildren.every(
+                (c) =>
+                    c is AtomicNode &&
+                    (c.tagName == 'img' || c.tagName == 'svg'),
+              );
 
           if (isImageOnly) {
             node.style.textIndent = 0.0;
@@ -110,8 +128,6 @@ extension UDTNodeExtensions on UDTNode {
         }
       }
     } else if (currentBlock != null) {
-
-
       // Child inline/text nodes: synchronize inheritable layout properties
       // so line-breaker / RenderHyperBoxLayout fragments directly receive the block's values.
       if (currentBlock.style.isExplicitlySet('text-align')) {
@@ -122,6 +138,17 @@ extension UDTNodeExtensions on UDTNode {
       }
       if (currentBlock.style.isExplicitlySet('line-height')) {
         node.style.lineHeight = currentBlock.style.lineHeight;
+      }
+
+      // CJK font: apply the user's CJK font to text runs containing CJK
+      // characters (Han ideographs, kana, hangul). This is applied per text
+      // node — mixed Latin/CJK nodes use the CJK font for the whole run, which
+      // is visually acceptable since CJK fonts include Latin glyphs.
+      if (node is TextNode &&
+          prefs.defaultCjkFont.isNotEmpty &&
+          _containsCjk(node.text)) {
+        node.style.fontFamily = prefs.defaultCjkFont;
+        node.style.markExplicitlySet('font-family');
       }
     }
 
@@ -169,3 +196,43 @@ extension UDTNodeExtensions on UDTNode {
   }
 }
 
+/// Maps the user-facing [ReaderTextAlign] onto hyper_render's [HyperTextAlign].
+extension ReaderTextAlignX on ReaderTextAlign {
+  HyperTextAlign toHyperTextAlign() {
+    return switch (this) {
+      ReaderTextAlign.left => HyperTextAlign.left,
+      ReaderTextAlign.center => HyperTextAlign.center,
+      ReaderTextAlign.right => HyperTextAlign.right,
+      ReaderTextAlign.justify => HyperTextAlign.justify,
+    };
+  }
+}
+
+/// Resolves the effective font family, honoring the user's default-font choice
+/// (serif vs sans-serif) when no explicit [ReaderPreferences.fontFamily] is set.
+extension ReaderPreferencesFontX on ReaderPreferences {
+  String get resolvedFont =>
+      fontFamily ??
+      (defaultFont == ReaderDefaultFont.serif ? serifFont : sansSerifFont);
+}
+
+/// Converts a CSS-style font-weight string (`normal`, `bold`, `lighter`,
+/// `300`, `500`, …) into a Flutter [FontWeight].
+FontWeight _fontWeightFromString(String weight) {
+  return switch (weight) {
+    'bold' || '700' => FontWeight.bold,
+    'lighter' || '300' => FontWeight.w300,
+    '500' => FontWeight.w500,
+    '600' => FontWeight.w600,
+    '200' => FontWeight.w200,
+    _ => FontWeight.normal,
+  };
+}
+
+/// Matches CJK ideographs (Han), kana, and hangul.
+final RegExp _cjkRegex = RegExp(
+  r'[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]',
+);
+
+/// Returns true if [text] contains any CJK character.
+bool _containsCjk(String text) => _cjkRegex.hasMatch(text);

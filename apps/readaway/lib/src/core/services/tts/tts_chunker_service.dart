@@ -126,7 +126,7 @@ class TtsChunkingService {
 /// - Multi-script sentence boundary detection (Latin, CJK, Cyrillic, etc.)
 /// - Trailing quotation mark and bracket attachment
 /// - Extensive abbreviation, title, decimal, and initial protection
-/// - Hierarchical clause breakpoint search for long utterances (Readest style)
+/// - Hierarchical clause breakpoint search for long utterances
 /// - Unspeakable noise filtering (ornamental dividers, bullet symbols)
 /// - Exact 1:1 character offset tracking
 /// - Paragraph boundary identification
@@ -388,7 +388,7 @@ class TextChunker {
 
   /// Hierarchically slices a long utterance (> [maxChars]) using natural clause breakpoints.
   ///
-  /// Priorities (Readest tiered strategy):
+  /// Priorities:
   /// 1. Major clause separators (;, :, —)
   /// 2. Parentheses/brackets
   /// 3. Commas & pauses (,)

@@ -21,6 +21,8 @@ abstract class RecentDocument with _$RecentDocument {
     required String format,
     @Default(0) int lastReadPage,
     @Default(0) int pageCount,
+    @Default(0) int lastReadChapter,
+    @Default(0.0) double lastReadProgression,
     @Default(ReadingStatus.unread) ReadingStatus readingStatus,
     @Default(false) bool isFavorite,
     @Default([]) List<String> tags,
@@ -37,14 +39,28 @@ abstract class RecentDocument with _$RecentDocument {
 
   double get progressPercent {
     if (pageCount <= 0) return 0.0;
+    // Anchor-based progress: (chapter + progression) / chapterCount. This is
+    // stable across reflow and correct for reflowable documents.
+    final hasAnchor = lastReadChapter > 0 || lastReadProgression > 0.0;
+    if (hasAnchor) {
+      return ((lastReadChapter + lastReadProgression) / pageCount).clamp(
+        0.0,
+        1.0,
+      );
+    }
+    // Legacy fallback for documents saved before anchors existed.
     return ((lastReadPage + 1) / pageCount).clamp(0.0, 1.0);
   }
 
   String get progressFormatted => '${(progressPercent * 100).toInt()}%';
 
-  bool get isFinished =>
-      readingStatus == ReadingStatus.finished ||
-      (pageCount > 0 && lastReadPage >= pageCount - 1);
+  bool get isFinished {
+    if (readingStatus == ReadingStatus.finished) return true;
+    if (pageCount <= 0) return false;
+    final hasAnchor = lastReadChapter > 0 || lastReadProgression > 0.0;
+    if (hasAnchor) return lastReadChapter >= pageCount - 1;
+    return lastReadPage >= pageCount - 1;
+  }
 
   String get formattedFileSize {
     if (fileSize <= 0) return '';

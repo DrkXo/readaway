@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/routes/routes.dart';
 import '../../../../core/services/services.dart';
@@ -68,21 +69,21 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
         BlocListener<SettingsBloc, SettingsState>(
           listenWhen: (prev, curr) =>
               prev.appSettings.screenWakeLock !=
-                  curr.appSettings.screenWakeLock ||
-              prev.readerPrefs.engineMode !=
-                  curr.readerPrefs.engineMode,
+              curr.appSettings.screenWakeLock,
           listener: (context, state) {
             syncSettings(state);
-            final bloc = context.read<ReaderBloc>();
-            if (bloc.state.hasDocument &&
-                bloc.state.isReflowable &&
-                bloc.state.engineMode != state.readerPrefs.engineMode) {
-              bloc.add(
-                ReaderEvent.engineModeChanged(
-                  newMode: state.readerPrefs.engineMode,
-                ),
-              );
-            }
+          },
+        ),
+        BlocListener<ReaderBloc, ReaderState>(
+          listenWhen: (prev, curr) =>
+              prev.documentPath != curr.documentPath &&
+              curr.documentPath != null,
+          listener: (context, state) {
+            // Load any per-book overrides for the newly opened document so the
+            // effective prefs (document ?? global) reflect the book's settings.
+            context.read<SettingsBloc>().add(
+              SettingsEvent.loadDocumentPrefs(state.documentPath!),
+            );
           },
         ),
         BlocListener<ReaderBloc, ReaderState>(
@@ -148,9 +149,15 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
 
           return BlocBuilder<SettingsBloc, SettingsState>(
             buildWhen: (prev, curr) =>
-                prev.globalReaderPrefs != curr.globalReaderPrefs,
+                prev.globalReaderPrefs != curr.globalReaderPrefs ||
+                prev.documentReaderPrefs != curr.documentReaderPrefs,
             builder: (context, settingsState) {
-              final prefs = settingsState.globalReaderPrefs;
+              // Effective prefs: per-book overrides win, otherwise global.
+              final documentPath = readerState.documentPath;
+              final prefs = documentPath != null
+                  ? (settingsState.documentReaderPrefs[documentPath] ??
+                        settingsState.globalReaderPrefs)
+                  : settingsState.globalReaderPrefs;
 
               return PopScope(
                 canPop: false,
