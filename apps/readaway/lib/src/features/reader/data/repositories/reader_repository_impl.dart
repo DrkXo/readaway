@@ -28,6 +28,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
   final DocumentCoverService _coverService;
   final LibraryRepository _libraryRepository;
   ReflowableDocumentReader? _reflowReader;
+  String? _currentDocumentPath;
+  bool _isMuPdfOpen = false;
 
   ReaderRepositoryImpl(
     this._muPdfService,
@@ -36,6 +38,13 @@ class ReaderRepositoryImpl implements ReaderRepository {
     this._coverService,
     this._libraryRepository,
   );
+
+  Future<void> _ensureMuPdfOpen() async {
+    if (!_isMuPdfOpen && _currentDocumentPath != null) {
+      await _muPdfService.openDocument(_currentDocumentPath!);
+      _isMuPdfOpen = true;
+    }
+  }
 
   @override
   TaskEither<Failure, ReaderDocumentInfo> openDocument(
@@ -55,11 +64,20 @@ class ReaderRepositoryImpl implements ReaderRepository {
           throw UnsupportedDocumentFormatFailure(ext.isEmpty ? 'unknown' : ext);
         }
 
-        await _muPdfService.openDocument(path);
+        _reflowReader?.dispose();
+        _reflowReader = null;
+        if (_isMuPdfOpen) {
+          await _muPdfService.closeDocument();
+          _isMuPdfOpen = false;
+        }
 
-        final isReflowable = await _muPdfService.isReflowable();
-        final rawOutline = await _muPdfService.getOutLine();
-        final metaTitle = await _muPdfService.getMetaData('info:Title');
+        _currentDocumentPath = path;
+
+        final format = SupportedDocumentFormats.findFormat(path);
+        final isReflowable = format?.isReflowable ?? false;
+
+        List<OutlineItem> rawOutline = [];
+        String? metaTitle;
 
         if (isReflowable) {
           try {
@@ -72,12 +90,35 @@ class ReaderRepositoryImpl implements ReaderRepository {
           _reflowReader = null;
         }
 
+        if (!isReflowable || engineMode == ReaderEngineMode.publisherFidelity) {
+          await _ensureMuPdfOpen();
+          rawOutline = await _muPdfService.getOutLine();
+          metaTitle = await _muPdfService.getMetaData('info:Title');
+        } else {
+          // Reflowable document in Custom Flow mode:
+          // For EPUB, briefly extract rich TOC and metadata via MuPDF, then immediately
+          // release the heavy background Fitz document from memory to avoid double loading.
+          if (format == SupportedDocumentFormats.epub) {
+            try {
+              await _muPdfService.openDocument(path);
+              rawOutline = await _muPdfService.getOutLine();
+              metaTitle = await _muPdfService.getMetaData('info:Title');
+            } catch (e) {
+              logger.w('Could not extract EPUB metadata via MuPdfService: $e');
+            } finally {
+              await _muPdfService.closeDocument();
+              _isMuPdfOpen = false;
+            }
+          }
+        }
+
         final int pageCount;
         if (isReflowable &&
             engineMode == ReaderEngineMode.customFlow &&
             _reflowReader != null) {
           pageCount = _reflowReader!.sectionCount;
         } else {
+          await _ensureMuPdfOpen();
           pageCount = await _muPdfService.getPageCount();
         }
 
@@ -163,6 +204,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
 
         // Non-reflowable document (PDF, XPS, CBZ) or Publisher Fidelity -> MuPDF Native C
+        await _ensureMuPdfOpen();
         final pageLinks = await _muPdfService.getPageLinks(pageIndex);
         final domainLinks = pageLinks
             .map(
@@ -204,6 +246,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
           return currentPage;
         }
 
+        await _ensureMuPdfOpen();
+
         if (fromMode == ReaderEngineMode.customFlow &&
             toMode == ReaderEngineMode.publisherFidelity) {
           final clampedSpine = currentPage.clamp(
@@ -238,6 +282,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
             engineMode == ReaderEngineMode.customFlow) {
           return _reflowReader!.sectionCount;
         }
+        await _ensureMuPdfOpen();
         return await _muPdfService.getPageCount();
       },
       (error, stack) => DocumentParseFailure(
@@ -258,6 +303,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
           final html = _reflowReader!.loadSectionHtml(pageIndex);
           return reader_html_utils.extractPageText(html);
         }
+        await _ensureMuPdfOpen();
         final text = await _muPdfService.extractPageText(pageIndex);
         return text ?? '';
       },
@@ -327,7 +373,10 @@ class ReaderRepositoryImpl implements ReaderRepository {
   @override
   TaskEither<Failure, int> resolveLink(String uri) {
     return TaskEither.tryCatch(
-      () async => await _muPdfService.resolveUri(uri),
+      () async {
+        await _ensureMuPdfOpen();
+        return await _muPdfService.resolveUri(uri);
+      },
       (error, stack) => CorruptDocumentFailure(
         'Failed to resolve link: $error',
         cause: error,
@@ -337,11 +386,16 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, Uint8List?> loadAssetBytes(String assetPath, {int? pageIndex}) {
+  TaskEither<Failure, Uint8List?> loadAssetBytes(
+    String assetPath, {
+    int? pageIndex,
+  }) {
     return TaskEither.tryCatch(
       () async {
         if (_reflowReader == null) {
-          logger.w('[ReaderRepository] loadAssetBytes: _reflowReader is null for asset: $assetPath');
+          logger.w(
+            '[ReaderRepository] loadAssetBytes: _reflowReader is null for asset: $assetPath',
+          );
           return null;
         }
 
@@ -366,7 +420,9 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
 
         // 4. Try path without leading slash
-        final noSlash = decoded.startsWith('/') ? decoded.substring(1) : decoded;
+        final noSlash = decoded.startsWith('/')
+            ? decoded.substring(1)
+            : decoded;
         if (noSlash != decoded) {
           bytes = _reflowReader!.loadAssetBytes(noSlash);
           if (bytes != null && bytes.isNotEmpty) return bytes;
@@ -377,11 +433,17 @@ class ReaderRepositoryImpl implements ReaderRepository {
         bytes = _reflowReader!.loadAssetBytes(base);
         if (bytes != null && bytes.isNotEmpty) return bytes;
 
-        logger.w('[ReaderRepository] loadAssetBytes: could not resolve asset "$assetPath" (page: $pageIndex)');
+        logger.w(
+          '[ReaderRepository] loadAssetBytes: could not resolve asset "$assetPath" (page: $pageIndex)',
+        );
         return null;
       },
       (error, stack) {
-        logger.e('[ReaderRepository] loadAssetBytes error: $error', error, stack);
+        logger.e(
+          '[ReaderRepository] loadAssetBytes error: $error',
+          error,
+          stack,
+        );
         return StorageReadFailure(
           assetPath,
           cause: error,
@@ -459,7 +521,11 @@ class ReaderRepositoryImpl implements ReaderRepository {
       () async {
         _reflowReader?.dispose();
         _reflowReader = null;
-        await _muPdfService.closeDocument();
+        if (_isMuPdfOpen) {
+          await _muPdfService.closeDocument();
+          _isMuPdfOpen = false;
+        }
+        _currentDocumentPath = null;
         return unit;
       },
       (error, stack) => UnexpectedFailure(
