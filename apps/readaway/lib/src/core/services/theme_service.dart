@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 
 import '../models/models.dart';
-import '../theme/theme.dart';
+import '../theme/theme_scheme.dart';
 import 'settings_service.dart';
 
 @Singleton()
@@ -18,6 +18,12 @@ class ThemeService {
 
   ThemeMode get currentThemeMode => _currentThemeMode;
   Stream<ThemeMode> get themeChanges => _themeController.stream;
+
+  /// All available color schemes, in display order.
+  List<ThemeScheme> get schemes => ThemeSchemes.all;
+
+  /// The currently active color scheme.
+  ThemeScheme get currentScheme => ThemeSchemes.tokenInspired;
 
   ThemeService({required this._settings});
 
@@ -44,20 +50,20 @@ class ThemeService {
   }
 
   ThemeData getLightTheme() {
-    final scheme = AppColors.light.scheme;
+    final scheme = ThemeSchemes.tokenInspired.light.scheme;
     return ThemeData(
       colorScheme: scheme,
-      extensions: [AppColors.light],
+      extensions: [ThemeSchemes.tokenInspired.light],
       useMaterial3: true,
       textSelectionTheme: _selectionTheme(scheme),
     );
   }
 
   ThemeData getDarkTheme() {
-    final scheme = AppColors.dark.scheme;
+    final scheme = ThemeSchemes.tokenInspired.dark.scheme;
     return ThemeData(
       colorScheme: scheme,
-      extensions: [AppColors.dark],
+      extensions: [ThemeSchemes.tokenInspired.dark],
       useMaterial3: true,
       textSelectionTheme: _selectionTheme(scheme),
     );

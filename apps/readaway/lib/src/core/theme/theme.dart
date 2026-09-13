@@ -1,6 +1,10 @@
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:theme_tailor_annotation/theme_tailor_annotation.dart';
+
+part 'theme.tailor.dart';
 
 extension ThemeExtensions on BuildContext {
   AppColors get appColors => Theme.of(this).extension<AppColors>()!;
@@ -8,10 +12,37 @@ extension ThemeExtensions on BuildContext {
 }
 
 // ---------------------------------------------------------------------------
+// Custom lerp encoders for types theme_tailor doesn't handle by default
+// ---------------------------------------------------------------------------
+
+/// Lerps [ColorScheme] values.
+class ColorSchemeEncoder extends ThemeEncoder<ColorScheme> {
+  const ColorSchemeEncoder();
+
+  @override
+  ColorScheme lerp(ColorScheme a, ColorScheme b, double t) =>
+      ColorScheme.lerp(a, b, t);
+}
+
+/// Lerps [List]s of [BoxShadow].
+class BoxShadowListEncoder extends ThemeEncoder<List<BoxShadow>> {
+  const BoxShadowListEncoder();
+
+  @override
+  List<BoxShadow> lerp(List<BoxShadow> a, List<BoxShadow> b, double t) =>
+      BoxShadow.lerpList(a, b, t)!;
+}
+
+// ---------------------------------------------------------------------------
 // AppColors — single source of truth for all colors + shadows
 // ---------------------------------------------------------------------------
 
-class AppColors extends ThemeExtension<AppColors> {
+@TailorMixin(
+  themeGetter: ThemeGetter.none,
+  encoders: [ColorSchemeEncoder(), BoxShadowListEncoder()],
+)
+class AppColors extends ThemeExtension<AppColors>
+    with DiagnosticableTreeMixin, _$AppColorsTailorMixin {
   const AppColors({
     required this.scheme,
     required this.readerBackground,
@@ -25,15 +56,25 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.onWarning,
   });
 
+  @override
   final ColorScheme scheme;
+  @override
   final Color readerBackground;
+  @override
   final Color readerForeground;
+  @override
   final List<BoxShadow> shadowSm;
+  @override
   final List<BoxShadow> shadowMd;
+  @override
   final List<BoxShadow> shadowLg;
+  @override
   final Color success;
+  @override
   final Color onSuccess;
+  @override
   final Color warning;
+  @override
   final Color onWarning;
 
   // Light ------------------------------------------------------------------
@@ -191,60 +232,6 @@ class AppColors extends ThemeExtension<AppColors> {
     warning: Color(0xFFFFBA38),
     onWarning: Color(0xFF191918),
   );
-
-  // ThemeExtension ---------------------------------------------------------
-
-  @override
-  AppColors copyWith({
-    ColorScheme? scheme,
-    Color? readerBackground,
-    Color? readerForeground,
-    List<BoxShadow>? shadowSm,
-    List<BoxShadow>? shadowMd,
-    List<BoxShadow>? shadowLg,
-    Color? success,
-    Color? onSuccess,
-    Color? warning,
-    Color? onWarning,
-  }) {
-    return AppColors(
-      scheme: scheme ?? this.scheme,
-      readerBackground: readerBackground ?? this.readerBackground,
-      readerForeground: readerForeground ?? this.readerForeground,
-      shadowSm: shadowSm ?? this.shadowSm,
-      shadowMd: shadowMd ?? this.shadowMd,
-      shadowLg: shadowLg ?? this.shadowLg,
-      success: success ?? this.success,
-      onSuccess: onSuccess ?? this.onSuccess,
-      warning: warning ?? this.warning,
-      onWarning: onWarning ?? this.onWarning,
-    );
-  }
-
-  @override
-  AppColors lerp(AppColors? other, double t) {
-    if (other is! AppColors) return this;
-    return AppColors(
-      scheme: ColorScheme.lerp(scheme, other.scheme, t),
-      readerBackground: Color.lerp(
-        readerBackground,
-        other.readerBackground,
-        t,
-      )!,
-      readerForeground: Color.lerp(
-        readerForeground,
-        other.readerForeground,
-        t,
-      )!,
-      shadowSm: BoxShadow.lerpList(shadowSm, other.shadowSm, t)!,
-      shadowMd: BoxShadow.lerpList(shadowMd, other.shadowMd, t)!,
-      shadowLg: BoxShadow.lerpList(shadowLg, other.shadowLg, t)!,
-      success: Color.lerp(success, other.success, t)!,
-      onSuccess: Color.lerp(onSuccess, other.onSuccess, t)!,
-      warning: Color.lerp(warning, other.warning, t)!,
-      onWarning: Color.lerp(onWarning, other.onWarning, t)!,
-    );
-  }
 }
 
 // ---------------------------------------------------------------------------
