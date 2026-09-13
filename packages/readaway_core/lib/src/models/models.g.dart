@@ -154,3 +154,92 @@ Map<String, dynamic> _$ReadingAnchorToJson(_ReadingAnchor instance) =>
       'chapterIndex': instance.chapterIndex,
       'progressionInChapter': instance.progressionInChapter,
     };
+
+_TransformContext _$TransformContextFromJson(Map<String, dynamic> json) =>
+    _TransformContext(
+      content: json['content'] as String,
+      language: json['language'] as String?,
+      vertical: json['vertical'] as bool? ?? false,
+      replaceQuotationMarks: json['replaceQuotationMarks'] as bool? ?? false,
+      convertChineseVariant: json['convertChineseVariant'] as String?,
+      overrideLayout: json['overrideLayout'] as bool? ?? false,
+      extra:
+          json['extra'] as Map<String, dynamic>? ?? const <String, dynamic>{},
+    );
+
+Map<String, dynamic> _$TransformContextToJson(_TransformContext instance) =>
+    <String, dynamic>{
+      'content': instance.content,
+      'language': instance.language,
+      'vertical': instance.vertical,
+      'replaceQuotationMarks': instance.replaceQuotationMarks,
+      'convertChineseVariant': instance.convertChineseVariant,
+      'overrideLayout': instance.overrideLayout,
+      'extra': instance.extra,
+    };
+
+_TxtMetadata _$TxtMetadataFromJson(Map<String, dynamic> json) => _TxtMetadata(
+  title: json['title'] as String,
+  author: json['author'] as String?,
+  language: json['language'] as String?,
+  encoding: json['encoding'] as String,
+  identifier: json['identifier'] as String?,
+);
+
+Map<String, dynamic> _$TxtMetadataToJson(_TxtMetadata instance) =>
+    <String, dynamic>{
+      'title': instance.title,
+      'author': instance.author,
+      'language': instance.language,
+      'encoding': instance.encoding,
+      'identifier': instance.identifier,
+    };
+
+_TxtChapter _$TxtChapterFromJson(Map<String, dynamic> json) => _TxtChapter(
+  index: (json['index'] as num).toInt(),
+  title: json['title'] as String,
+  contentHtml: json['contentHtml'] as String,
+  isVolume: json['isVolume'] as bool? ?? false,
+  detected: json['detected'] as bool? ?? true,
+);
+
+Map<String, dynamic> _$TxtChapterToJson(_TxtChapter instance) =>
+    <String, dynamic>{
+      'index': instance.index,
+      'title': instance.title,
+      'contentHtml': instance.contentHtml,
+      'isVolume': instance.isVolume,
+      'detected': instance.detected,
+    };
+
+_FootnoteItem _$FootnoteItemFromJson(Map<String, dynamic> json) =>
+    _FootnoteItem(
+      id: json['id'] as String,
+      referenceId: json['referenceId'] as String?,
+      title: json['title'] as String?,
+      contentHtml: json['contentHtml'] as String,
+      type: json['type'] as String? ?? 'footnote',
+    );
+
+Map<String, dynamic> _$FootnoteItemToJson(_FootnoteItem instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'referenceId': instance.referenceId,
+      'title': instance.title,
+      'contentHtml': instance.contentHtml,
+      'type': instance.type,
+    };
+
+_DetectedEncoding _$DetectedEncodingFromJson(Map<String, dynamic> json) =>
+    _DetectedEncoding(
+      name: json['name'] as String,
+      confidence: (json['confidence'] as num).toDouble(),
+      hasBom: json['hasBom'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$DetectedEncodingToJson(_DetectedEncoding instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'confidence': instance.confidence,
+      'hasBom': instance.hasBom,
+    };

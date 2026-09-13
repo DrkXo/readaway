@@ -11,6 +11,7 @@ import 'epub_container.dart';
 import 'nav_parser.dart';
 import 'ncx_parser.dart';
 import 'opf_parser.dart';
+import '../../transformers/transformers.dart';
 
 /// Pure-Dart EPUB implementation of [ReflowableDocumentReader].
 ///
@@ -26,6 +27,7 @@ class EpubDocumentReader implements ReflowableDocumentReader {
   final DocumentMetadata? _metadata;
   final List<OutlineItem> _outline;
   final String? _coverImagePath;
+  final TextTransformPipeline _pipeline;
   final Map<String, Uint8List> _assetCache = {};
   bool _disposed = false;
 
@@ -36,13 +38,17 @@ class EpubDocumentReader implements ReflowableDocumentReader {
     required this._metadata,
     required this._outline,
     required this._coverImagePath,
+    this._pipeline = TextTransformPipeline.defaultPipeline,
   });
 
   /// Opens an EPUB document from [filePath].
-  static Future<EpubDocumentReader> fromFile(String filePath) async {
+  static Future<EpubDocumentReader> fromFile(
+    String filePath, {
+    TextTransformPipeline pipeline = TextTransformPipeline.defaultPipeline,
+  }) async {
     final container = EpubContainer.openFile(filePath);
     try {
-      return await _open(container);
+      return await _open(container, pipeline: pipeline);
     } catch (_) {
       container.dispose();
       rethrow;
@@ -50,10 +56,13 @@ class EpubDocumentReader implements ReflowableDocumentReader {
   }
 
   /// Opens an EPUB document from raw [bytes].
-  static Future<EpubDocumentReader> fromBytes(Uint8List bytes) async {
+  static Future<EpubDocumentReader> fromBytes(
+    Uint8List bytes, {
+    TextTransformPipeline pipeline = TextTransformPipeline.defaultPipeline,
+  }) async {
     final container = EpubContainer.openBytes(bytes);
     try {
-      return await _open(container);
+      return await _open(container, pipeline: pipeline);
     } catch (_) {
       container.dispose();
       rethrow;
@@ -62,7 +71,10 @@ class EpubDocumentReader implements ReflowableDocumentReader {
 
   /// Opens the reader, offloading the expensive XML parsing to a background
   /// isolate while keeping the lazy ZIP container on the main isolate.
-  static Future<EpubDocumentReader> _open(EpubContainer container) async {
+  static Future<EpubDocumentReader> _open(
+    EpubContainer container, {
+    TextTransformPipeline pipeline = TextTransformPipeline.defaultPipeline,
+  }) async {
     final opfParser = const OpfParser();
 
     // 1. Locate the OPF (tiny container.xml — cheap on the main isolate).
@@ -111,6 +123,7 @@ class EpubDocumentReader implements ReflowableDocumentReader {
       metadata: opf.metadata,
       outline: outline,
       coverImagePath: opf.coverImagePath,
+      pipeline: pipeline,
     );
   }
 
@@ -232,7 +245,12 @@ class EpubDocumentReader implements ReflowableDocumentReader {
     if (bytes == null || bytes.isEmpty) {
       throw DocumentParseException('Section content missing: $href');
     }
-    return utf8.decode(bytes, allowMalformed: true);
+    final decoded = utf8.decode(bytes, allowMalformed: true);
+    final ctx = TransformContext(
+      content: decoded,
+      language: _metadata?.language,
+    );
+    return _pipeline.transform(ctx);
   }
 
   @override

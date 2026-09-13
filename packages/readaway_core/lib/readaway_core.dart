@@ -24,5 +24,6 @@ export 'src/readers/epub/ncx_parser.dart';
 export 'src/readers/epub/opf_parser.dart';
 export 'src/readers/html/html_text_extractor.dart';
 export 'src/readers/html/single_html_document_reader.dart';
-export 'src/readers/text/plain_text_document_reader.dart';
+export 'src/readers/text/text.dart';
 export 'src/readers/zip_container.dart';
+export 'src/transformers/transformers.dart';

@@ -81,6 +81,31 @@ void main() {
         equals(''),
       );
     });
+
+    test('extractSpeechText voices Japanese Kana ruby and mutes kanji base', () {
+      const html = '<p>私は<ruby>日本語<rp>(</rp><rt>にほんご</rt><rp>)</rp></ruby>を勉強しています。</p>';
+      final speechText = HtmlTextExtractor.extractSpeechText(html);
+      expect(speechText, contains('にほんご'));
+      expect(speechText, isNot(contains('日本語')));
+    });
+
+    test('extractSpeechText voices base text for non-kana glosses', () {
+      const html = '<p>Learning <ruby>hypertext<rt>web markup</rt></ruby> today.</p>';
+      final speechText = HtmlTextExtractor.extractSpeechText(html);
+      expect(speechText, contains('hypertext'));
+      expect(speechText, isNot(contains('web markup')));
+    });
+
+    test('extractSpeechText filters footnote citation anchors and aside bodies', () {
+      const html = '''
+        <p>Scientific discovery demonstrated results<sup><a href="#fn1">[1]</a></sup> clearly.</p>
+        <aside class="epubtype-footnote" id="fn1"><p>Citation reference text.</p></aside>
+      ''';
+      final speechText = HtmlTextExtractor.extractSpeechText(html);
+      expect(speechText, contains('Scientific discovery demonstrated results clearly.'));
+      expect(speechText, isNot(contains('[1]')));
+      expect(speechText, isNot(contains('Citation reference text.')));
+    });
   });
 
   group('ReflowableSectionText.extractSectionText', () {
