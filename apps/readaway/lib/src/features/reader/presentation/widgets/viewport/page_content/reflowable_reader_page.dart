@@ -11,6 +11,7 @@ import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../../gestures/reader_gesture_arena.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
+import 'package:readaway/src/features/reader/presentation/widgets/overlay/reader_footnote_sheet.dart';
 import 'html/hyper_page_content.dart';
 import 'reflowable_scroll_coordinator.dart';
 
@@ -266,6 +267,37 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
       final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;
       widget.onPageChangeRequested(
         int.parse(match.group(1)!).clamp(0, maxIndex),
+      );
+      return;
+    }
+
+    // Check if the link target is a footnote or note
+    final footnoteRes = await GetIt.I<ReaderRepository>()
+        .resolveFootnote(url, currentChapterIndex: widget.index)
+        .run();
+    final footnote = footnoteRes.getRight().toNullable()?.toNullable();
+    if (footnote != null && context.mounted) {
+      // Resolve optional cross-chapter jump target
+      VoidCallback? onJump;
+      if (!url.startsWith('#')) {
+        final reflowRes = await GetIt.I<ReaderRepository>()
+            .resolveReflowableLink(url)
+            .run();
+        final targetSection = reflowRes.getRight().toNullable();
+        if (targetSection != null &&
+            targetSection >= 0 &&
+            targetSection != widget.index) {
+          onJump = () {
+            final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;
+            widget.onPageChangeRequested(targetSection.clamp(0, maxIndex));
+          };
+        }
+      }
+      if (!context.mounted) return;
+      ReaderFootnoteSheet.show(
+        context: context,
+        footnote: footnote,
+        onJumpToNote: onJump,
       );
       return;
     }

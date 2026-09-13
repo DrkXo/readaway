@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_extensions.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../../core/theme/schemes/token_inspired.dart';
 import '../../../../../../../core/theme/theme.dart';
@@ -114,7 +115,15 @@ class _HyperPageContentState extends State<HyperPageContent> {
     );
 
     // Pre-process HTML to convert SVG image wrappers (commonly used for EPUB covers) into <img> tags
-    final processedHtml = _preprocessHtml(widget.html);
+    final preprocessedHtml = _preprocessHtml(widget.html);
+
+    // Apply pre-render natural reading text transformations
+    final transformCtx = TransformContext(
+      content: preprocessedHtml,
+      overrideLayout: widget.prefs.overrideLayout,
+    );
+    final processedHtml =
+        TextTransformPipeline.defaultPipeline.transform(transformCtx);
 
     // 1. Parse HTML into DocumentNode
     final document = _htmlAdapter.parse(processedHtml);

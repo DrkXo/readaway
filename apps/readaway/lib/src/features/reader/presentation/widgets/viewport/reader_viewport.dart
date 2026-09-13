@@ -13,6 +13,7 @@ import 'package:readaway_core/readaway_core.dart';
 import '../../bloc/reader_bloc.dart';
 import '../../controllers/reader_viewport_controller.dart';
 import '../common/reader_error_view.dart';
+import '../overlay/reader_footnote_sheet.dart';
 import '../tts/reader_tts_mini_player_bar.dart';
 import 'modes/continuous_reader_view.dart';
 import 'modes/paged_reader_view.dart';
@@ -382,6 +383,58 @@ class _ReaderViewportState extends State<ReaderViewport> {
   }
 
   Future<void> _onLinkTap(BuildContext context, String url) async {
+    if (url.isEmpty) return;
+
+    // Check if the link target is a footnote or note
+    final coord =
+        _paginationCoordinator.coordinateFromGlobalPage(_currentGlobalPage);
+    final footnoteRes = await GetIt.I<ReaderRepository>()
+        .resolveFootnote(url, currentChapterIndex: coord.chapterIndex)
+        .run();
+    final footnote = footnoteRes.getRight().toNullable()?.toNullable();
+    if (footnote != null && context.mounted) {
+      VoidCallback? onJump;
+      if (!url.startsWith('#')) {
+        final reflowRes = await GetIt.I<ReaderRepository>()
+            .resolveReflowableLink(url)
+            .run();
+        final targetChapter = reflowRes.getRight().toNullable();
+        if (targetChapter != null &&
+            targetChapter >= 0 &&
+            targetChapter != coord.chapterIndex) {
+          onJump = () {
+            final isContinuous =
+                widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
+                !widget.prefs.pageSnap;
+            if (isContinuous) {
+              _onNavigateRequested(
+                context,
+                context.read<ReaderBloc>().state,
+                targetChapter,
+                isContinuous: true,
+              );
+            } else {
+              final targetGlobal =
+                  _paginationCoordinator.getGlobalPageForChapter(targetChapter);
+              _onNavigateRequested(
+                context,
+                context.read<ReaderBloc>().state,
+                targetGlobal,
+                isContinuous: false,
+              );
+            }
+          };
+        }
+      }
+      if (!context.mounted) return;
+      ReaderFootnoteSheet.show(
+        context: context,
+        footnote: footnote,
+        onJumpToNote: onJump,
+      );
+      return;
+    }
+
     final res = await GetIt.I<ReaderRepository>()
         .resolveReflowableLink(url)
         .run();

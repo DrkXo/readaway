@@ -83,4 +83,48 @@ class FootnoteTransformer implements TextTransformer {
 
     return results;
   }
+
+  /// Searches [html] for a footnote matching [anchorId].
+  /// Matches standard <aside>, Duokan notes, elements with id matching [anchorId],
+  /// or elements with footnote/endnote classes.
+  static FootnoteItem? findFootnote(String html, String anchorId) {
+    if (html.isEmpty || anchorId.isEmpty) return null;
+    final cleanId = anchorId.startsWith('#') ? anchorId.substring(1) : anchorId;
+    if (cleanId.isEmpty) return null;
+
+    final doc = html_parser.parse(html);
+
+    // 1. Check if an element has matching id
+    final target = doc.getElementById(cleanId);
+    if (target != null) {
+      final epubType = target.attributes['epub:type']?.toLowerCase() ?? '';
+      final isAside = target.localName == 'aside';
+      final hasFootnoteClass = target.classes.any((c) =>
+          c.contains('footnote') || c.contains('endnote') || c.contains('note'));
+      final isLikelyNote = isAside ||
+          epubType.contains('footnote') ||
+          epubType.contains('note') ||
+          hasFootnoteClass ||
+          cleanId.toLowerCase().contains('fn') ||
+          cleanId.toLowerCase().contains('note');
+
+      if (isLikelyNote) {
+        return FootnoteItem(
+          id: cleanId,
+          contentHtml: target.innerHtml.trim(),
+          type: epubType.contains('endnote') ? 'endnote' : 'footnote',
+        );
+      }
+    }
+
+    // 2. Check extracted notes
+    final notes = extractFootnotes(html);
+    for (final note in notes) {
+      if (note.id == cleanId) {
+        return note;
+      }
+    }
+
+    return null;
+  }
 }

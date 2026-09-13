@@ -192,6 +192,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
             ttsCurrentPage: null,
             outline: info.outline,
             bookTitle: info.title,
+            author: info.author,
             loading: false,
             failure: null,
             error: null,
@@ -374,7 +375,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       }
     }
 
-    final textResult = await readerRepository.extractPageText(pageIndex).run();
+    final textResult = await readerRepository.extractSpeechText(pageIndex).run();
     final text = textResult.getOrElse((_) => '');
     if (text.trim().isEmpty) return;
 
@@ -450,7 +451,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     try {
       int? next;
       for (var i = basePage + 1; i < state.pageCount; i++) {
-        final textResult = await readerRepository.extractPageText(i).run();
+        final textResult = await readerRepository.extractSpeechText(i).run();
         final text = textResult.getOrElse((_) => '');
         if (text.trim().isNotEmpty) {
           next = i;

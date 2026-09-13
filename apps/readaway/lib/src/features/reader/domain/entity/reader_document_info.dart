@@ -9,6 +9,7 @@ abstract class ReaderDocumentInfo with _$ReaderDocumentInfo {
   const factory ReaderDocumentInfo({
     required String path,
     required String title,
+    String? author,
     required int pageCount,
     required List<OutlineItem> outline,
   }) = _ReaderDocumentInfo;

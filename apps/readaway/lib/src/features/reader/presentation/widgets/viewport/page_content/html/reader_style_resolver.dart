@@ -112,6 +112,19 @@ class ReaderStyleResolver {
       ''');
     }
 
+    // 5. Footnotes & Annotations (Ruby)
+    buffer.writeln('''
+      aside, .epubtype-footnote, .footnote {
+        font-size: 0.9em;
+        opacity: 0.85;
+      }
+      rt {
+        font-size: 0.55em;
+        line-height: 1;
+        opacity: 0.85;
+      }
+    ''');
+
     return buffer.toString();
   }
 

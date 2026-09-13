@@ -21,8 +21,17 @@ abstract interface class ReaderRepository {
   /// Loads the structured page content at [pageIndex].
   TaskEither<Failure, ReaderPageData> loadPage(int pageIndex);
 
-  /// Extracts plain text from the page at [pageIndex] (for TTS and analysis).
+  /// Extracts plain text from the page at [pageIndex] (for display and analysis).
   TaskEither<Failure, String> extractPageText(int pageIndex);
+
+  /// Extracts speech-conditioned plain text from the page at [pageIndex] (for natural TTS playback).
+  TaskEither<Failure, String> extractSpeechText(int pageIndex);
+
+  /// Attempts to resolve a footnote from [url] within the current or targeted section.
+  TaskEither<Failure, Option<FootnoteItem>> resolveFootnote(
+    String url, {
+    int? currentChapterIndex,
+  });
 
   /// Resolves cover art URI for the current document.
   TaskEither<Failure, Uri?> getCoverArtUri({

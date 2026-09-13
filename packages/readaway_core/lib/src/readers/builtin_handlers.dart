@@ -128,7 +128,8 @@ class TextFormatHandler implements DocumentFormatHandler {
 
   @override
   bool supports(String filePath, [Uint8List? bytes]) {
-    return p.extension(filePath).toLowerCase() == '.txt';
+    final ext = p.extension(filePath).toLowerCase();
+    return ext == '.txt' || ext == '.text' || ext == '.log';
   }
 
   @override

@@ -70,10 +70,12 @@ class ReaderRepositoryImpl implements ReaderRepository {
         final title = (metaTitle != null && metaTitle.isNotEmpty)
             ? metaTitle
             : (defaultTitle ?? file.uri.pathSegments.last);
+        final author = reader.metadata?.creator;
 
         return ReaderDocumentInfo(
           path: path,
           title: title,
+          author: author,
           pageCount: reader.sectionCount,
           outline: reader.outline,
         );
@@ -126,6 +128,78 @@ class ReaderRepositoryImpl implements ReaderRepository {
       },
       (error, stack) => DocumentParseFailure(
         'Failed to extract text from page $pageIndex: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  TaskEither<Failure, String> extractSpeechText(int pageIndex) {
+    return TaskEither.tryCatch(
+      () async {
+        if (_reflowReader != null &&
+            pageIndex >= 0 &&
+            pageIndex < _reflowReader!.sectionCount) {
+          return _reflowReader!.extractSectionSpeechText(pageIndex);
+        }
+        throw DocumentParseFailure('Invalid section index: $pageIndex');
+      },
+      (error, stack) => DocumentParseFailure(
+        'Failed to extract speech text from page $pageIndex: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  TaskEither<Failure, Option<FootnoteItem>> resolveFootnote(
+    String url, {
+    int? currentChapterIndex,
+  }) {
+    return TaskEither.tryCatch(
+      () async {
+        if (_reflowReader == null || url.trim().isEmpty) {
+          return none();
+        }
+
+        String? targetHref;
+        String? anchorId;
+        if (url.contains('#')) {
+          final parts = url.split('#');
+          targetHref = parts.first.trim().isEmpty ? null : parts.first.trim();
+          anchorId = parts.length > 1 ? parts[1].trim() : null;
+        } else {
+          targetHref = url.trim();
+        }
+
+        if (anchorId == null || anchorId.isEmpty) {
+          return none();
+        }
+
+        // Determine which section to search in
+        int? targetSectionIndex;
+        if (targetHref != null && targetHref.isNotEmpty) {
+          targetSectionIndex = _reflowReader!.resolveSectionIndex(targetHref);
+        }
+        targetSectionIndex ??= currentChapterIndex;
+
+        if (targetSectionIndex == null ||
+            targetSectionIndex < 0 ||
+            targetSectionIndex >= _reflowReader!.sectionCount) {
+          return none();
+        }
+
+        final html = _reflowReader!.loadSectionHtml(targetSectionIndex);
+        final footnote = FootnoteTransformer.findFootnote(html, anchorId);
+        if (footnote != null) {
+          return some(footnote);
+        }
+        return none();
+      },
+      (error, stack) => DocumentParseFailure(
+        'Failed to resolve footnote for "$url": $error',
         cause: error,
         stackTrace: stack,
       ),
