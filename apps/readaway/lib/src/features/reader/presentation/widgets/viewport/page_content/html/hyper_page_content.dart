@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_extensions.dart';
 
+import '../../../../../../../core/theme/schemes/token_inspired.dart';
 import '../../../../../../../core/theme/theme.dart';
 import '../../../../../../settings/domain/entity/reader_preferences.dart';
 import 'reader_style_resolver.dart';
@@ -76,8 +77,8 @@ class _HyperPageContentState extends State<HyperPageContent> {
     final appColors =
         Theme.of(context).extension<AppColors>() ??
         (Theme.of(context).brightness == Brightness.dark
-            ? AppColors.dark
-            : AppColors.light);
+            ? tokenInspiredDark
+            : tokenInspiredLight);
     final textColor = appColors.readerForeground;
     final linkColor = appColors.scheme.primary;
     final backgroundColor = appColors.readerBackground;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../../core/models/models.dart';
+import '../../../../../../core/theme/schemes/token_inspired.dart';
 import '../../../../../../core/theme/theme.dart';
 import 'reader_brightness_quick_view.dart';
 import 'reader_font_size_quick_view.dart';
@@ -60,7 +61,7 @@ class ReaderBottomControlsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final appColors = theme.extension<AppColors>() ?? AppColors.light;
+    final appColors = theme.extension<AppColors>() ?? tokenInspiredLight;
     final panelBgColor =
         backgroundColor ?? scheme.surface.withValues(alpha: 0.95);
 

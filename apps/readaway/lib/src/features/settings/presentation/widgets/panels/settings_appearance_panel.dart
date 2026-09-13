@@ -6,6 +6,7 @@ import '../../bloc/settings/settings_bloc.dart';
 import '../reader_prefs_scope.dart';
 import '../settings_bloc_x.dart';
 import '../widgets.dart';
+import 'scheme_picker_card.dart';
 
 class SettingsAppearancePanel extends StatelessWidget {
   const SettingsAppearancePanel({super.key});
@@ -22,6 +23,7 @@ class SettingsAppearancePanel extends StatelessWidget {
               settings.copyWith(
                 globalViewSettings: settings.globalViewSettings.copyWith(
                   theme: 'system',
+                  selectedScheme: 'tokenInspired',
                 ),
               ),
             ),
@@ -59,7 +61,10 @@ class SettingsAppearancePanel extends StatelessWidget {
             SettingsSection(
               title: 'Theme',
               onReset: resetTheme,
-              rows: const [_ThemeModeCard()],
+              rows: const [
+                _ThemeModeCard(),
+                SchemePickerCard(),
+              ],
             ),
             const SizedBox(height: 24),
             SettingsSection(
