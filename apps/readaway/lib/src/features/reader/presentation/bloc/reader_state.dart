@@ -7,11 +7,10 @@ abstract class ReaderState with _$ReaderState {
     Failure? failure,
     String? error,
     String? fileName,
-    @Default(false) bool isReflowable,
     @Default(0) int pageCount,
     @Default(0) int currentPage,
-    List<ReaderDocument?>? documentPages,
-    List<ui.Image?>? pageImages,
+    List<String?>? pageHtmls,
+    List<List<ReaderLink>?>? pageLinks,
     @Default(<int>{}) Set<int> loadingPages,
     List<OutlineItem>? outline,
     String? bookTitle,
@@ -20,11 +19,21 @@ abstract class ReaderState with _$ReaderState {
     UiFeedback? transientFeedback,
     @Default(false) bool ttsActive,
     int? ttsCurrentPage,
+    int? virtualPageCount,
+    int? currentVirtualPage,
+    ReadingAnchor? pendingRestoreAnchor,
   }) = _ReaderState;
 
   const ReaderState._();
 
-  bool get hasDocument => documentPages != null || pageImages != null;
+  bool get hasDocument => pageHtmls != null;
+
+  /// Effective page count to display in top bar, bottom scrubber, and page controls.
+  int get displayPageCount =>
+      (virtualPageCount != null) ? virtualPageCount! : pageCount;
+
+  /// Effective current page to display in top bar, bottom scrubber, and page controls.
+  int get displayCurrentPage => currentVirtualPage ?? currentPage;
 
   /// Whether the reader's viewport is currently looking at the page being read aloud by TTS.
   bool get isViewingTtsPage =>

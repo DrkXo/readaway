@@ -9,8 +9,10 @@
 // coverage:ignore-file
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
+import 'package:readaway_core/readaway_core.dart' as _i923;
 
 import '../../features/library/data/datasources/file_picker_data_source.dart'
     as _i502;
@@ -37,7 +39,6 @@ import '../../features/reader/domain/repositories/reader_repository.dart'
     as _i820;
 import '../../features/reader/domain/repositories/reader_tts_repository.dart'
     as _i779;
-import '../../features/reader/domain/services/document_parser.dart' as _i428;
 import '../../features/reader/presentation/bloc/reader_bloc.dart' as _i523;
 import '../../features/settings/data/repositories/settings_repository_impl.dart'
     as _i955;
@@ -55,12 +56,10 @@ import '../services/audio/audio_player_service.dart' as _i370;
 import '../services/document_cover_service.dart' as _i69;
 import '../services/file_open_service.dart' as _i156;
 import '../services/font_service.dart' as _i662;
-import '../services/html_document_parser.dart' as _i865;
 import '../services/http/http_service.dart' as _i920;
 import '../services/isolate_service.dart' as _i548;
 import '../services/logging_service.dart' as _i520;
 import '../services/lookup/lookup_service.dart' as _i456;
-import '../services/mupdf_service.dart' as _i16;
 import '../services/notification_service.dart' as _i941;
 import '../services/package_info_service.dart' as _i313;
 import '../services/path_service.dart' as _i145;
@@ -80,6 +79,7 @@ import '../services/tts/tts_engine.dart' as _i893;
 import '../services/tts/tts_engine_registry_impl.dart' as _i999;
 import '../services/wakelock_service.dart' as _i669;
 import '../services/window_service.dart' as _i516;
+import 'di_module.dart' as _i211;
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
@@ -88,6 +88,7 @@ extension GetItInjectableX on _i174.GetIt {
     _i526.EnvironmentFilter? environmentFilter,
   }) async {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
+    final coreModule = _$CoreModule();
     gh.singleton<_i494.AppRoutes>(() => _i494.AppRoutes());
     await gh.singletonAsync<_i520.LoggingService>(() {
       final i = _i520.LoggingService();
@@ -106,9 +107,11 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
+    gh.lazySingleton<_i923.PaginationCoordinator>(
+      () => coreModule.paginationCoordinator(),
+    );
     gh.lazySingleton<_i145.AppPathService>(() => _i145.AppPathService());
     gh.lazySingleton<_i427.ToastService>(() => _i427.ToastService());
-    gh.lazySingleton<_i864.TextChunker>(() => _i864.TextChunker());
     gh.lazySingleton<_i502.FilePickerDataSource>(
       () => _i502.FilePickerDataSource(),
     );
@@ -146,8 +149,8 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i428.DocumentParser<String>>(
-      () => const _i865.HtmlDocumentParser(),
+    gh.lazySingleton<_i69.DocumentCoverService>(
+      () => _i69.DocumentCoverService(gh<_i145.AppPathService>()),
     );
     gh.factory<_i155.HiveConfigService>(
       () => _i155.HiveConfigService(gh<_i145.AppPathService>()),
@@ -220,13 +223,6 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.singleton<_i16.MuPdfService>(
-      () => _i16.MuPdfService(
-        isolateService: gh<_i548.IsolateService>(),
-        loggingService: gh<_i520.LoggingService>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
     await gh.singletonAsync<_i114.SettingsService>(
       () {
         final i = _i114.SettingsService(
@@ -252,12 +248,6 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i69.DocumentCoverService>(
-      () => _i69.DocumentCoverService(
-        gh<_i16.MuPdfService>(),
-        gh<_i145.AppPathService>(),
-      ),
-    );
     gh.lazySingleton<_i674.SettingsRepository>(
       () => _i955.SettingsRepositoryImpl(gh<_i114.SettingsService>()),
     );
@@ -281,6 +271,13 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i433.LibraryLocalDataSource>(
       () => _i433.LibraryLocalDataSource(gh<_i1024.AppStorageService>()),
     );
+    gh.lazySingleton<_i810.LibraryRepository>(
+      () => _i912.LibraryRepositoryImpl(
+        gh<_i433.LibraryLocalDataSource>(),
+        gh<_i502.FilePickerDataSource>(),
+        gh<_i69.DocumentCoverService>(),
+      ),
+    );
     gh.lazySingleton<_i573.TtsControllerService>(
       () => _i573.TtsControllerService(
         gh<_i893.TtsEngineRegistry>(),
@@ -294,12 +291,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i779.ReaderTtsRepository>(
       () => _i22.ReaderTtsRepositoryImpl(gh<_i573.TtsControllerService>()),
     );
-    gh.lazySingleton<_i810.LibraryRepository>(
-      () => _i912.LibraryRepositoryImpl(
-        gh<_i433.LibraryLocalDataSource>(),
-        gh<_i502.FilePickerDataSource>(),
+    gh.lazySingleton<_i820.ReaderRepository>(
+      () => _i788.ReaderRepositoryImpl(
+        gh<_i516.WindowService>(),
+        gh<_i941.NotificationService>(),
         gh<_i69.DocumentCoverService>(),
-        gh<_i16.MuPdfService>(),
+        gh<_i810.LibraryRepository>(),
       ),
     );
     gh.lazySingleton<_i228.SettingsBloc>(
@@ -312,16 +309,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i395.LibraryBloc>(
       () => _i395.LibraryBloc(gh<_i810.LibraryRepository>()),
     );
-    gh.lazySingleton<_i820.ReaderRepository>(
-      () => _i788.ReaderRepositoryImpl(
-        gh<_i16.MuPdfService>(),
-        gh<_i428.DocumentParser<String>>(),
-        gh<_i516.WindowService>(),
-        gh<_i941.NotificationService>(),
-        gh<_i69.DocumentCoverService>(),
-        gh<_i810.LibraryRepository>(),
-      ),
-    );
     gh.factory<_i523.ReaderBloc>(
       () => _i523.ReaderBloc(
         readerRepository: gh<_i820.ReaderRepository>(),
@@ -331,3 +318,5 @@ extension GetItInjectableX on _i174.GetIt {
     return this;
   }
 }
+
+class _$CoreModule extends _i211.CoreModule {}

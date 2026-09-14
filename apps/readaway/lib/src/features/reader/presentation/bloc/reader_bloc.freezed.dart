@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'reader_bloc.dart';
@@ -9,6 +9,7 @@ part of 'reader_bloc.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderEvent);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderEvent);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent()';
+    return 'ReaderEvent()';
 }
 
 
@@ -55,7 +56,7 @@ extension ReaderEventPatterns on ReaderEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _OpenDocument value)?  openDocument,TResult Function( _PageChanged value)?  pageChanged,TResult Function( _LoadPage value)?  loadPage,TResult Function( _CloseDocument value)?  closeDocument,TResult Function( _TtsStart value)?  ttsStart,TResult Function( _TtsClose value)?  ttsClose,TResult Function( _ConsumeFeedback value)?  consumeFeedback,TResult Function( _TtsErrorOccurred value)?  ttsErrorOccurred,TResult Function( _JumpToTtsPage value)?  jumpToTtsPage,TResult Function( _TtsPageAdvanced value)?  ttsPageAdvanced,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _OpenDocument value)?  openDocument,TResult Function( _PageChanged value)?  pageChanged,TResult Function( _LoadPage value)?  loadPage,TResult Function( _CloseDocument value)?  closeDocument,TResult Function( _TtsStart value)?  ttsStart,TResult Function( _TtsClose value)?  ttsClose,TResult Function( _ConsumeFeedback value)?  consumeFeedback,TResult Function( _TtsErrorOccurred value)?  ttsErrorOccurred,TResult Function( _JumpToTtsPage value)?  jumpToTtsPage,TResult Function( _TtsPageAdvanced value)?  ttsPageAdvanced,TResult Function( _VirtualPageChanged value)?  virtualPageChanged,TResult Function( _ClearPendingRestore value)?  clearPendingRestore,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _OpenDocument() when openDocument != null:
@@ -68,7 +69,9 @@ return ttsClose(_that);case _ConsumeFeedback() when consumeFeedback != null:
 return consumeFeedback(_that);case _TtsErrorOccurred() when ttsErrorOccurred != null:
 return ttsErrorOccurred(_that);case _JumpToTtsPage() when jumpToTtsPage != null:
 return jumpToTtsPage(_that);case _TtsPageAdvanced() when ttsPageAdvanced != null:
-return ttsPageAdvanced(_that);case _:
+return ttsPageAdvanced(_that);case _VirtualPageChanged() when virtualPageChanged != null:
+return virtualPageChanged(_that);case _ClearPendingRestore() when clearPendingRestore != null:
+return clearPendingRestore(_that);case _:
   return orElse();
 
 }
@@ -86,7 +89,7 @@ return ttsPageAdvanced(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _OpenDocument value)  openDocument,required TResult Function( _PageChanged value)  pageChanged,required TResult Function( _LoadPage value)  loadPage,required TResult Function( _CloseDocument value)  closeDocument,required TResult Function( _TtsStart value)  ttsStart,required TResult Function( _TtsClose value)  ttsClose,required TResult Function( _ConsumeFeedback value)  consumeFeedback,required TResult Function( _TtsErrorOccurred value)  ttsErrorOccurred,required TResult Function( _JumpToTtsPage value)  jumpToTtsPage,required TResult Function( _TtsPageAdvanced value)  ttsPageAdvanced,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _OpenDocument value)  openDocument,required TResult Function( _PageChanged value)  pageChanged,required TResult Function( _LoadPage value)  loadPage,required TResult Function( _CloseDocument value)  closeDocument,required TResult Function( _TtsStart value)  ttsStart,required TResult Function( _TtsClose value)  ttsClose,required TResult Function( _ConsumeFeedback value)  consumeFeedback,required TResult Function( _TtsErrorOccurred value)  ttsErrorOccurred,required TResult Function( _JumpToTtsPage value)  jumpToTtsPage,required TResult Function( _TtsPageAdvanced value)  ttsPageAdvanced,required TResult Function( _VirtualPageChanged value)  virtualPageChanged,required TResult Function( _ClearPendingRestore value)  clearPendingRestore,}){
 final _that = this;
 switch (_that) {
 case _OpenDocument():
@@ -99,7 +102,9 @@ return ttsClose(_that);case _ConsumeFeedback():
 return consumeFeedback(_that);case _TtsErrorOccurred():
 return ttsErrorOccurred(_that);case _JumpToTtsPage():
 return jumpToTtsPage(_that);case _TtsPageAdvanced():
-return ttsPageAdvanced(_that);case _:
+return ttsPageAdvanced(_that);case _VirtualPageChanged():
+return virtualPageChanged(_that);case _ClearPendingRestore():
+return clearPendingRestore(_that);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -116,7 +121,7 @@ return ttsPageAdvanced(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _OpenDocument value)?  openDocument,TResult? Function( _PageChanged value)?  pageChanged,TResult? Function( _LoadPage value)?  loadPage,TResult? Function( _CloseDocument value)?  closeDocument,TResult? Function( _TtsStart value)?  ttsStart,TResult? Function( _TtsClose value)?  ttsClose,TResult? Function( _ConsumeFeedback value)?  consumeFeedback,TResult? Function( _TtsErrorOccurred value)?  ttsErrorOccurred,TResult? Function( _JumpToTtsPage value)?  jumpToTtsPage,TResult? Function( _TtsPageAdvanced value)?  ttsPageAdvanced,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _OpenDocument value)?  openDocument,TResult? Function( _PageChanged value)?  pageChanged,TResult? Function( _LoadPage value)?  loadPage,TResult? Function( _CloseDocument value)?  closeDocument,TResult? Function( _TtsStart value)?  ttsStart,TResult? Function( _TtsClose value)?  ttsClose,TResult? Function( _ConsumeFeedback value)?  consumeFeedback,TResult? Function( _TtsErrorOccurred value)?  ttsErrorOccurred,TResult? Function( _JumpToTtsPage value)?  jumpToTtsPage,TResult? Function( _TtsPageAdvanced value)?  ttsPageAdvanced,TResult? Function( _VirtualPageChanged value)?  virtualPageChanged,TResult? Function( _ClearPendingRestore value)?  clearPendingRestore,}){
 final _that = this;
 switch (_that) {
 case _OpenDocument() when openDocument != null:
@@ -129,7 +134,9 @@ return ttsClose(_that);case _ConsumeFeedback() when consumeFeedback != null:
 return consumeFeedback(_that);case _TtsErrorOccurred() when ttsErrorOccurred != null:
 return ttsErrorOccurred(_that);case _JumpToTtsPage() when jumpToTtsPage != null:
 return jumpToTtsPage(_that);case _TtsPageAdvanced() when ttsPageAdvanced != null:
-return ttsPageAdvanced(_that);case _:
+return ttsPageAdvanced(_that);case _VirtualPageChanged() when virtualPageChanged != null:
+return virtualPageChanged(_that);case _ClearPendingRestore() when clearPendingRestore != null:
+return clearPendingRestore(_that);case _:
   return null;
 
 }
@@ -146,7 +153,7 @@ return ttsPageAdvanced(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String path,  String? fileName)?  openDocument,TResult Function( int index)?  pageChanged,TResult Function( int index)?  loadPage,TResult Function()?  closeDocument,TResult Function()?  ttsStart,TResult Function()?  ttsClose,TResult Function()?  consumeFeedback,TResult Function( String message)?  ttsErrorOccurred,TResult Function()?  jumpToTtsPage,TResult Function( int pageIndex)?  ttsPageAdvanced,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String path,  String? fileName)?  openDocument,TResult Function( int index)?  pageChanged,TResult Function( int index)?  loadPage,TResult Function()?  closeDocument,TResult Function()?  ttsStart,TResult Function()?  ttsClose,TResult Function()?  consumeFeedback,TResult Function( String message)?  ttsErrorOccurred,TResult Function()?  jumpToTtsPage,TResult Function( int pageIndex)?  ttsPageAdvanced,TResult Function( int globalPage,  int totalPages,  int chapterIndex)?  virtualPageChanged,TResult Function()?  clearPendingRestore,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OpenDocument() when openDocument != null:
 return openDocument(_that.path,_that.fileName);case _PageChanged() when pageChanged != null:
@@ -158,7 +165,9 @@ return ttsClose();case _ConsumeFeedback() when consumeFeedback != null:
 return consumeFeedback();case _TtsErrorOccurred() when ttsErrorOccurred != null:
 return ttsErrorOccurred(_that.message);case _JumpToTtsPage() when jumpToTtsPage != null:
 return jumpToTtsPage();case _TtsPageAdvanced() when ttsPageAdvanced != null:
-return ttsPageAdvanced(_that.pageIndex);case _:
+return ttsPageAdvanced(_that.pageIndex);case _VirtualPageChanged() when virtualPageChanged != null:
+return virtualPageChanged(_that.globalPage,_that.totalPages,_that.chapterIndex);case _ClearPendingRestore() when clearPendingRestore != null:
+return clearPendingRestore();case _:
   return orElse();
 
 }
@@ -176,7 +185,7 @@ return ttsPageAdvanced(_that.pageIndex);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String path,  String? fileName)  openDocument,required TResult Function( int index)  pageChanged,required TResult Function( int index)  loadPage,required TResult Function()  closeDocument,required TResult Function()  ttsStart,required TResult Function()  ttsClose,required TResult Function()  consumeFeedback,required TResult Function( String message)  ttsErrorOccurred,required TResult Function()  jumpToTtsPage,required TResult Function( int pageIndex)  ttsPageAdvanced,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String path,  String? fileName)  openDocument,required TResult Function( int index)  pageChanged,required TResult Function( int index)  loadPage,required TResult Function()  closeDocument,required TResult Function()  ttsStart,required TResult Function()  ttsClose,required TResult Function()  consumeFeedback,required TResult Function( String message)  ttsErrorOccurred,required TResult Function()  jumpToTtsPage,required TResult Function( int pageIndex)  ttsPageAdvanced,required TResult Function( int globalPage,  int totalPages,  int chapterIndex)  virtualPageChanged,required TResult Function()  clearPendingRestore,}) {final _that = this;
 switch (_that) {
 case _OpenDocument():
 return openDocument(_that.path,_that.fileName);case _PageChanged():
@@ -188,7 +197,9 @@ return ttsClose();case _ConsumeFeedback():
 return consumeFeedback();case _TtsErrorOccurred():
 return ttsErrorOccurred(_that.message);case _JumpToTtsPage():
 return jumpToTtsPage();case _TtsPageAdvanced():
-return ttsPageAdvanced(_that.pageIndex);case _:
+return ttsPageAdvanced(_that.pageIndex);case _VirtualPageChanged():
+return virtualPageChanged(_that.globalPage,_that.totalPages,_that.chapterIndex);case _ClearPendingRestore():
+return clearPendingRestore();case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,7 +216,7 @@ return ttsPageAdvanced(_that.pageIndex);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String path,  String? fileName)?  openDocument,TResult? Function( int index)?  pageChanged,TResult? Function( int index)?  loadPage,TResult? Function()?  closeDocument,TResult? Function()?  ttsStart,TResult? Function()?  ttsClose,TResult? Function()?  consumeFeedback,TResult? Function( String message)?  ttsErrorOccurred,TResult? Function()?  jumpToTtsPage,TResult? Function( int pageIndex)?  ttsPageAdvanced,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String path,  String? fileName)?  openDocument,TResult? Function( int index)?  pageChanged,TResult? Function( int index)?  loadPage,TResult? Function()?  closeDocument,TResult? Function()?  ttsStart,TResult? Function()?  ttsClose,TResult? Function()?  consumeFeedback,TResult? Function( String message)?  ttsErrorOccurred,TResult? Function()?  jumpToTtsPage,TResult? Function( int pageIndex)?  ttsPageAdvanced,TResult? Function( int globalPage,  int totalPages,  int chapterIndex)?  virtualPageChanged,TResult? Function()?  clearPendingRestore,}) {final _that = this;
 switch (_that) {
 case _OpenDocument() when openDocument != null:
 return openDocument(_that.path,_that.fileName);case _PageChanged() when pageChanged != null:
@@ -217,7 +228,9 @@ return ttsClose();case _ConsumeFeedback() when consumeFeedback != null:
 return consumeFeedback();case _TtsErrorOccurred() when ttsErrorOccurred != null:
 return ttsErrorOccurred(_that.message);case _JumpToTtsPage() when jumpToTtsPage != null:
 return jumpToTtsPage();case _TtsPageAdvanced() when ttsPageAdvanced != null:
-return ttsPageAdvanced(_that.pageIndex);case _:
+return ttsPageAdvanced(_that.pageIndex);case _VirtualPageChanged() when virtualPageChanged != null:
+return virtualPageChanged(_that.globalPage,_that.totalPages,_that.chapterIndex);case _ClearPendingRestore() when clearPendingRestore != null:
+return clearPendingRestore();case _:
   return null;
 
 }
@@ -245,16 +258,18 @@ _$OpenDocumentCopyWith<_OpenDocument> get copyWith => __$OpenDocumentCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OpenDocument&&(identical(other.path, path) || other.path == path)&&(identical(other.fileName, fileName) || other.fileName == fileName));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OpenDocument&&(identical(other.path, path) || other.path == path)&&(identical(other.fileName, fileName) || other.fileName == fileName));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,path,fileName);
+int get hashCode {
+    return Object.hash(runtimeType,path,fileName);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.openDocument(path: $path, fileName: $fileName)';
+    return 'ReaderEvent.openDocument(path: $path, fileName: $fileName)';
 }
 
 
@@ -312,16 +327,18 @@ _$PageChangedCopyWith<_PageChanged> get copyWith => __$PageChangedCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageChanged&&(identical(other.index, index) || other.index == index));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageChanged&&(identical(other.index, index) || other.index == index));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,index);
+int get hashCode {
+    return Object.hash(runtimeType,index);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.pageChanged(index: $index)';
+    return 'ReaderEvent.pageChanged(index: $index)';
 }
 
 
@@ -378,16 +395,18 @@ _$LoadPageCopyWith<_LoadPage> get copyWith => __$LoadPageCopyWithImpl<_LoadPage>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LoadPage&&(identical(other.index, index) || other.index == index));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LoadPage&&(identical(other.index, index) || other.index == index));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,index);
+int get hashCode {
+    return Object.hash(runtimeType,index);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.loadPage(index: $index)';
+    return 'ReaderEvent.loadPage(index: $index)';
 }
 
 
@@ -439,7 +458,7 @@ class _CloseDocument implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CloseDocument);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CloseDocument);
 }
 
 
@@ -448,7 +467,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.closeDocument()';
+    return 'ReaderEvent.closeDocument()';
 }
 
 
@@ -471,7 +490,7 @@ class _TtsStart implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsStart);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsStart);
 }
 
 
@@ -480,7 +499,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.ttsStart()';
+    return 'ReaderEvent.ttsStart()';
 }
 
 
@@ -503,7 +522,7 @@ class _TtsClose implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsClose);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsClose);
 }
 
 
@@ -512,7 +531,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.ttsClose()';
+    return 'ReaderEvent.ttsClose()';
 }
 
 
@@ -535,7 +554,7 @@ class _ConsumeFeedback implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ConsumeFeedback);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ConsumeFeedback);
 }
 
 
@@ -544,7 +563,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.consumeFeedback()';
+    return 'ReaderEvent.consumeFeedback()';
 }
 
 
@@ -572,16 +591,18 @@ _$TtsErrorOccurredCopyWith<_TtsErrorOccurred> get copyWith => __$TtsErrorOccurre
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsErrorOccurred&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsErrorOccurred&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode {
+    return Object.hash(runtimeType,message);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.ttsErrorOccurred(message: $message)';
+    return 'ReaderEvent.ttsErrorOccurred(message: $message)';
 }
 
 
@@ -633,7 +654,7 @@ class _JumpToTtsPage implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _JumpToTtsPage);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _JumpToTtsPage);
 }
 
 
@@ -642,7 +663,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.jumpToTtsPage()';
+    return 'ReaderEvent.jumpToTtsPage()';
 }
 
 
@@ -670,16 +691,18 @@ _$TtsPageAdvancedCopyWith<_TtsPageAdvanced> get copyWith => __$TtsPageAdvancedCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsPageAdvanced&&(identical(other.pageIndex, pageIndex) || other.pageIndex == pageIndex));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsPageAdvanced&&(identical(other.pageIndex, pageIndex) || other.pageIndex == pageIndex));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,pageIndex);
+int get hashCode {
+    return Object.hash(runtimeType,pageIndex);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.ttsPageAdvanced(pageIndex: $pageIndex)';
+    return 'ReaderEvent.ttsPageAdvanced(pageIndex: $pageIndex)';
 }
 
 
@@ -718,9 +741,113 @@ as int,
 }
 
 /// @nodoc
+
+
+class _VirtualPageChanged implements ReaderEvent {
+  const _VirtualPageChanged({required this.globalPage, required this.totalPages, required this.chapterIndex});
+  
+
+ final  int globalPage;
+ final  int totalPages;
+ final  int chapterIndex;
+
+/// Create a copy of ReaderEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$VirtualPageChangedCopyWith<_VirtualPageChanged> get copyWith => __$VirtualPageChangedCopyWithImpl<_VirtualPageChanged>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _VirtualPageChanged&&(identical(other.globalPage, globalPage) || other.globalPage == globalPage)&&(identical(other.totalPages, totalPages) || other.totalPages == totalPages)&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,globalPage,totalPages,chapterIndex);
+}
+
+@override
+String toString() {
+    return 'ReaderEvent.virtualPageChanged(globalPage: $globalPage, totalPages: $totalPages, chapterIndex: $chapterIndex)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$VirtualPageChangedCopyWith<$Res> implements $ReaderEventCopyWith<$Res> {
+  factory _$VirtualPageChangedCopyWith(_VirtualPageChanged value, $Res Function(_VirtualPageChanged) _then) = __$VirtualPageChangedCopyWithImpl;
+@useResult
+$Res call({
+ int globalPage, int totalPages, int chapterIndex
+});
+
+
+
+
+}
+/// @nodoc
+class __$VirtualPageChangedCopyWithImpl<$Res>
+    implements _$VirtualPageChangedCopyWith<$Res> {
+  __$VirtualPageChangedCopyWithImpl(this._self, this._then);
+
+  final _VirtualPageChanged _self;
+  final $Res Function(_VirtualPageChanged) _then;
+
+/// Create a copy of ReaderEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? globalPage = null,Object? totalPages = null,Object? chapterIndex = null,}) {
+  return _then(_VirtualPageChanged(
+globalPage: null == globalPage ? _self.globalPage : globalPage // ignore: cast_nullable_to_non_nullable
+as int,totalPages: null == totalPages ? _self.totalPages : totalPages // ignore: cast_nullable_to_non_nullable
+as int,chapterIndex: null == chapterIndex ? _self.chapterIndex : chapterIndex // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class _ClearPendingRestore implements ReaderEvent {
+  const _ClearPendingRestore();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ClearPendingRestore);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'ReaderEvent.clearPendingRestore()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
 mixin _$ReaderState {
 
- bool get loading; Failure? get failure; String? get error; String? get fileName; bool get isReflowable; int get pageCount; int get currentPage; List<ReaderDocument?>? get documentPages; List<ui.Image?>? get pageImages; Set<int> get loadingPages; List<OutlineItem>? get outline; String? get bookTitle; String? get author; String? get documentPath; UiFeedback? get transientFeedback; bool get ttsActive; int? get ttsCurrentPage;
+ bool get loading; Failure? get failure; String? get error; String? get fileName; int get pageCount; int get currentPage; List<String?>? get pageHtmls; List<List<ReaderLink>?>? get pageLinks; Set<int> get loadingPages; List<OutlineItem>? get outline; String? get bookTitle; String? get author; String? get documentPath; UiFeedback? get transientFeedback; bool get ttsActive; int? get ttsCurrentPage; int? get virtualPageCount; int? get currentVirtualPage; ReadingAnchor? get pendingRestoreAnchor;
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -731,16 +858,21 @@ $ReaderStateCopyWith<ReaderState> get copyWith => _$ReaderStateCopyWithImpl<Read
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.isReflowable, isReflowable) || other.isReflowable == isReflowable)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.documentPages, documentPages)&&const DeepCollectionEquality().equals(other.pageImages, pageImages)&&const DeepCollectionEquality().equals(other.loadingPages, loadingPages)&&const DeepCollectionEquality().equals(other.outline, outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author)&&(identical(other.documentPath, documentPath) || other.documentPath == documentPath)&&(identical(other.transientFeedback, transientFeedback) || other.transientFeedback == transientFeedback)&&(identical(other.ttsActive, ttsActive) || other.ttsActive == ttsActive)&&(identical(other.ttsCurrentPage, ttsCurrentPage) || other.ttsCurrentPage == ttsCurrentPage));
+  final _this = this as ReaderState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderState&&(identical(other.loading, _this.loading) || other.loading == _this.loading)&&(identical(other.failure, _this.failure) || other.failure == _this.failure)&&(identical(other.error, _this.error) || other.error == _this.error)&&(identical(other.fileName, _this.fileName) || other.fileName == _this.fileName)&&(identical(other.pageCount, _this.pageCount) || other.pageCount == _this.pageCount)&&(identical(other.currentPage, _this.currentPage) || other.currentPage == _this.currentPage)&&const DeepCollectionEquality().equals(other.pageHtmls, _this.pageHtmls)&&const DeepCollectionEquality().equals(other.pageLinks, _this.pageLinks)&&const DeepCollectionEquality().equals(other.loadingPages, _this.loadingPages)&&const DeepCollectionEquality().equals(other.outline, _this.outline)&&(identical(other.bookTitle, _this.bookTitle) || other.bookTitle == _this.bookTitle)&&(identical(other.author, _this.author) || other.author == _this.author)&&(identical(other.documentPath, _this.documentPath) || other.documentPath == _this.documentPath)&&(identical(other.transientFeedback, _this.transientFeedback) || other.transientFeedback == _this.transientFeedback)&&(identical(other.ttsActive, _this.ttsActive) || other.ttsActive == _this.ttsActive)&&(identical(other.ttsCurrentPage, _this.ttsCurrentPage) || other.ttsCurrentPage == _this.ttsCurrentPage)&&(identical(other.virtualPageCount, _this.virtualPageCount) || other.virtualPageCount == _this.virtualPageCount)&&(identical(other.currentVirtualPage, _this.currentVirtualPage) || other.currentVirtualPage == _this.currentVirtualPage)&&(identical(other.pendingRestoreAnchor, _this.pendingRestoreAnchor) || other.pendingRestoreAnchor == _this.pendingRestoreAnchor));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,loading,failure,error,fileName,isReflowable,pageCount,currentPage,const DeepCollectionEquality().hash(documentPages),const DeepCollectionEquality().hash(pageImages),const DeepCollectionEquality().hash(loadingPages),const DeepCollectionEquality().hash(outline),bookTitle,author,documentPath,transientFeedback,ttsActive,ttsCurrentPage);
+int get hashCode {
+  final _this = this as ReaderState;
+  return Object.hashAll([runtimeType,_this.loading,_this.failure,_this.error,_this.fileName,_this.pageCount,_this.currentPage,const DeepCollectionEquality().hash(_this.pageHtmls),const DeepCollectionEquality().hash(_this.pageLinks),const DeepCollectionEquality().hash(_this.loadingPages),const DeepCollectionEquality().hash(_this.outline),_this.bookTitle,_this.author,_this.documentPath,_this.transientFeedback,_this.ttsActive,_this.ttsCurrentPage,_this.virtualPageCount,_this.currentVirtualPage,_this.pendingRestoreAnchor]);
+}
 
 @override
 String toString() {
-  return 'ReaderState(loading: $loading, failure: $failure, error: $error, fileName: $fileName, isReflowable: $isReflowable, pageCount: $pageCount, currentPage: $currentPage, documentPages: $documentPages, pageImages: $pageImages, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author, documentPath: $documentPath, transientFeedback: $transientFeedback, ttsActive: $ttsActive, ttsCurrentPage: $ttsCurrentPage)';
+  final _this = this as ReaderState;
+  return 'ReaderState(loading: ${_this.loading}, failure: ${_this.failure}, error: ${_this.error}, fileName: ${_this.fileName}, pageCount: ${_this.pageCount}, currentPage: ${_this.currentPage}, pageHtmls: ${_this.pageHtmls}, pageLinks: ${_this.pageLinks}, loadingPages: ${_this.loadingPages}, outline: ${_this.outline}, bookTitle: ${_this.bookTitle}, author: ${_this.author}, documentPath: ${_this.documentPath}, transientFeedback: ${_this.transientFeedback}, ttsActive: ${_this.ttsActive}, ttsCurrentPage: ${_this.ttsCurrentPage}, virtualPageCount: ${_this.virtualPageCount}, currentVirtualPage: ${_this.currentVirtualPage}, pendingRestoreAnchor: ${_this.pendingRestoreAnchor})';
 }
 
 
@@ -751,11 +883,11 @@ abstract mixin class $ReaderStateCopyWith<$Res>  {
   factory $ReaderStateCopyWith(ReaderState value, $Res Function(ReaderState) _then) = _$ReaderStateCopyWithImpl;
 @useResult
 $Res call({
- bool loading, Failure? failure, String? error, String? fileName, bool isReflowable, int pageCount, int currentPage, List<ReaderDocument?>? documentPages, List<ui.Image?>? pageImages, Set<int> loadingPages, List<OutlineItem>? outline, String? bookTitle, String? author, String? documentPath, UiFeedback? transientFeedback, bool ttsActive, int? ttsCurrentPage
+ bool loading, Failure? failure, String? error, String? fileName, int pageCount, int currentPage, List<String?>? pageHtmls, List<List<ReaderLink>?>? pageLinks, Set<int> loadingPages, List<OutlineItem>? outline, String? bookTitle, String? author, String? documentPath, UiFeedback? transientFeedback, bool ttsActive, int? ttsCurrentPage, int? virtualPageCount, int? currentVirtualPage, ReadingAnchor? pendingRestoreAnchor
 });
 
 
-
+$ReadingAnchorCopyWith<$Res>? get pendingRestoreAnchor;
 
 }
 /// @nodoc
@@ -768,18 +900,17 @@ class _$ReaderStateCopyWithImpl<$Res>
 
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? loading = null,Object? failure = freezed,Object? error = freezed,Object? fileName = freezed,Object? isReflowable = null,Object? pageCount = null,Object? currentPage = null,Object? documentPages = freezed,Object? pageImages = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,Object? documentPath = freezed,Object? transientFeedback = freezed,Object? ttsActive = null,Object? ttsCurrentPage = freezed,}) {
-  return _then(_self.copyWith(
+@pragma('vm:prefer-inline') @override $Res call({Object? loading = null,Object? failure = freezed,Object? error = freezed,Object? fileName = freezed,Object? pageCount = null,Object? currentPage = null,Object? pageHtmls = freezed,Object? pageLinks = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,Object? documentPath = freezed,Object? transientFeedback = freezed,Object? ttsActive = null,Object? ttsCurrentPage = freezed,Object? virtualPageCount = freezed,Object? currentVirtualPage = freezed,Object? pendingRestoreAnchor = freezed,}) {
+  return _then(ReaderState(
 loading: null == loading ? _self.loading : loading // ignore: cast_nullable_to_non_nullable
 as bool,failure: freezed == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
 as Failure?,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,fileName: freezed == fileName ? _self.fileName : fileName // ignore: cast_nullable_to_non_nullable
-as String?,isReflowable: null == isReflowable ? _self.isReflowable : isReflowable // ignore: cast_nullable_to_non_nullable
-as bool,pageCount: null == pageCount ? _self.pageCount : pageCount // ignore: cast_nullable_to_non_nullable
+as String?,pageCount: null == pageCount ? _self.pageCount : pageCount // ignore: cast_nullable_to_non_nullable
 as int,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
-as int,documentPages: freezed == documentPages ? _self.documentPages : documentPages // ignore: cast_nullable_to_non_nullable
-as List<ReaderDocument?>?,pageImages: freezed == pageImages ? _self.pageImages : pageImages // ignore: cast_nullable_to_non_nullable
-as List<ui.Image?>?,loadingPages: null == loadingPages ? _self.loadingPages : loadingPages // ignore: cast_nullable_to_non_nullable
+as int,pageHtmls: freezed == pageHtmls ? _self.pageHtmls : pageHtmls // ignore: cast_nullable_to_non_nullable
+as List<String?>?,pageLinks: freezed == pageLinks ? _self.pageLinks : pageLinks // ignore: cast_nullable_to_non_nullable
+as List<List<ReaderLink>?>?,loadingPages: null == loadingPages ? _self.loadingPages : loadingPages // ignore: cast_nullable_to_non_nullable
 as Set<int>,outline: freezed == outline ? _self.outline : outline // ignore: cast_nullable_to_non_nullable
 as List<OutlineItem>?,bookTitle: freezed == bookTitle ? _self.bookTitle : bookTitle // ignore: cast_nullable_to_non_nullable
 as String?,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
@@ -787,10 +918,25 @@ as String?,documentPath: freezed == documentPath ? _self.documentPath : document
 as String?,transientFeedback: freezed == transientFeedback ? _self.transientFeedback : transientFeedback // ignore: cast_nullable_to_non_nullable
 as UiFeedback?,ttsActive: null == ttsActive ? _self.ttsActive : ttsActive // ignore: cast_nullable_to_non_nullable
 as bool,ttsCurrentPage: freezed == ttsCurrentPage ? _self.ttsCurrentPage : ttsCurrentPage // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,virtualPageCount: freezed == virtualPageCount ? _self.virtualPageCount : virtualPageCount // ignore: cast_nullable_to_non_nullable
+as int?,currentVirtualPage: freezed == currentVirtualPage ? _self.currentVirtualPage : currentVirtualPage // ignore: cast_nullable_to_non_nullable
+as int?,pendingRestoreAnchor: freezed == pendingRestoreAnchor ? _self.pendingRestoreAnchor : pendingRestoreAnchor // ignore: cast_nullable_to_non_nullable
+as ReadingAnchor?,
   ));
 }
+/// Create a copy of ReaderState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReadingAnchorCopyWith<$Res>? get pendingRestoreAnchor {
+    if (_self.pendingRestoreAnchor == null) {
+    return null;
+  }
 
+  return $ReadingAnchorCopyWith<$Res>(_self.pendingRestoreAnchor!, (value) {
+    return _then(_self.copyWith(pendingRestoreAnchor: value));
+  });
+}
 }
 
 
@@ -872,10 +1018,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool loading,  Failure? failure,  String? error,  String? fileName,  bool isReflowable,  int pageCount,  int currentPage,  List<ReaderDocument?>? documentPages,  List<ui.Image?>? pageImages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  String? documentPath,  UiFeedback? transientFeedback,  bool ttsActive,  int? ttsCurrentPage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool loading,  Failure? failure,  String? error,  String? fileName,  int pageCount,  int currentPage,  List<String?>? pageHtmls,  List<List<ReaderLink>?>? pageLinks,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  String? documentPath,  UiFeedback? transientFeedback,  bool ttsActive,  int? ttsCurrentPage,  int? virtualPageCount,  int? currentVirtualPage,  ReadingAnchor? pendingRestoreAnchor)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReaderState() when $default != null:
-return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isReflowable,_that.pageCount,_that.currentPage,_that.documentPages,_that.pageImages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.documentPath,_that.transientFeedback,_that.ttsActive,_that.ttsCurrentPage);case _:
+return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.pageCount,_that.currentPage,_that.pageHtmls,_that.pageLinks,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.documentPath,_that.transientFeedback,_that.ttsActive,_that.ttsCurrentPage,_that.virtualPageCount,_that.currentVirtualPage,_that.pendingRestoreAnchor);case _:
   return orElse();
 
 }
@@ -893,10 +1039,10 @@ return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isR
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool loading,  Failure? failure,  String? error,  String? fileName,  bool isReflowable,  int pageCount,  int currentPage,  List<ReaderDocument?>? documentPages,  List<ui.Image?>? pageImages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  String? documentPath,  UiFeedback? transientFeedback,  bool ttsActive,  int? ttsCurrentPage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool loading,  Failure? failure,  String? error,  String? fileName,  int pageCount,  int currentPage,  List<String?>? pageHtmls,  List<List<ReaderLink>?>? pageLinks,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  String? documentPath,  UiFeedback? transientFeedback,  bool ttsActive,  int? ttsCurrentPage,  int? virtualPageCount,  int? currentVirtualPage,  ReadingAnchor? pendingRestoreAnchor)  $default,) {final _that = this;
 switch (_that) {
 case _ReaderState():
-return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isReflowable,_that.pageCount,_that.currentPage,_that.documentPages,_that.pageImages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.documentPath,_that.transientFeedback,_that.ttsActive,_that.ttsCurrentPage);case _:
+return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.pageCount,_that.currentPage,_that.pageHtmls,_that.pageLinks,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.documentPath,_that.transientFeedback,_that.ttsActive,_that.ttsCurrentPage,_that.virtualPageCount,_that.currentVirtualPage,_that.pendingRestoreAnchor);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -913,10 +1059,10 @@ return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isR
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool loading,  Failure? failure,  String? error,  String? fileName,  bool isReflowable,  int pageCount,  int currentPage,  List<ReaderDocument?>? documentPages,  List<ui.Image?>? pageImages,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  String? documentPath,  UiFeedback? transientFeedback,  bool ttsActive,  int? ttsCurrentPage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool loading,  Failure? failure,  String? error,  String? fileName,  int pageCount,  int currentPage,  List<String?>? pageHtmls,  List<List<ReaderLink>?>? pageLinks,  Set<int> loadingPages,  List<OutlineItem>? outline,  String? bookTitle,  String? author,  String? documentPath,  UiFeedback? transientFeedback,  bool ttsActive,  int? ttsCurrentPage,  int? virtualPageCount,  int? currentVirtualPage,  ReadingAnchor? pendingRestoreAnchor)?  $default,) {final _that = this;
 switch (_that) {
 case _ReaderState() when $default != null:
-return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isReflowable,_that.pageCount,_that.currentPage,_that.documentPages,_that.pageImages,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.documentPath,_that.transientFeedback,_that.ttsActive,_that.ttsCurrentPage);case _:
+return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.pageCount,_that.currentPage,_that.pageHtmls,_that.pageLinks,_that.loadingPages,_that.outline,_that.bookTitle,_that.author,_that.documentPath,_that.transientFeedback,_that.ttsActive,_that.ttsCurrentPage,_that.virtualPageCount,_that.currentVirtualPage,_that.pendingRestoreAnchor);case _:
   return null;
 
 }
@@ -928,30 +1074,29 @@ return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.isR
 
 
 class _ReaderState extends ReaderState {
-  const _ReaderState({this.loading = false, this.failure, this.error, this.fileName, this.isReflowable = false, this.pageCount = 0, this.currentPage = 0, final  List<ReaderDocument?>? documentPages, final  List<ui.Image?>? pageImages, final  Set<int> loadingPages = const <int>{}, final  List<OutlineItem>? outline, this.bookTitle, this.author, this.documentPath, this.transientFeedback, this.ttsActive = false, this.ttsCurrentPage}): _documentPages = documentPages,_pageImages = pageImages,_loadingPages = loadingPages,_outline = outline,super._();
+  const _ReaderState({this.loading = false, this.failure, this.error, this.fileName, this.pageCount = 0, this.currentPage = 0,  List<String?>? pageHtmls,  List<List<ReaderLink>?>? pageLinks,  Set<int> loadingPages = const <int>{},  List<OutlineItem>? outline, this.bookTitle, this.author, this.documentPath, this.transientFeedback, this.ttsActive = false, this.ttsCurrentPage, this.virtualPageCount, this.currentVirtualPage, this.pendingRestoreAnchor}): _pageHtmls = pageHtmls,_pageLinks = pageLinks,_loadingPages = loadingPages,_outline = outline,super._();
   
 
 @override@JsonKey() final  bool loading;
 @override final  Failure? failure;
 @override final  String? error;
 @override final  String? fileName;
-@override@JsonKey() final  bool isReflowable;
 @override@JsonKey() final  int pageCount;
 @override@JsonKey() final  int currentPage;
- final  List<ReaderDocument?>? _documentPages;
-@override List<ReaderDocument?>? get documentPages {
-  final value = _documentPages;
+ final  List<String?>? _pageHtmls;
+@override List<String?>? get pageHtmls {
+  final value = _pageHtmls;
   if (value == null) return null;
-  if (_documentPages is EqualUnmodifiableListView) return _documentPages;
+  if (_pageHtmls is EqualUnmodifiableListView) return _pageHtmls;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(value);
 }
 
- final  List<ui.Image?>? _pageImages;
-@override List<ui.Image?>? get pageImages {
-  final value = _pageImages;
+ final  List<List<ReaderLink>?>? _pageLinks;
+@override List<List<ReaderLink>?>? get pageLinks {
+  final value = _pageLinks;
   if (value == null) return null;
-  if (_pageImages is EqualUnmodifiableListView) return _pageImages;
+  if (_pageLinks is EqualUnmodifiableListView) return _pageLinks;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(value);
 }
@@ -978,6 +1123,9 @@ class _ReaderState extends ReaderState {
 @override final  UiFeedback? transientFeedback;
 @override@JsonKey() final  bool ttsActive;
 @override final  int? ttsCurrentPage;
+@override final  int? virtualPageCount;
+@override final  int? currentVirtualPage;
+@override final  ReadingAnchor? pendingRestoreAnchor;
 
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
@@ -989,16 +1137,18 @@ _$ReaderStateCopyWith<_ReaderState> get copyWith => __$ReaderStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.isReflowable, isReflowable) || other.isReflowable == isReflowable)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other._documentPages, _documentPages)&&const DeepCollectionEquality().equals(other._pageImages, _pageImages)&&const DeepCollectionEquality().equals(other._loadingPages, _loadingPages)&&const DeepCollectionEquality().equals(other._outline, _outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author)&&(identical(other.documentPath, documentPath) || other.documentPath == documentPath)&&(identical(other.transientFeedback, transientFeedback) || other.transientFeedback == transientFeedback)&&(identical(other.ttsActive, ttsActive) || other.ttsActive == ttsActive)&&(identical(other.ttsCurrentPage, ttsCurrentPage) || other.ttsCurrentPage == ttsCurrentPage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.pageHtmls, _pageHtmls)&&const DeepCollectionEquality().equals(other.pageLinks, _pageLinks)&&const DeepCollectionEquality().equals(other.loadingPages, _loadingPages)&&const DeepCollectionEquality().equals(other.outline, _outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author)&&(identical(other.documentPath, documentPath) || other.documentPath == documentPath)&&(identical(other.transientFeedback, transientFeedback) || other.transientFeedback == transientFeedback)&&(identical(other.ttsActive, ttsActive) || other.ttsActive == ttsActive)&&(identical(other.ttsCurrentPage, ttsCurrentPage) || other.ttsCurrentPage == ttsCurrentPage)&&(identical(other.virtualPageCount, virtualPageCount) || other.virtualPageCount == virtualPageCount)&&(identical(other.currentVirtualPage, currentVirtualPage) || other.currentVirtualPage == currentVirtualPage)&&(identical(other.pendingRestoreAnchor, pendingRestoreAnchor) || other.pendingRestoreAnchor == pendingRestoreAnchor));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,loading,failure,error,fileName,isReflowable,pageCount,currentPage,const DeepCollectionEquality().hash(_documentPages),const DeepCollectionEquality().hash(_pageImages),const DeepCollectionEquality().hash(_loadingPages),const DeepCollectionEquality().hash(_outline),bookTitle,author,documentPath,transientFeedback,ttsActive,ttsCurrentPage);
+int get hashCode {
+    return Object.hashAll([runtimeType,loading,failure,error,fileName,pageCount,currentPage,const DeepCollectionEquality().hash(_pageHtmls),const DeepCollectionEquality().hash(_pageLinks),const DeepCollectionEquality().hash(_loadingPages),const DeepCollectionEquality().hash(_outline),bookTitle,author,documentPath,transientFeedback,ttsActive,ttsCurrentPage,virtualPageCount,currentVirtualPage,pendingRestoreAnchor]);
+}
 
 @override
 String toString() {
-  return 'ReaderState(loading: $loading, failure: $failure, error: $error, fileName: $fileName, isReflowable: $isReflowable, pageCount: $pageCount, currentPage: $currentPage, documentPages: $documentPages, pageImages: $pageImages, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author, documentPath: $documentPath, transientFeedback: $transientFeedback, ttsActive: $ttsActive, ttsCurrentPage: $ttsCurrentPage)';
+    return 'ReaderState(loading: $loading, failure: $failure, error: $error, fileName: $fileName, pageCount: $pageCount, currentPage: $currentPage, pageHtmls: $pageHtmls, pageLinks: $pageLinks, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author, documentPath: $documentPath, transientFeedback: $transientFeedback, ttsActive: $ttsActive, ttsCurrentPage: $ttsCurrentPage, virtualPageCount: $virtualPageCount, currentVirtualPage: $currentVirtualPage, pendingRestoreAnchor: $pendingRestoreAnchor)';
 }
 
 
@@ -1009,11 +1159,11 @@ abstract mixin class _$ReaderStateCopyWith<$Res> implements $ReaderStateCopyWith
   factory _$ReaderStateCopyWith(_ReaderState value, $Res Function(_ReaderState) _then) = __$ReaderStateCopyWithImpl;
 @override @useResult
 $Res call({
- bool loading, Failure? failure, String? error, String? fileName, bool isReflowable, int pageCount, int currentPage, List<ReaderDocument?>? documentPages, List<ui.Image?>? pageImages, Set<int> loadingPages, List<OutlineItem>? outline, String? bookTitle, String? author, String? documentPath, UiFeedback? transientFeedback, bool ttsActive, int? ttsCurrentPage
+ bool loading, Failure? failure, String? error, String? fileName, int pageCount, int currentPage, List<String?>? pageHtmls, List<List<ReaderLink>?>? pageLinks, Set<int> loadingPages, List<OutlineItem>? outline, String? bookTitle, String? author, String? documentPath, UiFeedback? transientFeedback, bool ttsActive, int? ttsCurrentPage, int? virtualPageCount, int? currentVirtualPage, ReadingAnchor? pendingRestoreAnchor
 });
 
 
-
+@override $ReadingAnchorCopyWith<$Res>? get pendingRestoreAnchor;
 
 }
 /// @nodoc
@@ -1026,18 +1176,17 @@ class __$ReaderStateCopyWithImpl<$Res>
 
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? loading = null,Object? failure = freezed,Object? error = freezed,Object? fileName = freezed,Object? isReflowable = null,Object? pageCount = null,Object? currentPage = null,Object? documentPages = freezed,Object? pageImages = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,Object? documentPath = freezed,Object? transientFeedback = freezed,Object? ttsActive = null,Object? ttsCurrentPage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? loading = null,Object? failure = freezed,Object? error = freezed,Object? fileName = freezed,Object? pageCount = null,Object? currentPage = null,Object? pageHtmls = freezed,Object? pageLinks = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,Object? documentPath = freezed,Object? transientFeedback = freezed,Object? ttsActive = null,Object? ttsCurrentPage = freezed,Object? virtualPageCount = freezed,Object? currentVirtualPage = freezed,Object? pendingRestoreAnchor = freezed,}) {
   return _then(_ReaderState(
 loading: null == loading ? _self.loading : loading // ignore: cast_nullable_to_non_nullable
 as bool,failure: freezed == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
 as Failure?,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,fileName: freezed == fileName ? _self.fileName : fileName // ignore: cast_nullable_to_non_nullable
-as String?,isReflowable: null == isReflowable ? _self.isReflowable : isReflowable // ignore: cast_nullable_to_non_nullable
-as bool,pageCount: null == pageCount ? _self.pageCount : pageCount // ignore: cast_nullable_to_non_nullable
+as String?,pageCount: null == pageCount ? _self.pageCount : pageCount // ignore: cast_nullable_to_non_nullable
 as int,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
-as int,documentPages: freezed == documentPages ? _self._documentPages : documentPages // ignore: cast_nullable_to_non_nullable
-as List<ReaderDocument?>?,pageImages: freezed == pageImages ? _self._pageImages : pageImages // ignore: cast_nullable_to_non_nullable
-as List<ui.Image?>?,loadingPages: null == loadingPages ? _self._loadingPages : loadingPages // ignore: cast_nullable_to_non_nullable
+as int,pageHtmls: freezed == pageHtmls ? _self._pageHtmls : pageHtmls // ignore: cast_nullable_to_non_nullable
+as List<String?>?,pageLinks: freezed == pageLinks ? _self._pageLinks : pageLinks // ignore: cast_nullable_to_non_nullable
+as List<List<ReaderLink>?>?,loadingPages: null == loadingPages ? _self._loadingPages : loadingPages // ignore: cast_nullable_to_non_nullable
 as Set<int>,outline: freezed == outline ? _self._outline : outline // ignore: cast_nullable_to_non_nullable
 as List<OutlineItem>?,bookTitle: freezed == bookTitle ? _self.bookTitle : bookTitle // ignore: cast_nullable_to_non_nullable
 as String?,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
@@ -1045,11 +1194,26 @@ as String?,documentPath: freezed == documentPath ? _self.documentPath : document
 as String?,transientFeedback: freezed == transientFeedback ? _self.transientFeedback : transientFeedback // ignore: cast_nullable_to_non_nullable
 as UiFeedback?,ttsActive: null == ttsActive ? _self.ttsActive : ttsActive // ignore: cast_nullable_to_non_nullable
 as bool,ttsCurrentPage: freezed == ttsCurrentPage ? _self.ttsCurrentPage : ttsCurrentPage // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,virtualPageCount: freezed == virtualPageCount ? _self.virtualPageCount : virtualPageCount // ignore: cast_nullable_to_non_nullable
+as int?,currentVirtualPage: freezed == currentVirtualPage ? _self.currentVirtualPage : currentVirtualPage // ignore: cast_nullable_to_non_nullable
+as int?,pendingRestoreAnchor: freezed == pendingRestoreAnchor ? _self.pendingRestoreAnchor : pendingRestoreAnchor // ignore: cast_nullable_to_non_nullable
+as ReadingAnchor?,
   ));
 }
 
+/// Create a copy of ReaderState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReadingAnchorCopyWith<$Res>? get pendingRestoreAnchor {
+    if (_self.pendingRestoreAnchor == null) {
+    return null;
+  }
 
+  return $ReadingAnchorCopyWith<$Res>(_self.pendingRestoreAnchor!, (value) {
+    return _then(_self.copyWith(pendingRestoreAnchor: value));
+  });
+}
 }
 
 // dart format on

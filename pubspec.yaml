@@ -1,16 +1,17 @@
 name: readaway_workspace
 
 environment:
-  sdk: ^3.12.2
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
 
 workspace:
   - apps/readaway
-  - packages/mupdf
+  - packages/readaway_core
 
 dev_dependencies:
   melos: ^8.0.0
   logging: ^1.2.0
-  code_assets: ^1.0.0
+  code_assets: ^2.0.0
   hooks: ^2.0.2
 
 dependency_overrides:
@@ -39,9 +40,11 @@ melos:
     analyze:
       run: melos exec --depends-on="flutter" -- dart analyze --fatal-infos
       description: Run dart analyze in all packages
+
     format:
       run: melos exec --depends-on="flutter" -- dart format --set-exit-if-changed .
       description: Check formatting in all packages
+
     codegen:
       run: melos exec -c 1 --depends-on="build_runner" -- dart run build_runner build
       description: Run codegen in all apps
@@ -50,39 +53,47 @@ melos:
       run: melos exec -c 1 --flutter -- "flutter clean && flutter pub get"
       description: Refresh Apps & Packages Deps
 
+    # -------------------------------------------------------------
+    # Dependency & Launcher Updates
+    # -------------------------------------------------------------
+    upgrade:deps:
+      run: melos exec -c 1 --flutter -- "flutter pub upgrade"
+      description: Upgrade dependencies across all Flutter apps and packages
+
+    upgrade:deps:major:
+      run: melos exec -c 1 --flutter -- "flutter pub upgrade --major-versions"
+      description: Upgrade dependencies[major] across all Flutter apps and packages
+
     update:launcher_icon:
-      run: melos exec -c 1 --depends-on"flutter_launcher_icons' -- dart run flutter_launcher_icons
+      run: melos exec -c 1 --depends-on="flutter_launcher_icons" -- dart run flutter_launcher_icons
       description: Update launcher icons
 
+    # -------------------------------------------------------------
+    # Build Scripts
+    # -------------------------------------------------------------
     build:apk:debug:
       run: melos exec -c 1 --category="app" -- flutter build apk --debug
       description: Build debug APK for ReadAway app
+
     build:apk:release:
       run: melos exec -c 1 --category="app" -- flutter build apk --release
       description: Build release APK for ReadAway app
+
     build:apk:split:
       run: melos exec -c 1 --category="app" -- flutter build apk --release --split-per-abi
       description: Build release APK split per ABI (armeabi-v7a, arm64-v8a, x86_64)
+
     build:linux:
-      description: Build Linux binary and clean workspace for ReadAway app
       run: melos exec -c 1 --category="app" -- flutter build linux --release
+      description: Build Linux binary and clean workspace for ReadAway app
 
-    submodules:update:
-      run: git submodule update --init --recursive
-      description: Update git submodules (MuPDF source)
+    build:linux:appimage:
+      run: melos exec -c 1 --category="app" -- "appimage-builder --recipe AppImageBuilder.yml"
+      description: Build Linux AppImage for ReadAway app
 
-    ffi:build:
-      description: Build MuPDF native library from source
-      steps:
-        - cd packages/mupdf/native/mupdf
-        - make -j$(nproc) XCFLAGS=-fPIC
-    ffi:clean:
-      run: rm -rf packages/mupdf/native/mupdf/build/
-      description: Clean MuPDF build artifacts
-    ffi:generate:
-      description: Regenerate FFI bindings from mupdf_wrapper.h
-      run: melos exec -c 1 --depends-on="ffigen" -- "dart run ffigen --config ffigen.yaml"
-
+    # -------------------------------------------------------------
+    # Test Scripts
+    # -------------------------------------------------------------
     test:scoped:
       run: melos exec --dir-exists="test" --fail-fast -- flutter test --no-pub --coverage
       description: Run Flutter tests for a specific package in this project.

@@ -90,46 +90,47 @@ class _LiveSpeechWaveformState extends State<LiveSpeechWaveform>
         builder: (context, child) {
           final t = _controller.value * 2 * math.pi;
 
-        return SizedBox(
-          width: widget.width,
-          height: widget.height,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: List.generate(barCount, (index) {
-              // Staggered sine oscillation per bar for organic speech cadence
-              final phaseOffset = index * (math.pi / (barCount * 0.75));
-              final speedMultiplier = 1.0 + (index % 2) * 0.4;
-              final rawWave = math.sin(t * speedMultiplier + phaseOffset);
+          return SizedBox(
+            width: widget.width,
+            height: widget.height,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: List.generate(barCount, (index) {
+                // Staggered sine oscillation per bar for organic speech cadence
+                final phaseOffset = index * (math.pi / (barCount * 0.75));
+                final speedMultiplier = 1.0 + (index % 2) * 0.4;
+                final rawWave = math.sin(t * speedMultiplier + phaseOffset);
 
-              // Scale wave between minFraction (resting) and 1.0 (active)
-              const minFraction = 0.25;
-              final waveFraction = widget.isPlaying
-                  ? minFraction + (1.0 - minFraction) * ((rawWave + 1.0) / 2.0)
-                  : minFraction;
+                // Scale wave between minFraction (resting) and 1.0 (active)
+                const minFraction = 0.25;
+                final waveFraction = widget.isPlaying
+                    ? minFraction +
+                          (1.0 - minFraction) * ((rawWave + 1.0) / 2.0)
+                    : minFraction;
 
-              final barHeight = (widget.height * waveFraction).clamp(
-                widget.barRadius * 2,
-                widget.height,
-              );
+                final barHeight = (widget.height * waveFraction).clamp(
+                  widget.barRadius * 2,
+                  widget.height,
+                );
 
-              return Container(
-                margin: EdgeInsets.only(
-                  right: index < barCount - 1 ? widget.spacing : 0,
-                ),
-                width: barWidth,
-                height: barHeight,
-                decoration: BoxDecoration(
-                  color: themeColor,
-                  borderRadius: BorderRadius.circular(widget.barRadius),
-                ),
-              );
-            }),
-          ),
-        );
-      },
-    ),
-  );
-}
+                return Container(
+                  margin: EdgeInsets.only(
+                    right: index < barCount - 1 ? widget.spacing : 0,
+                  ),
+                  width: barWidth,
+                  height: barHeight,
+                  decoration: BoxDecoration(
+                    color: themeColor,
+                    borderRadius: BorderRadius.circular(widget.barRadius),
+                  ),
+                );
+              }),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }

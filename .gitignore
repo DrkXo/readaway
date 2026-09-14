@@ -46,6 +46,7 @@ apps/readaway/android/app/release
 
 # FVM Version Cache
 .fvm/
-# Agent
+
+# extra
 .agents
 .config

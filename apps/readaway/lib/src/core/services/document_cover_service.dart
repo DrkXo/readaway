@@ -7,10 +7,10 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
+import 'package:readaway_core/readaway_core.dart';
 
 import '../utils/reader/reader_image_utils.dart';
 import 'logging_service.dart';
-import 'mupdf_service.dart';
 import 'path_service.dart';
 
 /// Dedicated service for extracting, white-margin trimming, and caching
@@ -18,17 +18,15 @@ import 'path_service.dart';
 @lazySingleton
 class DocumentCoverService {
   DocumentCoverService(
-    this._muPdfService,
     this._pathService,
   );
 
-  final MuPdfService _muPdfService;
   final AppPathService _pathService;
 
   static final Logger _log = Logger('DocumentCoverService');
 
-  /// Retrieves a cached cover art URI or renders page 0, trims paper margins,
-  /// and saves a clean cover thumbnail PNG to disk.
+  /// Retrieves a cached cover art URI or extracts the embedded cover image,
+  /// trims paper margins, and saves a clean cover thumbnail PNG to disk.
   Future<Uri?> getCoverArtUri({
     required String filePath,
     required String fileName,
@@ -51,25 +49,49 @@ class DocumentCoverService {
         return coverFile.uri;
       }
 
-      // Render page 0 at 1.0x scale directly from file
-      final rendered = await _muPdfService.renderPageFromFile(
-        filePath,
-        0,
-        scaleX: 1.0,
-        scaleY: 1.0,
-      );
-      if (rendered == null) return null;
+      // Extract the embedded cover image via readaway_core
+      final reader = await DocumentReaderFactory().open(filePath);
+      final coverPath = reader.coverImagePath;
+      if (coverPath == null) {
+        reader.dispose();
+        return null;
+      }
+      final bytes = reader.loadAsset(coverPath);
+      reader.dispose();
+      if (bytes == null || bytes.isEmpty) return null;
+
+      final img = await _decodeImage(bytes);
+      if (img == null) return null;
+
+      final width = img.width;
+      final height = img.height;
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+      img.dispose();
+      if (byteData == null) return null;
+
+      final rendered = {
+        'width': width,
+        'height': height,
+        'stride': width * 4,
+        'components': 4,
+        'pixels': byteData.buffer.asUint8List(
+          byteData.offsetInBytes,
+          byteData.lengthInBytes,
+        ),
+      };
 
       // Automatically crop white paper borders around the cover illustration
       final cropped = cropWhiteMargins(rendered);
 
-      final img = await decodeRenderedPage(cropped);
-      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-      img.dispose();
+      final croppedImg = await decodeRenderedPage(cropped);
+      final pngData = await croppedImg.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      croppedImg.dispose();
 
-      if (byteData != null) {
+      if (pngData != null) {
         await coverFile.writeAsBytes(
-          byteData.buffer.asUint8List(),
+          pngData.buffer.asUint8List(),
           flush: true,
         );
         return coverFile.uri;
@@ -82,6 +104,16 @@ class DocumentCoverService {
       );
     }
     return null;
+  }
+
+  Future<ui.Image?> _decodeImage(Uint8List bytes) async {
+    try {
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      return frame.image;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Detects and trims uniform white or near-white borders surrounding the cover art.

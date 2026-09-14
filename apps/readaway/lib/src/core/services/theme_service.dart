@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 
 import '../models/models.dart';
-import '../theme/theme.dart';
+import '../theme/theme_scheme.dart';
 import 'settings_service.dart';
 
 @Singleton()
@@ -14,16 +14,25 @@ class ThemeService {
   final _themeController = StreamController<ThemeMode>.broadcast();
 
   ThemeMode _currentThemeMode = ThemeMode.system;
+  String? _currentSchemeId;
   StreamSubscription<Settings>? _settingsSub;
 
   ThemeMode get currentThemeMode => _currentThemeMode;
   Stream<ThemeMode> get themeChanges => _themeController.stream;
+
+  /// All available color schemes, in display order.
+  List<ThemeScheme> get schemes => ThemeSchemes.all;
+
+  /// The currently active color scheme.
+  ThemeScheme get currentScheme =>
+      ThemeSchemes.byId(_settings.settings.globalViewSettings.selectedScheme);
 
   ThemeService({required this._settings});
 
   @PostConstruct(preResolve: true)
   Future<void> init() async {
     _currentThemeMode = _modeFrom(_settings.settings);
+    _currentSchemeId = _settings.settings.globalViewSettings.selectedScheme;
     _themeController.add(_currentThemeMode);
     _settingsSub = _settings.changes.listen(_onSettingsChanged);
   }
@@ -37,27 +46,29 @@ class ThemeService {
 
   void _onSettingsChanged(Settings settings) {
     final mode = _modeFrom(settings);
-    if (mode == _currentThemeMode) return;
+    final schemeId = settings.globalViewSettings.selectedScheme;
+    if (mode == _currentThemeMode && schemeId == _currentSchemeId) return;
 
     _currentThemeMode = mode;
+    _currentSchemeId = schemeId;
     _themeController.add(mode);
   }
 
   ThemeData getLightTheme() {
-    final scheme = AppColors.light.scheme;
+    final scheme = currentScheme.light.scheme;
     return ThemeData(
       colorScheme: scheme,
-      extensions: [AppColors.light],
+      extensions: [currentScheme.light],
       useMaterial3: true,
       textSelectionTheme: _selectionTheme(scheme),
     );
   }
 
   ThemeData getDarkTheme() {
-    final scheme = AppColors.dark.scheme;
+    final scheme = currentScheme.dark.scheme;
     return ThemeData(
       colorScheme: scheme,
-      extensions: [AppColors.dark],
+      extensions: [currentScheme.dark],
       useMaterial3: true,
       textSelectionTheme: _selectionTheme(scheme),
     );

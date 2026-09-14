@@ -3,13 +3,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../bloc/settings/settings_bloc.dart';
+import '../reader_prefs_scope.dart';
+import '../settings_bloc_x.dart';
 import '../widgets.dart';
+import 'scheme_picker_card.dart';
 
 class SettingsAppearancePanel extends StatelessWidget {
   const SettingsAppearancePanel({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       builder: (context, state) {
         void resetTheme() {
@@ -19,6 +23,7 @@ class SettingsAppearancePanel extends StatelessWidget {
               settings.copyWith(
                 globalViewSettings: settings.globalViewSettings.copyWith(
                   theme: 'system',
+                  selectedScheme: 'tokenInspired',
                 ),
               ),
             ),
@@ -26,13 +31,12 @@ class SettingsAppearancePanel extends StatelessWidget {
         }
 
         void resetDisplayAdjustment() {
-          context.read<SettingsBloc>().add(
-            SettingsEvent.setGlobalReaderPref(
-              state.globalReaderPrefs.copyWith(
-                brightnessOverlay: 0.0,
-                contrastOverlay: 0.0,
-              ),
+          context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(
+              brightnessOverlay: 0.0,
+              contrastOverlay: 0.0,
             ),
+            documentPath: path,
           );
         }
 
@@ -57,7 +61,10 @@ class SettingsAppearancePanel extends StatelessWidget {
             SettingsSection(
               title: 'Theme',
               onReset: resetTheme,
-              rows: const [_ThemeModeCard()],
+              rows: const [
+                _ThemeModeCard(),
+                SchemePickerCard(),
+              ],
             ),
             const SizedBox(height: 24),
             SettingsSection(
@@ -150,12 +157,12 @@ class _BrightnessOverlayRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.brightnessOverlay !=
-          curr.globalReaderPrefs.brightnessOverlay,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final prefs = state.globalReaderPrefs;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSliderRow(
           label: 'Brightness',
           value: prefs.brightnessOverlay,
@@ -163,10 +170,9 @@ class _BrightnessOverlayRow extends StatelessWidget {
           max: 0.8,
           divisions: 80,
           format: (v) => v == 0 ? 'Off' : '-${(v * 100).round()}%',
-          onChanged: (v) => context.read<SettingsBloc>().add(
-            SettingsEvent.setGlobalReaderPref(
-              prefs.copyWith(brightnessOverlay: v),
-            ),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(brightnessOverlay: v),
+            documentPath: path,
           ),
         );
       },
@@ -179,12 +185,12 @@ class _ContrastOverlayRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.contrastOverlay !=
-          curr.globalReaderPrefs.contrastOverlay,
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final prefs = state.globalReaderPrefs;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSliderRow(
           label: 'Contrast',
           value: prefs.contrastOverlay,
@@ -192,10 +198,9 @@ class _ContrastOverlayRow extends StatelessWidget {
           max: 0.5,
           divisions: 50,
           format: (v) => v == 0 ? 'Off' : '+${(v * 100).round()}%',
-          onChanged: (v) => context.read<SettingsBloc>().add(
-            SettingsEvent.setGlobalReaderPref(
-              prefs.copyWith(contrastOverlay: v),
-            ),
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(contrastOverlay: v),
+            documentPath: path,
           ),
         );
       },

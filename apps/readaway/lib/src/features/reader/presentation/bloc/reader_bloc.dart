@@ -1,21 +1,20 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:audio_service/audio_service.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
-import 'package:mupdf/mupdf.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
-import '../../../../core/models/reader/reader_document.dart';
 import '../../../../core/models/ui_feedback.dart';
 import '../../../../core/routes/routes.dart';
 import '../../../../core/services/logging_service.dart';
 import '../../../../core/services/tts/tts_models.dart';
 import '../../../../core/utils/reader/reader_html_utils.dart';
-import '../../../../core/utils/reader/reader_image_utils.dart';
+import '../../domain/entity/reader_link.dart';
 import '../../domain/repositories/reader_repository.dart';
 import '../../domain/repositories/reader_tts_repository.dart';
 
@@ -51,6 +50,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_TtsErrorOccurred>(_onTtsErrorOccurred);
     on<_JumpToTtsPage>(_onJumpToTtsPage);
     on<_TtsPageAdvanced>(_onTtsPageAdvanced);
+    on<_VirtualPageChanged>(_onVirtualPageChanged);
+    on<_ClearPendingRestore>(_onClearPendingRestore);
 
     // Auto-advance or report errors when TTS reports state updates
     _ttsStateSub = ttsRepository.playbackState.listen((event) {
@@ -66,15 +67,6 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     });
   }
 
-  void _disposeImages() {
-    final images = state.pageImages;
-    if (images != null) {
-      for (final img in images) {
-        img?.dispose();
-      }
-    }
-  }
-
   Timer? _progressDebounceTimer;
 
   void _scheduleProgressSync(int page) {
@@ -88,18 +80,39 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     final targetPage = page ?? state.currentPage;
     final path = state.documentPath;
     if (path == null || state.pageCount <= 0) return;
-    readerRepository.updateReadingProgress(
-      path: path,
-      page: targetPage,
-      pageCount: state.pageCount,
-    ).run();
+
+    // Persist the stable anchor when pagination is ready. Before the viewport
+    // initializes the coordinator, chapterCount is 0 and we preserve any
+    // previously stored anchor instead of overwriting it.
+    ReadingAnchor? anchor;
+    final coordinator = GetIt.I.isRegistered<PaginationCoordinator>()
+        ? GetIt.I<PaginationCoordinator>()
+        : null;
+    if (coordinator != null && coordinator.chapterCount > 0) {
+      anchor = coordinator.currentAnchor;
+    }
+
+    readerRepository
+        .updateReadingProgress(
+          path: path,
+          page: targetPage,
+          pageCount: state.pageCount,
+          anchor: anchor,
+        )
+        .run();
+  }
+
+  void _onClearPendingRestore(
+    _ClearPendingRestore event,
+    Emitter<ReaderState> emit,
+  ) {
+    emit(state.copyWith(pendingRestoreAnchor: null));
   }
 
   @override
   Future<void> close() async {
     _progressDebounceTimer?.cancel();
     _flushProgress();
-    _disposeImages();
     await _ttsStateSub?.cancel();
     await ttsRepository.stopPipeline().run();
     await ttsRepository.releaseResources().run();
@@ -112,7 +125,13 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _OpenDocument event,
     Emitter<ReaderState> emit,
   ) async {
-    _disposeImages();
+    // Reset pagination so a stale anchor from a previous document is never
+    // saved while the new document is still loading.
+    final coordinator = GetIt.I.isRegistered<PaginationCoordinator>()
+        ? GetIt.I<PaginationCoordinator>()
+        : null;
+    coordinator?.reset();
+
     final initialFileName = event.fileName ?? event.path.split('/').last;
     emit(
       state.copyWith(
@@ -121,13 +140,15 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         error: null,
         documentPath: event.path,
         fileName: initialFileName,
-        documentPages: null,
-        pageImages: null,
+        pageHtmls: null,
       ),
     );
 
     final openResult = await readerRepository
-        .openDocument(event.path, defaultTitle: event.fileName)
+        .openDocument(
+          event.path,
+          defaultTitle: event.fileName,
+        )
         .run();
 
     await openResult.fold(
@@ -145,7 +166,6 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       },
       (info) async {
         final count = info.pageCount;
-        final reflowable = info.isReflowable;
 
         final lastPageResult = await readerRepository
             .getLastReadPage(event.path)
@@ -153,20 +173,26 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         final rawLastPage = lastPageResult.getOrElse((_) => 0);
         final initialPage = count > 0 ? rawLastPage.clamp(0, count - 1) : 0;
 
+        final anchorResult = await readerRepository
+            .getLastReadAnchor(event.path)
+            .run();
+        final savedAnchor = anchorResult.getRight().toNullable();
+
         emit(
           state.copyWith(
             documentPath: event.path,
             fileName: initialFileName,
             pageCount: count,
-            isReflowable: reflowable,
-            documentPages: reflowable
-                ? List<ReaderDocument?>.filled(count, null)
-                : null,
-            pageImages: reflowable ? null : List<ui.Image?>.filled(count, null),
+            pageHtmls: List<String?>.filled(count, null),
+            pageLinks: List<List<ReaderLink>?>.filled(count, null),
             currentPage: initialPage,
+            currentVirtualPage: null,
+            virtualPageCount: null,
+            pendingRestoreAnchor: savedAnchor,
             ttsCurrentPage: null,
             outline: info.outline,
             bookTitle: info.title,
+            author: info.author,
             loading: false,
             failure: null,
             error: null,
@@ -175,7 +201,6 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
         add(ReaderEvent.loadPage(index: initialPage));
         _precachePages(initialPage);
-        _scheduleProgressSync(initialPage);
 
         await readerRepository.updateWindowTitle(info.title).run();
 
@@ -192,34 +217,45 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   void _onPageChanged(_PageChanged event, Emitter<ReaderState> emit) {
-    emit(state.copyWith(currentPage: event.index));
+    emit(
+      state.copyWith(
+        currentPage: event.index,
+        currentVirtualPage: null,
+        virtualPageCount: null,
+      ),
+    );
     _precachePages(event.index);
     _scheduleProgressSync(event.index);
+  }
+
+  void _onVirtualPageChanged(
+    _VirtualPageChanged event,
+    Emitter<ReaderState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        currentVirtualPage: event.globalPage,
+        virtualPageCount: event.totalPages,
+        currentPage: event.chapterIndex,
+      ),
+    );
+    _precachePages(event.chapterIndex);
+    _scheduleProgressSync(event.globalPage);
   }
 
   Future<void> _onLoadPage(_LoadPage event, Emitter<ReaderState> emit) async {
     final index = event.index;
     if (index < 0 || index >= state.pageCount) return;
 
-    if (state.isReflowable) {
-      if (state.documentPages == null ||
-          state.documentPages![index] != null ||
-          state.loadingPages.contains(index)) {
-        return;
-      }
-    } else {
-      if (state.pageImages == null ||
-          state.pageImages![index] != null ||
-          state.loadingPages.contains(index)) {
-        return;
-      }
+    if (state.pageHtmls == null ||
+        state.pageHtmls![index] != null ||
+        state.loadingPages.contains(index)) {
+      return;
     }
 
     emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
 
-    final result = await readerRepository
-        .loadPage(index, isReflowable: state.isReflowable)
-        .run();
+    final result = await readerRepository.loadPage(index).run();
 
     await result.fold(
       (failure) async {
@@ -231,29 +267,17 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         );
       },
       (pageData) async {
-        if (state.isReflowable) {
-          final pages = List<ReaderDocument?>.from(state.documentPages!);
-          pages[index] = pageData.document;
-          emit(
-            state.copyWith(
-              documentPages: pages,
-              loadingPages: {...state.loadingPages}..remove(index),
-            ),
-          );
-        } else {
-          final rendered = pageData.renderedData;
-          final images = List<ui.Image?>.from(state.pageImages!);
-          images[index]?.dispose();
-          images[index] = rendered == null
-              ? null
-              : await decodeRenderedPage(rendered);
-          emit(
-            state.copyWith(
-              pageImages: images,
-              loadingPages: {...state.loadingPages}..remove(index),
-            ),
-          );
-        }
+        final htmlPages = List<String?>.from(state.pageHtmls!);
+        final linkPages = List<List<ReaderLink>?>.from(state.pageLinks!);
+        htmlPages[index] = pageData.html;
+        linkPages[index] = pageData.links;
+        emit(
+          state.copyWith(
+            pageHtmls: htmlPages,
+            pageLinks: linkPages,
+            loadingPages: {...state.loadingPages}..remove(index),
+          ),
+        );
       },
     );
   }
@@ -264,7 +288,6 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   ) {
     _progressDebounceTimer?.cancel();
     _flushProgress();
-    _disposeImages();
     _coverUri = null;
     readerRepository.closeDocument().run();
     readerRepository.updateWindowTitle(null).run();
@@ -276,8 +299,6 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _TtsStart event,
     Emitter<ReaderState> emit,
   ) async {
-    if (!state.isReflowable) return;
-
     final permissionResult = await readerRepository
         .requestAudioPermissions()
         .run();
@@ -354,7 +375,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       }
     }
 
-    final textResult = await readerRepository.extractPageText(pageIndex).run();
+    final textResult = await readerRepository.extractSpeechText(pageIndex).run();
     final text = textResult.getOrElse((_) => '');
     if (text.trim().isEmpty) return;
 
@@ -421,7 +442,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   /// forcefully changing the user's viewport page.
   Future<void> _onPageTtsCompleted() async {
     if (_autoAdvancing) return;
-    if (!state.isReflowable || !state.ttsActive) return;
+    if (!state.ttsActive) return;
 
     final basePage = state.ttsCurrentPage ?? state.currentPage;
     if (basePage >= state.pageCount - 1) return;
@@ -430,7 +451,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     try {
       int? next;
       for (var i = basePage + 1; i < state.pageCount; i++) {
-        final textResult = await readerRepository.extractPageText(i).run();
+        final textResult = await readerRepository.extractSpeechText(i).run();
         final text = textResult.getOrElse((_) => '');
         if (text.trim().isNotEmpty) {
           next = i;
@@ -499,7 +520,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   void _precachePages(int currentIndex) {
-    final pages = state.isReflowable ? state.documentPages : state.pageImages;
+    final pages = state.pageHtmls;
     if (pages == null) return;
 
     for (final idx in precacheCandidates(currentIndex, state.pageCount)) {

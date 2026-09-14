@@ -75,6 +75,21 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   }
 
   @override
+  TaskEither<Failure, Unit> clearDocumentPreferences(String path) {
+    return TaskEither.tryCatch(
+      () async {
+        await _storage.deleteReaderDocumentPrefs(path);
+        return unit;
+      },
+      (error, stack) => StorageWriteFailure(
+        'reader_doc_$path',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
   TaskEither<Failure, Unit> resetAllPreferences() {
     return TaskEither.tryCatch(
       () async {

@@ -6,13 +6,19 @@ import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:mutex/mutex.dart';
 import 'package:path/path.dart' as p;
+import 'package:readaway_core/readaway_core.dart'
+    show
+        TtsChunk,
+        bakedGapForRate,
+        kDefaultParagraphGapSec,
+        kDefaultSentenceGapSec;
 import 'package:rxdart/rxdart.dart';
 
 import '../../models/models.dart';
+import '../audio/audio_player_service.dart';
 import '../logging_service.dart';
 import '../path_service.dart';
 import '../settings_service.dart';
-import '../audio/audio_player_service.dart';
 import 'tts_chunker_service.dart';
 import 'tts_engine.dart';
 import 'tts_models.dart';
@@ -54,8 +60,9 @@ class TtsControllerService {
   ValueStream<TtsVoiceOption?> get currentVoiceOption =>
       _voiceController.stream;
 
-  final _voicesController =
-      BehaviorSubject<List<TtsVoiceOption>>.seeded(const []);
+  final _voicesController = BehaviorSubject<List<TtsVoiceOption>>.seeded(
+    const [],
+  );
   ValueStream<List<TtsVoiceOption>> get availableVoicesStream =>
       _voicesController.stream;
 
@@ -113,10 +120,9 @@ class TtsControllerService {
             : null);
   TtsVoiceOption? get currentVoice => _voice;
   List<TtsVoiceOption> _cachedInstalledVoices = const [];
-  List<TtsVoiceOption> get availableVoices =>
-      _voicesController.value.isNotEmpty
-          ? _voicesController.value
-          : _cachedInstalledVoices;
+  List<TtsVoiceOption> get availableVoices => _voicesController.value.isNotEmpty
+      ? _voicesController.value
+      : _cachedInstalledVoices;
 
   void _onSettingsChanged(Settings settings) {
     final gvs = settings.globalViewSettings;
@@ -153,8 +159,9 @@ class TtsControllerService {
     } else {
       unawaited(() async {
         final voices = await getInstalledVoices();
-        final match =
-            voices.where((v) => v.matchesKey(targetVoiceKey)).firstOrNull;
+        final match = voices
+            .where((v) => v.matchesKey(targetVoiceKey))
+            .firstOrNull;
         if (match != null) {
           await setVoice(match);
         }
@@ -167,12 +174,14 @@ class TtsControllerService {
     await _chunkingService.start();
     final voices = await getInstalledVoices();
 
-    final targetVoiceKey = _settingsService.settings.globalViewSettings.ttsVoice;
+    final targetVoiceKey =
+        _settingsService.settings.globalViewSettings.ttsVoice;
     TtsVoiceOption? resolvedVoice;
 
     if (targetVoiceKey != null && targetVoiceKey.isNotEmpty) {
-      resolvedVoice =
-          voices.where((v) => v.matchesKey(targetVoiceKey)).firstOrNull;
+      resolvedVoice = voices
+          .where((v) => v.matchesKey(targetVoiceKey))
+          .firstOrNull;
     }
 
     resolvedVoice ??= _voice ?? voices.firstOrNull;
@@ -366,6 +375,17 @@ class TtsControllerService {
     unawaited(_synthesizeAndPlayPipeline(sessionId, startIndex, tag));
   });
 
+  /// Seconds of silence to bake after [chunk] so the pause before the next
+  /// chunk follows the natural-voice curve. The final chunk carries no
+  /// trailing pause.
+  double _gapForChunk(TtsChunk chunk, int index) {
+    if (index >= _masterQueue.length - 1) return 0;
+    final base = chunk.isParagraphEnd
+        ? kDefaultParagraphGapSec
+        : kDefaultSentenceGapSec;
+    return bakedGapForRate(base, _rate <= 0 ? 1.0 : _rate);
+  }
+
   /// Lookahead synthesis pipeline: pre-synthesizes initial buffer, starts playback,
   /// and continues queuing remaining chunks ahead of playback.
   Future<void> _synthesizeAndPlayPipeline(
@@ -389,8 +409,9 @@ class TtsControllerService {
             _settingsService.settings.globalViewSettings.ttsVoice;
         TtsVoiceOption? resolvedVoice;
         if (targetVoiceKey != null && targetVoiceKey.isNotEmpty) {
-          resolvedVoice =
-              voices.where((v) => v.matchesKey(targetVoiceKey)).firstOrNull;
+          resolvedVoice = voices
+              .where((v) => v.matchesKey(targetVoiceKey))
+              .firstOrNull;
         }
         resolvedVoice ??= voices.firstOrNull;
 
@@ -435,8 +456,9 @@ class TtsControllerService {
             text: textToSpeak,
             outputPath: filePath,
             voice: _voice!,
-            speed: _rate <= 0 ? 1.0 : _rate,
-            pitch: _pitch <= 0 ? 1.0 : _pitch,
+            speed: 1.0,
+            pitch: 1.0,
+            gapSec: _gapForChunk(chunk, i),
           );
           consecutiveErrors = 0;
           if (sessionId != _activeSessionId) {
@@ -516,8 +538,9 @@ class TtsControllerService {
             text: textToSpeak,
             outputPath: filePath,
             voice: _voice!,
-            speed: _rate <= 0 ? 1.0 : _rate,
-            pitch: _pitch <= 0 ? 1.0 : _pitch,
+            speed: 1.0,
+            pitch: 1.0,
+            gapSec: _gapForChunk(chunk, i),
           );
           consecutiveErrors = 0;
           if (sessionId != _activeSessionId) {

@@ -45,6 +45,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       _onSetGlobalReaderPref,
       transformer: restartable(),
     );
+    on<_LoadDocumentPrefs>(_onLoadDocumentPrefs, transformer: droppable());
+    on<_SetDocumentReaderPref>(
+      _onSetDocumentReaderPref,
+      transformer: restartable(),
+    );
+    on<_ClearDocumentPrefs>(_onClearDocumentPrefs, transformer: droppable());
     on<_ResetAllReaderPrefs>(_onResetAllReaderPrefs, transformer: droppable());
     on<_ImportReaderPrefs>(_onImportReaderPrefs, transformer: droppable());
     on<_UpdateAppSettings>(_onUpdateAppSettings, transformer: droppable());
@@ -63,8 +69,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
     _settingsSub = settingsRepository.watchSettings().listen((settings) {
       final voice = settings.globalViewSettings.ttsVoice;
-      final modelId =
-          voice != null && voice.contains('@') ? voice.split('@').first : voice;
+      final modelId = voice != null && voice.contains('@')
+          ? voice.split('@').first
+          : voice;
       if (modelId != state.ttsActiveModelId && !isClosed) {
         add(const _RefreshTts());
       }
@@ -100,6 +107,74 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       ),
     );
     logger.d('All reader prefs reset');
+  }
+
+  void _onLoadDocumentPrefs(
+    _LoadDocumentPrefs event,
+    Emitter<SettingsState> emit,
+  ) async {
+    final result = await preferencesRepository
+        .getDocumentPreferences(event.path)
+        .run();
+    result.fold(
+      (failure) => logger.e('Failed to load document prefs: $failure'),
+      (loaded) {
+        final map = Map<String, ReaderPreferences>.of(
+          state.documentReaderPrefs,
+        );
+        // Only keep an entry when a real override exists; otherwise remove it
+        // so the effective prefs fall back to the LIVE global prefs.
+        loaded.fold(
+          () => map.remove(event.path),
+          (prefs) => map[event.path] = prefs,
+        );
+        emit(state.copyWith(documentReaderPrefs: map));
+        logger.d('Document reader prefs loaded for ${event.path}');
+      },
+    );
+  }
+
+  void _onSetDocumentReaderPref(
+    _SetDocumentReaderPref event,
+    Emitter<SettingsState> emit,
+  ) async {
+    final result = await preferencesRepository
+        .saveDocumentPreferences(event.path, event.prefs)
+        .run();
+    result.fold(
+      (failure) => logger.e('Failed to set document prefs: $failure'),
+      (_) {
+        emit(
+          state.copyWith(
+            documentReaderPrefs: {
+              ...state.documentReaderPrefs,
+              event.path: event.prefs,
+            },
+          ),
+        );
+        logger.d('Document reader prefs updated for ${event.path}');
+      },
+    );
+  }
+
+  void _onClearDocumentPrefs(
+    _ClearDocumentPrefs event,
+    Emitter<SettingsState> emit,
+  ) async {
+    final result = await preferencesRepository
+        .clearDocumentPreferences(event.path)
+        .run();
+    result.fold(
+      (failure) => logger.e('Failed to clear document prefs: $failure'),
+      (_) {
+        final map = Map<String, ReaderPreferences>.of(
+          state.documentReaderPrefs,
+        );
+        map.remove(event.path);
+        emit(state.copyWith(documentReaderPrefs: map));
+        logger.d('Document reader prefs cleared for ${event.path}');
+      },
+    );
   }
 
   void _onUpdateAppSettings(

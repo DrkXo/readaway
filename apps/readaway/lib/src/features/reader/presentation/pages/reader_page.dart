@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/routes/routes.dart';
 import '../../../../core/services/services.dart';
@@ -15,10 +17,10 @@ import '../../../settings/domain/entity/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../domain/gestures/reader_gestures.dart';
 import '../bloc/reader_bloc.dart';
-import '../controllers/reader_page_view_controller.dart';
+import '../controllers/reader_viewport_controller.dart';
 import '../widgets/widgets.dart';
 
-part '../mixins/reader_page_mixins.dart';
+part 'reader_page_mixin.dart';
 
 class ReaderPage extends StatefulWidget {
   const ReaderPage({
@@ -68,7 +70,21 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
           listenWhen: (prev, curr) =>
               prev.appSettings.screenWakeLock !=
               curr.appSettings.screenWakeLock,
-          listener: (context, state) => syncSettings(state),
+          listener: (context, state) {
+            syncSettings(state);
+          },
+        ),
+        BlocListener<ReaderBloc, ReaderState>(
+          listenWhen: (prev, curr) =>
+              prev.documentPath != curr.documentPath &&
+              curr.documentPath != null,
+          listener: (context, state) {
+            // Load any per-book overrides for the newly opened document so the
+            // effective prefs (document ?? global) reflect the book's settings.
+            context.read<SettingsBloc>().add(
+              SettingsEvent.loadDocumentPrefs(state.documentPath!),
+            );
+          },
         ),
         BlocListener<ReaderBloc, ReaderState>(
           listenWhen: (prev, curr) =>
@@ -133,9 +149,15 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
 
           return BlocBuilder<SettingsBloc, SettingsState>(
             buildWhen: (prev, curr) =>
-                prev.globalReaderPrefs != curr.globalReaderPrefs,
+                prev.globalReaderPrefs != curr.globalReaderPrefs ||
+                prev.documentReaderPrefs != curr.documentReaderPrefs,
             builder: (context, settingsState) {
-              final prefs = settingsState.globalReaderPrefs;
+              // Effective prefs: per-book overrides win, otherwise global.
+              final documentPath = readerState.documentPath;
+              final prefs = documentPath != null
+                  ? (settingsState.documentReaderPrefs[documentPath] ??
+                        settingsState.globalReaderPrefs)
+                  : settingsState.globalReaderPrefs;
 
               return PopScope(
                 canPop: false,
@@ -145,31 +167,23 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                 child: CallbackShortcuts(
                   bindings: {
                     const SingleActivator(LogicalKeyboardKey.arrowLeft):
-                        pageViewController.previousPage,
+                        viewportController.previousPage,
                     const SingleActivator(LogicalKeyboardKey.arrowRight):
-                        pageViewController.nextPage,
+                        viewportController.nextPage,
                     const SingleActivator(LogicalKeyboardKey.arrowUp):
-                        pageViewController.previousPage,
+                        viewportController.previousPage,
                     const SingleActivator(LogicalKeyboardKey.arrowDown):
-                        pageViewController.nextPage,
+                        viewportController.nextPage,
                     const SingleActivator(LogicalKeyboardKey.pageUp):
-                        pageViewController.previousPage,
+                        viewportController.previousPage,
                     const SingleActivator(LogicalKeyboardKey.pageDown):
-                        pageViewController.nextPage,
+                        viewportController.nextPage,
                   },
                   child: Focus(
                     autofocus: true,
                     child: Scaffold(
                       key: _scaffoldKey,
-                      drawer: ReaderDrawer(
-                        onJumpToPage: (page) {
-                          if (_scaffoldKey.currentState?.isDrawerOpen ??
-                              false) {
-                            _scaffoldKey.currentState?.closeDrawer();
-                          }
-                          jumpToPage(page);
-                        },
-                      ),
+                      drawer: ReaderDrawer(onJumpToPage: jumpToPage),
                       backgroundColor: context.appColors.readerBackground,
                       body: ReaderTtsPlayerOverlay(
                         isChromeVisible: isChromeVisibleNotifier,
@@ -192,13 +206,13 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                       autoScrollController.isActive,
                                   onSpeedChange: onSpeedGestureChange,
                                   onPageDragStart:
-                                      pageViewController.handleDragStart,
+                                      viewportController.handleDragStart,
                                   onPageDragUpdate:
-                                      pageViewController.handleDragUpdate,
+                                      viewportController.handleDragUpdate,
                                   onPageDragEnd:
-                                      pageViewController.handleDragEnd,
+                                      viewportController.handleDragEnd,
                                   onPageDragCancel:
-                                      pageViewController.handleDragCancel,
+                                      viewportController.handleDragCancel,
                                   onTapAction: handleTapAction,
                                   child: LayoutBuilder(
                                     builder: (context, constraints) {
@@ -212,8 +226,8 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                             Positioned.fill(
                                               child: SafeArea(
                                                 child: ReaderViewport(
-                                                  pageViewController:
-                                                      pageViewController,
+                                                  viewportController:
+                                                      viewportController,
                                                   prefs: prefs,
                                                   onScrollBoundaryChanged:
                                                       onScrollBoundaryChanged,
@@ -345,11 +359,11 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                               .currentState
                                               ?.openDrawer(),
                                           onPreviousPage:
-                                              pageViewController.previousPage,
+                                              viewportController.previousPage,
                                           onNextPage:
-                                              pageViewController.nextPage,
+                                              viewportController.nextPage,
                                           onSeekToPage:
-                                              pageViewController.goToPage,
+                                              viewportController.goToPage,
                                         ),
                                       ),
                                     ),

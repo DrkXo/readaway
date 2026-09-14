@@ -17,4 +17,10 @@ abstract class ReaderEvent with _$ReaderEvent {
   const factory ReaderEvent.jumpToTtsPage() = _JumpToTtsPage;
   const factory ReaderEvent.ttsPageAdvanced({required int pageIndex}) =
       _TtsPageAdvanced;
+  const factory ReaderEvent.virtualPageChanged({
+    required int globalPage,
+    required int totalPages,
+    required int chapterIndex,
+  }) = _VirtualPageChanged;
+  const factory ReaderEvent.clearPendingRestore() = _ClearPendingRestore;
 }

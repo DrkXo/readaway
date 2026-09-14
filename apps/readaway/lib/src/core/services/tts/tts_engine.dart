@@ -40,12 +40,17 @@ abstract interface class TtsEngine {
   Future<List<TtsVoiceOption>> getAvailableVoices();
 
   /// Synthesizes [text] to an audio file at [outputPath].
+  ///
+  /// [gapSec] is trailing silence baked into the file so the pause before the
+  /// next chunk matches the natural-voice curve. Rate and pitch are expected to
+  /// be controlled by the audio player, not the engine.
   Future<TtsSynthesisResult> synthesizeToFile({
     required String text,
     required String outputPath,
     required TtsVoiceOption voice,
     double speed = 1.0,
     double pitch = 1.0,
+    double gapSec = 0.0,
   });
 }
 

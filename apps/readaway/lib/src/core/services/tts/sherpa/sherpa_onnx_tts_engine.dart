@@ -67,6 +67,7 @@ class SherpaOnnxTtsEngine implements TtsEngine {
     required TtsVoiceOption voice,
     double speed = 1.0,
     double pitch = 1.0,
+    double gapSec = 0.0,
   }) async {
     if (_sherpaService.activeModel?.id != voice.id) {
       await _sherpaService.loadModel(voice.id);
@@ -77,6 +78,7 @@ class SherpaOnnxTtsEngine implements TtsEngine {
       outputPath: outputPath,
       speakerId: voice.sherpaSpeakerId ?? 0,
       speed: speed,
+      gapSec: gapSec,
     );
 
     return TtsSynthesisResult(

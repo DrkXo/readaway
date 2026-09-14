@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:readaway_core/readaway_core.dart' show TtsChunk;
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../../core/services/audio/audio_player_service.dart';
-import '../../../../../core/services/tts/tts_chunk_model.dart';
 import '../../../../../core/services/tts/tts_models.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
@@ -371,8 +371,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                         stream: tts.availableVoicesStream,
                         initialData: tts.availableVoices,
                         builder: (context, voicesSnap) {
-                          final voices =
-                              voicesSnap.data ?? tts.availableVoices;
+                          final voices = voicesSnap.data ?? tts.availableVoices;
                           return StreamBuilder<TtsVoiceOption?>(
                             stream: tts.currentVoiceOption,
                             initialData: tts.currentVoice,
@@ -395,44 +394,44 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                       ),
                     )
                   : _showSpeedPanel
-                      ? Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: StreamBuilder<double>(
-                            stream: tts.rateStream,
-                            initialData: tts.rate,
-                            builder: (context, rateSnap) {
-                              final rate = rateSnap.data ?? 1.0;
-                              return TtsSpeedControlPanel(
-                                rate: rate,
-                                onRateChanged: (newRate) =>
-                                    tts.setRate(newRate).run(),
-                                onClose: () {
-                                  setState(() => _showSpeedPanel = false);
-                                },
-                              );
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: StreamBuilder<double>(
+                        stream: tts.rateStream,
+                        initialData: tts.rate,
+                        builder: (context, rateSnap) {
+                          final rate = rateSnap.data ?? 1.0;
+                          return TtsSpeedControlPanel(
+                            rate: rate,
+                            onRateChanged: (newRate) =>
+                                tts.setRate(newRate).run(),
+                            onClose: () {
+                              setState(() => _showSpeedPanel = false);
                             },
-                          ),
-                        )
-                      : _showPitchPanel
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: StreamBuilder<double>(
-                                stream: tts.pitchStream,
-                                initialData: tts.pitch,
-                                builder: (context, pitchSnap) {
-                                  final pitch = pitchSnap.data ?? 1.0;
-                                  return TtsPitchControlPanel(
-                                    pitch: pitch,
-                                    onPitchChanged: (newPitch) =>
-                                        tts.setPitch(newPitch).run(),
-                                    onClose: () {
-                                      setState(() => _showPitchPanel = false);
-                                    },
-                                  );
-                                },
-                              ),
-                            )
-                          : const SizedBox.shrink(),
+                          );
+                        },
+                      ),
+                    )
+                  : _showPitchPanel
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: StreamBuilder<double>(
+                        stream: tts.pitchStream,
+                        initialData: tts.pitch,
+                        builder: (context, pitchSnap) {
+                          final pitch = pitchSnap.data ?? 1.0;
+                          return TtsPitchControlPanel(
+                            pitch: pitch,
+                            onPitchChanged: (newPitch) =>
+                                tts.setPitch(newPitch).run(),
+                            onClose: () {
+                              setState(() => _showPitchPanel = false);
+                            },
+                          );
+                        },
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
 
             const SizedBox(height: 8),

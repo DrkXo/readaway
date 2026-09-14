@@ -1,6 +1,7 @@
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:readaway_core/readaway_core.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 
 import '../tts_models.dart';
@@ -110,17 +111,49 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             sid: speakerId,
             speed: speed,
           );
+
+          // Trim leading/trailing silence and suppress edge clicks.
+          // The buffer is freshly produced by the engine so ownership is
+          // unconditional — no aliasing concern with the caller.
+          final bounds = findSpeechBounds(audio.samples, audio.sampleRate);
+          final startIdx = (bounds.startSec * audio.sampleRate).round().clamp(
+            0,
+            audio.samples.length,
+          );
+          final endIdx = (bounds.endSec * audio.sampleRate).round().clamp(
+            0,
+            audio.samples.length,
+          );
+          final trimmed = startIdx < endIdx
+              ? audio.samples.sublist(startIdx, endIdx)
+              : audio.samples;
+          var out = trimmed;
+          if (out.isNotEmpty) {
+            applyEdgeFade(out, audio.sampleRate);
+          }
+
+          // Append the inter-chunk pause as baked silence. The player's speed
+          // stretches it, so the controller passes the already-compensated
+          // duration via bakedGapForRate.
+          final gapSec = (message['gapSec'] as num?)?.toDouble() ?? 0.0;
+          final gapSamples = (gapSec * audio.sampleRate).round();
+          if (gapSamples > 0) {
+            final withGap = Float32List(out.length + gapSamples);
+            withGap.setAll(0, out);
+            out = withGap;
+          }
+
           final ok = sherpa.writeWave(
             filename: outputPath,
-            samples: audio.samples,
+            samples: out,
             sampleRate: audio.sampleRate,
           );
           if (!ok) {
             reply(id, error: 'Failed to write WAV to $outputPath');
             break;
           }
-          final duration = audio.samples.length / audio.sampleRate;
-          final peaks = _extractPeaks(audio.samples, targetBars: 64);
+          final duration = out.length / audio.sampleRate;
+          final peaks = _extractPeaks(out, targetBars: 64);
           reply(
             id,
             result: {
