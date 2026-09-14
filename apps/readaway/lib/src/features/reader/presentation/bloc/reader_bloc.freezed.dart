@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'reader_bloc.dart';
@@ -9,6 +9,7 @@ part of 'reader_bloc.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderEvent);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderEvent);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent()';
+    return 'ReaderEvent()';
 }
 
 
@@ -257,16 +258,18 @@ _$OpenDocumentCopyWith<_OpenDocument> get copyWith => __$OpenDocumentCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OpenDocument&&(identical(other.path, path) || other.path == path)&&(identical(other.fileName, fileName) || other.fileName == fileName));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OpenDocument&&(identical(other.path, path) || other.path == path)&&(identical(other.fileName, fileName) || other.fileName == fileName));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,path,fileName);
+int get hashCode {
+    return Object.hash(runtimeType,path,fileName);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.openDocument(path: $path, fileName: $fileName)';
+    return 'ReaderEvent.openDocument(path: $path, fileName: $fileName)';
 }
 
 
@@ -324,16 +327,18 @@ _$PageChangedCopyWith<_PageChanged> get copyWith => __$PageChangedCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageChanged&&(identical(other.index, index) || other.index == index));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageChanged&&(identical(other.index, index) || other.index == index));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,index);
+int get hashCode {
+    return Object.hash(runtimeType,index);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.pageChanged(index: $index)';
+    return 'ReaderEvent.pageChanged(index: $index)';
 }
 
 
@@ -390,16 +395,18 @@ _$LoadPageCopyWith<_LoadPage> get copyWith => __$LoadPageCopyWithImpl<_LoadPage>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LoadPage&&(identical(other.index, index) || other.index == index));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LoadPage&&(identical(other.index, index) || other.index == index));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,index);
+int get hashCode {
+    return Object.hash(runtimeType,index);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.loadPage(index: $index)';
+    return 'ReaderEvent.loadPage(index: $index)';
 }
 
 
@@ -451,7 +458,7 @@ class _CloseDocument implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CloseDocument);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CloseDocument);
 }
 
 
@@ -460,7 +467,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.closeDocument()';
+    return 'ReaderEvent.closeDocument()';
 }
 
 
@@ -483,7 +490,7 @@ class _TtsStart implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsStart);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsStart);
 }
 
 
@@ -492,7 +499,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.ttsStart()';
+    return 'ReaderEvent.ttsStart()';
 }
 
 
@@ -515,7 +522,7 @@ class _TtsClose implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsClose);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsClose);
 }
 
 
@@ -524,7 +531,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.ttsClose()';
+    return 'ReaderEvent.ttsClose()';
 }
 
 
@@ -547,7 +554,7 @@ class _ConsumeFeedback implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ConsumeFeedback);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ConsumeFeedback);
 }
 
 
@@ -556,7 +563,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.consumeFeedback()';
+    return 'ReaderEvent.consumeFeedback()';
 }
 
 
@@ -584,16 +591,18 @@ _$TtsErrorOccurredCopyWith<_TtsErrorOccurred> get copyWith => __$TtsErrorOccurre
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsErrorOccurred&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsErrorOccurred&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode {
+    return Object.hash(runtimeType,message);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.ttsErrorOccurred(message: $message)';
+    return 'ReaderEvent.ttsErrorOccurred(message: $message)';
 }
 
 
@@ -645,7 +654,7 @@ class _JumpToTtsPage implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _JumpToTtsPage);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _JumpToTtsPage);
 }
 
 
@@ -654,7 +663,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.jumpToTtsPage()';
+    return 'ReaderEvent.jumpToTtsPage()';
 }
 
 
@@ -682,16 +691,18 @@ _$TtsPageAdvancedCopyWith<_TtsPageAdvanced> get copyWith => __$TtsPageAdvancedCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsPageAdvanced&&(identical(other.pageIndex, pageIndex) || other.pageIndex == pageIndex));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsPageAdvanced&&(identical(other.pageIndex, pageIndex) || other.pageIndex == pageIndex));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,pageIndex);
+int get hashCode {
+    return Object.hash(runtimeType,pageIndex);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.ttsPageAdvanced(pageIndex: $pageIndex)';
+    return 'ReaderEvent.ttsPageAdvanced(pageIndex: $pageIndex)';
 }
 
 
@@ -750,16 +761,18 @@ _$VirtualPageChangedCopyWith<_VirtualPageChanged> get copyWith => __$VirtualPage
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VirtualPageChanged&&(identical(other.globalPage, globalPage) || other.globalPage == globalPage)&&(identical(other.totalPages, totalPages) || other.totalPages == totalPages)&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _VirtualPageChanged&&(identical(other.globalPage, globalPage) || other.globalPage == globalPage)&&(identical(other.totalPages, totalPages) || other.totalPages == totalPages)&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,globalPage,totalPages,chapterIndex);
+int get hashCode {
+    return Object.hash(runtimeType,globalPage,totalPages,chapterIndex);
+}
 
 @override
 String toString() {
-  return 'ReaderEvent.virtualPageChanged(globalPage: $globalPage, totalPages: $totalPages, chapterIndex: $chapterIndex)';
+    return 'ReaderEvent.virtualPageChanged(globalPage: $globalPage, totalPages: $totalPages, chapterIndex: $chapterIndex)';
 }
 
 
@@ -813,7 +826,7 @@ class _ClearPendingRestore implements ReaderEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ClearPendingRestore);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ClearPendingRestore);
 }
 
 
@@ -822,7 +835,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ReaderEvent.clearPendingRestore()';
+    return 'ReaderEvent.clearPendingRestore()';
 }
 
 
@@ -845,16 +858,21 @@ $ReaderStateCopyWith<ReaderState> get copyWith => _$ReaderStateCopyWithImpl<Read
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.pageHtmls, pageHtmls)&&const DeepCollectionEquality().equals(other.pageLinks, pageLinks)&&const DeepCollectionEquality().equals(other.loadingPages, loadingPages)&&const DeepCollectionEquality().equals(other.outline, outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author)&&(identical(other.documentPath, documentPath) || other.documentPath == documentPath)&&(identical(other.transientFeedback, transientFeedback) || other.transientFeedback == transientFeedback)&&(identical(other.ttsActive, ttsActive) || other.ttsActive == ttsActive)&&(identical(other.ttsCurrentPage, ttsCurrentPage) || other.ttsCurrentPage == ttsCurrentPage)&&(identical(other.virtualPageCount, virtualPageCount) || other.virtualPageCount == virtualPageCount)&&(identical(other.currentVirtualPage, currentVirtualPage) || other.currentVirtualPage == currentVirtualPage)&&(identical(other.pendingRestoreAnchor, pendingRestoreAnchor) || other.pendingRestoreAnchor == pendingRestoreAnchor));
+  final _this = this as ReaderState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReaderState&&(identical(other.loading, _this.loading) || other.loading == _this.loading)&&(identical(other.failure, _this.failure) || other.failure == _this.failure)&&(identical(other.error, _this.error) || other.error == _this.error)&&(identical(other.fileName, _this.fileName) || other.fileName == _this.fileName)&&(identical(other.pageCount, _this.pageCount) || other.pageCount == _this.pageCount)&&(identical(other.currentPage, _this.currentPage) || other.currentPage == _this.currentPage)&&const DeepCollectionEquality().equals(other.pageHtmls, _this.pageHtmls)&&const DeepCollectionEquality().equals(other.pageLinks, _this.pageLinks)&&const DeepCollectionEquality().equals(other.loadingPages, _this.loadingPages)&&const DeepCollectionEquality().equals(other.outline, _this.outline)&&(identical(other.bookTitle, _this.bookTitle) || other.bookTitle == _this.bookTitle)&&(identical(other.author, _this.author) || other.author == _this.author)&&(identical(other.documentPath, _this.documentPath) || other.documentPath == _this.documentPath)&&(identical(other.transientFeedback, _this.transientFeedback) || other.transientFeedback == _this.transientFeedback)&&(identical(other.ttsActive, _this.ttsActive) || other.ttsActive == _this.ttsActive)&&(identical(other.ttsCurrentPage, _this.ttsCurrentPage) || other.ttsCurrentPage == _this.ttsCurrentPage)&&(identical(other.virtualPageCount, _this.virtualPageCount) || other.virtualPageCount == _this.virtualPageCount)&&(identical(other.currentVirtualPage, _this.currentVirtualPage) || other.currentVirtualPage == _this.currentVirtualPage)&&(identical(other.pendingRestoreAnchor, _this.pendingRestoreAnchor) || other.pendingRestoreAnchor == _this.pendingRestoreAnchor));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,loading,failure,error,fileName,pageCount,currentPage,const DeepCollectionEquality().hash(pageHtmls),const DeepCollectionEquality().hash(pageLinks),const DeepCollectionEquality().hash(loadingPages),const DeepCollectionEquality().hash(outline),bookTitle,author,documentPath,transientFeedback,ttsActive,ttsCurrentPage,virtualPageCount,currentVirtualPage,pendingRestoreAnchor]);
+int get hashCode {
+  final _this = this as ReaderState;
+  return Object.hashAll([runtimeType,_this.loading,_this.failure,_this.error,_this.fileName,_this.pageCount,_this.currentPage,const DeepCollectionEquality().hash(_this.pageHtmls),const DeepCollectionEquality().hash(_this.pageLinks),const DeepCollectionEquality().hash(_this.loadingPages),const DeepCollectionEquality().hash(_this.outline),_this.bookTitle,_this.author,_this.documentPath,_this.transientFeedback,_this.ttsActive,_this.ttsCurrentPage,_this.virtualPageCount,_this.currentVirtualPage,_this.pendingRestoreAnchor]);
+}
 
 @override
 String toString() {
-  return 'ReaderState(loading: $loading, failure: $failure, error: $error, fileName: $fileName, pageCount: $pageCount, currentPage: $currentPage, pageHtmls: $pageHtmls, pageLinks: $pageLinks, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author, documentPath: $documentPath, transientFeedback: $transientFeedback, ttsActive: $ttsActive, ttsCurrentPage: $ttsCurrentPage, virtualPageCount: $virtualPageCount, currentVirtualPage: $currentVirtualPage, pendingRestoreAnchor: $pendingRestoreAnchor)';
+  final _this = this as ReaderState;
+  return 'ReaderState(loading: ${_this.loading}, failure: ${_this.failure}, error: ${_this.error}, fileName: ${_this.fileName}, pageCount: ${_this.pageCount}, currentPage: ${_this.currentPage}, pageHtmls: ${_this.pageHtmls}, pageLinks: ${_this.pageLinks}, loadingPages: ${_this.loadingPages}, outline: ${_this.outline}, bookTitle: ${_this.bookTitle}, author: ${_this.author}, documentPath: ${_this.documentPath}, transientFeedback: ${_this.transientFeedback}, ttsActive: ${_this.ttsActive}, ttsCurrentPage: ${_this.ttsCurrentPage}, virtualPageCount: ${_this.virtualPageCount}, currentVirtualPage: ${_this.currentVirtualPage}, pendingRestoreAnchor: ${_this.pendingRestoreAnchor})';
 }
 
 
@@ -883,7 +901,7 @@ class _$ReaderStateCopyWithImpl<$Res>
 /// Create a copy of ReaderState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? loading = null,Object? failure = freezed,Object? error = freezed,Object? fileName = freezed,Object? pageCount = null,Object? currentPage = null,Object? pageHtmls = freezed,Object? pageLinks = freezed,Object? loadingPages = null,Object? outline = freezed,Object? bookTitle = freezed,Object? author = freezed,Object? documentPath = freezed,Object? transientFeedback = freezed,Object? ttsActive = null,Object? ttsCurrentPage = freezed,Object? virtualPageCount = freezed,Object? currentVirtualPage = freezed,Object? pendingRestoreAnchor = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ReaderState(
 loading: null == loading ? _self.loading : loading // ignore: cast_nullable_to_non_nullable
 as bool,failure: freezed == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
 as Failure?,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
@@ -1056,7 +1074,7 @@ return $default(_that.loading,_that.failure,_that.error,_that.fileName,_that.pag
 
 
 class _ReaderState extends ReaderState {
-  const _ReaderState({this.loading = false, this.failure, this.error, this.fileName, this.pageCount = 0, this.currentPage = 0, final  List<String?>? pageHtmls, final  List<List<ReaderLink>?>? pageLinks, final  Set<int> loadingPages = const <int>{}, final  List<OutlineItem>? outline, this.bookTitle, this.author, this.documentPath, this.transientFeedback, this.ttsActive = false, this.ttsCurrentPage, this.virtualPageCount, this.currentVirtualPage, this.pendingRestoreAnchor}): _pageHtmls = pageHtmls,_pageLinks = pageLinks,_loadingPages = loadingPages,_outline = outline,super._();
+  const _ReaderState({this.loading = false, this.failure, this.error, this.fileName, this.pageCount = 0, this.currentPage = 0,  List<String?>? pageHtmls,  List<List<ReaderLink>?>? pageLinks,  Set<int> loadingPages = const <int>{},  List<OutlineItem>? outline, this.bookTitle, this.author, this.documentPath, this.transientFeedback, this.ttsActive = false, this.ttsCurrentPage, this.virtualPageCount, this.currentVirtualPage, this.pendingRestoreAnchor}): _pageHtmls = pageHtmls,_pageLinks = pageLinks,_loadingPages = loadingPages,_outline = outline,super._();
   
 
 @override@JsonKey() final  bool loading;
@@ -1119,16 +1137,18 @@ _$ReaderStateCopyWith<_ReaderState> get copyWith => __$ReaderStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other._pageHtmls, _pageHtmls)&&const DeepCollectionEquality().equals(other._pageLinks, _pageLinks)&&const DeepCollectionEquality().equals(other._loadingPages, _loadingPages)&&const DeepCollectionEquality().equals(other._outline, _outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author)&&(identical(other.documentPath, documentPath) || other.documentPath == documentPath)&&(identical(other.transientFeedback, transientFeedback) || other.transientFeedback == transientFeedback)&&(identical(other.ttsActive, ttsActive) || other.ttsActive == ttsActive)&&(identical(other.ttsCurrentPage, ttsCurrentPage) || other.ttsCurrentPage == ttsCurrentPage)&&(identical(other.virtualPageCount, virtualPageCount) || other.virtualPageCount == virtualPageCount)&&(identical(other.currentVirtualPage, currentVirtualPage) || other.currentVirtualPage == currentVirtualPage)&&(identical(other.pendingRestoreAnchor, pendingRestoreAnchor) || other.pendingRestoreAnchor == pendingRestoreAnchor));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReaderState&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.error, error) || other.error == error)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.pageHtmls, _pageHtmls)&&const DeepCollectionEquality().equals(other.pageLinks, _pageLinks)&&const DeepCollectionEquality().equals(other.loadingPages, _loadingPages)&&const DeepCollectionEquality().equals(other.outline, _outline)&&(identical(other.bookTitle, bookTitle) || other.bookTitle == bookTitle)&&(identical(other.author, author) || other.author == author)&&(identical(other.documentPath, documentPath) || other.documentPath == documentPath)&&(identical(other.transientFeedback, transientFeedback) || other.transientFeedback == transientFeedback)&&(identical(other.ttsActive, ttsActive) || other.ttsActive == ttsActive)&&(identical(other.ttsCurrentPage, ttsCurrentPage) || other.ttsCurrentPage == ttsCurrentPage)&&(identical(other.virtualPageCount, virtualPageCount) || other.virtualPageCount == virtualPageCount)&&(identical(other.currentVirtualPage, currentVirtualPage) || other.currentVirtualPage == currentVirtualPage)&&(identical(other.pendingRestoreAnchor, pendingRestoreAnchor) || other.pendingRestoreAnchor == pendingRestoreAnchor));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,loading,failure,error,fileName,pageCount,currentPage,const DeepCollectionEquality().hash(_pageHtmls),const DeepCollectionEquality().hash(_pageLinks),const DeepCollectionEquality().hash(_loadingPages),const DeepCollectionEquality().hash(_outline),bookTitle,author,documentPath,transientFeedback,ttsActive,ttsCurrentPage,virtualPageCount,currentVirtualPage,pendingRestoreAnchor]);
+int get hashCode {
+    return Object.hashAll([runtimeType,loading,failure,error,fileName,pageCount,currentPage,const DeepCollectionEquality().hash(_pageHtmls),const DeepCollectionEquality().hash(_pageLinks),const DeepCollectionEquality().hash(_loadingPages),const DeepCollectionEquality().hash(_outline),bookTitle,author,documentPath,transientFeedback,ttsActive,ttsCurrentPage,virtualPageCount,currentVirtualPage,pendingRestoreAnchor]);
+}
 
 @override
 String toString() {
-  return 'ReaderState(loading: $loading, failure: $failure, error: $error, fileName: $fileName, pageCount: $pageCount, currentPage: $currentPage, pageHtmls: $pageHtmls, pageLinks: $pageLinks, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author, documentPath: $documentPath, transientFeedback: $transientFeedback, ttsActive: $ttsActive, ttsCurrentPage: $ttsCurrentPage, virtualPageCount: $virtualPageCount, currentVirtualPage: $currentVirtualPage, pendingRestoreAnchor: $pendingRestoreAnchor)';
+    return 'ReaderState(loading: $loading, failure: $failure, error: $error, fileName: $fileName, pageCount: $pageCount, currentPage: $currentPage, pageHtmls: $pageHtmls, pageLinks: $pageLinks, loadingPages: $loadingPages, outline: $outline, bookTitle: $bookTitle, author: $author, documentPath: $documentPath, transientFeedback: $transientFeedback, ttsActive: $ttsActive, ttsCurrentPage: $ttsCurrentPage, virtualPageCount: $virtualPageCount, currentVirtualPage: $currentVirtualPage, pendingRestoreAnchor: $pendingRestoreAnchor)';
 }
 
 

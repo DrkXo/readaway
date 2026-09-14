@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'models.dart';
@@ -9,6 +9,7 @@ part of 'models.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -31,16 +32,21 @@ $DetectedEncodingCopyWith<DetectedEncoding> get copyWith => _$DetectedEncodingCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DetectedEncoding&&(identical(other.name, name) || other.name == name)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.hasBom, hasBom) || other.hasBom == hasBom));
+  final _this = this as DetectedEncoding;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DetectedEncoding&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.confidence, _this.confidence) || other.confidence == _this.confidence)&&(identical(other.hasBom, _this.hasBom) || other.hasBom == _this.hasBom));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,confidence,hasBom);
+int get hashCode {
+  final _this = this as DetectedEncoding;
+  return Object.hash(runtimeType,_this.name,_this.confidence,_this.hasBom);
+}
 
 @override
 String toString() {
-  return 'DetectedEncoding(name: $name, confidence: $confidence, hasBom: $hasBom)';
+  final _this = this as DetectedEncoding;
+  return 'DetectedEncoding(name: ${_this.name}, confidence: ${_this.confidence}, hasBom: ${_this.hasBom})';
 }
 
 
@@ -69,7 +75,7 @@ class _$DetectedEncodingCopyWithImpl<$Res>
 /// Create a copy of DetectedEncoding
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? confidence = null,Object? hasBom = null,}) {
-  return _then(_self.copyWith(
+  return _then(DetectedEncoding(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,confidence: null == confidence ? _self.confidence : confidence // ignore: cast_nullable_to_non_nullable
 as double,hasBom: null == hasBom ? _self.hasBom : hasBom // ignore: cast_nullable_to_non_nullable
@@ -237,16 +243,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DetectedEncoding&&(identical(other.name, name) || other.name == name)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.hasBom, hasBom) || other.hasBom == hasBom));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DetectedEncoding&&(identical(other.name, name) || other.name == name)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.hasBom, hasBom) || other.hasBom == hasBom));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,confidence,hasBom);
+int get hashCode {
+    return Object.hash(runtimeType,name,confidence,hasBom);
+}
 
 @override
 String toString() {
-  return 'DetectedEncoding(name: $name, confidence: $confidence, hasBom: $hasBom)';
+    return 'DetectedEncoding(name: $name, confidence: $confidence, hasBom: $hasBom)';
 }
 
 
@@ -311,16 +319,21 @@ $DocumentMetadataCopyWith<DocumentMetadata> get copyWith => _$DocumentMetadataCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DocumentMetadata&&(identical(other.title, title) || other.title == title)&&(identical(other.creator, creator) || other.creator == creator)&&(identical(other.language, language) || other.language == language)&&(identical(other.identifier, identifier) || other.identifier == identifier)&&(identical(other.publisher, publisher) || other.publisher == publisher)&&(identical(other.description, description) || other.description == description)&&(identical(other.subject, subject) || other.subject == subject)&&(identical(other.modified, modified) || other.modified == modified));
+  final _this = this as DocumentMetadata;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DocumentMetadata&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.creator, _this.creator) || other.creator == _this.creator)&&(identical(other.language, _this.language) || other.language == _this.language)&&(identical(other.identifier, _this.identifier) || other.identifier == _this.identifier)&&(identical(other.publisher, _this.publisher) || other.publisher == _this.publisher)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.subject, _this.subject) || other.subject == _this.subject)&&(identical(other.modified, _this.modified) || other.modified == _this.modified));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,creator,language,identifier,publisher,description,subject,modified);
+int get hashCode {
+  final _this = this as DocumentMetadata;
+  return Object.hash(runtimeType,_this.title,_this.creator,_this.language,_this.identifier,_this.publisher,_this.description,_this.subject,_this.modified);
+}
 
 @override
 String toString() {
-  return 'DocumentMetadata(title: $title, creator: $creator, language: $language, identifier: $identifier, publisher: $publisher, description: $description, subject: $subject, modified: $modified)';
+  final _this = this as DocumentMetadata;
+  return 'DocumentMetadata(title: ${_this.title}, creator: ${_this.creator}, language: ${_this.language}, identifier: ${_this.identifier}, publisher: ${_this.publisher}, description: ${_this.description}, subject: ${_this.subject}, modified: ${_this.modified})';
 }
 
 
@@ -349,7 +362,7 @@ class _$DocumentMetadataCopyWithImpl<$Res>
 /// Create a copy of DocumentMetadata
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? title = freezed,Object? creator = freezed,Object? language = freezed,Object? identifier = freezed,Object? publisher = freezed,Object? description = freezed,Object? subject = freezed,Object? modified = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DocumentMetadata(
 title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,creator: freezed == creator ? _self.creator : creator // ignore: cast_nullable_to_non_nullable
 as String?,language: freezed == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
@@ -532,16 +545,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DocumentMetadata&&(identical(other.title, title) || other.title == title)&&(identical(other.creator, creator) || other.creator == creator)&&(identical(other.language, language) || other.language == language)&&(identical(other.identifier, identifier) || other.identifier == identifier)&&(identical(other.publisher, publisher) || other.publisher == publisher)&&(identical(other.description, description) || other.description == description)&&(identical(other.subject, subject) || other.subject == subject)&&(identical(other.modified, modified) || other.modified == modified));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DocumentMetadata&&(identical(other.title, title) || other.title == title)&&(identical(other.creator, creator) || other.creator == creator)&&(identical(other.language, language) || other.language == language)&&(identical(other.identifier, identifier) || other.identifier == identifier)&&(identical(other.publisher, publisher) || other.publisher == publisher)&&(identical(other.description, description) || other.description == description)&&(identical(other.subject, subject) || other.subject == subject)&&(identical(other.modified, modified) || other.modified == modified));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,creator,language,identifier,publisher,description,subject,modified);
+int get hashCode {
+    return Object.hash(runtimeType,title,creator,language,identifier,publisher,description,subject,modified);
+}
 
 @override
 String toString() {
-  return 'DocumentMetadata(title: $title, creator: $creator, language: $language, identifier: $identifier, publisher: $publisher, description: $description, subject: $subject, modified: $modified)';
+    return 'DocumentMetadata(title: $title, creator: $creator, language: $language, identifier: $identifier, publisher: $publisher, description: $description, subject: $subject, modified: $modified)';
 }
 
 
@@ -608,16 +623,21 @@ $DocumentSectionCopyWith<DocumentSection> get copyWith => _$DocumentSectionCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DocumentSection&&(identical(other.index, index) || other.index == index)&&(identical(other.id, id) || other.id == id)&&(identical(other.href, href) || other.href == href)&&(identical(other.mediaType, mediaType) || other.mediaType == mediaType)&&(identical(other.title, title) || other.title == title));
+  final _this = this as DocumentSection;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DocumentSection&&(identical(other.index, _this.index) || other.index == _this.index)&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.href, _this.href) || other.href == _this.href)&&(identical(other.mediaType, _this.mediaType) || other.mediaType == _this.mediaType)&&(identical(other.title, _this.title) || other.title == _this.title));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,index,id,href,mediaType,title);
+int get hashCode {
+  final _this = this as DocumentSection;
+  return Object.hash(runtimeType,_this.index,_this.id,_this.href,_this.mediaType,_this.title);
+}
 
 @override
 String toString() {
-  return 'DocumentSection(index: $index, id: $id, href: $href, mediaType: $mediaType, title: $title)';
+  final _this = this as DocumentSection;
+  return 'DocumentSection(index: ${_this.index}, id: ${_this.id}, href: ${_this.href}, mediaType: ${_this.mediaType}, title: ${_this.title})';
 }
 
 
@@ -646,7 +666,7 @@ class _$DocumentSectionCopyWithImpl<$Res>
 /// Create a copy of DocumentSection
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? id = null,Object? href = null,Object? mediaType = null,Object? title = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DocumentSection(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,href: null == href ? _self.href : href // ignore: cast_nullable_to_non_nullable
@@ -820,16 +840,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DocumentSection&&(identical(other.index, index) || other.index == index)&&(identical(other.id, id) || other.id == id)&&(identical(other.href, href) || other.href == href)&&(identical(other.mediaType, mediaType) || other.mediaType == mediaType)&&(identical(other.title, title) || other.title == title));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DocumentSection&&(identical(other.index, index) || other.index == index)&&(identical(other.id, id) || other.id == id)&&(identical(other.href, href) || other.href == href)&&(identical(other.mediaType, mediaType) || other.mediaType == mediaType)&&(identical(other.title, title) || other.title == title));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,index,id,href,mediaType,title);
+int get hashCode {
+    return Object.hash(runtimeType,index,id,href,mediaType,title);
+}
 
 @override
 String toString() {
-  return 'DocumentSection(index: $index, id: $id, href: $href, mediaType: $mediaType, title: $title)';
+    return 'DocumentSection(index: $index, id: $id, href: $href, mediaType: $mediaType, title: $title)';
 }
 
 
@@ -894,16 +916,21 @@ $OpfDataCopyWith<OpfData> get copyWith => _$OpfDataCopyWithImpl<OpfData>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OpfData&&(identical(other.metadata, metadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other.sections, sections)&&(identical(other.ncxHref, ncxHref) || other.ncxHref == ncxHref)&&(identical(other.navHref, navHref) || other.navHref == navHref)&&(identical(other.opfDir, opfDir) || other.opfDir == opfDir)&&(identical(other.coverImagePath, coverImagePath) || other.coverImagePath == coverImagePath));
+  final _this = this as OpfData;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OpfData&&(identical(other.metadata, _this.metadata) || other.metadata == _this.metadata)&&const DeepCollectionEquality().equals(other.sections, _this.sections)&&(identical(other.ncxHref, _this.ncxHref) || other.ncxHref == _this.ncxHref)&&(identical(other.navHref, _this.navHref) || other.navHref == _this.navHref)&&(identical(other.opfDir, _this.opfDir) || other.opfDir == _this.opfDir)&&(identical(other.coverImagePath, _this.coverImagePath) || other.coverImagePath == _this.coverImagePath));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,metadata,const DeepCollectionEquality().hash(sections),ncxHref,navHref,opfDir,coverImagePath);
+int get hashCode {
+  final _this = this as OpfData;
+  return Object.hash(runtimeType,_this.metadata,const DeepCollectionEquality().hash(_this.sections),_this.ncxHref,_this.navHref,_this.opfDir,_this.coverImagePath);
+}
 
 @override
 String toString() {
-  return 'OpfData(metadata: $metadata, sections: $sections, ncxHref: $ncxHref, navHref: $navHref, opfDir: $opfDir, coverImagePath: $coverImagePath)';
+  final _this = this as OpfData;
+  return 'OpfData(metadata: ${_this.metadata}, sections: ${_this.sections}, ncxHref: ${_this.ncxHref}, navHref: ${_this.navHref}, opfDir: ${_this.opfDir}, coverImagePath: ${_this.coverImagePath})';
 }
 
 
@@ -932,7 +959,7 @@ class _$OpfDataCopyWithImpl<$Res>
 /// Create a copy of OpfData
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? metadata = null,Object? sections = null,Object? ncxHref = freezed,Object? navHref = freezed,Object? opfDir = null,Object? coverImagePath = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OpfData(
 metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
 as DocumentMetadata,sections: null == sections ? _self.sections : sections // ignore: cast_nullable_to_non_nullable
 as List<DocumentSection>,ncxHref: freezed == ncxHref ? _self.ncxHref : ncxHref // ignore: cast_nullable_to_non_nullable
@@ -1089,7 +1116,7 @@ return $default(_that.metadata,_that.sections,_that.ncxHref,_that.navHref,_that.
 @JsonSerializable()
 
 class _OpfData implements OpfData {
-  const _OpfData({required this.metadata, required final  List<DocumentSection> sections, this.ncxHref, this.navHref, this.opfDir = '', this.coverImagePath}): _sections = sections;
+  const _OpfData({required this.metadata, required  List<DocumentSection> sections, this.ncxHref, this.navHref, this.opfDir = '', this.coverImagePath}): _sections = sections;
   factory _OpfData.fromJson(Map<String, dynamic> json) => _$OpfDataFromJson(json);
 
 /// Bibliographic metadata from `<metadata>`.
@@ -1125,16 +1152,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OpfData&&(identical(other.metadata, metadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other._sections, _sections)&&(identical(other.ncxHref, ncxHref) || other.ncxHref == ncxHref)&&(identical(other.navHref, navHref) || other.navHref == navHref)&&(identical(other.opfDir, opfDir) || other.opfDir == opfDir)&&(identical(other.coverImagePath, coverImagePath) || other.coverImagePath == coverImagePath));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OpfData&&(identical(other.metadata, metadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other.sections, _sections)&&(identical(other.ncxHref, ncxHref) || other.ncxHref == ncxHref)&&(identical(other.navHref, navHref) || other.navHref == navHref)&&(identical(other.opfDir, opfDir) || other.opfDir == opfDir)&&(identical(other.coverImagePath, coverImagePath) || other.coverImagePath == coverImagePath));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,metadata,const DeepCollectionEquality().hash(_sections),ncxHref,navHref,opfDir,coverImagePath);
+int get hashCode {
+    return Object.hash(runtimeType,metadata,const DeepCollectionEquality().hash(_sections),ncxHref,navHref,opfDir,coverImagePath);
+}
 
 @override
 String toString() {
-  return 'OpfData(metadata: $metadata, sections: $sections, ncxHref: $ncxHref, navHref: $navHref, opfDir: $opfDir, coverImagePath: $coverImagePath)';
+    return 'OpfData(metadata: $metadata, sections: $sections, ncxHref: $ncxHref, navHref: $navHref, opfDir: $opfDir, coverImagePath: $coverImagePath)';
 }
 
 
@@ -1208,16 +1237,21 @@ $FootnoteItemCopyWith<FootnoteItem> get copyWith => _$FootnoteItemCopyWithImpl<F
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FootnoteItem&&(identical(other.id, id) || other.id == id)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.contentHtml, contentHtml) || other.contentHtml == contentHtml)&&(identical(other.type, type) || other.type == type));
+  final _this = this as FootnoteItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FootnoteItem&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.referenceId, _this.referenceId) || other.referenceId == _this.referenceId)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.contentHtml, _this.contentHtml) || other.contentHtml == _this.contentHtml)&&(identical(other.type, _this.type) || other.type == _this.type));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,referenceId,title,contentHtml,type);
+int get hashCode {
+  final _this = this as FootnoteItem;
+  return Object.hash(runtimeType,_this.id,_this.referenceId,_this.title,_this.contentHtml,_this.type);
+}
 
 @override
 String toString() {
-  return 'FootnoteItem(id: $id, referenceId: $referenceId, title: $title, contentHtml: $contentHtml, type: $type)';
+  final _this = this as FootnoteItem;
+  return 'FootnoteItem(id: ${_this.id}, referenceId: ${_this.referenceId}, title: ${_this.title}, contentHtml: ${_this.contentHtml}, type: ${_this.type})';
 }
 
 
@@ -1246,7 +1280,7 @@ class _$FootnoteItemCopyWithImpl<$Res>
 /// Create a copy of FootnoteItem
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? referenceId = freezed,Object? title = freezed,Object? contentHtml = null,Object? type = null,}) {
-  return _then(_self.copyWith(
+  return _then(FootnoteItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,referenceId: freezed == referenceId ? _self.referenceId : referenceId // ignore: cast_nullable_to_non_nullable
 as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -1420,16 +1454,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FootnoteItem&&(identical(other.id, id) || other.id == id)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.contentHtml, contentHtml) || other.contentHtml == contentHtml)&&(identical(other.type, type) || other.type == type));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FootnoteItem&&(identical(other.id, id) || other.id == id)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.contentHtml, contentHtml) || other.contentHtml == contentHtml)&&(identical(other.type, type) || other.type == type));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,referenceId,title,contentHtml,type);
+int get hashCode {
+    return Object.hash(runtimeType,id,referenceId,title,contentHtml,type);
+}
 
 @override
 String toString() {
-  return 'FootnoteItem(id: $id, referenceId: $referenceId, title: $title, contentHtml: $contentHtml, type: $type)';
+    return 'FootnoteItem(id: $id, referenceId: $referenceId, title: $title, contentHtml: $contentHtml, type: $type)';
 }
 
 
@@ -1493,16 +1529,21 @@ $OutlineItemCopyWith<OutlineItem> get copyWith => _$OutlineItemCopyWithImpl<Outl
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OutlineItem&&(identical(other.title, title) || other.title == title)&&(identical(other.href, href) || other.href == href)&&(identical(other.level, level) || other.level == level)&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&const DeepCollectionEquality().equals(other.children, children));
+  final _this = this as OutlineItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OutlineItem&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.href, _this.href) || other.href == _this.href)&&(identical(other.level, _this.level) || other.level == _this.level)&&(identical(other.chapterIndex, _this.chapterIndex) || other.chapterIndex == _this.chapterIndex)&&const DeepCollectionEquality().equals(other.children, _this.children));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,href,level,chapterIndex,const DeepCollectionEquality().hash(children));
+int get hashCode {
+  final _this = this as OutlineItem;
+  return Object.hash(runtimeType,_this.title,_this.href,_this.level,_this.chapterIndex,const DeepCollectionEquality().hash(_this.children));
+}
 
 @override
 String toString() {
-  return 'OutlineItem(title: $title, href: $href, level: $level, chapterIndex: $chapterIndex, children: $children)';
+  final _this = this as OutlineItem;
+  return 'OutlineItem(title: ${_this.title}, href: ${_this.href}, level: ${_this.level}, chapterIndex: ${_this.chapterIndex}, children: ${_this.children})';
 }
 
 
@@ -1531,7 +1572,7 @@ class _$OutlineItemCopyWithImpl<$Res>
 /// Create a copy of OutlineItem
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? href = freezed,Object? level = null,Object? chapterIndex = freezed,Object? children = null,}) {
-  return _then(_self.copyWith(
+  return _then(OutlineItem(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,href: freezed == href ? _self.href : href // ignore: cast_nullable_to_non_nullable
 as String?,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
@@ -1678,7 +1719,7 @@ return $default(_that.title,_that.href,_that.level,_that.chapterIndex,_that.chil
 @JsonSerializable()
 
 class _OutlineItem extends OutlineItem {
-  const _OutlineItem({required this.title, this.href, this.level = 0, this.chapterIndex, final  List<OutlineItem> children = const []}): _children = children,super._();
+  const _OutlineItem({required this.title, this.href, this.level = 0, this.chapterIndex,  List<OutlineItem> children = const []}): _children = children,super._();
   factory _OutlineItem.fromJson(Map<String, dynamic> json) => _$OutlineItemFromJson(json);
 
 /// Display label of the outline entry.
@@ -1712,16 +1753,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OutlineItem&&(identical(other.title, title) || other.title == title)&&(identical(other.href, href) || other.href == href)&&(identical(other.level, level) || other.level == level)&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&const DeepCollectionEquality().equals(other._children, _children));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OutlineItem&&(identical(other.title, title) || other.title == title)&&(identical(other.href, href) || other.href == href)&&(identical(other.level, level) || other.level == level)&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&const DeepCollectionEquality().equals(other.children, _children));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,href,level,chapterIndex,const DeepCollectionEquality().hash(_children));
+int get hashCode {
+    return Object.hash(runtimeType,title,href,level,chapterIndex,const DeepCollectionEquality().hash(_children));
+}
 
 @override
 String toString() {
-  return 'OutlineItem(title: $title, href: $href, level: $level, chapterIndex: $chapterIndex, children: $children)';
+    return 'OutlineItem(title: $title, href: $href, level: $level, chapterIndex: $chapterIndex, children: $children)';
 }
 
 
@@ -1784,16 +1827,21 @@ $PageCoordinateCopyWith<PageCoordinate> get copyWith => _$PageCoordinateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageCoordinate&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&(identical(other.pageInChapter, pageInChapter) || other.pageInChapter == pageInChapter)&&(identical(other.totalPagesInChapter, totalPagesInChapter) || other.totalPagesInChapter == totalPagesInChapter)&&(identical(other.globalPage, globalPage) || other.globalPage == globalPage));
+  final _this = this as PageCoordinate;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageCoordinate&&(identical(other.chapterIndex, _this.chapterIndex) || other.chapterIndex == _this.chapterIndex)&&(identical(other.pageInChapter, _this.pageInChapter) || other.pageInChapter == _this.pageInChapter)&&(identical(other.totalPagesInChapter, _this.totalPagesInChapter) || other.totalPagesInChapter == _this.totalPagesInChapter)&&(identical(other.globalPage, _this.globalPage) || other.globalPage == _this.globalPage));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,chapterIndex,pageInChapter,totalPagesInChapter,globalPage);
+int get hashCode {
+  final _this = this as PageCoordinate;
+  return Object.hash(runtimeType,_this.chapterIndex,_this.pageInChapter,_this.totalPagesInChapter,_this.globalPage);
+}
 
 @override
 String toString() {
-  return 'PageCoordinate(chapterIndex: $chapterIndex, pageInChapter: $pageInChapter, totalPagesInChapter: $totalPagesInChapter, globalPage: $globalPage)';
+  final _this = this as PageCoordinate;
+  return 'PageCoordinate(chapterIndex: ${_this.chapterIndex}, pageInChapter: ${_this.pageInChapter}, totalPagesInChapter: ${_this.totalPagesInChapter}, globalPage: ${_this.globalPage})';
 }
 
 
@@ -1822,7 +1870,7 @@ class _$PageCoordinateCopyWithImpl<$Res>
 /// Create a copy of PageCoordinate
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? chapterIndex = null,Object? pageInChapter = null,Object? totalPagesInChapter = null,Object? globalPage = null,}) {
-  return _then(_self.copyWith(
+  return _then(PageCoordinate(
 chapterIndex: null == chapterIndex ? _self.chapterIndex : chapterIndex // ignore: cast_nullable_to_non_nullable
 as int,pageInChapter: null == pageInChapter ? _self.pageInChapter : pageInChapter // ignore: cast_nullable_to_non_nullable
 as int,totalPagesInChapter: null == totalPagesInChapter ? _self.totalPagesInChapter : totalPagesInChapter // ignore: cast_nullable_to_non_nullable
@@ -1993,16 +2041,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageCoordinate&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&(identical(other.pageInChapter, pageInChapter) || other.pageInChapter == pageInChapter)&&(identical(other.totalPagesInChapter, totalPagesInChapter) || other.totalPagesInChapter == totalPagesInChapter)&&(identical(other.globalPage, globalPage) || other.globalPage == globalPage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageCoordinate&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&(identical(other.pageInChapter, pageInChapter) || other.pageInChapter == pageInChapter)&&(identical(other.totalPagesInChapter, totalPagesInChapter) || other.totalPagesInChapter == totalPagesInChapter)&&(identical(other.globalPage, globalPage) || other.globalPage == globalPage));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,chapterIndex,pageInChapter,totalPagesInChapter,globalPage);
+int get hashCode {
+    return Object.hash(runtimeType,chapterIndex,pageInChapter,totalPagesInChapter,globalPage);
+}
 
 @override
 String toString() {
-  return 'PageCoordinate(chapterIndex: $chapterIndex, pageInChapter: $pageInChapter, totalPagesInChapter: $totalPagesInChapter, globalPage: $globalPage)';
+    return 'PageCoordinate(chapterIndex: $chapterIndex, pageInChapter: $pageInChapter, totalPagesInChapter: $totalPagesInChapter, globalPage: $globalPage)';
 }
 
 
@@ -2060,16 +2110,21 @@ $PageLinkCopyWith<PageLink> get copyWith => _$PageLinkCopyWithImpl<PageLink>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageLink&&(identical(other.bounds, bounds) || other.bounds == bounds)&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.pageNumber, pageNumber) || other.pageNumber == pageNumber));
+  final _this = this as PageLink;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageLink&&(identical(other.bounds, _this.bounds) || other.bounds == _this.bounds)&&(identical(other.uri, _this.uri) || other.uri == _this.uri)&&(identical(other.pageNumber, _this.pageNumber) || other.pageNumber == _this.pageNumber));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,bounds,uri,pageNumber);
+int get hashCode {
+  final _this = this as PageLink;
+  return Object.hash(runtimeType,_this.bounds,_this.uri,_this.pageNumber);
+}
 
 @override
 String toString() {
-  return 'PageLink(bounds: $bounds, uri: $uri, pageNumber: $pageNumber)';
+  final _this = this as PageLink;
+  return 'PageLink(bounds: ${_this.bounds}, uri: ${_this.uri}, pageNumber: ${_this.pageNumber})';
 }
 
 
@@ -2098,7 +2153,7 @@ class _$PageLinkCopyWithImpl<$Res>
 /// Create a copy of PageLink
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? bounds = null,Object? uri = freezed,Object? pageNumber = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(PageLink(
 bounds: null == bounds ? _self.bounds : bounds // ignore: cast_nullable_to_non_nullable
 as PageRect,uri: freezed == uri ? _self.uri : uri // ignore: cast_nullable_to_non_nullable
 as String?,pageNumber: freezed == pageNumber ? _self.pageNumber : pageNumber // ignore: cast_nullable_to_non_nullable
@@ -2272,16 +2327,18 @@ _$PageLinkCopyWith<_PageLink> get copyWith => __$PageLinkCopyWithImpl<_PageLink>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageLink&&(identical(other.bounds, bounds) || other.bounds == bounds)&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.pageNumber, pageNumber) || other.pageNumber == pageNumber));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageLink&&(identical(other.bounds, bounds) || other.bounds == bounds)&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.pageNumber, pageNumber) || other.pageNumber == pageNumber));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,bounds,uri,pageNumber);
+int get hashCode {
+    return Object.hash(runtimeType,bounds,uri,pageNumber);
+}
 
 @override
 String toString() {
-  return 'PageLink(bounds: $bounds, uri: $uri, pageNumber: $pageNumber)';
+    return 'PageLink(bounds: $bounds, uri: $uri, pageNumber: $pageNumber)';
 }
 
 
@@ -2348,16 +2405,21 @@ $PageRectCopyWith<PageRect> get copyWith => _$PageRectCopyWithImpl<PageRect>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageRect&&(identical(other.x0, x0) || other.x0 == x0)&&(identical(other.y0, y0) || other.y0 == y0)&&(identical(other.x1, x1) || other.x1 == x1)&&(identical(other.y1, y1) || other.y1 == y1));
+  final _this = this as PageRect;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageRect&&(identical(other.x0, _this.x0) || other.x0 == _this.x0)&&(identical(other.y0, _this.y0) || other.y0 == _this.y0)&&(identical(other.x1, _this.x1) || other.x1 == _this.x1)&&(identical(other.y1, _this.y1) || other.y1 == _this.y1));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,x0,y0,x1,y1);
+int get hashCode {
+  final _this = this as PageRect;
+  return Object.hash(runtimeType,_this.x0,_this.y0,_this.x1,_this.y1);
+}
 
 @override
 String toString() {
-  return 'PageRect(x0: $x0, y0: $y0, x1: $x1, y1: $y1)';
+  final _this = this as PageRect;
+  return 'PageRect(x0: ${_this.x0}, y0: ${_this.y0}, x1: ${_this.x1}, y1: ${_this.y1})';
 }
 
 
@@ -2386,7 +2448,7 @@ class _$PageRectCopyWithImpl<$Res>
 /// Create a copy of PageRect
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? x0 = null,Object? y0 = null,Object? x1 = null,Object? y1 = null,}) {
-  return _then(_self.copyWith(
+  return _then(PageRect(
 x0: null == x0 ? _self.x0 : x0 // ignore: cast_nullable_to_non_nullable
 as double,y0: null == y0 ? _self.y0 : y0 // ignore: cast_nullable_to_non_nullable
 as double,x1: null == x1 ? _self.x1 : x1 // ignore: cast_nullable_to_non_nullable
@@ -2554,16 +2616,18 @@ _$PageRectCopyWith<_PageRect> get copyWith => __$PageRectCopyWithImpl<_PageRect>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageRect&&(identical(other.x0, x0) || other.x0 == x0)&&(identical(other.y0, y0) || other.y0 == y0)&&(identical(other.x1, x1) || other.x1 == x1)&&(identical(other.y1, y1) || other.y1 == y1));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageRect&&(identical(other.x0, x0) || other.x0 == x0)&&(identical(other.y0, y0) || other.y0 == y0)&&(identical(other.x1, x1) || other.x1 == x1)&&(identical(other.y1, y1) || other.y1 == y1));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,x0,y0,x1,y1);
+int get hashCode {
+    return Object.hash(runtimeType,x0,y0,x1,y1);
+}
 
 @override
 String toString() {
-  return 'PageRect(x0: $x0, y0: $y0, x1: $x1, y1: $y1)';
+    return 'PageRect(x0: $x0, y0: $y0, x1: $x1, y1: $y1)';
 }
 
 
@@ -2629,16 +2693,21 @@ $PaginationStateCopyWith<PaginationState> get copyWith => _$PaginationStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaginationState&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&(identical(other.pageInChapter, pageInChapter) || other.pageInChapter == pageInChapter)&&(identical(other.totalPagesInChapter, totalPagesInChapter) || other.totalPagesInChapter == totalPagesInChapter)&&(identical(other.globalPage, globalPage) || other.globalPage == globalPage)&&(identical(other.totalPages, totalPages) || other.totalPages == totalPages)&&(identical(other.viewportHeight, viewportHeight) || other.viewportHeight == viewportHeight)&&const DeepCollectionEquality().equals(other.chapterHeights, chapterHeights)&&const DeepCollectionEquality().equals(other.chapterPageCounts, chapterPageCounts));
+  final _this = this as PaginationState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaginationState&&(identical(other.chapterIndex, _this.chapterIndex) || other.chapterIndex == _this.chapterIndex)&&(identical(other.pageInChapter, _this.pageInChapter) || other.pageInChapter == _this.pageInChapter)&&(identical(other.totalPagesInChapter, _this.totalPagesInChapter) || other.totalPagesInChapter == _this.totalPagesInChapter)&&(identical(other.globalPage, _this.globalPage) || other.globalPage == _this.globalPage)&&(identical(other.totalPages, _this.totalPages) || other.totalPages == _this.totalPages)&&(identical(other.viewportHeight, _this.viewportHeight) || other.viewportHeight == _this.viewportHeight)&&const DeepCollectionEquality().equals(other.chapterHeights, _this.chapterHeights)&&const DeepCollectionEquality().equals(other.chapterPageCounts, _this.chapterPageCounts));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,chapterIndex,pageInChapter,totalPagesInChapter,globalPage,totalPages,viewportHeight,const DeepCollectionEquality().hash(chapterHeights),const DeepCollectionEquality().hash(chapterPageCounts));
+int get hashCode {
+  final _this = this as PaginationState;
+  return Object.hash(runtimeType,_this.chapterIndex,_this.pageInChapter,_this.totalPagesInChapter,_this.globalPage,_this.totalPages,_this.viewportHeight,const DeepCollectionEquality().hash(_this.chapterHeights),const DeepCollectionEquality().hash(_this.chapterPageCounts));
+}
 
 @override
 String toString() {
-  return 'PaginationState(chapterIndex: $chapterIndex, pageInChapter: $pageInChapter, totalPagesInChapter: $totalPagesInChapter, globalPage: $globalPage, totalPages: $totalPages, viewportHeight: $viewportHeight, chapterHeights: $chapterHeights, chapterPageCounts: $chapterPageCounts)';
+  final _this = this as PaginationState;
+  return 'PaginationState(chapterIndex: ${_this.chapterIndex}, pageInChapter: ${_this.pageInChapter}, totalPagesInChapter: ${_this.totalPagesInChapter}, globalPage: ${_this.globalPage}, totalPages: ${_this.totalPages}, viewportHeight: ${_this.viewportHeight}, chapterHeights: ${_this.chapterHeights}, chapterPageCounts: ${_this.chapterPageCounts})';
 }
 
 
@@ -2667,7 +2736,7 @@ class _$PaginationStateCopyWithImpl<$Res>
 /// Create a copy of PaginationState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? chapterIndex = null,Object? pageInChapter = null,Object? totalPagesInChapter = null,Object? globalPage = null,Object? totalPages = null,Object? viewportHeight = null,Object? chapterHeights = null,Object? chapterPageCounts = null,}) {
-  return _then(_self.copyWith(
+  return _then(PaginationState(
 chapterIndex: null == chapterIndex ? _self.chapterIndex : chapterIndex // ignore: cast_nullable_to_non_nullable
 as int,pageInChapter: null == pageInChapter ? _self.pageInChapter : pageInChapter // ignore: cast_nullable_to_non_nullable
 as int,totalPagesInChapter: null == totalPagesInChapter ? _self.totalPagesInChapter : totalPagesInChapter // ignore: cast_nullable_to_non_nullable
@@ -2817,7 +2886,7 @@ return $default(_that.chapterIndex,_that.pageInChapter,_that.totalPagesInChapter
 @JsonSerializable()
 
 class _PaginationState implements PaginationState {
-  const _PaginationState({this.chapterIndex = 0, this.pageInChapter = 0, this.totalPagesInChapter = 1, this.globalPage = 0, this.totalPages = 0, this.viewportHeight = 0.0, final  Map<int, double> chapterHeights = const {}, final  Map<int, int> chapterPageCounts = const {}}): _chapterHeights = chapterHeights,_chapterPageCounts = chapterPageCounts;
+  const _PaginationState({this.chapterIndex = 0, this.pageInChapter = 0, this.totalPagesInChapter = 1, this.globalPage = 0, this.totalPages = 0, this.viewportHeight = 0.0,  Map<int, double> chapterHeights = const {},  Map<int, int> chapterPageCounts = const {}}): _chapterHeights = chapterHeights,_chapterPageCounts = chapterPageCounts;
   factory _PaginationState.fromJson(Map<String, dynamic> json) => _$PaginationStateFromJson(json);
 
 /// Zero-based current chapter index.
@@ -2864,16 +2933,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaginationState&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&(identical(other.pageInChapter, pageInChapter) || other.pageInChapter == pageInChapter)&&(identical(other.totalPagesInChapter, totalPagesInChapter) || other.totalPagesInChapter == totalPagesInChapter)&&(identical(other.globalPage, globalPage) || other.globalPage == globalPage)&&(identical(other.totalPages, totalPages) || other.totalPages == totalPages)&&(identical(other.viewportHeight, viewportHeight) || other.viewportHeight == viewportHeight)&&const DeepCollectionEquality().equals(other._chapterHeights, _chapterHeights)&&const DeepCollectionEquality().equals(other._chapterPageCounts, _chapterPageCounts));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaginationState&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&(identical(other.pageInChapter, pageInChapter) || other.pageInChapter == pageInChapter)&&(identical(other.totalPagesInChapter, totalPagesInChapter) || other.totalPagesInChapter == totalPagesInChapter)&&(identical(other.globalPage, globalPage) || other.globalPage == globalPage)&&(identical(other.totalPages, totalPages) || other.totalPages == totalPages)&&(identical(other.viewportHeight, viewportHeight) || other.viewportHeight == viewportHeight)&&const DeepCollectionEquality().equals(other.chapterHeights, _chapterHeights)&&const DeepCollectionEquality().equals(other.chapterPageCounts, _chapterPageCounts));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,chapterIndex,pageInChapter,totalPagesInChapter,globalPage,totalPages,viewportHeight,const DeepCollectionEquality().hash(_chapterHeights),const DeepCollectionEquality().hash(_chapterPageCounts));
+int get hashCode {
+    return Object.hash(runtimeType,chapterIndex,pageInChapter,totalPagesInChapter,globalPage,totalPages,viewportHeight,const DeepCollectionEquality().hash(_chapterHeights),const DeepCollectionEquality().hash(_chapterPageCounts));
+}
 
 @override
 String toString() {
-  return 'PaginationState(chapterIndex: $chapterIndex, pageInChapter: $pageInChapter, totalPagesInChapter: $totalPagesInChapter, globalPage: $globalPage, totalPages: $totalPages, viewportHeight: $viewportHeight, chapterHeights: $chapterHeights, chapterPageCounts: $chapterPageCounts)';
+    return 'PaginationState(chapterIndex: $chapterIndex, pageInChapter: $pageInChapter, totalPagesInChapter: $totalPagesInChapter, globalPage: $globalPage, totalPages: $totalPages, viewportHeight: $viewportHeight, chapterHeights: $chapterHeights, chapterPageCounts: $chapterPageCounts)';
 }
 
 
@@ -2937,16 +3008,21 @@ $ReadingAnchorCopyWith<ReadingAnchor> get copyWith => _$ReadingAnchorCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReadingAnchor&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&(identical(other.progressionInChapter, progressionInChapter) || other.progressionInChapter == progressionInChapter));
+  final _this = this as ReadingAnchor;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReadingAnchor&&(identical(other.chapterIndex, _this.chapterIndex) || other.chapterIndex == _this.chapterIndex)&&(identical(other.progressionInChapter, _this.progressionInChapter) || other.progressionInChapter == _this.progressionInChapter));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,chapterIndex,progressionInChapter);
+int get hashCode {
+  final _this = this as ReadingAnchor;
+  return Object.hash(runtimeType,_this.chapterIndex,_this.progressionInChapter);
+}
 
 @override
 String toString() {
-  return 'ReadingAnchor(chapterIndex: $chapterIndex, progressionInChapter: $progressionInChapter)';
+  final _this = this as ReadingAnchor;
+  return 'ReadingAnchor(chapterIndex: ${_this.chapterIndex}, progressionInChapter: ${_this.progressionInChapter})';
 }
 
 
@@ -2975,7 +3051,7 @@ class _$ReadingAnchorCopyWithImpl<$Res>
 /// Create a copy of ReadingAnchor
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? chapterIndex = null,Object? progressionInChapter = null,}) {
-  return _then(_self.copyWith(
+  return _then(ReadingAnchor(
 chapterIndex: null == chapterIndex ? _self.chapterIndex : chapterIndex // ignore: cast_nullable_to_non_nullable
 as int,progressionInChapter: null == progressionInChapter ? _self.progressionInChapter : progressionInChapter // ignore: cast_nullable_to_non_nullable
 as double,
@@ -3140,16 +3216,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReadingAnchor&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&(identical(other.progressionInChapter, progressionInChapter) || other.progressionInChapter == progressionInChapter));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReadingAnchor&&(identical(other.chapterIndex, chapterIndex) || other.chapterIndex == chapterIndex)&&(identical(other.progressionInChapter, progressionInChapter) || other.progressionInChapter == progressionInChapter));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,chapterIndex,progressionInChapter);
+int get hashCode {
+    return Object.hash(runtimeType,chapterIndex,progressionInChapter);
+}
 
 @override
 String toString() {
-  return 'ReadingAnchor(chapterIndex: $chapterIndex, progressionInChapter: $progressionInChapter)';
+    return 'ReadingAnchor(chapterIndex: $chapterIndex, progressionInChapter: $progressionInChapter)';
 }
 
 
@@ -3207,16 +3285,21 @@ $RenderedPageCopyWith<RenderedPage> get copyWith => _$RenderedPageCopyWithImpl<R
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RenderedPage&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height)&&(identical(other.stride, stride) || other.stride == stride)&&(identical(other.components, components) || other.components == components)&&const DeepCollectionEquality().equals(other.pixels, pixels));
+  final _this = this as RenderedPage;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RenderedPage&&(identical(other.width, _this.width) || other.width == _this.width)&&(identical(other.height, _this.height) || other.height == _this.height)&&(identical(other.stride, _this.stride) || other.stride == _this.stride)&&(identical(other.components, _this.components) || other.components == _this.components)&&const DeepCollectionEquality().equals(other.pixels, _this.pixels));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,width,height,stride,components,const DeepCollectionEquality().hash(pixels));
+int get hashCode {
+  final _this = this as RenderedPage;
+  return Object.hash(runtimeType,_this.width,_this.height,_this.stride,_this.components,const DeepCollectionEquality().hash(_this.pixels));
+}
 
 @override
 String toString() {
-  return 'RenderedPage(width: $width, height: $height, stride: $stride, components: $components, pixels: $pixels)';
+  final _this = this as RenderedPage;
+  return 'RenderedPage(width: ${_this.width}, height: ${_this.height}, stride: ${_this.stride}, components: ${_this.components}, pixels: ${_this.pixels})';
 }
 
 
@@ -3245,7 +3328,7 @@ class _$RenderedPageCopyWithImpl<$Res>
 /// Create a copy of RenderedPage
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? width = null,Object? height = null,Object? stride = null,Object? components = null,Object? pixels = null,}) {
-  return _then(_self.copyWith(
+  return _then(RenderedPage(
 width: null == width ? _self.width : width // ignore: cast_nullable_to_non_nullable
 as int,height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
 as int,stride: null == stride ? _self.stride : stride // ignore: cast_nullable_to_non_nullable
@@ -3416,16 +3499,18 @@ _$RenderedPageCopyWith<_RenderedPage> get copyWith => __$RenderedPageCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RenderedPage&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height)&&(identical(other.stride, stride) || other.stride == stride)&&(identical(other.components, components) || other.components == components)&&const DeepCollectionEquality().equals(other.pixels, pixels));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RenderedPage&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height)&&(identical(other.stride, stride) || other.stride == stride)&&(identical(other.components, components) || other.components == components)&&const DeepCollectionEquality().equals(other.pixels, pixels));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,width,height,stride,components,const DeepCollectionEquality().hash(pixels));
+int get hashCode {
+    return Object.hash(runtimeType,width,height,stride,components,const DeepCollectionEquality().hash(pixels));
+}
 
 @override
 String toString() {
-  return 'RenderedPage(width: $width, height: $height, stride: $stride, components: $components, pixels: $pixels)';
+    return 'RenderedPage(width: $width, height: $height, stride: $stride, components: $components, pixels: $pixels)';
 }
 
 
@@ -3481,16 +3566,21 @@ $SearchHitCopyWith<SearchHit> get copyWith => _$SearchHitCopyWithImpl<SearchHit>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SearchHit&&(identical(other.ulX, ulX) || other.ulX == ulX)&&(identical(other.ulY, ulY) || other.ulY == ulY)&&(identical(other.urX, urX) || other.urX == urX)&&(identical(other.urY, urY) || other.urY == urY)&&(identical(other.lrX, lrX) || other.lrX == lrX)&&(identical(other.lrY, lrY) || other.lrY == lrY)&&(identical(other.llX, llX) || other.llX == llX)&&(identical(other.llY, llY) || other.llY == llY));
+  final _this = this as SearchHit;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SearchHit&&(identical(other.ulX, _this.ulX) || other.ulX == _this.ulX)&&(identical(other.ulY, _this.ulY) || other.ulY == _this.ulY)&&(identical(other.urX, _this.urX) || other.urX == _this.urX)&&(identical(other.urY, _this.urY) || other.urY == _this.urY)&&(identical(other.lrX, _this.lrX) || other.lrX == _this.lrX)&&(identical(other.lrY, _this.lrY) || other.lrY == _this.lrY)&&(identical(other.llX, _this.llX) || other.llX == _this.llX)&&(identical(other.llY, _this.llY) || other.llY == _this.llY));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,ulX,ulY,urX,urY,lrX,lrY,llX,llY);
+int get hashCode {
+  final _this = this as SearchHit;
+  return Object.hash(runtimeType,_this.ulX,_this.ulY,_this.urX,_this.urY,_this.lrX,_this.lrY,_this.llX,_this.llY);
+}
 
 @override
 String toString() {
-  return 'SearchHit(ulX: $ulX, ulY: $ulY, urX: $urX, urY: $urY, lrX: $lrX, lrY: $lrY, llX: $llX, llY: $llY)';
+  final _this = this as SearchHit;
+  return 'SearchHit(ulX: ${_this.ulX}, ulY: ${_this.ulY}, urX: ${_this.urX}, urY: ${_this.urY}, lrX: ${_this.lrX}, lrY: ${_this.lrY}, llX: ${_this.llX}, llY: ${_this.llY})';
 }
 
 
@@ -3519,7 +3609,7 @@ class _$SearchHitCopyWithImpl<$Res>
 /// Create a copy of SearchHit
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? ulX = null,Object? ulY = null,Object? urX = null,Object? urY = null,Object? lrX = null,Object? lrY = null,Object? llX = null,Object? llY = null,}) {
-  return _then(_self.copyWith(
+  return _then(SearchHit(
 ulX: null == ulX ? _self.ulX : ulX // ignore: cast_nullable_to_non_nullable
 as double,ulY: null == ulY ? _self.ulY : ulY // ignore: cast_nullable_to_non_nullable
 as double,urX: null == urX ? _self.urX : urX // ignore: cast_nullable_to_non_nullable
@@ -3691,16 +3781,18 @@ _$SearchHitCopyWith<_SearchHit> get copyWith => __$SearchHitCopyWithImpl<_Search
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SearchHit&&(identical(other.ulX, ulX) || other.ulX == ulX)&&(identical(other.ulY, ulY) || other.ulY == ulY)&&(identical(other.urX, urX) || other.urX == urX)&&(identical(other.urY, urY) || other.urY == urY)&&(identical(other.lrX, lrX) || other.lrX == lrX)&&(identical(other.lrY, lrY) || other.lrY == lrY)&&(identical(other.llX, llX) || other.llX == llX)&&(identical(other.llY, llY) || other.llY == llY));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SearchHit&&(identical(other.ulX, ulX) || other.ulX == ulX)&&(identical(other.ulY, ulY) || other.ulY == ulY)&&(identical(other.urX, urX) || other.urX == urX)&&(identical(other.urY, urY) || other.urY == urY)&&(identical(other.lrX, lrX) || other.lrX == lrX)&&(identical(other.lrY, lrY) || other.lrY == lrY)&&(identical(other.llX, llX) || other.llX == llX)&&(identical(other.llY, llY) || other.llY == llY));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,ulX,ulY,urX,urY,lrX,lrY,llX,llY);
+int get hashCode {
+    return Object.hash(runtimeType,ulX,ulY,urX,urY,lrX,lrY,llX,llY);
+}
 
 @override
 String toString() {
-  return 'SearchHit(ulX: $ulX, ulY: $ulY, urX: $urX, urY: $urY, lrX: $lrX, lrY: $lrY, llX: $llX, llY: $llY)';
+    return 'SearchHit(ulX: $ulX, ulY: $ulY, urX: $urX, urY: $urY, lrX: $lrX, lrY: $lrY, llX: $llX, llY: $llY)';
 }
 
 
@@ -3770,16 +3862,21 @@ $TransformContextCopyWith<TransformContext> get copyWith => _$TransformContextCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransformContext&&(identical(other.content, content) || other.content == content)&&(identical(other.language, language) || other.language == language)&&(identical(other.vertical, vertical) || other.vertical == vertical)&&(identical(other.replaceQuotationMarks, replaceQuotationMarks) || other.replaceQuotationMarks == replaceQuotationMarks)&&(identical(other.convertChineseVariant, convertChineseVariant) || other.convertChineseVariant == convertChineseVariant)&&(identical(other.overrideLayout, overrideLayout) || other.overrideLayout == overrideLayout)&&const DeepCollectionEquality().equals(other.extra, extra));
+  final _this = this as TransformContext;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransformContext&&(identical(other.content, _this.content) || other.content == _this.content)&&(identical(other.language, _this.language) || other.language == _this.language)&&(identical(other.vertical, _this.vertical) || other.vertical == _this.vertical)&&(identical(other.replaceQuotationMarks, _this.replaceQuotationMarks) || other.replaceQuotationMarks == _this.replaceQuotationMarks)&&(identical(other.convertChineseVariant, _this.convertChineseVariant) || other.convertChineseVariant == _this.convertChineseVariant)&&(identical(other.overrideLayout, _this.overrideLayout) || other.overrideLayout == _this.overrideLayout)&&const DeepCollectionEquality().equals(other.extra, _this.extra));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,content,language,vertical,replaceQuotationMarks,convertChineseVariant,overrideLayout,const DeepCollectionEquality().hash(extra));
+int get hashCode {
+  final _this = this as TransformContext;
+  return Object.hash(runtimeType,_this.content,_this.language,_this.vertical,_this.replaceQuotationMarks,_this.convertChineseVariant,_this.overrideLayout,const DeepCollectionEquality().hash(_this.extra));
+}
 
 @override
 String toString() {
-  return 'TransformContext(content: $content, language: $language, vertical: $vertical, replaceQuotationMarks: $replaceQuotationMarks, convertChineseVariant: $convertChineseVariant, overrideLayout: $overrideLayout, extra: $extra)';
+  final _this = this as TransformContext;
+  return 'TransformContext(content: ${_this.content}, language: ${_this.language}, vertical: ${_this.vertical}, replaceQuotationMarks: ${_this.replaceQuotationMarks}, convertChineseVariant: ${_this.convertChineseVariant}, overrideLayout: ${_this.overrideLayout}, extra: ${_this.extra})';
 }
 
 
@@ -3808,7 +3905,7 @@ class _$TransformContextCopyWithImpl<$Res>
 /// Create a copy of TransformContext
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? content = null,Object? language = freezed,Object? vertical = null,Object? replaceQuotationMarks = null,Object? convertChineseVariant = freezed,Object? overrideLayout = null,Object? extra = null,}) {
-  return _then(_self.copyWith(
+  return _then(TransformContext(
 content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
 as String,language: freezed == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
 as String?,vertical: null == vertical ? _self.vertical : vertical // ignore: cast_nullable_to_non_nullable
@@ -3957,7 +4054,7 @@ return $default(_that.content,_that.language,_that.vertical,_that.replaceQuotati
 @JsonSerializable()
 
 class _TransformContext implements TransformContext {
-  const _TransformContext({required this.content, this.language, this.vertical = false, this.replaceQuotationMarks = false, this.convertChineseVariant, this.overrideLayout = false, final  Map<String, dynamic> extra = const <String, dynamic>{}}): _extra = extra;
+  const _TransformContext({required this.content, this.language, this.vertical = false, this.replaceQuotationMarks = false, this.convertChineseVariant, this.overrideLayout = false,  Map<String, dynamic> extra = const <String, dynamic>{}}): _extra = extra;
   factory _TransformContext.fromJson(Map<String, dynamic> json) => _$TransformContextFromJson(json);
 
 /// The HTML or text content to be transformed.
@@ -3996,16 +4093,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransformContext&&(identical(other.content, content) || other.content == content)&&(identical(other.language, language) || other.language == language)&&(identical(other.vertical, vertical) || other.vertical == vertical)&&(identical(other.replaceQuotationMarks, replaceQuotationMarks) || other.replaceQuotationMarks == replaceQuotationMarks)&&(identical(other.convertChineseVariant, convertChineseVariant) || other.convertChineseVariant == convertChineseVariant)&&(identical(other.overrideLayout, overrideLayout) || other.overrideLayout == overrideLayout)&&const DeepCollectionEquality().equals(other._extra, _extra));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransformContext&&(identical(other.content, content) || other.content == content)&&(identical(other.language, language) || other.language == language)&&(identical(other.vertical, vertical) || other.vertical == vertical)&&(identical(other.replaceQuotationMarks, replaceQuotationMarks) || other.replaceQuotationMarks == replaceQuotationMarks)&&(identical(other.convertChineseVariant, convertChineseVariant) || other.convertChineseVariant == convertChineseVariant)&&(identical(other.overrideLayout, overrideLayout) || other.overrideLayout == overrideLayout)&&const DeepCollectionEquality().equals(other.extra, _extra));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,content,language,vertical,replaceQuotationMarks,convertChineseVariant,overrideLayout,const DeepCollectionEquality().hash(_extra));
+int get hashCode {
+    return Object.hash(runtimeType,content,language,vertical,replaceQuotationMarks,convertChineseVariant,overrideLayout,const DeepCollectionEquality().hash(_extra));
+}
 
 @override
 String toString() {
-  return 'TransformContext(content: $content, language: $language, vertical: $vertical, replaceQuotationMarks: $replaceQuotationMarks, convertChineseVariant: $convertChineseVariant, overrideLayout: $overrideLayout, extra: $extra)';
+    return 'TransformContext(content: $content, language: $language, vertical: $vertical, replaceQuotationMarks: $replaceQuotationMarks, convertChineseVariant: $convertChineseVariant, overrideLayout: $overrideLayout, extra: $extra)';
 }
 
 
@@ -4069,16 +4168,21 @@ $TtsWordSpanCopyWith<TtsWordSpan> get copyWith => _$TtsWordSpanCopyWithImpl<TtsW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TtsWordSpan&&(identical(other.word, word) || other.word == word)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset));
+  final _this = this as TtsWordSpan;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TtsWordSpan&&(identical(other.word, _this.word) || other.word == _this.word)&&(identical(other.startOffset, _this.startOffset) || other.startOffset == _this.startOffset)&&(identical(other.endOffset, _this.endOffset) || other.endOffset == _this.endOffset));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,word,startOffset,endOffset);
+int get hashCode {
+  final _this = this as TtsWordSpan;
+  return Object.hash(runtimeType,_this.word,_this.startOffset,_this.endOffset);
+}
 
 @override
 String toString() {
-  return 'TtsWordSpan(word: $word, startOffset: $startOffset, endOffset: $endOffset)';
+  final _this = this as TtsWordSpan;
+  return 'TtsWordSpan(word: ${_this.word}, startOffset: ${_this.startOffset}, endOffset: ${_this.endOffset})';
 }
 
 
@@ -4107,7 +4211,7 @@ class _$TtsWordSpanCopyWithImpl<$Res>
 /// Create a copy of TtsWordSpan
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? word = null,Object? startOffset = null,Object? endOffset = null,}) {
-  return _then(_self.copyWith(
+  return _then(TtsWordSpan(
 word: null == word ? _self.word : word // ignore: cast_nullable_to_non_nullable
 as String,startOffset: null == startOffset ? _self.startOffset : startOffset // ignore: cast_nullable_to_non_nullable
 as int,endOffset: null == endOffset ? _self.endOffset : endOffset // ignore: cast_nullable_to_non_nullable
@@ -4275,16 +4379,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsWordSpan&&(identical(other.word, word) || other.word == word)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsWordSpan&&(identical(other.word, word) || other.word == word)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,word,startOffset,endOffset);
+int get hashCode {
+    return Object.hash(runtimeType,word,startOffset,endOffset);
+}
 
 @override
 String toString() {
-  return 'TtsWordSpan(word: $word, startOffset: $startOffset, endOffset: $endOffset)';
+    return 'TtsWordSpan(word: $word, startOffset: $startOffset, endOffset: $endOffset)';
 }
 
 
@@ -4365,16 +4471,21 @@ $TtsChunkCopyWith<TtsChunk> get copyWith => _$TtsChunkCopyWithImpl<TtsChunk>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TtsChunk&&(identical(other.text, text) || other.text == text)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.spokenText, spokenText) || other.spokenText == spokenText)&&(identical(other.rawStartOffset, rawStartOffset) || other.rawStartOffset == rawStartOffset)&&(identical(other.rawEndOffset, rawEndOffset) || other.rawEndOffset == rawEndOffset)&&(identical(other.isParagraphEnd, isParagraphEnd) || other.isParagraphEnd == isParagraphEnd)&&(identical(other.paragraphIndex, paragraphIndex) || other.paragraphIndex == paragraphIndex)&&const DeepCollectionEquality().equals(other.words, words)&&(identical(other.language, language) || other.language == language));
+  final _this = this as TtsChunk;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TtsChunk&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.startOffset, _this.startOffset) || other.startOffset == _this.startOffset)&&(identical(other.endOffset, _this.endOffset) || other.endOffset == _this.endOffset)&&(identical(other.spokenText, _this.spokenText) || other.spokenText == _this.spokenText)&&(identical(other.rawStartOffset, _this.rawStartOffset) || other.rawStartOffset == _this.rawStartOffset)&&(identical(other.rawEndOffset, _this.rawEndOffset) || other.rawEndOffset == _this.rawEndOffset)&&(identical(other.isParagraphEnd, _this.isParagraphEnd) || other.isParagraphEnd == _this.isParagraphEnd)&&(identical(other.paragraphIndex, _this.paragraphIndex) || other.paragraphIndex == _this.paragraphIndex)&&const DeepCollectionEquality().equals(other.words, _this.words)&&(identical(other.language, _this.language) || other.language == _this.language));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,text,startOffset,endOffset,spokenText,rawStartOffset,rawEndOffset,isParagraphEnd,paragraphIndex,const DeepCollectionEquality().hash(words),language);
+int get hashCode {
+  final _this = this as TtsChunk;
+  return Object.hash(runtimeType,_this.text,_this.startOffset,_this.endOffset,_this.spokenText,_this.rawStartOffset,_this.rawEndOffset,_this.isParagraphEnd,_this.paragraphIndex,const DeepCollectionEquality().hash(_this.words),_this.language);
+}
 
 @override
 String toString() {
-  return 'TtsChunk(text: $text, startOffset: $startOffset, endOffset: $endOffset, spokenText: $spokenText, rawStartOffset: $rawStartOffset, rawEndOffset: $rawEndOffset, isParagraphEnd: $isParagraphEnd, paragraphIndex: $paragraphIndex, words: $words, language: $language)';
+  final _this = this as TtsChunk;
+  return 'TtsChunk(text: ${_this.text}, startOffset: ${_this.startOffset}, endOffset: ${_this.endOffset}, spokenText: ${_this.spokenText}, rawStartOffset: ${_this.rawStartOffset}, rawEndOffset: ${_this.rawEndOffset}, isParagraphEnd: ${_this.isParagraphEnd}, paragraphIndex: ${_this.paragraphIndex}, words: ${_this.words}, language: ${_this.language})';
 }
 
 
@@ -4403,7 +4514,7 @@ class _$TtsChunkCopyWithImpl<$Res>
 /// Create a copy of TtsChunk
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? text = null,Object? startOffset = null,Object? endOffset = null,Object? spokenText = freezed,Object? rawStartOffset = freezed,Object? rawEndOffset = freezed,Object? isParagraphEnd = null,Object? paragraphIndex = null,Object? words = null,Object? language = null,}) {
-  return _then(_self.copyWith(
+  return _then(TtsChunk(
 text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,startOffset: null == startOffset ? _self.startOffset : startOffset // ignore: cast_nullable_to_non_nullable
 as int,endOffset: null == endOffset ? _self.endOffset : endOffset // ignore: cast_nullable_to_non_nullable
@@ -4555,7 +4666,7 @@ return $default(_that.text,_that.startOffset,_that.endOffset,_that.spokenText,_t
 @JsonSerializable()
 
 class _TtsChunk extends TtsChunk {
-  const _TtsChunk({required this.text, required this.startOffset, required this.endOffset, this.spokenText, this.rawStartOffset, this.rawEndOffset, this.isParagraphEnd = false, this.paragraphIndex = 0, @JsonKey(toJson: _encodeWordSpans, fromJson: _decodeWordSpans) final  List<TtsWordSpan> words = const <TtsWordSpan>[], this.language = 'en'}): _words = words,super._();
+  const _TtsChunk({required this.text, required this.startOffset, required this.endOffset, this.spokenText, this.rawStartOffset, this.rawEndOffset, this.isParagraphEnd = false, this.paragraphIndex = 0, @JsonKey(toJson: _encodeWordSpans, fromJson: _decodeWordSpans)  List<TtsWordSpan> words = const <TtsWordSpan>[], this.language = 'en'}): _words = words,super._();
   factory _TtsChunk.fromJson(Map<String, dynamic> json) => _$TtsChunkFromJson(json);
 
 /// Trimmed display text representing the sentence or clause.
@@ -4616,16 +4727,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsChunk&&(identical(other.text, text) || other.text == text)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.spokenText, spokenText) || other.spokenText == spokenText)&&(identical(other.rawStartOffset, rawStartOffset) || other.rawStartOffset == rawStartOffset)&&(identical(other.rawEndOffset, rawEndOffset) || other.rawEndOffset == rawEndOffset)&&(identical(other.isParagraphEnd, isParagraphEnd) || other.isParagraphEnd == isParagraphEnd)&&(identical(other.paragraphIndex, paragraphIndex) || other.paragraphIndex == paragraphIndex)&&const DeepCollectionEquality().equals(other._words, _words)&&(identical(other.language, language) || other.language == language));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsChunk&&(identical(other.text, text) || other.text == text)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.spokenText, spokenText) || other.spokenText == spokenText)&&(identical(other.rawStartOffset, rawStartOffset) || other.rawStartOffset == rawStartOffset)&&(identical(other.rawEndOffset, rawEndOffset) || other.rawEndOffset == rawEndOffset)&&(identical(other.isParagraphEnd, isParagraphEnd) || other.isParagraphEnd == isParagraphEnd)&&(identical(other.paragraphIndex, paragraphIndex) || other.paragraphIndex == paragraphIndex)&&const DeepCollectionEquality().equals(other.words, _words)&&(identical(other.language, language) || other.language == language));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,text,startOffset,endOffset,spokenText,rawStartOffset,rawEndOffset,isParagraphEnd,paragraphIndex,const DeepCollectionEquality().hash(_words),language);
+int get hashCode {
+    return Object.hash(runtimeType,text,startOffset,endOffset,spokenText,rawStartOffset,rawEndOffset,isParagraphEnd,paragraphIndex,const DeepCollectionEquality().hash(_words),language);
+}
 
 @override
 String toString() {
-  return 'TtsChunk(text: $text, startOffset: $startOffset, endOffset: $endOffset, spokenText: $spokenText, rawStartOffset: $rawStartOffset, rawEndOffset: $rawEndOffset, isParagraphEnd: $isParagraphEnd, paragraphIndex: $paragraphIndex, words: $words, language: $language)';
+    return 'TtsChunk(text: $text, startOffset: $startOffset, endOffset: $endOffset, spokenText: $spokenText, rawStartOffset: $rawStartOffset, rawEndOffset: $rawEndOffset, isParagraphEnd: $isParagraphEnd, paragraphIndex: $paragraphIndex, words: $words, language: $language)';
 }
 
 
@@ -4695,16 +4808,21 @@ $TxtChapterCopyWith<TxtChapter> get copyWith => _$TxtChapterCopyWithImpl<TxtChap
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TxtChapter&&(identical(other.index, index) || other.index == index)&&(identical(other.title, title) || other.title == title)&&(identical(other.contentHtml, contentHtml) || other.contentHtml == contentHtml)&&(identical(other.isVolume, isVolume) || other.isVolume == isVolume)&&(identical(other.detected, detected) || other.detected == detected));
+  final _this = this as TxtChapter;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TxtChapter&&(identical(other.index, _this.index) || other.index == _this.index)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.contentHtml, _this.contentHtml) || other.contentHtml == _this.contentHtml)&&(identical(other.isVolume, _this.isVolume) || other.isVolume == _this.isVolume)&&(identical(other.detected, _this.detected) || other.detected == _this.detected));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,index,title,contentHtml,isVolume,detected);
+int get hashCode {
+  final _this = this as TxtChapter;
+  return Object.hash(runtimeType,_this.index,_this.title,_this.contentHtml,_this.isVolume,_this.detected);
+}
 
 @override
 String toString() {
-  return 'TxtChapter(index: $index, title: $title, contentHtml: $contentHtml, isVolume: $isVolume, detected: $detected)';
+  final _this = this as TxtChapter;
+  return 'TxtChapter(index: ${_this.index}, title: ${_this.title}, contentHtml: ${_this.contentHtml}, isVolume: ${_this.isVolume}, detected: ${_this.detected})';
 }
 
 
@@ -4733,7 +4851,7 @@ class _$TxtChapterCopyWithImpl<$Res>
 /// Create a copy of TxtChapter
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? title = null,Object? contentHtml = null,Object? isVolume = null,Object? detected = null,}) {
-  return _then(_self.copyWith(
+  return _then(TxtChapter(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,contentHtml: null == contentHtml ? _self.contentHtml : contentHtml // ignore: cast_nullable_to_non_nullable
@@ -4908,16 +5026,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TxtChapter&&(identical(other.index, index) || other.index == index)&&(identical(other.title, title) || other.title == title)&&(identical(other.contentHtml, contentHtml) || other.contentHtml == contentHtml)&&(identical(other.isVolume, isVolume) || other.isVolume == isVolume)&&(identical(other.detected, detected) || other.detected == detected));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TxtChapter&&(identical(other.index, index) || other.index == index)&&(identical(other.title, title) || other.title == title)&&(identical(other.contentHtml, contentHtml) || other.contentHtml == contentHtml)&&(identical(other.isVolume, isVolume) || other.isVolume == isVolume)&&(identical(other.detected, detected) || other.detected == detected));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,index,title,contentHtml,isVolume,detected);
+int get hashCode {
+    return Object.hash(runtimeType,index,title,contentHtml,isVolume,detected);
+}
 
 @override
 String toString() {
-  return 'TxtChapter(index: $index, title: $title, contentHtml: $contentHtml, isVolume: $isVolume, detected: $detected)';
+    return 'TxtChapter(index: $index, title: $title, contentHtml: $contentHtml, isVolume: $isVolume, detected: $detected)';
 }
 
 
@@ -4981,16 +5101,21 @@ $TxtMetadataCopyWith<TxtMetadata> get copyWith => _$TxtMetadataCopyWithImpl<TxtM
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TxtMetadata&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.language, language) || other.language == language)&&(identical(other.encoding, encoding) || other.encoding == encoding)&&(identical(other.identifier, identifier) || other.identifier == identifier));
+  final _this = this as TxtMetadata;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TxtMetadata&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.author, _this.author) || other.author == _this.author)&&(identical(other.language, _this.language) || other.language == _this.language)&&(identical(other.encoding, _this.encoding) || other.encoding == _this.encoding)&&(identical(other.identifier, _this.identifier) || other.identifier == _this.identifier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,author,language,encoding,identifier);
+int get hashCode {
+  final _this = this as TxtMetadata;
+  return Object.hash(runtimeType,_this.title,_this.author,_this.language,_this.encoding,_this.identifier);
+}
 
 @override
 String toString() {
-  return 'TxtMetadata(title: $title, author: $author, language: $language, encoding: $encoding, identifier: $identifier)';
+  final _this = this as TxtMetadata;
+  return 'TxtMetadata(title: ${_this.title}, author: ${_this.author}, language: ${_this.language}, encoding: ${_this.encoding}, identifier: ${_this.identifier})';
 }
 
 
@@ -5019,7 +5144,7 @@ class _$TxtMetadataCopyWithImpl<$Res>
 /// Create a copy of TxtMetadata
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? author = freezed,Object? language = freezed,Object? encoding = null,Object? identifier = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(TxtMetadata(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
 as String?,language: freezed == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
@@ -5193,16 +5318,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TxtMetadata&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.language, language) || other.language == language)&&(identical(other.encoding, encoding) || other.encoding == encoding)&&(identical(other.identifier, identifier) || other.identifier == identifier));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TxtMetadata&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.language, language) || other.language == language)&&(identical(other.encoding, encoding) || other.encoding == encoding)&&(identical(other.identifier, identifier) || other.identifier == identifier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,author,language,encoding,identifier);
+int get hashCode {
+    return Object.hash(runtimeType,title,author,language,encoding,identifier);
+}
 
 @override
 String toString() {
-  return 'TxtMetadata(title: $title, author: $author, language: $language, encoding: $encoding, identifier: $identifier)';
+    return 'TxtMetadata(title: $title, author: $author, language: $language, encoding: $encoding, identifier: $identifier)';
 }
 
 
