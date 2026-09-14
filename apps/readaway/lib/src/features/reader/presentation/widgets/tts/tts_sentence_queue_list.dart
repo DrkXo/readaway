@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:readaway_core/readaway_core.dart' show TtsChunk;
 
-import '../../../../../core/services/tts/tts_chunk_model.dart';
 import '../../../../../core/services/tts/tts_models.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../domain/repositories/reader_tts_repository.dart';

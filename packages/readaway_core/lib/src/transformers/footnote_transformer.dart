@@ -11,7 +11,7 @@ class FootnoteTransformer implements TextTransformer {
   @override
   String get name => 'footnote';
 
-  static final RegExp _asideEpubTypeRegex = RegExp(
+  RegExp get _asideEpubTypeRegex => RegExp(
     r'<aside\s+([^>]*\bepub:type\s*=\s*["\x27](footnote|endnote|note|rearnote)["\x27][^>]*)>',
     caseSensitive: false,
   );
@@ -49,9 +49,7 @@ class FootnoteTransformer implements TextTransformer {
           epubType.contains('endnote') ||
           epubType.contains('note') ||
           aside.classes.contains('epubtype-footnote')) {
-        final id = aside.id.isNotEmpty
-            ? aside.id
-            : 'fn-${results.length + 1}';
+        final id = aside.id.isNotEmpty ? aside.id : 'fn-${results.length + 1}';
         results.add(
           FootnoteItem(
             id: id,
@@ -99,9 +97,14 @@ class FootnoteTransformer implements TextTransformer {
     if (target != null) {
       final epubType = target.attributes['epub:type']?.toLowerCase() ?? '';
       final isAside = target.localName == 'aside';
-      final hasFootnoteClass = target.classes.any((c) =>
-          c.contains('footnote') || c.contains('endnote') || c.contains('note'));
-      final isLikelyNote = isAside ||
+      final hasFootnoteClass = target.classes.any(
+        (c) =>
+            c.contains('footnote') ||
+            c.contains('endnote') ||
+            c.contains('note'),
+      );
+      final isLikelyNote =
+          isAside ||
           epubType.contains('footnote') ||
           epubType.contains('note') ||
           hasFootnoteClass ||

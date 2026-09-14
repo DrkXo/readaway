@@ -1,9 +1,9 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:readaway_core/readaway_core.dart' show TtsChunk;
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/services/audio/audio_player_service.dart';
-import '../../../../core/services/tts/tts_chunk_model.dart';
 import '../../../../core/services/tts/tts_models.dart';
 
 /// Contract for TTS playback operations and reactive state streams in the Reader feature.

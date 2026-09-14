@@ -9,6 +9,7 @@ export 'src/abstracts/document_format_handler.dart';
 export 'src/abstracts/document_reader.dart';
 export 'src/abstracts/pdf_document_reader.dart';
 export 'src/abstracts/reflowable_document_reader.dart';
+export 'src/audio/audio.dart';
 export 'src/errors/document_exception.dart';
 export 'src/models/models.dart';
 export 'src/pagination/page_slicer.dart';

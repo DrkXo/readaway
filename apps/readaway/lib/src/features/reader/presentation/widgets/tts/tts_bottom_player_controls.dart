@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:readaway_core/readaway_core.dart' show TtsChunk;
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../../core/services/audio/audio_player_service.dart';
-import '../../../../../core/services/tts/tts_chunk_model.dart';
 import '../../../../../core/services/tts/tts_models.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';

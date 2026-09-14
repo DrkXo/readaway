@@ -13,6 +13,281 @@ part of 'models.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
+mixin _$DetectedEncoding {
+
+/// Canonical encoding name (e.g. 'utf-8', 'utf-16le', 'utf-16be', 'gbk', 'gb18030', 'shift-jis').
+ String get name;/// Confidence score between 0.0 and 1.0.
+ double get confidence;/// True if a definitive Byte Order Mark (BOM) was encountered.
+ bool get hasBom;
+/// Create a copy of DetectedEncoding
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DetectedEncodingCopyWith<DetectedEncoding> get copyWith => _$DetectedEncodingCopyWithImpl<DetectedEncoding>(this as DetectedEncoding, _$identity);
+
+  /// Serializes this DetectedEncoding to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DetectedEncoding&&(identical(other.name, name) || other.name == name)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.hasBom, hasBom) || other.hasBom == hasBom));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,name,confidence,hasBom);
+
+@override
+String toString() {
+  return 'DetectedEncoding(name: $name, confidence: $confidence, hasBom: $hasBom)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DetectedEncodingCopyWith<$Res>  {
+  factory $DetectedEncodingCopyWith(DetectedEncoding value, $Res Function(DetectedEncoding) _then) = _$DetectedEncodingCopyWithImpl;
+@useResult
+$Res call({
+ String name, double confidence, bool hasBom
+});
+
+
+
+
+}
+/// @nodoc
+class _$DetectedEncodingCopyWithImpl<$Res>
+    implements $DetectedEncodingCopyWith<$Res> {
+  _$DetectedEncodingCopyWithImpl(this._self, this._then);
+
+  final DetectedEncoding _self;
+  final $Res Function(DetectedEncoding) _then;
+
+/// Create a copy of DetectedEncoding
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? confidence = null,Object? hasBom = null,}) {
+  return _then(_self.copyWith(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,confidence: null == confidence ? _self.confidence : confidence // ignore: cast_nullable_to_non_nullable
+as double,hasBom: null == hasBom ? _self.hasBom : hasBom // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [DetectedEncoding].
+extension DetectedEncodingPatterns on DetectedEncoding {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DetectedEncoding value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DetectedEncoding() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DetectedEncoding value)  $default,){
+final _that = this;
+switch (_that) {
+case _DetectedEncoding():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DetectedEncoding value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DetectedEncoding() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  double confidence,  bool hasBom)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DetectedEncoding() when $default != null:
+return $default(_that.name,_that.confidence,_that.hasBom);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  double confidence,  bool hasBom)  $default,) {final _that = this;
+switch (_that) {
+case _DetectedEncoding():
+return $default(_that.name,_that.confidence,_that.hasBom);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  double confidence,  bool hasBom)?  $default,) {final _that = this;
+switch (_that) {
+case _DetectedEncoding() when $default != null:
+return $default(_that.name,_that.confidence,_that.hasBom);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DetectedEncoding implements DetectedEncoding {
+  const _DetectedEncoding({required this.name, required this.confidence, this.hasBom = false});
+  factory _DetectedEncoding.fromJson(Map<String, dynamic> json) => _$DetectedEncodingFromJson(json);
+
+/// Canonical encoding name (e.g. 'utf-8', 'utf-16le', 'utf-16be', 'gbk', 'gb18030', 'shift-jis').
+@override final  String name;
+/// Confidence score between 0.0 and 1.0.
+@override final  double confidence;
+/// True if a definitive Byte Order Mark (BOM) was encountered.
+@override@JsonKey() final  bool hasBom;
+
+/// Create a copy of DetectedEncoding
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DetectedEncodingCopyWith<_DetectedEncoding> get copyWith => __$DetectedEncodingCopyWithImpl<_DetectedEncoding>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DetectedEncodingToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DetectedEncoding&&(identical(other.name, name) || other.name == name)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.hasBom, hasBom) || other.hasBom == hasBom));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,name,confidence,hasBom);
+
+@override
+String toString() {
+  return 'DetectedEncoding(name: $name, confidence: $confidence, hasBom: $hasBom)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DetectedEncodingCopyWith<$Res> implements $DetectedEncodingCopyWith<$Res> {
+  factory _$DetectedEncodingCopyWith(_DetectedEncoding value, $Res Function(_DetectedEncoding) _then) = __$DetectedEncodingCopyWithImpl;
+@override @useResult
+$Res call({
+ String name, double confidence, bool hasBom
+});
+
+
+
+
+}
+/// @nodoc
+class __$DetectedEncodingCopyWithImpl<$Res>
+    implements _$DetectedEncodingCopyWith<$Res> {
+  __$DetectedEncodingCopyWithImpl(this._self, this._then);
+
+  final _DetectedEncoding _self;
+  final $Res Function(_DetectedEncoding) _then;
+
+/// Create a copy of DetectedEncoding
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? confidence = null,Object? hasBom = null,}) {
+  return _then(_DetectedEncoding(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,confidence: null == confidence ? _self.confidence : confidence // ignore: cast_nullable_to_non_nullable
+as double,hasBom: null == hasBom ? _self.hasBom : hasBom // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$DocumentMetadata {
 
 /// Document title.
@@ -909,6 +1184,291 @@ $DocumentMetadataCopyWith<$Res> get metadata {
     return _then(_self.copyWith(metadata: value));
   });
 }
+}
+
+
+/// @nodoc
+mixin _$FootnoteItem {
+
+/// Unique anchor identifier of the footnote body (e.g. `fn-1`).
+ String get id;/// Identifier of the caller reference link if present.
+ String? get referenceId;/// Human-readable title or label of the footnote (e.g. `[1]`, `Note 1`).
+ String? get title;/// Clean inner HTML content of the footnote body.
+ String get contentHtml;/// Semantic type of note: 'footnote', 'endnote', 'rearnote', or 'note'.
+ String get type;
+/// Create a copy of FootnoteItem
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FootnoteItemCopyWith<FootnoteItem> get copyWith => _$FootnoteItemCopyWithImpl<FootnoteItem>(this as FootnoteItem, _$identity);
+
+  /// Serializes this FootnoteItem to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FootnoteItem&&(identical(other.id, id) || other.id == id)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.contentHtml, contentHtml) || other.contentHtml == contentHtml)&&(identical(other.type, type) || other.type == type));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,referenceId,title,contentHtml,type);
+
+@override
+String toString() {
+  return 'FootnoteItem(id: $id, referenceId: $referenceId, title: $title, contentHtml: $contentHtml, type: $type)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FootnoteItemCopyWith<$Res>  {
+  factory $FootnoteItemCopyWith(FootnoteItem value, $Res Function(FootnoteItem) _then) = _$FootnoteItemCopyWithImpl;
+@useResult
+$Res call({
+ String id, String? referenceId, String? title, String contentHtml, String type
+});
+
+
+
+
+}
+/// @nodoc
+class _$FootnoteItemCopyWithImpl<$Res>
+    implements $FootnoteItemCopyWith<$Res> {
+  _$FootnoteItemCopyWithImpl(this._self, this._then);
+
+  final FootnoteItem _self;
+  final $Res Function(FootnoteItem) _then;
+
+/// Create a copy of FootnoteItem
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? referenceId = freezed,Object? title = freezed,Object? contentHtml = null,Object? type = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,referenceId: freezed == referenceId ? _self.referenceId : referenceId // ignore: cast_nullable_to_non_nullable
+as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,contentHtml: null == contentHtml ? _self.contentHtml : contentHtml // ignore: cast_nullable_to_non_nullable
+as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FootnoteItem].
+extension FootnoteItemPatterns on FootnoteItem {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FootnoteItem value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FootnoteItem() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FootnoteItem value)  $default,){
+final _that = this;
+switch (_that) {
+case _FootnoteItem():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FootnoteItem value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FootnoteItem() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? referenceId,  String? title,  String contentHtml,  String type)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FootnoteItem() when $default != null:
+return $default(_that.id,_that.referenceId,_that.title,_that.contentHtml,_that.type);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? referenceId,  String? title,  String contentHtml,  String type)  $default,) {final _that = this;
+switch (_that) {
+case _FootnoteItem():
+return $default(_that.id,_that.referenceId,_that.title,_that.contentHtml,_that.type);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? referenceId,  String? title,  String contentHtml,  String type)?  $default,) {final _that = this;
+switch (_that) {
+case _FootnoteItem() when $default != null:
+return $default(_that.id,_that.referenceId,_that.title,_that.contentHtml,_that.type);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FootnoteItem implements FootnoteItem {
+  const _FootnoteItem({required this.id, this.referenceId, this.title, required this.contentHtml, this.type = 'footnote'});
+  factory _FootnoteItem.fromJson(Map<String, dynamic> json) => _$FootnoteItemFromJson(json);
+
+/// Unique anchor identifier of the footnote body (e.g. `fn-1`).
+@override final  String id;
+/// Identifier of the caller reference link if present.
+@override final  String? referenceId;
+/// Human-readable title or label of the footnote (e.g. `[1]`, `Note 1`).
+@override final  String? title;
+/// Clean inner HTML content of the footnote body.
+@override final  String contentHtml;
+/// Semantic type of note: 'footnote', 'endnote', 'rearnote', or 'note'.
+@override@JsonKey() final  String type;
+
+/// Create a copy of FootnoteItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FootnoteItemCopyWith<_FootnoteItem> get copyWith => __$FootnoteItemCopyWithImpl<_FootnoteItem>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FootnoteItemToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FootnoteItem&&(identical(other.id, id) || other.id == id)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.contentHtml, contentHtml) || other.contentHtml == contentHtml)&&(identical(other.type, type) || other.type == type));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,referenceId,title,contentHtml,type);
+
+@override
+String toString() {
+  return 'FootnoteItem(id: $id, referenceId: $referenceId, title: $title, contentHtml: $contentHtml, type: $type)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FootnoteItemCopyWith<$Res> implements $FootnoteItemCopyWith<$Res> {
+  factory _$FootnoteItemCopyWith(_FootnoteItem value, $Res Function(_FootnoteItem) _then) = __$FootnoteItemCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String? referenceId, String? title, String contentHtml, String type
+});
+
+
+
+
+}
+/// @nodoc
+class __$FootnoteItemCopyWithImpl<$Res>
+    implements _$FootnoteItemCopyWith<$Res> {
+  __$FootnoteItemCopyWithImpl(this._self, this._then);
+
+  final _FootnoteItem _self;
+  final $Res Function(_FootnoteItem) _then;
+
+/// Create a copy of FootnoteItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? referenceId = freezed,Object? title = freezed,Object? contentHtml = null,Object? type = null,}) {
+  return _then(_FootnoteItem(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,referenceId: freezed == referenceId ? _self.referenceId : referenceId // ignore: cast_nullable_to_non_nullable
+as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,contentHtml: null == contentHtml ? _self.contentHtml : contentHtml // ignore: cast_nullable_to_non_nullable
+as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
 }
 
 
@@ -3491,47 +4051,45 @@ as Map<String, dynamic>,
 
 
 /// @nodoc
-mixin _$TxtMetadata {
+mixin _$TtsWordSpan {
 
-/// Extracted or fallback title of the document.
- String get title;/// Extracted author name if detected, or null.
- String? get author;/// Detected or provided BCP-47 language tag.
- String? get language;/// Character encoding detected or used (e.g. 'utf-8', 'gbk', 'shift-jis').
- String get encoding;/// Stable content identifier.
- String? get identifier;
-/// Create a copy of TxtMetadata
+/// The raw word or token string.
+ String get word;/// Absolute character index start bound within the parent chunk text.
+ int get startOffset;/// Absolute character index end bound within the parent chunk text.
+ int get endOffset;
+/// Create a copy of TtsWordSpan
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$TxtMetadataCopyWith<TxtMetadata> get copyWith => _$TxtMetadataCopyWithImpl<TxtMetadata>(this as TxtMetadata, _$identity);
+$TtsWordSpanCopyWith<TtsWordSpan> get copyWith => _$TtsWordSpanCopyWithImpl<TtsWordSpan>(this as TtsWordSpan, _$identity);
 
-  /// Serializes this TxtMetadata to a JSON map.
+  /// Serializes this TtsWordSpan to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TxtMetadata&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.language, language) || other.language == language)&&(identical(other.encoding, encoding) || other.encoding == encoding)&&(identical(other.identifier, identifier) || other.identifier == identifier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TtsWordSpan&&(identical(other.word, word) || other.word == word)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,author,language,encoding,identifier);
+int get hashCode => Object.hash(runtimeType,word,startOffset,endOffset);
 
 @override
 String toString() {
-  return 'TxtMetadata(title: $title, author: $author, language: $language, encoding: $encoding, identifier: $identifier)';
+  return 'TtsWordSpan(word: $word, startOffset: $startOffset, endOffset: $endOffset)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $TxtMetadataCopyWith<$Res>  {
-  factory $TxtMetadataCopyWith(TxtMetadata value, $Res Function(TxtMetadata) _then) = _$TxtMetadataCopyWithImpl;
+abstract mixin class $TtsWordSpanCopyWith<$Res>  {
+  factory $TtsWordSpanCopyWith(TtsWordSpan value, $Res Function(TtsWordSpan) _then) = _$TtsWordSpanCopyWithImpl;
 @useResult
 $Res call({
- String title, String? author, String? language, String encoding, String? identifier
+ String word, int startOffset, int endOffset
 });
 
 
@@ -3539,31 +4097,29 @@ $Res call({
 
 }
 /// @nodoc
-class _$TxtMetadataCopyWithImpl<$Res>
-    implements $TxtMetadataCopyWith<$Res> {
-  _$TxtMetadataCopyWithImpl(this._self, this._then);
+class _$TtsWordSpanCopyWithImpl<$Res>
+    implements $TtsWordSpanCopyWith<$Res> {
+  _$TtsWordSpanCopyWithImpl(this._self, this._then);
 
-  final TxtMetadata _self;
-  final $Res Function(TxtMetadata) _then;
+  final TtsWordSpan _self;
+  final $Res Function(TtsWordSpan) _then;
 
-/// Create a copy of TxtMetadata
+/// Create a copy of TtsWordSpan
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? author = freezed,Object? language = freezed,Object? encoding = null,Object? identifier = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? word = null,Object? startOffset = null,Object? endOffset = null,}) {
   return _then(_self.copyWith(
-title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
-as String,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
-as String?,language: freezed == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
-as String?,encoding: null == encoding ? _self.encoding : encoding // ignore: cast_nullable_to_non_nullable
-as String,identifier: freezed == identifier ? _self.identifier : identifier // ignore: cast_nullable_to_non_nullable
-as String?,
+word: null == word ? _self.word : word // ignore: cast_nullable_to_non_nullable
+as String,startOffset: null == startOffset ? _self.startOffset : startOffset // ignore: cast_nullable_to_non_nullable
+as int,endOffset: null == endOffset ? _self.endOffset : endOffset // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
 }
 
 
-/// Adds pattern-matching-related methods to [TxtMetadata].
-extension TxtMetadataPatterns on TxtMetadata {
+/// Adds pattern-matching-related methods to [TtsWordSpan].
+extension TtsWordSpanPatterns on TtsWordSpan {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -3576,10 +4132,10 @@ extension TxtMetadataPatterns on TxtMetadata {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TxtMetadata value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TtsWordSpan value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _TxtMetadata() when $default != null:
+case _TtsWordSpan() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -3598,10 +4154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TxtMetadata value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TtsWordSpan value)  $default,){
 final _that = this;
 switch (_that) {
-case _TxtMetadata():
+case _TtsWordSpan():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -3619,10 +4175,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TxtMetadata value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TtsWordSpan value)?  $default,){
 final _that = this;
 switch (_that) {
-case _TxtMetadata() when $default != null:
+case _TtsWordSpan() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -3640,10 +4196,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  String? author,  String? language,  String encoding,  String? identifier)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String word,  int startOffset,  int endOffset)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _TxtMetadata() when $default != null:
-return $default(_that.title,_that.author,_that.language,_that.encoding,_that.identifier);case _:
+case _TtsWordSpan() when $default != null:
+return $default(_that.word,_that.startOffset,_that.endOffset);case _:
   return orElse();
 
 }
@@ -3661,10 +4217,10 @@ return $default(_that.title,_that.author,_that.language,_that.encoding,_that.ide
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  String? author,  String? language,  String encoding,  String? identifier)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String word,  int startOffset,  int endOffset)  $default,) {final _that = this;
 switch (_that) {
-case _TxtMetadata():
-return $default(_that.title,_that.author,_that.language,_that.encoding,_that.identifier);case _:
+case _TtsWordSpan():
+return $default(_that.word,_that.startOffset,_that.endOffset);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3681,10 +4237,10 @@ return $default(_that.title,_that.author,_that.language,_that.encoding,_that.ide
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  String? author,  String? language,  String encoding,  String? identifier)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String word,  int startOffset,  int endOffset)?  $default,) {final _that = this;
 switch (_that) {
-case _TxtMetadata() when $default != null:
-return $default(_that.title,_that.author,_that.language,_that.encoding,_that.identifier);case _:
+case _TtsWordSpan() when $default != null:
+return $default(_that.word,_that.startOffset,_that.endOffset);case _:
   return null;
 
 }
@@ -3695,55 +4251,51 @@ return $default(_that.title,_that.author,_that.language,_that.encoding,_that.ide
 /// @nodoc
 @JsonSerializable()
 
-class _TxtMetadata implements TxtMetadata {
-  const _TxtMetadata({required this.title, this.author, this.language, required this.encoding, this.identifier});
-  factory _TxtMetadata.fromJson(Map<String, dynamic> json) => _$TxtMetadataFromJson(json);
+class _TtsWordSpan implements TtsWordSpan {
+  const _TtsWordSpan({required this.word, required this.startOffset, required this.endOffset});
+  factory _TtsWordSpan.fromJson(Map<String, dynamic> json) => _$TtsWordSpanFromJson(json);
 
-/// Extracted or fallback title of the document.
-@override final  String title;
-/// Extracted author name if detected, or null.
-@override final  String? author;
-/// Detected or provided BCP-47 language tag.
-@override final  String? language;
-/// Character encoding detected or used (e.g. 'utf-8', 'gbk', 'shift-jis').
-@override final  String encoding;
-/// Stable content identifier.
-@override final  String? identifier;
+/// The raw word or token string.
+@override final  String word;
+/// Absolute character index start bound within the parent chunk text.
+@override final  int startOffset;
+/// Absolute character index end bound within the parent chunk text.
+@override final  int endOffset;
 
-/// Create a copy of TxtMetadata
+/// Create a copy of TtsWordSpan
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$TxtMetadataCopyWith<_TxtMetadata> get copyWith => __$TxtMetadataCopyWithImpl<_TxtMetadata>(this, _$identity);
+_$TtsWordSpanCopyWith<_TtsWordSpan> get copyWith => __$TtsWordSpanCopyWithImpl<_TtsWordSpan>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$TxtMetadataToJson(this, );
+  return _$TtsWordSpanToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TxtMetadata&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.language, language) || other.language == language)&&(identical(other.encoding, encoding) || other.encoding == encoding)&&(identical(other.identifier, identifier) || other.identifier == identifier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsWordSpan&&(identical(other.word, word) || other.word == word)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,author,language,encoding,identifier);
+int get hashCode => Object.hash(runtimeType,word,startOffset,endOffset);
 
 @override
 String toString() {
-  return 'TxtMetadata(title: $title, author: $author, language: $language, encoding: $encoding, identifier: $identifier)';
+  return 'TtsWordSpan(word: $word, startOffset: $startOffset, endOffset: $endOffset)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$TxtMetadataCopyWith<$Res> implements $TxtMetadataCopyWith<$Res> {
-  factory _$TxtMetadataCopyWith(_TxtMetadata value, $Res Function(_TxtMetadata) _then) = __$TxtMetadataCopyWithImpl;
+abstract mixin class _$TtsWordSpanCopyWith<$Res> implements $TtsWordSpanCopyWith<$Res> {
+  factory _$TtsWordSpanCopyWith(_TtsWordSpan value, $Res Function(_TtsWordSpan) _then) = __$TtsWordSpanCopyWithImpl;
 @override @useResult
 $Res call({
- String title, String? author, String? language, String encoding, String? identifier
+ String word, int startOffset, int endOffset
 });
 
 
@@ -3751,23 +4303,369 @@ $Res call({
 
 }
 /// @nodoc
-class __$TxtMetadataCopyWithImpl<$Res>
-    implements _$TxtMetadataCopyWith<$Res> {
-  __$TxtMetadataCopyWithImpl(this._self, this._then);
+class __$TtsWordSpanCopyWithImpl<$Res>
+    implements _$TtsWordSpanCopyWith<$Res> {
+  __$TtsWordSpanCopyWithImpl(this._self, this._then);
 
-  final _TxtMetadata _self;
-  final $Res Function(_TxtMetadata) _then;
+  final _TtsWordSpan _self;
+  final $Res Function(_TtsWordSpan) _then;
 
-/// Create a copy of TxtMetadata
+/// Create a copy of TtsWordSpan
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? author = freezed,Object? language = freezed,Object? encoding = null,Object? identifier = freezed,}) {
-  return _then(_TxtMetadata(
-title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
-as String,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
-as String?,language: freezed == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
-as String?,encoding: null == encoding ? _self.encoding : encoding // ignore: cast_nullable_to_non_nullable
-as String,identifier: freezed == identifier ? _self.identifier : identifier // ignore: cast_nullable_to_non_nullable
-as String?,
+@override @pragma('vm:prefer-inline') $Res call({Object? word = null,Object? startOffset = null,Object? endOffset = null,}) {
+  return _then(_TtsWordSpan(
+word: null == word ? _self.word : word // ignore: cast_nullable_to_non_nullable
+as String,startOffset: null == startOffset ? _self.startOffset : startOffset // ignore: cast_nullable_to_non_nullable
+as int,endOffset: null == endOffset ? _self.endOffset : endOffset // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$TtsChunk {
+
+/// Trimmed display text representing the sentence or clause.
+ String get text;/// Absolute character index start bound in the source text
+/// (trimmed to non-whitespace).
+ int get startOffset;/// Absolute character index end bound in the source text
+/// (trimmed to non-whitespace).
+ int get endOffset;/// Text sanitized and normalized for speech synthesis (e.g. stripped of
+/// footnote citations, soft hyphens, and decorative glyphs).
+///
+/// Falls back to [text] at read time via [speechContent].
+ String? get spokenText;/// Absolute character index start bound in the source text including
+/// leading whitespace.
+ int? get rawStartOffset;/// Absolute character index end bound in the source text including
+/// trailing whitespace.
+ int? get rawEndOffset;/// Whether this chunk marks the terminal sentence/clause of a paragraph.
+ bool get isParagraphEnd;/// 0-based paragraph index within the page or document section.
+ int get paragraphIndex;/// Optional word-level spans for progressive karaoke-style highlighting.
+///
+/// Explicit encoders keep the nested [TtsWordSpan] objects flattened into
+/// plain maps so the payload survives `SendPort` hops between isolates.
+@JsonKey(toJson: _encodeWordSpans, fromJson: _decodeWordSpans) List<TtsWordSpan> get words;/// BCP-47 language tag inferred from the chunk's dominant script
+/// (e.g. `'en'`, `'ja'`, `'zh'`, `'ru'`).
+///
+/// Lets the TTS engine pick the right voice/pronunciation for
+/// mixed-language content.
+ String get language;
+/// Create a copy of TtsChunk
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TtsChunkCopyWith<TtsChunk> get copyWith => _$TtsChunkCopyWithImpl<TtsChunk>(this as TtsChunk, _$identity);
+
+  /// Serializes this TtsChunk to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TtsChunk&&(identical(other.text, text) || other.text == text)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.spokenText, spokenText) || other.spokenText == spokenText)&&(identical(other.rawStartOffset, rawStartOffset) || other.rawStartOffset == rawStartOffset)&&(identical(other.rawEndOffset, rawEndOffset) || other.rawEndOffset == rawEndOffset)&&(identical(other.isParagraphEnd, isParagraphEnd) || other.isParagraphEnd == isParagraphEnd)&&(identical(other.paragraphIndex, paragraphIndex) || other.paragraphIndex == paragraphIndex)&&const DeepCollectionEquality().equals(other.words, words)&&(identical(other.language, language) || other.language == language));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,text,startOffset,endOffset,spokenText,rawStartOffset,rawEndOffset,isParagraphEnd,paragraphIndex,const DeepCollectionEquality().hash(words),language);
+
+@override
+String toString() {
+  return 'TtsChunk(text: $text, startOffset: $startOffset, endOffset: $endOffset, spokenText: $spokenText, rawStartOffset: $rawStartOffset, rawEndOffset: $rawEndOffset, isParagraphEnd: $isParagraphEnd, paragraphIndex: $paragraphIndex, words: $words, language: $language)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TtsChunkCopyWith<$Res>  {
+  factory $TtsChunkCopyWith(TtsChunk value, $Res Function(TtsChunk) _then) = _$TtsChunkCopyWithImpl;
+@useResult
+$Res call({
+ String text, int startOffset, int endOffset, String? spokenText, int? rawStartOffset, int? rawEndOffset, bool isParagraphEnd, int paragraphIndex,@JsonKey(toJson: _encodeWordSpans, fromJson: _decodeWordSpans) List<TtsWordSpan> words, String language
+});
+
+
+
+
+}
+/// @nodoc
+class _$TtsChunkCopyWithImpl<$Res>
+    implements $TtsChunkCopyWith<$Res> {
+  _$TtsChunkCopyWithImpl(this._self, this._then);
+
+  final TtsChunk _self;
+  final $Res Function(TtsChunk) _then;
+
+/// Create a copy of TtsChunk
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? text = null,Object? startOffset = null,Object? endOffset = null,Object? spokenText = freezed,Object? rawStartOffset = freezed,Object? rawEndOffset = freezed,Object? isParagraphEnd = null,Object? paragraphIndex = null,Object? words = null,Object? language = null,}) {
+  return _then(_self.copyWith(
+text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String,startOffset: null == startOffset ? _self.startOffset : startOffset // ignore: cast_nullable_to_non_nullable
+as int,endOffset: null == endOffset ? _self.endOffset : endOffset // ignore: cast_nullable_to_non_nullable
+as int,spokenText: freezed == spokenText ? _self.spokenText : spokenText // ignore: cast_nullable_to_non_nullable
+as String?,rawStartOffset: freezed == rawStartOffset ? _self.rawStartOffset : rawStartOffset // ignore: cast_nullable_to_non_nullable
+as int?,rawEndOffset: freezed == rawEndOffset ? _self.rawEndOffset : rawEndOffset // ignore: cast_nullable_to_non_nullable
+as int?,isParagraphEnd: null == isParagraphEnd ? _self.isParagraphEnd : isParagraphEnd // ignore: cast_nullable_to_non_nullable
+as bool,paragraphIndex: null == paragraphIndex ? _self.paragraphIndex : paragraphIndex // ignore: cast_nullable_to_non_nullable
+as int,words: null == words ? _self.words : words // ignore: cast_nullable_to_non_nullable
+as List<TtsWordSpan>,language: null == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TtsChunk].
+extension TtsChunkPatterns on TtsChunk {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TtsChunk value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TtsChunk() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TtsChunk value)  $default,){
+final _that = this;
+switch (_that) {
+case _TtsChunk():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TtsChunk value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TtsChunk() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String text,  int startOffset,  int endOffset,  String? spokenText,  int? rawStartOffset,  int? rawEndOffset,  bool isParagraphEnd,  int paragraphIndex, @JsonKey(toJson: _encodeWordSpans, fromJson: _decodeWordSpans)  List<TtsWordSpan> words,  String language)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TtsChunk() when $default != null:
+return $default(_that.text,_that.startOffset,_that.endOffset,_that.spokenText,_that.rawStartOffset,_that.rawEndOffset,_that.isParagraphEnd,_that.paragraphIndex,_that.words,_that.language);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String text,  int startOffset,  int endOffset,  String? spokenText,  int? rawStartOffset,  int? rawEndOffset,  bool isParagraphEnd,  int paragraphIndex, @JsonKey(toJson: _encodeWordSpans, fromJson: _decodeWordSpans)  List<TtsWordSpan> words,  String language)  $default,) {final _that = this;
+switch (_that) {
+case _TtsChunk():
+return $default(_that.text,_that.startOffset,_that.endOffset,_that.spokenText,_that.rawStartOffset,_that.rawEndOffset,_that.isParagraphEnd,_that.paragraphIndex,_that.words,_that.language);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String text,  int startOffset,  int endOffset,  String? spokenText,  int? rawStartOffset,  int? rawEndOffset,  bool isParagraphEnd,  int paragraphIndex, @JsonKey(toJson: _encodeWordSpans, fromJson: _decodeWordSpans)  List<TtsWordSpan> words,  String language)?  $default,) {final _that = this;
+switch (_that) {
+case _TtsChunk() when $default != null:
+return $default(_that.text,_that.startOffset,_that.endOffset,_that.spokenText,_that.rawStartOffset,_that.rawEndOffset,_that.isParagraphEnd,_that.paragraphIndex,_that.words,_that.language);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TtsChunk extends TtsChunk {
+  const _TtsChunk({required this.text, required this.startOffset, required this.endOffset, this.spokenText, this.rawStartOffset, this.rawEndOffset, this.isParagraphEnd = false, this.paragraphIndex = 0, @JsonKey(toJson: _encodeWordSpans, fromJson: _decodeWordSpans) final  List<TtsWordSpan> words = const <TtsWordSpan>[], this.language = 'en'}): _words = words,super._();
+  factory _TtsChunk.fromJson(Map<String, dynamic> json) => _$TtsChunkFromJson(json);
+
+/// Trimmed display text representing the sentence or clause.
+@override final  String text;
+/// Absolute character index start bound in the source text
+/// (trimmed to non-whitespace).
+@override final  int startOffset;
+/// Absolute character index end bound in the source text
+/// (trimmed to non-whitespace).
+@override final  int endOffset;
+/// Text sanitized and normalized for speech synthesis (e.g. stripped of
+/// footnote citations, soft hyphens, and decorative glyphs).
+///
+/// Falls back to [text] at read time via [speechContent].
+@override final  String? spokenText;
+/// Absolute character index start bound in the source text including
+/// leading whitespace.
+@override final  int? rawStartOffset;
+/// Absolute character index end bound in the source text including
+/// trailing whitespace.
+@override final  int? rawEndOffset;
+/// Whether this chunk marks the terminal sentence/clause of a paragraph.
+@override@JsonKey() final  bool isParagraphEnd;
+/// 0-based paragraph index within the page or document section.
+@override@JsonKey() final  int paragraphIndex;
+/// Optional word-level spans for progressive karaoke-style highlighting.
+///
+/// Explicit encoders keep the nested [TtsWordSpan] objects flattened into
+/// plain maps so the payload survives `SendPort` hops between isolates.
+ final  List<TtsWordSpan> _words;
+/// Optional word-level spans for progressive karaoke-style highlighting.
+///
+/// Explicit encoders keep the nested [TtsWordSpan] objects flattened into
+/// plain maps so the payload survives `SendPort` hops between isolates.
+@override@JsonKey(toJson: _encodeWordSpans, fromJson: _decodeWordSpans) List<TtsWordSpan> get words {
+  if (_words is EqualUnmodifiableListView) return _words;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_words);
+}
+
+/// BCP-47 language tag inferred from the chunk's dominant script
+/// (e.g. `'en'`, `'ja'`, `'zh'`, `'ru'`).
+///
+/// Lets the TTS engine pick the right voice/pronunciation for
+/// mixed-language content.
+@override@JsonKey() final  String language;
+
+/// Create a copy of TtsChunk
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TtsChunkCopyWith<_TtsChunk> get copyWith => __$TtsChunkCopyWithImpl<_TtsChunk>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TtsChunkToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TtsChunk&&(identical(other.text, text) || other.text == text)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.spokenText, spokenText) || other.spokenText == spokenText)&&(identical(other.rawStartOffset, rawStartOffset) || other.rawStartOffset == rawStartOffset)&&(identical(other.rawEndOffset, rawEndOffset) || other.rawEndOffset == rawEndOffset)&&(identical(other.isParagraphEnd, isParagraphEnd) || other.isParagraphEnd == isParagraphEnd)&&(identical(other.paragraphIndex, paragraphIndex) || other.paragraphIndex == paragraphIndex)&&const DeepCollectionEquality().equals(other._words, _words)&&(identical(other.language, language) || other.language == language));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,text,startOffset,endOffset,spokenText,rawStartOffset,rawEndOffset,isParagraphEnd,paragraphIndex,const DeepCollectionEquality().hash(_words),language);
+
+@override
+String toString() {
+  return 'TtsChunk(text: $text, startOffset: $startOffset, endOffset: $endOffset, spokenText: $spokenText, rawStartOffset: $rawStartOffset, rawEndOffset: $rawEndOffset, isParagraphEnd: $isParagraphEnd, paragraphIndex: $paragraphIndex, words: $words, language: $language)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TtsChunkCopyWith<$Res> implements $TtsChunkCopyWith<$Res> {
+  factory _$TtsChunkCopyWith(_TtsChunk value, $Res Function(_TtsChunk) _then) = __$TtsChunkCopyWithImpl;
+@override @useResult
+$Res call({
+ String text, int startOffset, int endOffset, String? spokenText, int? rawStartOffset, int? rawEndOffset, bool isParagraphEnd, int paragraphIndex,@JsonKey(toJson: _encodeWordSpans, fromJson: _decodeWordSpans) List<TtsWordSpan> words, String language
+});
+
+
+
+
+}
+/// @nodoc
+class __$TtsChunkCopyWithImpl<$Res>
+    implements _$TtsChunkCopyWith<$Res> {
+  __$TtsChunkCopyWithImpl(this._self, this._then);
+
+  final _TtsChunk _self;
+  final $Res Function(_TtsChunk) _then;
+
+/// Create a copy of TtsChunk
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? text = null,Object? startOffset = null,Object? endOffset = null,Object? spokenText = freezed,Object? rawStartOffset = freezed,Object? rawEndOffset = freezed,Object? isParagraphEnd = null,Object? paragraphIndex = null,Object? words = null,Object? language = null,}) {
+  return _then(_TtsChunk(
+text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String,startOffset: null == startOffset ? _self.startOffset : startOffset // ignore: cast_nullable_to_non_nullable
+as int,endOffset: null == endOffset ? _self.endOffset : endOffset // ignore: cast_nullable_to_non_nullable
+as int,spokenText: freezed == spokenText ? _self.spokenText : spokenText // ignore: cast_nullable_to_non_nullable
+as String?,rawStartOffset: freezed == rawStartOffset ? _self.rawStartOffset : rawStartOffset // ignore: cast_nullable_to_non_nullable
+as int?,rawEndOffset: freezed == rawEndOffset ? _self.rawEndOffset : rawEndOffset // ignore: cast_nullable_to_non_nullable
+as int?,isParagraphEnd: null == isParagraphEnd ? _self.isParagraphEnd : isParagraphEnd // ignore: cast_nullable_to_non_nullable
+as bool,paragraphIndex: null == paragraphIndex ? _self.paragraphIndex : paragraphIndex // ignore: cast_nullable_to_non_nullable
+as int,words: null == words ? _self._words : words // ignore: cast_nullable_to_non_nullable
+as List<TtsWordSpan>,language: null == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -4063,47 +4961,47 @@ as bool,
 
 
 /// @nodoc
-mixin _$FootnoteItem {
+mixin _$TxtMetadata {
 
-/// Unique anchor identifier of the footnote body (e.g. `fn-1`).
- String get id;/// Identifier of the caller reference link if present.
- String? get referenceId;/// Human-readable title or label of the footnote (e.g. `[1]`, `Note 1`).
- String? get title;/// Clean inner HTML content of the footnote body.
- String get contentHtml;/// Semantic type of note: 'footnote', 'endnote', 'rearnote', or 'note'.
- String get type;
-/// Create a copy of FootnoteItem
+/// Extracted or fallback title of the document.
+ String get title;/// Extracted author name if detected, or null.
+ String? get author;/// Detected or provided BCP-47 language tag.
+ String? get language;/// Character encoding detected or used (e.g. 'utf-8', 'gbk', 'shift-jis').
+ String get encoding;/// Stable content identifier.
+ String? get identifier;
+/// Create a copy of TxtMetadata
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$FootnoteItemCopyWith<FootnoteItem> get copyWith => _$FootnoteItemCopyWithImpl<FootnoteItem>(this as FootnoteItem, _$identity);
+$TxtMetadataCopyWith<TxtMetadata> get copyWith => _$TxtMetadataCopyWithImpl<TxtMetadata>(this as TxtMetadata, _$identity);
 
-  /// Serializes this FootnoteItem to a JSON map.
+  /// Serializes this TxtMetadata to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FootnoteItem&&(identical(other.id, id) || other.id == id)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.contentHtml, contentHtml) || other.contentHtml == contentHtml)&&(identical(other.type, type) || other.type == type));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TxtMetadata&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.language, language) || other.language == language)&&(identical(other.encoding, encoding) || other.encoding == encoding)&&(identical(other.identifier, identifier) || other.identifier == identifier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,referenceId,title,contentHtml,type);
+int get hashCode => Object.hash(runtimeType,title,author,language,encoding,identifier);
 
 @override
 String toString() {
-  return 'FootnoteItem(id: $id, referenceId: $referenceId, title: $title, contentHtml: $contentHtml, type: $type)';
+  return 'TxtMetadata(title: $title, author: $author, language: $language, encoding: $encoding, identifier: $identifier)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $FootnoteItemCopyWith<$Res>  {
-  factory $FootnoteItemCopyWith(FootnoteItem value, $Res Function(FootnoteItem) _then) = _$FootnoteItemCopyWithImpl;
+abstract mixin class $TxtMetadataCopyWith<$Res>  {
+  factory $TxtMetadataCopyWith(TxtMetadata value, $Res Function(TxtMetadata) _then) = _$TxtMetadataCopyWithImpl;
 @useResult
 $Res call({
- String id, String? referenceId, String? title, String contentHtml, String type
+ String title, String? author, String? language, String encoding, String? identifier
 });
 
 
@@ -4111,31 +5009,31 @@ $Res call({
 
 }
 /// @nodoc
-class _$FootnoteItemCopyWithImpl<$Res>
-    implements $FootnoteItemCopyWith<$Res> {
-  _$FootnoteItemCopyWithImpl(this._self, this._then);
+class _$TxtMetadataCopyWithImpl<$Res>
+    implements $TxtMetadataCopyWith<$Res> {
+  _$TxtMetadataCopyWithImpl(this._self, this._then);
 
-  final FootnoteItem _self;
-  final $Res Function(FootnoteItem) _then;
+  final TxtMetadata _self;
+  final $Res Function(TxtMetadata) _then;
 
-/// Create a copy of FootnoteItem
+/// Create a copy of TxtMetadata
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? referenceId = freezed,Object? title = freezed,Object? contentHtml = null,Object? type = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? author = freezed,Object? language = freezed,Object? encoding = null,Object? identifier = freezed,}) {
   return _then(_self.copyWith(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,referenceId: freezed == referenceId ? _self.referenceId : referenceId // ignore: cast_nullable_to_non_nullable
-as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
-as String?,contentHtml: null == contentHtml ? _self.contentHtml : contentHtml // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as String,
+title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
+as String?,language: freezed == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
+as String?,encoding: null == encoding ? _self.encoding : encoding // ignore: cast_nullable_to_non_nullable
+as String,identifier: freezed == identifier ? _self.identifier : identifier // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
 }
 
 
-/// Adds pattern-matching-related methods to [FootnoteItem].
-extension FootnoteItemPatterns on FootnoteItem {
+/// Adds pattern-matching-related methods to [TxtMetadata].
+extension TxtMetadataPatterns on TxtMetadata {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -4148,10 +5046,10 @@ extension FootnoteItemPatterns on FootnoteItem {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FootnoteItem value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TxtMetadata value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _FootnoteItem() when $default != null:
+case _TxtMetadata() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -4170,10 +5068,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FootnoteItem value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TxtMetadata value)  $default,){
 final _that = this;
 switch (_that) {
-case _FootnoteItem():
+case _TxtMetadata():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -4191,10 +5089,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FootnoteItem value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TxtMetadata value)?  $default,){
 final _that = this;
 switch (_that) {
-case _FootnoteItem() when $default != null:
+case _TxtMetadata() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -4212,10 +5110,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? referenceId,  String? title,  String contentHtml,  String type)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  String? author,  String? language,  String encoding,  String? identifier)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _FootnoteItem() when $default != null:
-return $default(_that.id,_that.referenceId,_that.title,_that.contentHtml,_that.type);case _:
+case _TxtMetadata() when $default != null:
+return $default(_that.title,_that.author,_that.language,_that.encoding,_that.identifier);case _:
   return orElse();
 
 }
@@ -4233,10 +5131,10 @@ return $default(_that.id,_that.referenceId,_that.title,_that.contentHtml,_that.t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? referenceId,  String? title,  String contentHtml,  String type)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  String? author,  String? language,  String encoding,  String? identifier)  $default,) {final _that = this;
 switch (_that) {
-case _FootnoteItem():
-return $default(_that.id,_that.referenceId,_that.title,_that.contentHtml,_that.type);case _:
+case _TxtMetadata():
+return $default(_that.title,_that.author,_that.language,_that.encoding,_that.identifier);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -4253,10 +5151,10 @@ return $default(_that.id,_that.referenceId,_that.title,_that.contentHtml,_that.t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? referenceId,  String? title,  String contentHtml,  String type)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  String? author,  String? language,  String encoding,  String? identifier)?  $default,) {final _that = this;
 switch (_that) {
-case _FootnoteItem() when $default != null:
-return $default(_that.id,_that.referenceId,_that.title,_that.contentHtml,_that.type);case _:
+case _TxtMetadata() when $default != null:
+return $default(_that.title,_that.author,_that.language,_that.encoding,_that.identifier);case _:
   return null;
 
 }
@@ -4267,55 +5165,55 @@ return $default(_that.id,_that.referenceId,_that.title,_that.contentHtml,_that.t
 /// @nodoc
 @JsonSerializable()
 
-class _FootnoteItem implements FootnoteItem {
-  const _FootnoteItem({required this.id, this.referenceId, this.title, required this.contentHtml, this.type = 'footnote'});
-  factory _FootnoteItem.fromJson(Map<String, dynamic> json) => _$FootnoteItemFromJson(json);
+class _TxtMetadata implements TxtMetadata {
+  const _TxtMetadata({required this.title, this.author, this.language, required this.encoding, this.identifier});
+  factory _TxtMetadata.fromJson(Map<String, dynamic> json) => _$TxtMetadataFromJson(json);
 
-/// Unique anchor identifier of the footnote body (e.g. `fn-1`).
-@override final  String id;
-/// Identifier of the caller reference link if present.
-@override final  String? referenceId;
-/// Human-readable title or label of the footnote (e.g. `[1]`, `Note 1`).
-@override final  String? title;
-/// Clean inner HTML content of the footnote body.
-@override final  String contentHtml;
-/// Semantic type of note: 'footnote', 'endnote', 'rearnote', or 'note'.
-@override@JsonKey() final  String type;
+/// Extracted or fallback title of the document.
+@override final  String title;
+/// Extracted author name if detected, or null.
+@override final  String? author;
+/// Detected or provided BCP-47 language tag.
+@override final  String? language;
+/// Character encoding detected or used (e.g. 'utf-8', 'gbk', 'shift-jis').
+@override final  String encoding;
+/// Stable content identifier.
+@override final  String? identifier;
 
-/// Create a copy of FootnoteItem
+/// Create a copy of TxtMetadata
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$FootnoteItemCopyWith<_FootnoteItem> get copyWith => __$FootnoteItemCopyWithImpl<_FootnoteItem>(this, _$identity);
+_$TxtMetadataCopyWith<_TxtMetadata> get copyWith => __$TxtMetadataCopyWithImpl<_TxtMetadata>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$FootnoteItemToJson(this, );
+  return _$TxtMetadataToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FootnoteItem&&(identical(other.id, id) || other.id == id)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.title, title) || other.title == title)&&(identical(other.contentHtml, contentHtml) || other.contentHtml == contentHtml)&&(identical(other.type, type) || other.type == type));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TxtMetadata&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.language, language) || other.language == language)&&(identical(other.encoding, encoding) || other.encoding == encoding)&&(identical(other.identifier, identifier) || other.identifier == identifier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,referenceId,title,contentHtml,type);
+int get hashCode => Object.hash(runtimeType,title,author,language,encoding,identifier);
 
 @override
 String toString() {
-  return 'FootnoteItem(id: $id, referenceId: $referenceId, title: $title, contentHtml: $contentHtml, type: $type)';
+  return 'TxtMetadata(title: $title, author: $author, language: $language, encoding: $encoding, identifier: $identifier)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$FootnoteItemCopyWith<$Res> implements $FootnoteItemCopyWith<$Res> {
-  factory _$FootnoteItemCopyWith(_FootnoteItem value, $Res Function(_FootnoteItem) _then) = __$FootnoteItemCopyWithImpl;
+abstract mixin class _$TxtMetadataCopyWith<$Res> implements $TxtMetadataCopyWith<$Res> {
+  factory _$TxtMetadataCopyWith(_TxtMetadata value, $Res Function(_TxtMetadata) _then) = __$TxtMetadataCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? referenceId, String? title, String contentHtml, String type
+ String title, String? author, String? language, String encoding, String? identifier
 });
 
 
@@ -4323,298 +5221,23 @@ $Res call({
 
 }
 /// @nodoc
-class __$FootnoteItemCopyWithImpl<$Res>
-    implements _$FootnoteItemCopyWith<$Res> {
-  __$FootnoteItemCopyWithImpl(this._self, this._then);
+class __$TxtMetadataCopyWithImpl<$Res>
+    implements _$TxtMetadataCopyWith<$Res> {
+  __$TxtMetadataCopyWithImpl(this._self, this._then);
 
-  final _FootnoteItem _self;
-  final $Res Function(_FootnoteItem) _then;
+  final _TxtMetadata _self;
+  final $Res Function(_TxtMetadata) _then;
 
-/// Create a copy of FootnoteItem
+/// Create a copy of TxtMetadata
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? referenceId = freezed,Object? title = freezed,Object? contentHtml = null,Object? type = null,}) {
-  return _then(_FootnoteItem(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,referenceId: freezed == referenceId ? _self.referenceId : referenceId // ignore: cast_nullable_to_non_nullable
-as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
-as String?,contentHtml: null == contentHtml ? _self.contentHtml : contentHtml // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-
-}
-
-
-/// @nodoc
-mixin _$DetectedEncoding {
-
-/// Canonical encoding name (e.g. 'utf-8', 'utf-16le', 'utf-16be', 'gbk', 'gb18030', 'shift-jis').
- String get name;/// Confidence score between 0.0 and 1.0.
- double get confidence;/// True if a definitive Byte Order Mark (BOM) was encountered.
- bool get hasBom;
-/// Create a copy of DetectedEncoding
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$DetectedEncodingCopyWith<DetectedEncoding> get copyWith => _$DetectedEncodingCopyWithImpl<DetectedEncoding>(this as DetectedEncoding, _$identity);
-
-  /// Serializes this DetectedEncoding to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DetectedEncoding&&(identical(other.name, name) || other.name == name)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.hasBom, hasBom) || other.hasBom == hasBom));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,name,confidence,hasBom);
-
-@override
-String toString() {
-  return 'DetectedEncoding(name: $name, confidence: $confidence, hasBom: $hasBom)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $DetectedEncodingCopyWith<$Res>  {
-  factory $DetectedEncodingCopyWith(DetectedEncoding value, $Res Function(DetectedEncoding) _then) = _$DetectedEncodingCopyWithImpl;
-@useResult
-$Res call({
- String name, double confidence, bool hasBom
-});
-
-
-
-
-}
-/// @nodoc
-class _$DetectedEncodingCopyWithImpl<$Res>
-    implements $DetectedEncodingCopyWith<$Res> {
-  _$DetectedEncodingCopyWithImpl(this._self, this._then);
-
-  final DetectedEncoding _self;
-  final $Res Function(DetectedEncoding) _then;
-
-/// Create a copy of DetectedEncoding
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? confidence = null,Object? hasBom = null,}) {
-  return _then(_self.copyWith(
-name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,confidence: null == confidence ? _self.confidence : confidence // ignore: cast_nullable_to_non_nullable
-as double,hasBom: null == hasBom ? _self.hasBom : hasBom // ignore: cast_nullable_to_non_nullable
-as bool,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [DetectedEncoding].
-extension DetectedEncodingPatterns on DetectedEncoding {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DetectedEncoding value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _DetectedEncoding() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DetectedEncoding value)  $default,){
-final _that = this;
-switch (_that) {
-case _DetectedEncoding():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DetectedEncoding value)?  $default,){
-final _that = this;
-switch (_that) {
-case _DetectedEncoding() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  double confidence,  bool hasBom)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _DetectedEncoding() when $default != null:
-return $default(_that.name,_that.confidence,_that.hasBom);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  double confidence,  bool hasBom)  $default,) {final _that = this;
-switch (_that) {
-case _DetectedEncoding():
-return $default(_that.name,_that.confidence,_that.hasBom);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  double confidence,  bool hasBom)?  $default,) {final _that = this;
-switch (_that) {
-case _DetectedEncoding() when $default != null:
-return $default(_that.name,_that.confidence,_that.hasBom);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _DetectedEncoding implements DetectedEncoding {
-  const _DetectedEncoding({required this.name, required this.confidence, this.hasBom = false});
-  factory _DetectedEncoding.fromJson(Map<String, dynamic> json) => _$DetectedEncodingFromJson(json);
-
-/// Canonical encoding name (e.g. 'utf-8', 'utf-16le', 'utf-16be', 'gbk', 'gb18030', 'shift-jis').
-@override final  String name;
-/// Confidence score between 0.0 and 1.0.
-@override final  double confidence;
-/// True if a definitive Byte Order Mark (BOM) was encountered.
-@override@JsonKey() final  bool hasBom;
-
-/// Create a copy of DetectedEncoding
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$DetectedEncodingCopyWith<_DetectedEncoding> get copyWith => __$DetectedEncodingCopyWithImpl<_DetectedEncoding>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$DetectedEncodingToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DetectedEncoding&&(identical(other.name, name) || other.name == name)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.hasBom, hasBom) || other.hasBom == hasBom));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,name,confidence,hasBom);
-
-@override
-String toString() {
-  return 'DetectedEncoding(name: $name, confidence: $confidence, hasBom: $hasBom)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$DetectedEncodingCopyWith<$Res> implements $DetectedEncodingCopyWith<$Res> {
-  factory _$DetectedEncodingCopyWith(_DetectedEncoding value, $Res Function(_DetectedEncoding) _then) = __$DetectedEncodingCopyWithImpl;
-@override @useResult
-$Res call({
- String name, double confidence, bool hasBom
-});
-
-
-
-
-}
-/// @nodoc
-class __$DetectedEncodingCopyWithImpl<$Res>
-    implements _$DetectedEncodingCopyWith<$Res> {
-  __$DetectedEncodingCopyWithImpl(this._self, this._then);
-
-  final _DetectedEncoding _self;
-  final $Res Function(_DetectedEncoding) _then;
-
-/// Create a copy of DetectedEncoding
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? confidence = null,Object? hasBom = null,}) {
-  return _then(_DetectedEncoding(
-name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,confidence: null == confidence ? _self.confidence : confidence // ignore: cast_nullable_to_non_nullable
-as double,hasBom: null == hasBom ? _self.hasBom : hasBom // ignore: cast_nullable_to_non_nullable
-as bool,
+@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? author = freezed,Object? language = freezed,Object? encoding = null,Object? identifier = freezed,}) {
+  return _then(_TxtMetadata(
+title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
+as String?,language: freezed == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
+as String?,encoding: null == encoding ? _self.encoding : encoding // ignore: cast_nullable_to_non_nullable
+as String,identifier: freezed == identifier ? _self.identifier : identifier // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

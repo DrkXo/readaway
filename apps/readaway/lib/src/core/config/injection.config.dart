@@ -111,7 +111,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i145.AppPathService>(() => _i145.AppPathService());
     gh.lazySingleton<_i427.ToastService>(() => _i427.ToastService());
-    gh.lazySingleton<_i864.TextChunker>(() => _i864.TextChunker());
     gh.lazySingleton<_i502.FilePickerDataSource>(
       () => _i502.FilePickerDataSource(),
     );

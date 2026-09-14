@@ -67,6 +67,9 @@ melos:
     build:linux:
       description: Build Linux binary and clean workspace for ReadAway app
       run: melos exec -c 1 --category="app" -- flutter build linux --release
+    build:linux:appimage:
+      description: Build Linux AppImage for ReadAway app
+      run: melos exec -c 1 --category="app" -- "appimage-builder --recipe AppImageBuilder.yml"
 
     submodules:update:
       run: git submodule update --init --recursive

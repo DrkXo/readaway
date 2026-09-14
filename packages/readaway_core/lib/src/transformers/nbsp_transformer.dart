@@ -12,7 +12,7 @@ class NbspTransformer implements TextTransformer {
   @override
   String get name => 'nbsp';
 
-  static const Map<String, _NbspLanguageConfig> _languages = {
+  Map<String, _NbspLanguageConfig> get _languages => {
     'ru': _NbspLanguageConfig(
       script: 'Cyrillic',
       shortWords: [
@@ -31,13 +31,11 @@ class NbspTransformer implements TextTransformer {
     ),
     'en': _NbspLanguageConfig(
       script: 'Latin',
-      shortWords: [
-        'the', 'and', 'for', 'but', 'nor', 'out', 'off', 'via',
-      ],
+      shortWords: ['the', 'and', 'for', 'but', 'nor', 'out', 'off', 'via'],
     ),
   };
 
-  static final RegExp _textOrSkipPattern = RegExp(
+  RegExp get _textOrSkipPattern => RegExp(
     r'<(style|script)\b[^>]*>[\s\S]*?<\/\1>|>([^<]+)<',
     caseSensitive: false,
   );
@@ -61,7 +59,7 @@ class NbspTransformer implements TextTransformer {
     return _glueShortWords(context.content, regex);
   }
 
-  static RegExp _buildGlueRegex(_NbspLanguageConfig config) {
+  RegExp _buildGlueRegex(_NbspLanguageConfig config) {
     final words = config.shortWords.join('|');
     return RegExp(
       r'(^|[^\p{L}])(' +
@@ -76,7 +74,7 @@ class NbspTransformer implements TextTransformer {
     );
   }
 
-  static String _glueShortWords(String text, RegExp regex) {
+  String _glueShortWords(String text, RegExp regex) {
     if (!text.contains(' ')) return text;
     var result = text;
     String prev;
@@ -89,7 +87,7 @@ class NbspTransformer implements TextTransformer {
     return result;
   }
 
-  static String _normalizeLangCode(String? language) {
+  String _normalizeLangCode(String? language) {
     if (language == null || language.isEmpty) return 'en';
     final clean = language.trim().toLowerCase();
     final dash = clean.indexOf('-');
@@ -104,8 +102,5 @@ class _NbspLanguageConfig {
   final String script;
   final List<String> shortWords;
 
-  const _NbspLanguageConfig({
-    required this.script,
-    required this.shortWords,
-  });
+  const _NbspLanguageConfig({required this.script, required this.shortWords});
 }

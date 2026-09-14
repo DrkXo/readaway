@@ -385,6 +385,7 @@ class SherpaOnnxTtsService {
     required String outputPath,
     int speakerId = 0,
     double speed = 1.0,
+    double gapSec = 0.0,
   }) async {
     if (!hasLoadedModel) {
       throw const TtsModelNotLoadedException();
@@ -399,6 +400,7 @@ class SherpaOnnxTtsService {
           'outputPath': outputPath,
           'speakerId': speakerId,
           'speed': speed,
+          'gapSec': gapSec,
         },
       );
       final rawWaveform = result['waveform'] as List<dynamic>?;

@@ -9,7 +9,7 @@ class PunctuationTransformer implements TextTransformer {
   @override
   String get name => 'punctuation';
 
-  static const Map<String, String> _verticalQuotationsMapHans = {
+  Map<String, String> get _verticalQuotationsMapHans => {
     '“': '﹃',
     '”': '﹄',
     '‘': '﹁',
@@ -20,7 +20,7 @@ class PunctuationTransformer implements TextTransformer {
     '』': '﹄',
   };
 
-  static const Map<String, String> _verticalQuotationsMapHant = {
+  Map<String, String> get _verticalQuotationsMapHant => {
     '“': '﹁',
     '”': '﹂',
     '‘': '﹃',
@@ -31,7 +31,7 @@ class PunctuationTransformer implements TextTransformer {
     '』': '﹄',
   };
 
-  static const Map<String, String> _quotationsMapHans2Hant = {
+  Map<String, String> get _quotationsMapHans2Hant => {
     '“': '「',
     '”': '」',
     '‘': '『',
@@ -64,9 +64,8 @@ class PunctuationTransformer implements TextTransformer {
     // 2. Vertical reading quotation rotation
     if (context.vertical) {
       final lang = context.language ?? '';
-      final isTraditional = lang.contains('Hant') ||
-          lang.contains('TW') ||
-          lang.contains('HK');
+      final isTraditional =
+          lang.contains('Hant') || lang.contains('TW') || lang.contains('HK');
       final map = isTraditional
           ? _verticalQuotationsMapHant
           : _verticalQuotationsMapHans;

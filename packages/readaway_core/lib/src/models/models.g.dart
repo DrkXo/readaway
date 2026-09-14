@@ -6,6 +6,20 @@ part of 'models.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_DetectedEncoding _$DetectedEncodingFromJson(Map<String, dynamic> json) =>
+    _DetectedEncoding(
+      name: json['name'] as String,
+      confidence: (json['confidence'] as num).toDouble(),
+      hasBom: json['hasBom'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$DetectedEncodingToJson(_DetectedEncoding instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'confidence': instance.confidence,
+      'hasBom': instance.hasBom,
+    };
+
 _DocumentMetadata _$DocumentMetadataFromJson(Map<String, dynamic> json) =>
     _DocumentMetadata(
       title: json['title'] as String?,
@@ -69,6 +83,24 @@ Map<String, dynamic> _$OpfDataToJson(_OpfData instance) => <String, dynamic>{
   'opfDir': instance.opfDir,
   'coverImagePath': instance.coverImagePath,
 };
+
+_FootnoteItem _$FootnoteItemFromJson(Map<String, dynamic> json) =>
+    _FootnoteItem(
+      id: json['id'] as String,
+      referenceId: json['referenceId'] as String?,
+      title: json['title'] as String?,
+      contentHtml: json['contentHtml'] as String,
+      type: json['type'] as String? ?? 'footnote',
+    );
+
+Map<String, dynamic> _$FootnoteItemToJson(_FootnoteItem instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'referenceId': instance.referenceId,
+      'title': instance.title,
+      'contentHtml': instance.contentHtml,
+      'type': instance.type,
+    };
 
 _OutlineItem _$OutlineItemFromJson(Map<String, dynamic> json) => _OutlineItem(
   title: json['title'] as String,
@@ -178,22 +210,46 @@ Map<String, dynamic> _$TransformContextToJson(_TransformContext instance) =>
       'extra': instance.extra,
     };
 
-_TxtMetadata _$TxtMetadataFromJson(Map<String, dynamic> json) => _TxtMetadata(
-  title: json['title'] as String,
-  author: json['author'] as String?,
-  language: json['language'] as String?,
-  encoding: json['encoding'] as String,
-  identifier: json['identifier'] as String?,
+_TtsWordSpan _$TtsWordSpanFromJson(Map<String, dynamic> json) => _TtsWordSpan(
+  word: json['word'] as String,
+  startOffset: (json['startOffset'] as num).toInt(),
+  endOffset: (json['endOffset'] as num).toInt(),
 );
 
-Map<String, dynamic> _$TxtMetadataToJson(_TxtMetadata instance) =>
+Map<String, dynamic> _$TtsWordSpanToJson(_TtsWordSpan instance) =>
     <String, dynamic>{
-      'title': instance.title,
-      'author': instance.author,
-      'language': instance.language,
-      'encoding': instance.encoding,
-      'identifier': instance.identifier,
+      'word': instance.word,
+      'startOffset': instance.startOffset,
+      'endOffset': instance.endOffset,
     };
+
+_TtsChunk _$TtsChunkFromJson(Map<String, dynamic> json) => _TtsChunk(
+  text: json['text'] as String,
+  startOffset: (json['startOffset'] as num).toInt(),
+  endOffset: (json['endOffset'] as num).toInt(),
+  spokenText: json['spokenText'] as String?,
+  rawStartOffset: (json['rawStartOffset'] as num?)?.toInt(),
+  rawEndOffset: (json['rawEndOffset'] as num?)?.toInt(),
+  isParagraphEnd: json['isParagraphEnd'] as bool? ?? false,
+  paragraphIndex: (json['paragraphIndex'] as num?)?.toInt() ?? 0,
+  words: json['words'] == null
+      ? const <TtsWordSpan>[]
+      : _decodeWordSpans(json['words']),
+  language: json['language'] as String? ?? 'en',
+);
+
+Map<String, dynamic> _$TtsChunkToJson(_TtsChunk instance) => <String, dynamic>{
+  'text': instance.text,
+  'startOffset': instance.startOffset,
+  'endOffset': instance.endOffset,
+  'spokenText': instance.spokenText,
+  'rawStartOffset': instance.rawStartOffset,
+  'rawEndOffset': instance.rawEndOffset,
+  'isParagraphEnd': instance.isParagraphEnd,
+  'paragraphIndex': instance.paragraphIndex,
+  'words': _encodeWordSpans(instance.words),
+  'language': instance.language,
+};
 
 _TxtChapter _$TxtChapterFromJson(Map<String, dynamic> json) => _TxtChapter(
   index: (json['index'] as num).toInt(),
@@ -212,34 +268,19 @@ Map<String, dynamic> _$TxtChapterToJson(_TxtChapter instance) =>
       'detected': instance.detected,
     };
 
-_FootnoteItem _$FootnoteItemFromJson(Map<String, dynamic> json) =>
-    _FootnoteItem(
-      id: json['id'] as String,
-      referenceId: json['referenceId'] as String?,
-      title: json['title'] as String?,
-      contentHtml: json['contentHtml'] as String,
-      type: json['type'] as String? ?? 'footnote',
-    );
+_TxtMetadata _$TxtMetadataFromJson(Map<String, dynamic> json) => _TxtMetadata(
+  title: json['title'] as String,
+  author: json['author'] as String?,
+  language: json['language'] as String?,
+  encoding: json['encoding'] as String,
+  identifier: json['identifier'] as String?,
+);
 
-Map<String, dynamic> _$FootnoteItemToJson(_FootnoteItem instance) =>
+Map<String, dynamic> _$TxtMetadataToJson(_TxtMetadata instance) =>
     <String, dynamic>{
-      'id': instance.id,
-      'referenceId': instance.referenceId,
       'title': instance.title,
-      'contentHtml': instance.contentHtml,
-      'type': instance.type,
-    };
-
-_DetectedEncoding _$DetectedEncodingFromJson(Map<String, dynamic> json) =>
-    _DetectedEncoding(
-      name: json['name'] as String,
-      confidence: (json['confidence'] as num).toDouble(),
-      hasBom: json['hasBom'] as bool? ?? false,
-    );
-
-Map<String, dynamic> _$DetectedEncodingToJson(_DetectedEncoding instance) =>
-    <String, dynamic>{
-      'name': instance.name,
-      'confidence': instance.confidence,
-      'hasBom': instance.hasBom,
+      'author': instance.author,
+      'language': instance.language,
+      'encoding': instance.encoding,
+      'identifier': instance.identifier,
     };

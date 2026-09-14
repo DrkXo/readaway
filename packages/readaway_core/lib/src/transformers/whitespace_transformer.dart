@@ -9,13 +9,11 @@ class WhitespaceTransformer implements TextTransformer {
   @override
   String get name => 'whitespace';
 
-  static final RegExp _preservedRegions = RegExp(
-    r'<(pre|code)\b[^>]*>[\s\S]*?<\/\1\s*>',
-    caseSensitive: false,
-  );
+  RegExp get _preservedRegions =>
+      RegExp(r'<(pre|code)\b[^>]*>[\s\S]*?<\/\1\s*>', caseSensitive: false);
 
-  static final RegExp _multipleSpaces = RegExp(r' {2,}');
-  static final RegExp _nbspPattern = RegExp(r'(?:&amp;)?&nbsp;', caseSensitive: false);
+  RegExp get _multipleSpaces => RegExp(r' {2,}');
+  RegExp get _nbspPattern => RegExp(r'(?:&amp;)?&nbsp;', caseSensitive: false);
 
   @override
   String transform(TransformContext context) {
@@ -30,7 +28,9 @@ class WhitespaceTransformer implements TextTransformer {
     var lastIndex = 0;
 
     for (final match in _preservedRegions.allMatches(content)) {
-      buffer.write(_collapseWhitespace(content.substring(lastIndex, match.start)));
+      buffer.write(
+        _collapseWhitespace(content.substring(lastIndex, match.start)),
+      );
       buffer.write(match.group(0)!);
       lastIndex = match.end;
     }
@@ -39,7 +39,7 @@ class WhitespaceTransformer implements TextTransformer {
     return buffer.toString();
   }
 
-  static String _collapseWhitespace(String input) {
+  String _collapseWhitespace(String input) {
     return input
         .replaceAllMapped(_nbspPattern, (m) {
           return m.group(0)!.startsWith('&amp;') ? m.group(0)! : ' ';
