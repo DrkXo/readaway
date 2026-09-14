@@ -5,7 +5,6 @@ environment:
 
 workspace:
   - apps/readaway
-  - packages/mupdf
   - packages/readaway_core
 
 dev_dependencies:
@@ -70,22 +69,6 @@ melos:
     build:linux:appimage:
       description: Build Linux AppImage for ReadAway app
       run: melos exec -c 1 --category="app" -- "appimage-builder --recipe AppImageBuilder.yml"
-
-    submodules:update:
-      run: git submodule update --init --recursive
-      description: Update git submodules (MuPDF source)
-
-    ffi:build:
-      description: Build MuPDF native library from source
-      steps:
-        - cd packages/mupdf/native/mupdf
-        - make -j$(nproc) XCFLAGS=-fPIC
-    ffi:clean:
-      run: rm -rf packages/mupdf/native/mupdf/build/
-      description: Clean MuPDF build artifacts
-    ffi:generate:
-      description: Regenerate FFI bindings from mupdf_wrapper.h
-      run: melos exec -c 1 --depends-on="ffigen" -- "dart run ffigen --config ffigen.yaml"
 
     test:scoped:
       run: melos exec --dir-exists="test" --fail-fast -- flutter test --no-pub --coverage
