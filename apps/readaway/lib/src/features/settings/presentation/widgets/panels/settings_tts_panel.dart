@@ -271,7 +271,9 @@ class _VoiceTile extends StatelessWidget {
                   child: Text(
                     switch (download.stage) {
                       ModelDownloadStage.downloading =>
-                        'Downloading ${(download.fraction * 100).round()}%',
+                        'Downloading ${(download.fraction * 100).round()}%'
+                            '${_speedLabel(download)}${_etaLabel(download)}',
+                      ModelDownloadStage.paused => 'Paused',
                       ModelDownloadStage.extracting => 'Extracting…',
                       _ => '',
                     },
@@ -286,6 +288,23 @@ class _VoiceTile extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _speedLabel(SettingsDownloadStatus download) {
+    final speed = download.speedBytesPerSec;
+    if (speed == null || speed <= 0) return '';
+    if (speed >= 1024 * 1024) {
+      return ' • ${(speed / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+    }
+    return ' • ${(speed / 1024).toStringAsFixed(0)} KB/s';
+  }
+
+  String _etaLabel(SettingsDownloadStatus download) {
+    final eta = download.timeRemaining;
+    if (eta == null || eta.isNegative) return '';
+    if (eta.inSeconds < 60) return ' • ${eta.inSeconds}s left';
+    if (eta.inMinutes < 60) return ' • ${eta.inMinutes} min left';
+    return ' • ${eta.inHours}h ${eta.inMinutes % 60}m left';
   }
 }
 
@@ -333,12 +352,33 @@ class _VoiceActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final bloc = context.read<SettingsBloc>();
+    final download = this.download;
 
     if (download != null) {
-      return IconButton(
-        tooltip: 'Cancel download',
-        icon: const Icon(LucideIcons.x),
-        onPressed: () => bloc.add(SettingsEvent.cancelTtsDownload(model.id)),
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (download.stage == ModelDownloadStage.paused)
+            IconButton(
+              tooltip: 'Resume download',
+              icon: const Icon(LucideIcons.play),
+              onPressed: () =>
+                  bloc.add(SettingsEvent.resumeTtsDownload(model.id)),
+            )
+          else if (download.stage == ModelDownloadStage.downloading)
+            IconButton(
+              tooltip: 'Pause download',
+              icon: const Icon(LucideIcons.pause),
+              onPressed: () =>
+                  bloc.add(SettingsEvent.pauseTtsDownload(model.id)),
+            ),
+          IconButton(
+            tooltip: 'Cancel download',
+            icon: const Icon(LucideIcons.x),
+            onPressed: () =>
+                bloc.add(SettingsEvent.cancelTtsDownload(model.id)),
+          ),
+        ],
       );
     }
 

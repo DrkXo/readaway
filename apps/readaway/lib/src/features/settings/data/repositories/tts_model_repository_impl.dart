@@ -71,6 +71,18 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   }
 
   @override
+  Future<void> pauseDownload(String modelId) =>
+      _ttsService.pauseDownload(modelId);
+
+  @override
+  Future<void> resumeDownload(String modelId) =>
+      _ttsService.resumeDownload(modelId);
+
+  @override
+  Future<void> cancelDownload(String modelId) =>
+      _ttsService.cancelDownload(modelId);
+
+  @override
   TaskEither<Failure, Unit> deleteModel(String modelId) {
     return TaskEither.tryCatch(
       () async {

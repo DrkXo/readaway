@@ -53,6 +53,7 @@ import '../../features/settings/presentation/bloc/settings/settings_bloc.dart'
 import '../../router/router.dart' as _i295;
 import '../routes/routes.dart' as _i494;
 import '../services/audio/audio_player_service.dart' as _i370;
+import '../services/background_downloader_service.dart' as _i17;
 import '../services/document_cover_service.dart' as _i69;
 import '../services/file_open_service.dart' as _i156;
 import '../services/font_service.dart' as _i662;
@@ -149,6 +150,14 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
+    await gh.lazySingletonAsync<_i17.BackGroundDownloaderService>(
+      () {
+        final i = _i17.BackGroundDownloaderService(gh<_i145.AppPathService>());
+        return i.init().then((_) => i);
+      },
+      preResolve: true,
+      dispose: (i) => i.onDispose(),
+    );
     gh.lazySingleton<_i69.DocumentCoverService>(
       () => _i69.DocumentCoverService(gh<_i145.AppPathService>()),
     );
@@ -186,7 +195,7 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.singleton<_i590.SherpaTtsModelDownloaderService>(
       () => _i590.SherpaTtsModelDownloaderService(
-        client: gh<_i920.HttpService>(),
+        backgroundDownloader: gh<_i17.BackGroundDownloaderService>(),
         catalog: gh<_i468.SherpaTtsModelCatalogService>(),
         pathService: gh<_i145.AppPathService>(),
       ),

@@ -136,11 +136,47 @@ class SherpaOnnxTtsService {
     if (_sherpaTtsModelCatalog.models.isEmpty) {
       await _sherpaTtsModelCatalog.load();
     }
+    await reconcilePendingDownloads();
     final result = <SherpaTtsModelInfo>[];
     for (final m in availableModels) {
       if (await isModelDownloaded(m.id)) result.add(m);
     }
     return result;
+  }
+
+  /// Finishes any model downloads that were interrupted after the archive
+  /// transfer completed but before extraction ran (e.g. the app was killed
+  /// mid-download). Scans each model directory for `.done` markers written
+  /// by [SherpaTtsModelDownloaderService.ttsModelTaskFinished], then runs
+  /// the checksum/extract/vocoder/espeak pipeline. Idempotent — markers are
+  /// consumed once.
+  Future<void> reconcilePendingDownloads() async {
+    final root = _modelsRootDir ?? await _resolveModelsRootDir();
+    _modelsRootDir = root;
+    if (!await root.exists()) return;
+
+    await for (final entity in root.list()) {
+      if (entity is! Directory) continue;
+      final modelId = p.basename(entity.path);
+      final model = _sherpaTtsModelCatalog.byId(modelId);
+      if (model == null) continue;
+
+      final markers = <File>[];
+      await for (final e in entity.list()) {
+        if (e is File && e.path.endsWith('.done')) markers.add(e);
+      }
+      if (markers.isEmpty) continue;
+
+      try {
+        await _downloader.reconcileModel(model, entity);
+        for (final marker in markers) {
+          await marker.delete();
+        }
+        logger.d('Reconciled interrupted TTS download for $modelId');
+      } catch (e, st) {
+        logger.e('Failed to reconcile TTS download for $modelId', e, st);
+      }
+    }
   }
 
   Future<void> deleteModel(String modelId) async {
@@ -163,6 +199,15 @@ class SherpaOnnxTtsService {
     final dir = await _modelDir(model.id);
     yield* _downloader.downloadModel(model, dir);
   }
+
+  Future<void> pauseDownload(String modelId) =>
+      _downloader.pauseDownload(modelId);
+
+  Future<void> resumeDownload(String modelId) =>
+      _downloader.resumeDownload(modelId);
+
+  Future<void> cancelDownload(String modelId) =>
+      _downloader.cancelDownload(modelId);
 
   SherpaTtsModelInfo? get activeModel => _activeModel;
   bool get hasLoadedModel => _sampleRate != null;

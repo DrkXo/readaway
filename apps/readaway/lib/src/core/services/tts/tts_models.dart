@@ -123,14 +123,27 @@ class ModelDownloadProgress {
     required this.modelId,
     required this.stage,
     required this.fraction,
+    this.speedBytesPerSec,
+    this.timeRemaining,
   });
 
   final String modelId;
   final ModelDownloadStage stage;
   final double fraction;
+
+  /// Current download speed in bytes/second, when known.
+  final double? speedBytesPerSec;
+
+  /// Estimated time remaining, when known.
+  final Duration? timeRemaining;
 }
 
-enum ModelDownloadStage { downloading, extracting, done, failed }
+enum ModelDownloadStage { downloading, paused, extracting, done, failed }
+
+/// Deterministic background_downloader task id for a TTS model's archive
+/// download. Shared by the downloader service (which creates the transfer)
+/// and the settings bloc (which pauses/resumes/cancels it).
+String ttsModelTaskId(String modelId) => 'tts-model-$modelId';
 
 class TtsAudio {
   const TtsAudio({

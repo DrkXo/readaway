@@ -25,6 +25,10 @@ abstract class SettingsEvent with _$SettingsEvent {
       _StartTtsDownload;
   const factory SettingsEvent.cancelTtsDownload(String modelId) =
       _CancelTtsDownload;
+  const factory SettingsEvent.pauseTtsDownload(String modelId) =
+      _PauseTtsDownload;
+  const factory SettingsEvent.resumeTtsDownload(String modelId) =
+      _ResumeTtsDownload;
   const factory SettingsEvent.deleteTtsModel(SherpaTtsModelInfo model) =
       _DeleteTtsModel;
   const factory SettingsEvent.activateTts(String modelId) = _ActivateTts;
@@ -33,8 +37,10 @@ abstract class SettingsEvent with _$SettingsEvent {
   const factory SettingsEvent.ttsDownloadProgress(
     String modelId,
     ModelDownloadStage stage,
-    double fraction,
-  ) = _TtsDownloadProgress;
+    double fraction, {
+    double? speedBytesPerSec,
+    Duration? timeRemaining,
+  }) = _TtsDownloadProgress;
   const factory SettingsEvent.ttsDownloadFailed(String modelId, String error) =
       _TtsDownloadFailed;
 }

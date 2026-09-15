@@ -5,6 +5,8 @@ abstract class SettingsDownloadStatus with _$SettingsDownloadStatus {
   const factory SettingsDownloadStatus({
     required ModelDownloadStage stage,
     @Default(0) double fraction,
+    double? speedBytesPerSec,
+    Duration? timeRemaining,
   }) = _SettingsDownloadStatus;
 }
 

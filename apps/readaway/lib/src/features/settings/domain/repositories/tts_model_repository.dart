@@ -20,6 +20,15 @@ abstract interface class TtsModelRepository {
   /// Downloads and extracts a model, emitting progress updates.
   Stream<ModelDownloadProgress> downloadModel(SherpaTtsModelInfo model);
 
+  /// Pauses an in-progress download of [modelId].
+  Future<void> pauseDownload(String modelId);
+
+  /// Resumes a paused download of [modelId].
+  Future<void> resumeDownload(String modelId);
+
+  /// Cancels an in-progress download of [modelId].
+  Future<void> cancelDownload(String modelId);
+
   /// Deletes a downloaded model from disk.
   TaskEither<Failure, Unit> deleteModel(String modelId);
 

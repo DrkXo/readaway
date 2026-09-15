@@ -58,6 +58,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_RefreshTts>(_onRefreshTts, transformer: concurrent());
     on<_StartTtsDownload>(_onStartTtsDownload, transformer: concurrent());
     on<_CancelTtsDownload>(_onCancelTtsDownload);
+    on<_PauseTtsDownload>(_onPauseTtsDownload);
+    on<_ResumeTtsDownload>(_onResumeTtsDownload);
     on<_DeleteTtsModel>(_onDeleteTtsModel);
     on<_ActivateTts>(_onActivateTts, transformer: droppable());
     on<_PreviewTts>(_onPreviewTts, transformer: droppable());
@@ -294,6 +296,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
               progress.modelId,
               progress.stage,
               progress.fraction,
+              speedBytesPerSec: progress.speedBytesPerSec,
+              timeRemaining: progress.timeRemaining,
             ),
           ),
           onError: (Object e) => add(_TtsDownloadFailed(id, e.toString())),
@@ -306,7 +310,43 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     _ttsDownloadSubs.remove(event.modelId)?.cancel();
+    unawaited(ttsModelRepository.cancelDownload(event.modelId));
     _removeTtsDownload(event.modelId, emit);
+  }
+
+  void _onPauseTtsDownload(
+    _PauseTtsDownload event,
+    Emitter<SettingsState> emit,
+  ) {
+    unawaited(ttsModelRepository.pauseDownload(event.modelId));
+    _setTtsDownloadStage(event.modelId, ModelDownloadStage.paused, emit);
+  }
+
+  void _onResumeTtsDownload(
+    _ResumeTtsDownload event,
+    Emitter<SettingsState> emit,
+  ) {
+    unawaited(ttsModelRepository.resumeDownload(event.modelId));
+    _setTtsDownloadStage(event.modelId, ModelDownloadStage.downloading, emit);
+  }
+
+  void _setTtsDownloadStage(
+    String id,
+    ModelDownloadStage stage,
+    Emitter<SettingsState> emit,
+  ) {
+    final current = state.ttsDownloads[id];
+    if (current == null) return;
+    final downloads = Map<String, SettingsDownloadStatus>.of(
+      state.ttsDownloads,
+    );
+    downloads[id] = SettingsDownloadStatus(
+      stage: stage,
+      fraction: current.fraction,
+      speedBytesPerSec: current.speedBytesPerSec,
+      timeRemaining: current.timeRemaining,
+    );
+    emit(state.copyWith(ttsDownloads: downloads));
   }
 
   void _onTtsDownloadProgress(
@@ -330,6 +370,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     downloads[event.modelId] = SettingsDownloadStatus(
       stage: event.stage,
       fraction: event.fraction,
+      speedBytesPerSec: event.speedBytesPerSec,
+      timeRemaining: event.timeRemaining,
     );
     emit(state.copyWith(ttsDownloads: downloads));
   }

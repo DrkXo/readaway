@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:archive/archive_io.dart';
+import 'package:background_downloader/background_downloader.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 
-import '../../http/http_service.dart';
+import '../../background_downloader_service.dart';
 import '../../logging_service.dart';
 import '../../path_service.dart';
 import '../tts_models.dart';
@@ -15,12 +17,12 @@ import 'sherpa_model_catalog.dart';
 @singleton
 class SherpaTtsModelDownloaderService {
   SherpaTtsModelDownloaderService({
-    required this._client,
+    required this._backgroundDownloader,
     required this._catalog,
     required this._pathService,
   });
 
-  final HttpService _client;
+  final BackGroundDownloaderService _backgroundDownloader;
   final SherpaTtsModelCatalogService _catalog;
   final AppPathService _pathService;
 
@@ -39,52 +41,49 @@ class SherpaTtsModelDownloaderService {
     return controller.stream;
   }
 
+  Future<void> pauseDownload(String modelId) =>
+      _backgroundDownloader.pause(ttsModelTaskId(modelId));
+
+  Future<void> resumeDownload(String modelId) =>
+      _backgroundDownloader.resume(ttsModelTaskId(modelId));
+
+  Future<void> cancelDownload(String modelId) =>
+      _backgroundDownloader.cancel(ttsModelTaskId(modelId));
+
   Future<void> _runDownload(
     SherpaTtsModelInfo model,
     Directory destDir,
     StreamController<ModelDownloadProgress> controller,
   ) async {
-    final cancelToken = CancelToken();
-    controller.onCancel = () => cancelToken.cancel('cancelled by caller');
-
     try {
       if (!await destDir.exists()) await destDir.create(recursive: true);
 
       await _downloadAndExtractArchive(
-        url: model.downloadUrl,
+        model: model,
         destDir: destDir,
-        cancelToken: cancelToken,
-        onProgress: (stage, fraction) => controller.add(
+        onProgress: (stage, fraction, {speedBytesPerSec, timeRemaining}) =>
+            controller.add(
+              ModelDownloadProgress(
+                modelId: model.id,
+                stage: stage,
+                fraction: fraction,
+                speedBytesPerSec: speedBytesPerSec,
+                timeRemaining: timeRemaining,
+              ),
+            ),
+      );
+
+      await _installAuxiliaryFiles(
+        model,
+        destDir,
+        onVocoderProgress: (fraction) => controller.add(
           ModelDownloadProgress(
             modelId: model.id,
-            stage: stage,
+            stage: ModelDownloadStage.downloading,
             fraction: fraction,
           ),
         ),
       );
-
-      final vocoderUrl = model.vocoderUrl;
-      if (vocoderUrl != null) {
-        final vocoderFile = File(p.join(destDir.path, model.vocoderFileName!));
-        if (!await vocoderFile.exists()) {
-          await _downloadRawFile(
-            url: vocoderUrl,
-            destFile: vocoderFile,
-            cancelToken: cancelToken,
-            onProgress: (fraction) => controller.add(
-              ModelDownloadProgress(
-                modelId: model.id,
-                stage: ModelDownloadStage.downloading,
-                fraction: fraction,
-              ),
-            ),
-          );
-        }
-      }
-
-      if (model.needsEspeakData) {
-        await _ensureEspeakData(destDir.parent);
-      }
 
       controller.add(
         ModelDownloadProgress(
@@ -93,6 +92,9 @@ class SherpaTtsModelDownloaderService {
           fraction: 1,
         ),
       );
+    } on _DownloadCanceledException {
+      // User canceled — the caller already removed the download entry.
+      return;
     } catch (e, stackTrace) {
       logger.e('Failed to download ${model.id}', e, stackTrace);
       controller.add(
@@ -112,57 +114,107 @@ class SherpaTtsModelDownloaderService {
   }
 
   Future<void> _downloadAndExtractArchive({
-    required String url,
+    required SherpaTtsModelInfo model,
     required Directory destDir,
-    required CancelToken cancelToken,
-    required void Function(ModelDownloadStage stage, double fraction)
+    required void Function(
+      ModelDownloadStage stage,
+      double fraction, {
+      double? speedBytesPerSec,
+      Duration? timeRemaining,
+    })
     onProgress,
   }) async {
-    final tmpDir = await _pathService.tempDirectory;
-    final archivePath = p.join(tmpDir.path, url.split('/').last);
-    final archiveFile = File(archivePath);
-
-    await _client.dio.download(
-      url,
-      archivePath,
-      cancelToken: cancelToken,
-      onReceiveProgress: (received, total) {
-        if (total > 0) {
-          onProgress(ModelDownloadStage.downloading, received / total);
-        }
-      },
+    final archiveFileName = model.archiveFileName;
+    final transfer = await _backgroundDownloader.download(
+      taskId: ttsModelTaskId(model.id),
+      url: model.downloadUrl,
+      filename: archiveFileName,
+      saveDirectory: destDir,
+      userInitiated: true,
+      largeFile: true,
+      onTaskFinished: ttsModelTaskFinished,
     );
 
-    await _verifyChecksum(archiveFile, url.split('/').last);
+    var lastProgress = 0.0;
+    final progressSub = transfer.progressUpdates.listen((update) {
+      lastProgress = update.progress;
+      onProgress(
+        ModelDownloadStage.downloading,
+        update.progress,
+        speedBytesPerSec: update.hasNetworkSpeed
+            ? update.networkSpeed * 1024 * 1024
+            : null,
+        timeRemaining: update.hasTimeRemaining ? update.timeRemaining : null,
+      );
+    });
+    final statusSub = transfer.statusUpdates.listen((update) {
+      if (update.status == TaskStatus.paused) {
+        onProgress(ModelDownloadStage.paused, lastProgress);
+      }
+    });
 
-    onProgress(ModelDownloadStage.extracting, 0);
-    final bytes = await archiveFile.readAsBytes();
+    try {
+      final result = await transfer.result;
+      if (result.status == TaskStatus.canceled) {
+        throw const _DownloadCanceledException();
+      }
+      if (result.status != TaskStatus.complete) {
+        throw SherpaTtsException(
+          'Download failed for ${model.id}: '
+          '${result.exception?.description ?? result.status.name}',
+        );
+      }
 
-    await compute(_extractModelArchiveWorker, (
-      bytes: bytes,
-      archivePath: archivePath,
-      destPath: destDir.path,
-    ));
+      final archiveFile = await transfer.file;
+      await _verifyChecksum(archiveFile, archiveFileName);
 
-    onProgress(ModelDownloadStage.extracting, 1);
-    await archiveFile.delete();
+      onProgress(ModelDownloadStage.extracting, 0);
+      final bytes = await archiveFile.readAsBytes();
+      await compute(_extractModelArchiveWorker, (
+        bytes: bytes,
+        archivePath: archiveFile.path,
+        destPath: destDir.path,
+      ));
+      onProgress(ModelDownloadStage.extracting, 1);
+
+      await archiveFile.delete();
+      final marker = File('${archiveFile.path}.done');
+      if (await marker.exists()) await marker.delete();
+    } finally {
+      await progressSub.cancel();
+      await statusSub.cancel();
+    }
   }
 
   Future<void> _downloadRawFile({
     required String url,
     required File destFile,
-    required CancelToken cancelToken,
     required void Function(double fraction) onProgress,
   }) async {
-    await _client.dio.download(
-      url,
-      destFile.path,
-      cancelToken: cancelToken,
-      onReceiveProgress: (received, total) {
-        if (total > 0) onProgress(received / total);
-      },
+    final transfer = await _backgroundDownloader.download(
+      url: url,
+      filename: p.basename(destFile.path),
+      saveDirectory: destFile.parent,
+      userInitiated: true,
     );
-    await _verifyChecksum(destFile, url.split('/').last);
+    final progressSub = transfer.progressUpdates.listen(
+      (update) => onProgress(update.progress),
+    );
+    try {
+      final result = await transfer.result;
+      if (result.status == TaskStatus.canceled) {
+        throw const _DownloadCanceledException();
+      }
+      if (result.status != TaskStatus.complete) {
+        throw SherpaTtsException(
+          'Download failed for ${p.basename(destFile.path)}: '
+          '${result.exception?.description ?? result.status.name}',
+        );
+      }
+      await _verifyChecksum(destFile, url.split('/').last);
+    } finally {
+      await progressSub.cancel();
+    }
   }
 
   Future<void> _verifyChecksum(File file, String fileName) async {
@@ -195,7 +247,22 @@ class SherpaTtsModelDownloaderService {
     final archivePath = p.join(tmpDir.path, 'espeak-ng-data.tar.bz2');
     final archiveFile = File(archivePath);
 
-    await _client.dio.download(_catalog.espeakDataUrl, archivePath);
+    final transfer = await _backgroundDownloader.download(
+      url: _catalog.espeakDataUrl,
+      filename: 'espeak-ng-data.tar.bz2',
+      saveDirectory: tmpDir,
+      userInitiated: true,
+    );
+    final result = await transfer.result;
+    if (result.status == TaskStatus.canceled) {
+      throw const _DownloadCanceledException();
+    }
+    if (result.status != TaskStatus.complete) {
+      throw SherpaTtsException(
+        'Failed to download espeak-ng-data: '
+        '${result.exception?.description ?? result.status.name}',
+      );
+    }
     await _verifyChecksum(archiveFile, 'espeak-ng-data.tar.bz2');
 
     final bytes = await archiveFile.readAsBytes();
@@ -213,6 +280,53 @@ class SherpaTtsModelDownloaderService {
         'espeak-ng-data archive did not produce an espeak-ng-data directory',
       );
     }
+  }
+
+  /// Downloads the optional vocoder and shared espeak-ng-data for [model]
+  /// if they are missing. Shared by the normal download flow and by
+  /// [reconcileModel].
+  Future<void> _installAuxiliaryFiles(
+    SherpaTtsModelInfo model,
+    Directory destDir, {
+    required void Function(double fraction) onVocoderProgress,
+  }) async {
+    final vocoderUrl = model.vocoderUrl;
+    if (vocoderUrl != null) {
+      final vocoderFile = File(p.join(destDir.path, model.vocoderFileName!));
+      if (!await vocoderFile.exists()) {
+        await _downloadRawFile(
+          url: vocoderUrl,
+          destFile: vocoderFile,
+          onProgress: onVocoderProgress,
+        );
+      }
+    }
+    if (model.needsEspeakData) {
+      await _ensureEspeakData(destDir.parent);
+    }
+  }
+
+  /// Completes a model download that was interrupted after the archive
+  /// transfer finished but before extraction ran (e.g. the app was killed
+  /// mid-download). Used by
+  /// [SherpaOnnxTtsService.reconcilePendingDownloads].
+  Future<void> reconcileModel(
+    SherpaTtsModelInfo model,
+    Directory destDir,
+  ) async {
+    final archiveFile = File(p.join(destDir.path, model.archiveFileName));
+    if (!await archiveFile.exists()) return;
+
+    await _verifyChecksum(archiveFile, model.archiveFileName);
+    final bytes = await archiveFile.readAsBytes();
+    await compute(_extractModelArchiveWorker, (
+      bytes: bytes,
+      archivePath: archiveFile.path,
+      destPath: destDir.path,
+    ));
+    await archiveFile.delete();
+
+    await _installAuxiliaryFiles(model, destDir, onVocoderProgress: (_) {});
   }
 
   static Archive _decodeArchive(Uint8List bytes, String path) {
@@ -285,5 +399,33 @@ Future<void> _extractEspeakArchiveWorker(
     final outFile = File(p.join(basePath, entry.name));
     await outFile.parent.create(recursive: true);
     await outFile.writeAsBytes(entry.content as List<int>);
+  }
+}
+
+/// Thrown internally when a transfer is canceled by the user; the caller
+/// treats it as a quiet stop rather than a failure.
+class _DownloadCanceledException implements Exception {
+  const _DownloadCanceledException();
+}
+
+/// Called by background_downloader when the archive transfer reaches a final
+/// state — including if the app was killed and relaunched mid-download.
+/// Writes a `.done` marker next to the archive so
+/// [SherpaOnnxTtsService.reconcilePendingDownloads] can finish the
+/// checksum/extract/vocoder/espeak pipeline on next launch.
+@pragma('vm:entry-point')
+Future<void> ttsModelTaskFinished(TaskStatusUpdate update) async {
+  await _writeDoneMarker(update.task);
+}
+
+Future<void> _writeDoneMarker(Task task) async {
+  try {
+    final path = await task.filePath();
+    final file = File(path);
+    if (await file.exists()) {
+      await File('$path.done').writeAsString('${task.taskId}\n');
+    }
+  } catch (_) {
+    // Best-effort marker; reconciliation also tolerates a missing marker.
   }
 }
