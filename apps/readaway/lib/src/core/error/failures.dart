@@ -32,12 +32,10 @@ class DocumentNotFoundFailure extends DocumentFailure {
   final String path;
   const DocumentNotFoundFailure(
     this.path, {
-    Object? cause,
-    StackTrace? stackTrace,
+    super.cause,
+    super.stackTrace,
   }) : super(
          'Document not found at path: $path',
-         cause: cause,
-         stackTrace: stackTrace,
        );
 
   @override
@@ -48,12 +46,10 @@ class UnsupportedDocumentFormatFailure extends DocumentFailure {
   final String format;
   const UnsupportedDocumentFormatFailure(
     this.format, {
-    Object? cause,
-    StackTrace? stackTrace,
+    super.cause,
+    super.stackTrace,
   }) : super(
          'Unsupported document format: $format',
-         cause: cause,
-         stackTrace: stackTrace,
        );
 
   @override
@@ -84,8 +80,8 @@ sealed class StorageFailure extends Failure {
 
 class StorageReadFailure extends StorageFailure {
   final String key;
-  const StorageReadFailure(this.key, {Object? cause, StackTrace? stackTrace})
-    : super('Failed to read key: $key', cause: cause, stackTrace: stackTrace);
+  const StorageReadFailure(this.key, {super.cause, super.stackTrace})
+    : super('Failed to read key: $key');
 
   @override
   List<Object?> get props => [key, message, cause];
@@ -93,8 +89,8 @@ class StorageReadFailure extends StorageFailure {
 
 class StorageWriteFailure extends StorageFailure {
   final String key;
-  const StorageWriteFailure(this.key, {Object? cause, StackTrace? stackTrace})
-    : super('Failed to write key: $key', cause: cause, stackTrace: stackTrace);
+  const StorageWriteFailure(this.key, {super.cause, super.stackTrace})
+    : super('Failed to write key: $key');
 
   @override
   List<Object?> get props => [key, message, cause];
@@ -157,12 +153,10 @@ class TtsModelNotFoundFailure extends TtsFailure {
   final String modelId;
   const TtsModelNotFoundFailure(
     this.modelId, {
-    Object? cause,
-    StackTrace? stackTrace,
+    super.cause,
+    super.stackTrace,
   }) : super(
          'TTS Model "$modelId" was not found',
-         cause: cause,
-         stackTrace: stackTrace,
        );
 
   @override
@@ -173,10 +167,10 @@ class TtsDownloadFailure extends TtsFailure {
   final String modelId;
   const TtsDownloadFailure(
     this.modelId,
-    String message, {
-    Object? cause,
-    StackTrace? stackTrace,
-  }) : super(message, cause: cause, stackTrace: stackTrace);
+    super.message, {
+    super.cause,
+    super.stackTrace,
+  });
 
   @override
   List<Object?> get props => [modelId, message, cause];
