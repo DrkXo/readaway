@@ -192,6 +192,7 @@ class _VoiceTile extends StatelessWidget {
 
         final subtitle = [
           model.languageLabel,
+          if (model.familyLabel != null) model.familyLabel!,
           '${model.approxSizeMb.round()} MB',
           if (model.speakerCount > 0) '${model.speakerCount} voices',
           if (isActive) 'Active',

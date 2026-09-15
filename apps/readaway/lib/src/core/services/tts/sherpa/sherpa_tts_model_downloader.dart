@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import '../../background_downloader_service.dart';
 import '../../logging_service.dart';
 import '../../path_service.dart';
+import '../tts_model_store.dart';
 import '../tts_models.dart';
 import 'sherpa_model_catalog.dart';
 
@@ -20,11 +21,13 @@ class SherpaTtsModelDownloaderService {
     required this._backgroundDownloader,
     required this._catalog,
     required this._pathService,
+    required this._store,
   });
 
   final BackGroundDownloaderService _backgroundDownloader;
   final SherpaTtsModelCatalogService _catalog;
   final AppPathService _pathService;
+  final TtsModelStore _store;
 
   final _downloadControllers =
       <String, StreamController<ModelDownloadProgress>>{};
@@ -84,6 +87,9 @@ class SherpaTtsModelDownloaderService {
           ),
         ),
       );
+
+      // Fully downloaded and extracted — persist the index entry.
+      await _store.markDownloaded(model.id);
 
       controller.add(
         ModelDownloadProgress(
@@ -327,6 +333,9 @@ class SherpaTtsModelDownloaderService {
     await archiveFile.delete();
 
     await _installAuxiliaryFiles(model, destDir, onVocoderProgress: (_) {});
+
+    // Reconciliation completed the full pipeline — persist the index entry.
+    await _store.markDownloaded(model.id);
   }
 
   static Archive _decodeArchive(Uint8List bytes, String path) {

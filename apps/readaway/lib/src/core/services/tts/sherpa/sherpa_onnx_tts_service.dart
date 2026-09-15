@@ -9,6 +9,7 @@ import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 import '../../isolate_service.dart';
 import '../../logging_service.dart';
 import '../../path_service.dart';
+import '../tts_model_store.dart';
 import '../tts_models.dart';
 import 'sherpa_isolate_worker_service.dart';
 import 'sherpa_model_catalog.dart';
@@ -21,12 +22,14 @@ class SherpaOnnxTtsService {
     required this._sherpaTtsModelCatalog,
     required this._isolateService,
     required this._pathService,
+    required this._store,
   });
 
   final SherpaTtsModelDownloaderService _downloader;
   final SherpaTtsModelCatalogService _sherpaTtsModelCatalog;
   final IsolateService _isolateService;
   final AppPathService _pathService;
+  final TtsModelStore _store;
 
   SherpaTtsModelInfo? _activeModel;
   Directory? _modelsRootDir;
@@ -137,9 +140,35 @@ class SherpaOnnxTtsService {
       await _sherpaTtsModelCatalog.load();
     }
     await reconcilePendingDownloads();
+
+    // Fast path: only structurally-check models the store says are
+    // downloaded, instead of scanning every model directory.
+    final downloadedIds = _store.loadDownloadedIds();
     final result = <SherpaTtsModelInfo>[];
+    final stale = <String>[];
     for (final m in availableModels) {
-      if (await isModelDownloaded(m.id)) result.add(m);
+      if (!downloadedIds.contains(m.id)) continue;
+      if (await isModelDownloaded(m.id)) {
+        result.add(m);
+      } else {
+        stale.add(m.id);
+      }
+    }
+
+    // One-time migration: if the store has no entries but models exist on
+    // disk (installs predating the store), discover and persist them.
+    if (downloadedIds.isEmpty) {
+      for (final m in availableModels) {
+        if (await isModelDownloaded(m.id)) {
+          result.add(m);
+          await _store.markDownloaded(m.id);
+        }
+      }
+    }
+
+    // Drop stale entries so the store stays accurate.
+    for (final id in stale) {
+      await _store.unmarkDownloaded(id);
     }
     return result;
   }
@@ -193,6 +222,7 @@ class SherpaOnnxTtsService {
     if (await dir.exists()) {
       await dir.delete(recursive: true);
     }
+    await _store.unmarkDownloaded(modelId);
   }
 
   Stream<ModelDownloadProgress> downloadModel(SherpaTtsModelInfo model) async* {

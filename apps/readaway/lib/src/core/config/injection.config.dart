@@ -73,11 +73,13 @@ import '../services/toast/toast_service.dart' as _i427;
 import '../services/tts/sherpa/sherpa_model_catalog.dart' as _i468;
 import '../services/tts/sherpa/sherpa_onnx_tts_engine.dart' as _i446;
 import '../services/tts/sherpa/sherpa_onnx_tts_service.dart' as _i572;
+import '../services/tts/sherpa/sherpa_tts_api.dart' as _i191;
 import '../services/tts/sherpa/sherpa_tts_model_downloader.dart' as _i590;
 import '../services/tts/tts_chunker_service.dart' as _i864;
 import '../services/tts/tts_controller_service.dart' as _i573;
 import '../services/tts/tts_engine.dart' as _i893;
 import '../services/tts/tts_engine_registry_impl.dart' as _i999;
+import '../services/tts/tts_model_store.dart' as _i79;
 import '../services/wakelock_service.dart' as _i669;
 import '../services/window_service.dart' as _i516;
 import 'di_module.dart' as _i211;
@@ -185,30 +187,11 @@ extension GetItInjectableX on _i174.GetIt {
       );
       return i.initialize().then((_) => i);
     }, preResolve: true);
-    gh.lazySingleton<_i468.SherpaTtsModelCatalogService>(
-      () => _i468.SherpaTtsModelCatalogService(
-        httpService: gh<_i920.HttpService>(),
-      ),
+    gh.lazySingleton<_i191.SherpaTtsApi>(
+      () => _i191.SherpaTtsApi(httpService: gh<_i920.HttpService>()),
     );
     gh.lazySingleton<_i456.LookupService>(
       () => _i456.LookupService(gh<_i920.HttpService>()),
-    );
-    gh.singleton<_i590.SherpaTtsModelDownloaderService>(
-      () => _i590.SherpaTtsModelDownloaderService(
-        backgroundDownloader: gh<_i17.BackGroundDownloaderService>(),
-        catalog: gh<_i468.SherpaTtsModelCatalogService>(),
-        pathService: gh<_i145.AppPathService>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
-    gh.lazySingleton<_i572.SherpaOnnxTtsService>(
-      () => _i572.SherpaOnnxTtsService(
-        downloader: gh<_i590.SherpaTtsModelDownloaderService>(),
-        sherpaTtsModelCatalog: gh<_i468.SherpaTtsModelCatalogService>(),
-        isolateService: gh<_i548.IsolateService>(),
-        pathService: gh<_i145.AppPathService>(),
-      ),
-      dispose: (i) => i.dispose(),
     );
     gh.singleton<_i295.AppRouter>(
       () => _i295.AppRouter(
@@ -242,12 +225,8 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i358.TtsModelRepository>(
-      () => _i336.TtsModelRepositoryImpl(
-        gh<_i572.SherpaOnnxTtsService>(),
-        gh<_i370.AudioPlayerService>(),
-        gh<_i145.AppPathService>(),
-      ),
+    gh.lazySingleton<_i79.TtsModelStore>(
+      () => _i79.TtsModelStore(storage: gh<_i1024.AppStorageService>()),
     );
     await gh.singletonAsync<_i982.ThemeService>(
       () {
@@ -259,12 +238,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i674.SettingsRepository>(
       () => _i955.SettingsRepositoryImpl(gh<_i114.SettingsService>()),
-    );
-    gh.lazySingleton<_i446.SherpaOnnxTtsEngine>(
-      () => _i446.SherpaOnnxTtsEngine(gh<_i572.SherpaOnnxTtsService>()),
-    );
-    gh.lazySingleton<_i893.TtsEngineRegistry>(
-      () => _i999.TtsEngineRegistryImpl(gh<_i446.SherpaOnnxTtsEngine>()),
     );
     gh.lazySingleton<_i360.ReaderPreferencesRepository>(
       () =>
@@ -280,11 +253,67 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i433.LibraryLocalDataSource>(
       () => _i433.LibraryLocalDataSource(gh<_i1024.AppStorageService>()),
     );
+    gh.lazySingleton<_i468.SherpaTtsModelCatalogService>(
+      () => _i468.SherpaTtsModelCatalogService(
+        api: gh<_i191.SherpaTtsApi>(),
+        store: gh<_i79.TtsModelStore>(),
+      ),
+    );
     gh.lazySingleton<_i810.LibraryRepository>(
       () => _i912.LibraryRepositoryImpl(
         gh<_i433.LibraryLocalDataSource>(),
         gh<_i502.FilePickerDataSource>(),
         gh<_i69.DocumentCoverService>(),
+      ),
+    );
+    gh.singleton<_i590.SherpaTtsModelDownloaderService>(
+      () => _i590.SherpaTtsModelDownloaderService(
+        backgroundDownloader: gh<_i17.BackGroundDownloaderService>(),
+        catalog: gh<_i468.SherpaTtsModelCatalogService>(),
+        pathService: gh<_i145.AppPathService>(),
+        store: gh<_i79.TtsModelStore>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
+    gh.lazySingleton<_i820.ReaderRepository>(
+      () => _i788.ReaderRepositoryImpl(
+        gh<_i516.WindowService>(),
+        gh<_i941.NotificationService>(),
+        gh<_i69.DocumentCoverService>(),
+        gh<_i810.LibraryRepository>(),
+      ),
+    );
+    gh.lazySingleton<_i572.SherpaOnnxTtsService>(
+      () => _i572.SherpaOnnxTtsService(
+        downloader: gh<_i590.SherpaTtsModelDownloaderService>(),
+        sherpaTtsModelCatalog: gh<_i468.SherpaTtsModelCatalogService>(),
+        isolateService: gh<_i548.IsolateService>(),
+        pathService: gh<_i145.AppPathService>(),
+        store: gh<_i79.TtsModelStore>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
+    gh.factory<_i395.LibraryBloc>(
+      () => _i395.LibraryBloc(gh<_i810.LibraryRepository>()),
+    );
+    gh.lazySingleton<_i358.TtsModelRepository>(
+      () => _i336.TtsModelRepositoryImpl(
+        gh<_i572.SherpaOnnxTtsService>(),
+        gh<_i370.AudioPlayerService>(),
+        gh<_i145.AppPathService>(),
+      ),
+    );
+    gh.lazySingleton<_i446.SherpaOnnxTtsEngine>(
+      () => _i446.SherpaOnnxTtsEngine(gh<_i572.SherpaOnnxTtsService>()),
+    );
+    gh.lazySingleton<_i893.TtsEngineRegistry>(
+      () => _i999.TtsEngineRegistryImpl(gh<_i446.SherpaOnnxTtsEngine>()),
+    );
+    gh.lazySingleton<_i228.SettingsBloc>(
+      () => _i228.SettingsBloc(
+        preferencesRepository: gh<_i360.ReaderPreferencesRepository>(),
+        settingsRepository: gh<_i674.SettingsRepository>(),
+        ttsModelRepository: gh<_i358.TtsModelRepository>(),
       ),
     );
     gh.lazySingleton<_i573.TtsControllerService>(
@@ -299,24 +328,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i779.ReaderTtsRepository>(
       () => _i22.ReaderTtsRepositoryImpl(gh<_i573.TtsControllerService>()),
-    );
-    gh.lazySingleton<_i820.ReaderRepository>(
-      () => _i788.ReaderRepositoryImpl(
-        gh<_i516.WindowService>(),
-        gh<_i941.NotificationService>(),
-        gh<_i69.DocumentCoverService>(),
-        gh<_i810.LibraryRepository>(),
-      ),
-    );
-    gh.lazySingleton<_i228.SettingsBloc>(
-      () => _i228.SettingsBloc(
-        preferencesRepository: gh<_i360.ReaderPreferencesRepository>(),
-        settingsRepository: gh<_i674.SettingsRepository>(),
-        ttsModelRepository: gh<_i358.TtsModelRepository>(),
-      ),
-    );
-    gh.factory<_i395.LibraryBloc>(
-      () => _i395.LibraryBloc(gh<_i810.LibraryRepository>()),
     );
     gh.factory<_i523.ReaderBloc>(
       () => _i523.ReaderBloc(
