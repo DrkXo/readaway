@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:readaway_core/readaway_core.dart';
+import 'package:readaway_core_rust/readaway_core_rust.dart';
 
 import '../../../controllers/reader_viewport_controller.dart';
 import 'continuous_scroll_coordinator.dart';

@@ -1,7 +1,7 @@
 import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:readaway_core/readaway_core.dart';
+import 'package:readaway_core_rust/readaway_core_rust.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 
 import '../tts_models.dart';

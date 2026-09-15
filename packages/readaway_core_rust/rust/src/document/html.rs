@@ -20,8 +20,16 @@ static DUOKAN_FOOTNOTE_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"(?is)<(?:div|p|span)\b([^>]*(?:duokan-footnote|data-wr-footnote|zy-footnote)[^>]*id=["']([^"']+)["'][^>]*)>(.*?)</(?:div|p|span)>"#).unwrap()
 });
 
-static CITATION_LINK_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"(?is)<a\b[^>]*>\s*[\[\(]?[\*\d]+[\)\]]?\s*</a>"#).unwrap()
+static CITATION_ANCHOR_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[\[\(]?[\*\d]+[\)\]]?$").unwrap()
+});
+
+static A_TAG_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(?is)<a\b[^>]*>(.*?)</a>"#).unwrap()
+});
+
+static SUP_TAG_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(?is)<sup\b[^>]*>(.*?)</sup>"#).unwrap()
 });
 
 static RUBY_RE: Lazy<Regex> = Lazy::new(|| {
@@ -58,14 +66,32 @@ pub fn extract_page_text(html: &str, for_speech: bool) -> String {
     // 1. Remove non-content tags (scripts, styles, svg)
     let cleaned = IGNORED_TAGS_RE.replace_all(html, "");
 
-    // 2. Strip footnote blocks if for speech
+    // 2. Strip footnote blocks and citation numbers if for speech
     let cleaned = if for_speech {
         let without_asides = FOOTNOTE_ASIDE_RE.replace_all(&cleaned, "");
         let without_duokan = DUOKAN_FOOTNOTE_RE.replace_all(&without_asides, "");
-        CITATION_LINK_RE.replace_all(&without_duokan, "").to_string()
+        let without_a = A_TAG_RE.replace_all(&without_duokan, |caps: &regex::Captures| {
+            let inner = caps.get(1).map(|m| m.as_str()).unwrap_or("");
+            let inner_text = ALL_TAGS_RE.replace_all(inner, "");
+            if CITATION_ANCHOR_RE.is_match(inner_text.trim()) {
+                "".to_string()
+            } else {
+                caps.get(0).map(|m| m.as_str()).unwrap_or("").to_string()
+            }
+        });
+        SUP_TAG_RE.replace_all(&without_a, |caps: &regex::Captures| {
+            let inner = caps.get(1).map(|m| m.as_str()).unwrap_or("");
+            let inner_text = ALL_TAGS_RE.replace_all(inner, "");
+            if CITATION_ANCHOR_RE.is_match(inner_text.trim()) {
+                "".to_string()
+            } else {
+                caps.get(0).map(|m| m.as_str()).unwrap_or("").to_string()
+            }
+        }).to_string()
     } else {
         cleaned.to_string()
     };
+
 
     // 3. Handle Ruby typography: voice kana rt over kanji base when for_speech
     let cleaned = if for_speech {

@@ -8,6 +8,27 @@ class ReadingAnchor {
     required this.progressionInChapter,
   });
 
+  ReadingAnchor copyWith({
+    int? chapterIndex,
+    double? progressionInChapter,
+  }) {
+    return ReadingAnchor(
+      chapterIndex: chapterIndex ?? this.chapterIndex,
+      progressionInChapter: progressionInChapter ?? this.progressionInChapter,
+    );
+  }
+
+  factory ReadingAnchor.fromJson(Map<String, dynamic> json) => ReadingAnchor(
+        chapterIndex: (json['chapterIndex'] as num?)?.toInt() ?? 0,
+        progressionInChapter:
+            (json['progressionInChapter'] as num?)?.toDouble() ?? 0.0,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'chapterIndex': chapterIndex,
+        'progressionInChapter': progressionInChapter,
+      };
+
   @override
   String toString() =>
       'ReadingAnchor(chapterIndex: $chapterIndex, progressionInChapter: $progressionInChapter)';

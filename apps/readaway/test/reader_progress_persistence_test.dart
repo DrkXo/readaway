@@ -9,7 +9,7 @@ import 'package:readaway/src/features/library/domain/entity/reading_status.dart'
 import 'package:readaway/src/features/library/domain/entity/recent_document.dart';
 import 'package:readaway/src/features/library/domain/repositories/library_repository.dart';
 import 'package:readaway/src/features/reader/data/repositories/reader_repository_impl.dart';
-import 'package:readaway_core/readaway_core.dart';
+import 'package:readaway_core_rust/readaway_core_rust.dart';
 
 class MockWindowService extends Mock implements WindowService {}
 

@@ -43,6 +43,7 @@ export 'src/pagination/pagination_coordinator.dart';
 // Readers & Factory
 export 'src/readers/builtin_handlers.dart';
 export 'src/readers/document_reader_factory.dart';
+export 'src/readers/html_text_extractor.dart';
 export 'src/readers/plain_text_document_reader.dart';
 export 'src/readers/rust_cbz_document_reader.dart';
 export 'src/readers/rust_epub_document_reader.dart';
@@ -53,3 +54,5 @@ export 'src/rust/api/init.dart';
 export 'src/rust/api/models.dart';
 export 'src/rust/api/tts.dart';
 export 'src/rust/frb_generated.dart' show RustLib;
+export 'src/rust/rust_init.dart';
+

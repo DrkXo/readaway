@@ -8,7 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
-import 'package:readaway_core/readaway_core.dart';
+import 'package:readaway_core_rust/readaway_core_rust.dart';
 
 import '../../bloc/reader_bloc.dart';
 import '../../controllers/reader_viewport_controller.dart';

@@ -8,6 +8,7 @@ import '../models/document_metadata.dart';
 import '../models/document_section.dart';
 import '../models/outline_item.dart';
 import '../rust/api/document.dart' as doc_api;
+import '../rust/rust_init.dart';
 
 /// High-performance reflowable EPUB document reader backed by `rbook` in Rust.
 class RustEpubDocumentReader implements ReflowableDocumentReader {
@@ -30,7 +31,9 @@ class RustEpubDocumentReader implements ReflowableDocumentReader {
 
   /// Opens an EPUB document from [filePath].
   static Future<RustEpubDocumentReader> open(String filePath) async {
+    await ensureRustInitialized();
     final rawMeta = await doc_api.getEpubMetadata(path: filePath);
+
     final count = (await doc_api.getEpubSectionCount(path: filePath)).toInt();
     final spineHrefs = await doc_api.getEpubSpineHrefs(path: filePath);
     final rawToc = await doc_api.getEpubToc(path: filePath);

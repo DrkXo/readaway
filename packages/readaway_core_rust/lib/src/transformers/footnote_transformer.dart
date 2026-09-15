@@ -1,10 +1,9 @@
-import 'package:html/parser.dart' as html_parser;
-
 import '../models/footnote_item.dart';
 import '../models/transform_context.dart';
+import '../rust/api/tts.dart' as tts_api;
 import 'text_transformer.dart';
 
-/// Identifies, normalizes, and extracts footnotes, endnotes, and asides.
+/// Identifies, normalizes, and extracts footnotes, endnotes, and asides backed by native Rust.
 class FootnoteTransformer implements TextTransformer {
   const FootnoteTransformer();
 
@@ -34,49 +33,18 @@ class FootnoteTransformer implements TextTransformer {
     return result;
   }
 
-  /// Extracts structured [FootnoteItem] records from the chapter HTML.
+  /// Extracts structured [FootnoteItem] records from the chapter HTML using native Rust.
   static List<FootnoteItem> extractFootnotes(String html) {
     if (html.isEmpty) return const [];
-    final doc = html_parser.parse(html);
-    final results = <FootnoteItem>[];
-
-    final asides = doc.querySelectorAll('aside');
-    for (final aside in asides) {
-      final epubType = aside.attributes['epub:type']?.toLowerCase() ?? '';
-      if (epubType.contains('footnote') ||
-          epubType.contains('endnote') ||
-          epubType.contains('note') ||
-          aside.classes.contains('epubtype-footnote')) {
-        final id = aside.id.isNotEmpty ? aside.id : 'fn-${results.length + 1}';
-        results.add(
-          FootnoteItem(
-            id: id,
-            contentHtml: aside.innerHtml.trim(),
-            type: epubType.contains('endnote') ? 'endnote' : 'footnote',
-          ),
-        );
-      }
+    try {
+      return tts_api
+          .extractHtmlContent(html: html)
+          .footnotes
+          .map(FootnoteItem.fromRust)
+          .toList();
+    } catch (_) {
+      return const [];
     }
-
-    final duokanNotes = doc.querySelectorAll(
-      '.duokan-footnote-content, .duokan-footnote-item, [data-wr-footernote], [zy-footnote]',
-    );
-    for (final note in duokanNotes) {
-      final id = note.id.isNotEmpty
-          ? note.id
-          : 'duokan-fn-${results.length + 1}';
-      if (!results.any((fn) => fn.id == id)) {
-        results.add(
-          FootnoteItem(
-            id: id,
-            contentHtml: note.innerHtml.trim(),
-            type: 'footnote',
-          ),
-        );
-      }
-    }
-
-    return results;
   }
 
   /// Searches [html] for a footnote matching [anchorId].
@@ -84,34 +52,6 @@ class FootnoteTransformer implements TextTransformer {
     if (html.isEmpty || anchorId.isEmpty) return null;
     final cleanId = anchorId.startsWith('#') ? anchorId.substring(1) : anchorId;
     if (cleanId.isEmpty) return null;
-
-    final doc = html_parser.parse(html);
-
-    final target = doc.getElementById(cleanId);
-    if (target != null) {
-      final epubType = target.attributes['epub:type']?.toLowerCase() ?? '';
-      final isAside = target.localName == 'aside';
-      final hasFootnoteClass = target.classes.any(
-        (c) =>
-            c.contains('footnote') ||
-            c.contains('endnote') ||
-            c.contains('note'),
-      );
-      final isLikelyNote = isAside ||
-          epubType.contains('footnote') ||
-          epubType.contains('note') ||
-          hasFootnoteClass ||
-          cleanId.toLowerCase().contains('fn') ||
-          cleanId.toLowerCase().contains('note');
-
-      if (isLikelyNote) {
-        return FootnoteItem(
-          id: cleanId,
-          contentHtml: target.innerHtml.trim(),
-          type: epubType.contains('endnote') ? 'endnote' : 'footnote',
-        );
-      }
-    }
 
     final notes = extractFootnotes(html);
     for (final note in notes) {
@@ -123,3 +63,4 @@ class FootnoteTransformer implements TextTransformer {
     return null;
   }
 }
+

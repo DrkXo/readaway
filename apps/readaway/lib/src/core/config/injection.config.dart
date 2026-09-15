@@ -12,7 +12,7 @@
 
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
-import 'package:readaway_core/readaway_core.dart' as _i923;
+import 'package:readaway_core_rust/readaway_core_rust.dart' as _i766;
 
 import '../../features/library/data/datasources/file_picker_data_source.dart'
     as _i502;
@@ -110,7 +110,7 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i923.PaginationCoordinator>(
+    gh.lazySingleton<_i766.PaginationCoordinator>(
       () => coreModule.paginationCoordinator(),
     );
     gh.lazySingleton<_i145.AppPathService>(() => _i145.AppPathService());

@@ -7,6 +7,7 @@ import '../errors/document_exception.dart';
 import '../models/document_metadata.dart';
 import '../models/outline_item.dart';
 import '../rust/api/document.dart' as doc_api;
+import '../rust/rust_init.dart';
 
 /// High-performance CBZ comic document reader backed by native Rust.
 class RustCbzDocumentReader implements DocumentReader {
@@ -25,7 +26,9 @@ class RustCbzDocumentReader implements DocumentReader {
 
   /// Opens a CBZ comic archive from [filePath].
   static Future<RustCbzDocumentReader> open(String filePath) async {
+    await ensureRustInitialized();
     final pagePaths = doc_api.getCbzPagePaths(path: filePath);
+
     if (pagePaths.isEmpty) {
       throw const DocumentParseException('No image pages found in CBZ');
     }

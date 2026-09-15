@@ -887,7 +887,7 @@ $Res call({
 });
 
 
-$ReadingAnchorCopyWith<$Res>? get pendingRestoreAnchor;
+
 
 }
 /// @nodoc
@@ -924,19 +924,7 @@ as int?,pendingRestoreAnchor: freezed == pendingRestoreAnchor ? _self.pendingRes
 as ReadingAnchor?,
   ));
 }
-/// Create a copy of ReaderState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ReadingAnchorCopyWith<$Res>? get pendingRestoreAnchor {
-    if (_self.pendingRestoreAnchor == null) {
-    return null;
-  }
 
-  return $ReadingAnchorCopyWith<$Res>(_self.pendingRestoreAnchor!, (value) {
-    return _then(_self.copyWith(pendingRestoreAnchor: value));
-  });
-}
 }
 
 
@@ -1163,7 +1151,7 @@ $Res call({
 });
 
 
-@override $ReadingAnchorCopyWith<$Res>? get pendingRestoreAnchor;
+
 
 }
 /// @nodoc
@@ -1201,19 +1189,7 @@ as ReadingAnchor?,
   ));
 }
 
-/// Create a copy of ReaderState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ReadingAnchorCopyWith<$Res>? get pendingRestoreAnchor {
-    if (_self.pendingRestoreAnchor == null) {
-    return null;
-  }
 
-  return $ReadingAnchorCopyWith<$Res>(_self.pendingRestoreAnchor!, (value) {
-    return _then(_self.copyWith(pendingRestoreAnchor: value));
-  });
-}
 }
 
 // dart format on
