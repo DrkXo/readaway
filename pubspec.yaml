@@ -46,7 +46,7 @@ melos:
       description: Check formatting in all packages
 
     codegen:
-      run: melos exec -c 1 --depends-on="build_runner" -- dart run build_runner build
+      run: melos exec -c 1 --depends-on="build_runner" -- "fvm dart run build_runner build"
       description: Run codegen in all apps
 
     refresh:
@@ -57,34 +57,34 @@ melos:
     # Dependency & Launcher Updates
     # -------------------------------------------------------------
     upgrade:deps:
-      run: melos exec -c 1 --flutter -- "flutter pub upgrade"
+      run: melos exec -c 1 --flutter -- "fvm exec flutter pub upgrade"
       description: Upgrade dependencies across all Flutter apps and packages
 
     upgrade:deps:major:
-      run: melos exec -c 1 --flutter -- "flutter pub upgrade --major-versions"
+      run: melos exec -c 1 --flutter -- "fvm exec flutter pub upgrade --major-versions"
       description: Upgrade dependencies[major] across all Flutter apps and packages
 
     update:launcher_icon:
-      run: melos exec -c 1 --depends-on="flutter_launcher_icons" -- dart run flutter_launcher_icons
+      run: melos exec -c 1 --depends-on="flutter_launcher_icons" -- "fvm exec dart run flutter_launcher_icons"
       description: Update launcher icons
 
     # -------------------------------------------------------------
     # Build Scripts
     # -------------------------------------------------------------
     build:apk:debug:
-      run: melos exec -c 1 --category="app" -- flutter build apk --debug
+      run: melos exec -c 1 --category="app" -- "fvm exec flutter build apk --debug"
       description: Build debug APK for ReadAway app
 
     build:apk:release:
-      run: melos exec -c 1 --category="app" -- flutter build apk --release
+      run: melos exec -c 1 --category="app" -- "fvm exec flutter build apk --release"
       description: Build release APK for ReadAway app
 
     build:apk:split:
-      run: melos exec -c 1 --category="app" -- flutter build apk --release --split-per-abi
+      run: melos exec -c 1 --category="app" -- "fvm exec flutter build apk --release --split-per-abi"
       description: Build release APK split per ABI (armeabi-v7a, arm64-v8a, x86_64)
 
     build:linux:
-      run: melos exec -c 1 --category="app" -- flutter build linux --release
+      run: melos exec -c 1 --category="app" -- "fvm exec flutter build linux --release"
       description: Build Linux binary and clean workspace for ReadAway app
 
     build:linux:appimage:
@@ -95,7 +95,7 @@ melos:
     # Test Scripts
     # -------------------------------------------------------------
     test:scoped:
-      run: melos exec --dir-exists="test" --fail-fast -- flutter test --no-pub --coverage
+      run: melos exec --dir-exists="test" --fail-fast -- "fvm exec flutter test --no-pub --coverage"
       description: Run Flutter tests for a specific package in this project.
       select-package:
         flutter: true
