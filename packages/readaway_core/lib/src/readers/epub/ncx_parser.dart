@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:xml/xml.dart';
 
 import '../../models/models.dart';
+import 'html_entity_decoder.dart';
 
 /// Parses an EPUB 2 NCX navigation document into a hierarchical outline.
 class NcxParser {
@@ -27,7 +28,7 @@ class NcxParser {
       for (final child in parent.findElements('navPoint')) {
         final labelElem = child.findElements('navLabel').firstOrNull;
         final textElem = labelElem?.findElements('text').firstOrNull;
-        final label = textElem?.innerText.trim() ?? '';
+        final label = decodeHtmlEntities(textElem?.innerText.trim() ?? '');
 
         final contentElem = child.findElements('content').firstOrNull;
         final src = contentElem?.getAttribute('src') ?? '';

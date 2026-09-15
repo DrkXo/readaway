@@ -33,6 +33,33 @@ void main() {
       expect(opf.metadata.modified, DateTime.utc(2024, 1, 1));
     });
 
+    test('decodes HTML entities in metadata', () {
+      final opf = parser.parseBytes(
+        utf8.encode('''
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Les Mis&eacute;rables &amp; Friends</dc:title>
+    <dc:creator>Victor Hugo</dc:creator>
+    <dc:description>It&#8217;s a &ldquo;classic&rdquo; &mdash; &amp;nbsp; stays.</dc:description>
+    <dc:subject>Caf&#xE9;</dc:subject>
+  </metadata>
+  <manifest>
+    <item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="c1"/>
+  </spine>
+</package>
+'''),
+      );
+
+      expect(opf.metadata.title, 'Les Misérables & Friends');
+      expect(opf.metadata.creator, 'Victor Hugo');
+      expect(opf.metadata.description, 'It’s a “classic” — \u00a0 stays.');
+      expect(opf.metadata.subject, 'Café');
+    });
+
     test('parses spine sections with hrefs resolved to the OPF dir', () {
       final opf = parser.parse(container, opfPath: 'OEBPS/content.opf');
 

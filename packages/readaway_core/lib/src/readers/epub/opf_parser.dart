@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:xml/xml.dart';
 
 import '../../../readaway_core.dart';
+import 'html_entity_decoder.dart';
 
 /// Parses the EPUB container + package document (OPF).
 class OpfParser {
@@ -141,7 +142,7 @@ class OpfParser {
     String? textOf(String name) {
       final el = doc.findAllElements(name).firstOrNull;
       final t = el?.innerText.trim();
-      return (t == null || t.isEmpty) ? null : t;
+      return (t == null || t.isEmpty) ? null : decodeHtmlEntities(t);
     }
 
     DateTime? modified;

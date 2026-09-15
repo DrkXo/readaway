@@ -29,6 +29,26 @@ void main() {
       expect(outline[0].level, 0);
     });
 
+    test('decodes HTML entities in TOC labels', () {
+      final bytes = utf8.encode('''
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+  <body>
+    <nav epub:type="toc">
+      <ol>
+        <li><a href="c1.xhtml">Caf&eacute; &amp; Cr&egrave;me</a></li>
+        <li><a href="c2.xhtml">It&#8217;s a &ldquo;classic&rdquo;</a></li>
+      </ol>
+    </nav>
+  </body>
+</html>
+''');
+
+      final outline = parser.parse(bytes);
+
+      expect(outline[0].title, 'Café & Crème');
+      expect(outline[1].title, 'It’s a “classic”');
+    });
+
     test('parses nested lists into a hierarchy', () {
       final bytes = utf8.encode('''
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">

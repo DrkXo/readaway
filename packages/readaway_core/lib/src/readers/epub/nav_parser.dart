@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:xml/xml.dart';
 
 import '../../../readaway_core.dart';
+import 'html_entity_decoder.dart';
 
 /// Parses an EPUB 3 `<nav>` document into a hierarchical outline.
 class NavParser {
@@ -40,7 +41,7 @@ class NavParser {
       for (final li in ol.findElements('li')) {
         final a = li.findElements('a').firstOrNull;
         if (a == null) continue;
-        final label = a.innerText.trim();
+        final label = decodeHtmlEntities(a.innerText.trim());
         final rawHref = a.getAttribute('href') ?? '';
         final href = resolveHref?.call(rawHref) ?? rawHref;
         final nestedOl = li.findElements('ol').firstOrNull;

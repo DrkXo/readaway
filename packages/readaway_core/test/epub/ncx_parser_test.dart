@@ -33,6 +33,24 @@ void main() {
       expect(outline[1].title, 'Chapter Two');
     });
 
+    test('decodes HTML entities in nav labels', () {
+      final bytes = utf8.encode('''
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/">
+  <navMap>
+    <navPoint id="np1" playOrder="1">
+      <navLabel><text>Caf&eacute; &amp; Cr&egrave;me</text></navLabel>
+      <content src="c1.xhtml"/>
+    </navPoint>
+  </navMap>
+</ncx>
+''');
+
+      final outline = parser.parse(bytes);
+
+      expect(outline, hasLength(1));
+      expect(outline[0].title, 'Café & Crème');
+    });
+
     test('parses nested navPoints into a hierarchy', () {
       final bytes = utf8.encode('''
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/">
