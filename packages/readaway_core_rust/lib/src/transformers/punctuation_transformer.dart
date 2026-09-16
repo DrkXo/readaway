@@ -1,4 +1,4 @@
-import '../models/transform_context.dart';
+import '../models/models.dart';
 import 'text_transformer.dart';
 
 /// Adapts quotation marks for vertical reading mode and variant conversions

@@ -6,50 +6,22 @@
 import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
+import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
+part 'models.freezed.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
-class RustDocumentMetadata {
-  final String? title;
-  final String? author;
-  final String? language;
-  final String? identifier;
-  final String? publisher;
-  final String? description;
-  final String? coverImagePath;
-
-  const RustDocumentMetadata({
-    this.title,
-    this.author,
-    this.language,
-    this.identifier,
-    this.publisher,
-    this.description,
-    this.coverImagePath,
-  });
-
-  @override
-  int get hashCode =>
-      title.hashCode ^
-      author.hashCode ^
-      language.hashCode ^
-      identifier.hashCode ^
-      publisher.hashCode ^
-      description.hashCode ^
-      coverImagePath.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is RustDocumentMetadata &&
-          runtimeType == other.runtimeType &&
-          title == other.title &&
-          author == other.author &&
-          language == other.language &&
-          identifier == other.identifier &&
-          publisher == other.publisher &&
-          description == other.description &&
-          coverImagePath == other.coverImagePath;
+@freezed
+sealed class RustDocumentMetadata with _$RustDocumentMetadata {
+  const factory RustDocumentMetadata({
+    String? title,
+    String? author,
+    String? language,
+    String? identifier,
+    String? publisher,
+    String? description,
+    String? coverImagePath,
+  }) = _RustDocumentMetadata;
 }
 
 class RustExtractedContent {

@@ -1,4 +1,4 @@
-import '../models/transform_context.dart';
+import '../models/models.dart';
 import 'text_transformer.dart';
 
 /// Glues hanging prepositions, conjunctions, and short words to the next word

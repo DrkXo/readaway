@@ -1,26 +1,15 @@
-import 'package:copy_with_extension/copy_with_extension.dart';
-import 'package:equatable/equatable.dart';
-
-import '../rust/api/models.dart';
-
-part 'footnote_item.g.dart';
+part of 'models.dart';
 
 /// Structured information about an isolated footnote or endnote.
-@CopyWith()
-class FootnoteItem extends Equatable {
-  final String id;
-  final String? referenceId;
-  final String? title;
-  final String contentHtml;
-  final String type;
-
-  const FootnoteItem({
-    required this.id,
-    this.referenceId,
-    this.title,
-    required this.contentHtml,
-    this.type = 'footnote',
-  });
+@freezed
+sealed class FootnoteItem with _$FootnoteItem {
+  const factory FootnoteItem({
+    required String id,
+    String? referenceId,
+    String? title,
+    required String contentHtml,
+    @Default('footnote') String type,
+  }) = _FootnoteItem;
 
   factory FootnoteItem.fromRust(RustFootnote r) =>
       FootnoteItem(id: r.id, contentHtml: r.contentHtml, type: r.footnoteType);
@@ -33,6 +22,7 @@ class FootnoteItem extends Equatable {
     type: json['type'] as String? ?? 'footnote',
   );
 
+  @override
   Map<String, dynamic> toJson() => {
     'id': id,
     if (referenceId != null) 'referenceId': referenceId,
@@ -40,10 +30,4 @@ class FootnoteItem extends Equatable {
     'contentHtml': contentHtml,
     'type': type,
   };
-
-  @override
-  bool get stringify => true;
-
-  @override
-  List<Object?> get props => [id, referenceId, title, contentHtml, type];
 }

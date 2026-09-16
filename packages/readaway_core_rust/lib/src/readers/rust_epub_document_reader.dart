@@ -4,9 +4,7 @@ import 'package:path/path.dart' as p;
 
 import '../abstracts/reflowable_document_reader.dart';
 import '../errors/document_exception.dart';
-import '../models/document_metadata.dart';
-import '../models/document_section.dart';
-import '../models/outline_item.dart';
+import '../models/models.dart';
 import '../rust/api/document.dart' as doc_api;
 import '../rust/rust_init.dart';
 
@@ -38,7 +36,7 @@ class RustEpubDocumentReader implements ReflowableDocumentReader {
     final spineHrefs = await doc_api.getEpubSpineHrefs(path: filePath);
     final rawToc = await doc_api.getEpubToc(path: filePath);
 
-    final metadata = DocumentMetadata(
+    final metadata = DocumentMetadata.normalized(
       title: rawMeta.title,
       author: rawMeta.author,
       language: rawMeta.language,

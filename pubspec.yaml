@@ -6,7 +6,6 @@ environment:
 
 workspace:
   - apps/readaway
-  - packages/readaway_core
   - packages/readaway_core_rust
 
 dev_dependencies:
@@ -47,12 +46,16 @@ melos:
       description: Check formatting in all packages
 
     codegen:
-      run: melos exec -c 1 --depends-on="build_runner" -- "fvm dart run build_runner build"
       description: Run codegen in all apps
+      steps:
+        - melos exec --depends-on="build_runner" -- "fvm dart run build_runner build"
+        - melos exec --depends-on="flutter_rust_bridge" -- "fvm exec flutter_rust_bridge_codegen generate"
 
     refresh:
-      run: melos exec -c 1 --flutter -- "flutter clean && flutter pub get"
       description: Refresh Apps & Packages Deps
+      steps:
+        - melos exec --flutter -- "fvm exec flutter clean"
+        - melos exec --flutter -- "fvm exec flutter pub get"
 
     # -------------------------------------------------------------
     # Dependency & Launcher Updates

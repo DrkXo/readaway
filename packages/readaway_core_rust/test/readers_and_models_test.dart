@@ -7,14 +7,14 @@ import 'package:readaway_core_rust/readaway_core_rust.dart';
 void main() {
   group('DocumentMetadata tests', () {
     test('author and creator are symmetric', () {
-      const meta1 = DocumentMetadata(
+      final meta1 = DocumentMetadata.normalized(
         title: 'Book 1',
         author: 'Arthur Conan Doyle',
       );
       expect(meta1.author, 'Arthur Conan Doyle');
       expect(meta1.creator, 'Arthur Conan Doyle');
 
-      const meta2 = DocumentMetadata(
+      final meta2 = DocumentMetadata.normalized(
         title: 'Book 2',
         creator: 'J.K. Rowling',
       );
@@ -61,7 +61,10 @@ They set out into the wild forest.
       expect(reader.resolveSectionIndex('The Great Novel.txt'), 0);
 
       reader.dispose();
-      expect(() => reader.loadSectionHtml(0), throwsA(isA<DocumentDisposedException>()));
+      expect(
+        () => reader.loadSectionHtml(0),
+        throwsA(isA<DocumentDisposedException>()),
+      );
     });
   });
 
@@ -146,7 +149,9 @@ class SingleHtmlDocumentReaderFake implements ReflowableDocumentReader {
   DocumentMetadata? get metadata => null;
 
   @override
-  List<OutlineItem> get outline => [OutlineItem(title: title, href: 'index.html', level: 0)];
+  List<OutlineItem> get outline => [
+    OutlineItem(title: title, href: 'index.html', level: 0),
+  ];
 
   @override
   String? get coverImagePath => null;
@@ -156,8 +161,8 @@ class SingleHtmlDocumentReaderFake implements ReflowableDocumentReader {
 
   @override
   List<DocumentSection> get sections => [
-        DocumentSection(index: 0, id: '0', href: 'index.html', title: title),
-      ];
+    DocumentSection(index: 0, id: '0', href: 'index.html', title: title),
+  ];
 
   @override
   String loadSectionHtml(int index) => html;
@@ -166,7 +171,8 @@ class SingleHtmlDocumentReaderFake implements ReflowableDocumentReader {
   Uint8List? loadAsset(String assetPath) => null;
 
   @override
-  String resolveAssetPath(int sectionIndex, String relativeHref) => relativeHref;
+  String resolveAssetPath(int sectionIndex, String relativeHref) =>
+      relativeHref;
 
   @override
   int? resolveSectionIndex(String href) => 0;

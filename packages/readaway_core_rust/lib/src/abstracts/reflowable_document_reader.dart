@@ -1,4 +1,4 @@
-import '../models/document_section.dart';
+import '../models/models.dart';
 import 'document_reader.dart';
 
 /// A document whose content reflows to fit the viewport (EPUB, HTML, text).

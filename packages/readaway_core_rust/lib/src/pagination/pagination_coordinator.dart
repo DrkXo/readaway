@@ -2,9 +2,7 @@ import 'dart:math' as math;
 
 import 'package:rxdart/rxdart.dart';
 
-import '../models/page_coordinate.dart';
-import '../models/pagination_state.dart';
-import '../models/reading_anchor.dart';
+import '../models/models.dart';
 import 'page_slicer.dart';
 
 /// Reactive pagination coordinator for reflowable documents.

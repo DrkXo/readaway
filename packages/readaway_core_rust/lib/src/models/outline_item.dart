@@ -1,26 +1,17 @@
-import 'package:copy_with_extension/copy_with_extension.dart';
-import 'package:equatable/equatable.dart';
-
-import '../rust/api/models.dart';
-
-part 'outline_item.g.dart';
+part of 'models.dart';
 
 /// A single entry in a document's table of contents / outline.
-@CopyWith()
-class OutlineItem extends Equatable {
-  final String title;
-  final String? href;
-  final int level;
-  final int? chapterIndex;
-  final List<OutlineItem> children;
+@freezed
+sealed class OutlineItem with _$OutlineItem {
+  const OutlineItem._();
 
-  const OutlineItem({
-    required this.title,
-    this.href,
-    this.level = 0,
-    this.chapterIndex,
-    this.children = const [],
-  });
+  const factory OutlineItem({
+    required String title,
+    String? href,
+    @Default(0) int level,
+    int? chapterIndex,
+    @Default(<OutlineItem>[]) List<OutlineItem> children,
+  }) = _OutlineItem;
 
   /// Factory recursively mapping native [RustTocItem] to [OutlineItem].
   factory OutlineItem.fromRust(RustTocItem r) => OutlineItem(
@@ -36,10 +27,4 @@ class OutlineItem extends Equatable {
     this,
     for (final child in children) ...child.flatten(),
   ];
-
-  @override
-  bool get stringify => true;
-
-  @override
-  List<Object?> get props => [title, href, level, chapterIndex];
 }

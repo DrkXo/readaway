@@ -1,22 +1,13 @@
-import 'package:copy_with_extension/copy_with_extension.dart';
-import 'package:equatable/equatable.dart';
-
-import '../rust/api/models.dart';
-
-part 'tts_chunk.g.dart';
+part of 'models.dart';
 
 /// Word-level span for karaoke-style progressive text highlighting during TTS playback.
-@CopyWith()
-class TtsWordSpan extends Equatable {
-  final String word;
-  final int startOffset;
-  final int endOffset;
-
-  const TtsWordSpan({
-    required this.word,
-    required this.startOffset,
-    required this.endOffset,
-  });
+@freezed
+sealed class TtsWordSpan with _$TtsWordSpan {
+  const factory TtsWordSpan({
+    required String word,
+    required int startOffset,
+    required int endOffset,
+  }) = _TtsWordSpan;
 
   factory TtsWordSpan.fromJson(Map<String, dynamic> json) => TtsWordSpan(
     word: json['word'] as String? ?? '',
@@ -24,73 +15,69 @@ class TtsWordSpan extends Equatable {
     endOffset: (json['endOffset'] as num?)?.toInt() ?? 0,
   );
 
+  @override
   Map<String, dynamic> toJson() => {
     'word': word,
     'startOffset': startOffset,
     'endOffset': endOffset,
   };
-
-  @override
-  bool get stringify => true;
-
-  @override
-  List<Object?> get props => [word, startOffset, endOffset];
 }
 
 /// Dart model representing a sentence chunk prepared for speech synthesis and text highlighting.
-@CopyWith(constructor: '_')
-class TtsChunk extends Equatable {
-  final String id;
-  final int sectionIndex;
-  final int sentenceIndex;
-  final String text;
-  final String? spokenText;
-  final int startOffset;
-  final int endOffset;
-  final int? rawStartOffset;
-  final int? rawEndOffset;
-  final bool isParagraphEnd;
-  final int paragraphIndex;
-  final List<TtsWordSpan> words;
-  final String language;
-  final int estimatedDurationMs;
+@freezed
+sealed class TtsChunk with _$TtsChunk {
+  const TtsChunk._();
 
-  const TtsChunk({
+  const factory TtsChunk({
+    required String id,
+    @Default(0) int sectionIndex,
+    @Default(0) int sentenceIndex,
+    required String text,
+    String? spokenText,
+    required int startOffset,
+    required int endOffset,
+    int? rawStartOffset,
+    int? rawEndOffset,
+    @Default(false) bool isParagraphEnd,
+    @Default(0) int paragraphIndex,
+    @Default(<TtsWordSpan>[]) List<TtsWordSpan> words,
+    @Default('en') String language,
+    @Default(0) int estimatedDurationMs,
+  }) = _TtsChunk;
+
+  /// Constructs a chunk deriving `id` from `sectionIndex:sentenceIndex:startOffset`
+  /// when it is omitted.
+  factory TtsChunk.withDerivedId({
     String? id,
-    this.sectionIndex = 0,
-    this.sentenceIndex = 0,
-    required this.text,
-    this.spokenText,
-    required this.startOffset,
-    required this.endOffset,
-    this.rawStartOffset,
-    this.rawEndOffset,
-    this.isParagraphEnd = false,
-    this.paragraphIndex = 0,
-    this.words = const [],
-    this.language = 'en',
-    this.estimatedDurationMs = 0,
-  }) : id = id ?? '$sectionIndex:$sentenceIndex:$startOffset';
-
-  /// Private constructor used by the generated `copyWith` extension so that
-  /// `id` is copied directly (the public constructor derives it from the
-  /// section/sentence/offset when omitted).
-  const TtsChunk._({
-    required this.id,
-    this.sectionIndex = 0,
-    this.sentenceIndex = 0,
-    required this.text,
-    this.spokenText,
-    required this.startOffset,
-    required this.endOffset,
-    this.rawStartOffset,
-    this.rawEndOffset,
-    this.isParagraphEnd = false,
-    this.paragraphIndex = 0,
-    this.words = const [],
-    this.language = 'en',
-    this.estimatedDurationMs = 0,
-  });
+    int sectionIndex = 0,
+    int sentenceIndex = 0,
+    required String text,
+    String? spokenText,
+    required int startOffset,
+    required int endOffset,
+    int? rawStartOffset,
+    int? rawEndOffset,
+    bool isParagraphEnd = false,
+    int paragraphIndex = 0,
+    List<TtsWordSpan> words = const [],
+    String language = 'en',
+    int estimatedDurationMs = 0,
+  }) => TtsChunk(
+    id: id ?? '$sectionIndex:$sentenceIndex:$startOffset',
+    sectionIndex: sectionIndex,
+    sentenceIndex: sentenceIndex,
+    text: text,
+    spokenText: spokenText,
+    startOffset: startOffset,
+    endOffset: endOffset,
+    rawStartOffset: rawStartOffset,
+    rawEndOffset: rawEndOffset,
+    isParagraphEnd: isParagraphEnd,
+    paragraphIndex: paragraphIndex,
+    words: words,
+    language: language,
+    estimatedDurationMs: estimatedDurationMs,
+  );
 
   /// Effective text passed to the TTS synthesizer.
   String get speechContent =>
@@ -110,28 +97,31 @@ class TtsChunk extends Equatable {
     estimatedDurationMs: r.estimatedDurationMs,
   );
 
-  factory TtsChunk.fromJson(Map<String, dynamic> json) => TtsChunk(
-    id: json['id'] as String?,
-    sectionIndex: (json['sectionIndex'] as num?)?.toInt() ?? 0,
-    sentenceIndex: (json['sentenceIndex'] as num?)?.toInt() ?? 0,
-    text: json['text'] as String? ?? '',
-    spokenText: json['spokenText'] as String?,
-    startOffset: (json['startOffset'] as num?)?.toInt() ?? 0,
-    endOffset: (json['endOffset'] as num?)?.toInt() ?? 0,
-    rawStartOffset: (json['rawStartOffset'] as num?)?.toInt(),
-    rawEndOffset: (json['rawEndOffset'] as num?)?.toInt(),
-    isParagraphEnd: json['isParagraphEnd'] as bool? ?? false,
-    paragraphIndex: (json['paragraphIndex'] as num?)?.toInt() ?? 0,
-    words:
-        (json['words'] as List<dynamic>?)
-            ?.whereType<Map<Object?, Object?>>()
-            .map((m) => TtsWordSpan.fromJson(Map<String, dynamic>.from(m)))
-            .toList() ??
-        const [],
-    language: json['language'] as String? ?? 'en',
-    estimatedDurationMs: (json['estimatedDurationMs'] as num?)?.toInt() ?? 0,
-  );
+  factory TtsChunk.fromJson(Map<String, dynamic> json) =>
+      TtsChunk.withDerivedId(
+        id: json['id'] as String?,
+        sectionIndex: (json['sectionIndex'] as num?)?.toInt() ?? 0,
+        sentenceIndex: (json['sentenceIndex'] as num?)?.toInt() ?? 0,
+        text: json['text'] as String? ?? '',
+        spokenText: json['spokenText'] as String?,
+        startOffset: (json['startOffset'] as num?)?.toInt() ?? 0,
+        endOffset: (json['endOffset'] as num?)?.toInt() ?? 0,
+        rawStartOffset: (json['rawStartOffset'] as num?)?.toInt(),
+        rawEndOffset: (json['rawEndOffset'] as num?)?.toInt(),
+        isParagraphEnd: json['isParagraphEnd'] as bool? ?? false,
+        paragraphIndex: (json['paragraphIndex'] as num?)?.toInt() ?? 0,
+        words:
+            (json['words'] as List<dynamic>?)
+                ?.whereType<Map<Object?, Object?>>()
+                .map((m) => TtsWordSpan.fromJson(Map<String, dynamic>.from(m)))
+                .toList() ??
+            const [],
+        language: json['language'] as String? ?? 'en',
+        estimatedDurationMs:
+            (json['estimatedDurationMs'] as num?)?.toInt() ?? 0,
+      );
 
+  @override
   Map<String, dynamic> toJson() => {
     'id': id,
     'sectionIndex': sectionIndex,
@@ -148,10 +138,4 @@ class TtsChunk extends Equatable {
     'language': language,
     'estimatedDurationMs': estimatedDurationMs,
   };
-
-  @override
-  bool get stringify => true;
-
-  @override
-  List<Object?> get props => [id, text, spokenText, startOffset, endOffset];
 }

@@ -1,4 +1,4 @@
-import '../models/transform_context.dart';
+import '../models/models.dart';
 import 'text_transformer.dart';
 
 /// Repairs Persian and Arabic ebook text shaping.

@@ -1,6 +1,5 @@
 import 'dart:typed_data';
-import '../models/document_metadata.dart';
-import '../models/outline_item.dart';
+import '../models/models.dart';
 
 /// Unified interface for all document types (reflowable and fixed-layout).
 abstract class DocumentReader {

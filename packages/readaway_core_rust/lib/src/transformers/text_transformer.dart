@@ -1,4 +1,4 @@
-import '../models/transform_context.dart';
+import '../models/models.dart';
 
 /// Abstract contract for modular HTML and text transformers.
 abstract interface class TextTransformer {

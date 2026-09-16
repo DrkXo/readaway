@@ -4,8 +4,7 @@ import 'package:path/path.dart' as p;
 
 import '../abstracts/document_reader.dart';
 import '../errors/document_exception.dart';
-import '../models/document_metadata.dart';
-import '../models/outline_item.dart';
+import '../models/models.dart';
 import '../rust/api/document.dart' as doc_api;
 import '../rust/rust_init.dart';
 

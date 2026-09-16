@@ -24,6 +24,7 @@ pub struct RustExtractedContent {
     pub footnotes: Vec<RustFootnote>,
 }
 
+#[flutter_rust_bridge::frb(dart_metadata=("freezed"))]
 #[derive(Debug, Clone)]
 pub struct RustDocumentMetadata {
     pub title: Option<String>,

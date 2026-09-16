@@ -1,4 +1,4 @@
-import '../models/tts_chunk.dart';
+import '../models/models.dart';
 import '../rust/api/tts.dart' as tts_api;
 
 /// High-performance text chunker and speech normalizer backed by native Rust.

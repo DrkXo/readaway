@@ -1,4 +1,4 @@
-import '../models/tts_chunk.dart';
+import '../models/models.dart';
 import '../rust/api/tts.dart' as tts_api;
 
 /// High-performance multi-script text chunking engine backed by native Rust.
@@ -62,7 +62,7 @@ class TextChunker {
       final subText = text.substring(start, end).trim();
       if (subText.isNotEmpty) {
         results.add(
-          TtsChunk(
+          TtsChunk.withDerivedId(
             sectionIndex: chunk.sectionIndex,
             sentenceIndex: chunk.sentenceIndex + results.length,
             text: subText,
@@ -93,7 +93,7 @@ class TextChunker {
       offset = end;
 
       results.add(
-        TtsChunk(
+        TtsChunk.withDerivedId(
           sectionIndex: sectionIndex,
           sentenceIndex: i,
           text: s,

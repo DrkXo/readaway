@@ -1,18 +1,12 @@
-import 'package:copy_with_extension/copy_with_extension.dart';
-import 'package:equatable/equatable.dart';
-
-part 'reading_anchor.g.dart';
+part of 'models.dart';
 
 /// Stable anchor representing a reading position within a reflowable document.
-@CopyWith()
-class ReadingAnchor extends Equatable {
-  final int chapterIndex;
-  final double progressionInChapter;
-
-  const ReadingAnchor({
-    required this.chapterIndex,
-    required this.progressionInChapter,
-  });
+@freezed
+sealed class ReadingAnchor with _$ReadingAnchor {
+  const factory ReadingAnchor({
+    required int chapterIndex,
+    required double progressionInChapter,
+  }) = _ReadingAnchor;
 
   factory ReadingAnchor.fromJson(Map<String, dynamic> json) => ReadingAnchor(
     chapterIndex: (json['chapterIndex'] as num?)?.toInt() ?? 0,
@@ -20,14 +14,9 @@ class ReadingAnchor extends Equatable {
         (json['progressionInChapter'] as num?)?.toDouble() ?? 0.0,
   );
 
+  @override
   Map<String, dynamic> toJson() => {
     'chapterIndex': chapterIndex,
     'progressionInChapter': progressionInChapter,
   };
-
-  @override
-  bool get stringify => true;
-
-  @override
-  List<Object?> get props => [chapterIndex, progressionInChapter];
 }

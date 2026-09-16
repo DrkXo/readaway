@@ -6,10 +6,7 @@ import 'package:path/path.dart' as p;
 
 import '../abstracts/reflowable_document_reader.dart';
 import '../errors/document_exception.dart';
-import '../models/document_metadata.dart';
-import '../models/document_section.dart';
-import '../models/outline_item.dart';
-import '../models/txt_models.dart';
+import '../models/models.dart';
 
 /// Reads a plain-text document, automatically detecting character encoding,
 /// parsing book metadata from filename/header, segmenting content into chapters,
@@ -111,7 +108,7 @@ class PlainTextDocumentReader implements ReflowableDocumentReader {
   String? get title => _txtMetadata.title;
 
   @override
-  DocumentMetadata? get metadata => DocumentMetadata(
+  DocumentMetadata? get metadata => DocumentMetadata.normalized(
     title: _txtMetadata.title,
     author: _txtMetadata.author,
     language: _txtMetadata.language,

@@ -6,9 +6,7 @@ import 'package:path/path.dart' as p;
 
 import '../abstracts/reflowable_document_reader.dart';
 import '../errors/document_exception.dart';
-import '../models/document_metadata.dart';
-import '../models/document_section.dart';
-import '../models/outline_item.dart';
+import '../models/models.dart';
 
 /// Reads a standalone HTML file as a single-section reflowable document.
 ///

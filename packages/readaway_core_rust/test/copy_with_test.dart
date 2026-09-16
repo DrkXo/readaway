@@ -3,8 +3,12 @@ import 'package:readaway_core_rust/readaway_core_rust.dart';
 
 void main() {
   group('generated copyWith smoke tests', () {
-    test('DocumentMetadata copyWith works (private ctor path)', () {
-      const meta = DocumentMetadata(title: 'T', author: 'A', identifier: 'I');
+    test('DocumentMetadata copyWith works (normalized ctor path)', () {
+      final meta = DocumentMetadata.normalized(
+        title: 'T',
+        author: 'A',
+        identifier: 'I',
+      );
       final updated = meta.copyWith(title: 'T2', language: 'en');
       expect(updated.title, 'T2');
       expect(updated.author, 'A');
@@ -15,8 +19,8 @@ void main() {
       expect(updated.toString(), contains('T2'));
     });
 
-    test('TtsChunk copyWith works (private ctor path)', () {
-      const chunk = TtsChunk(
+    test('TtsChunk copyWith works (derived id path)', () {
+      final chunk = TtsChunk.withDerivedId(
         sectionIndex: 1,
         sentenceIndex: 2,
         text: 'Hello',
