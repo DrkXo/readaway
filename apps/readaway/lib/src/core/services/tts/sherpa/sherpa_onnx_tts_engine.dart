@@ -88,4 +88,31 @@ class SherpaOnnxTtsEngine implements TtsEngine {
       waveform: result.waveform,
     );
   }
+
+  @override
+  Future<TtsSynthesisBytesResult> synthesizeToBytes({
+    required String text,
+    required TtsVoiceOption voice,
+    double speed = 1.0,
+    double pitch = 1.0,
+    double gapSec = 0.0,
+  }) async {
+    if (_sherpaService.activeModel?.id != voice.id) {
+      await _sherpaService.loadModel(voice.id);
+    }
+
+    final result = await _sherpaService.generateToBytes(
+      text: text,
+      speakerId: voice.sherpaSpeakerId ?? 0,
+      speed: speed,
+      gapSec: gapSec,
+    );
+
+    return TtsSynthesisBytesResult(
+      wavBytes: result.wavBytes,
+      duration: result.duration,
+      sampleRate: result.sampleRate,
+      waveform: result.waveform,
+    );
+  }
 }

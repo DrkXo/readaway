@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:readaway_core_rust/readaway_core_rust.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 
+import '../stream/wav_encoder.dart';
 import '../tts_models.dart';
 
 const sherpaTtsIsolateName = 'sherpa-tts';
@@ -112,36 +113,8 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             speed: speed,
           );
 
-          // Trim leading/trailing silence and suppress edge clicks.
-          // The buffer is freshly produced by the engine so ownership is
-          // unconditional — no aliasing concern with the caller.
-          final bounds = findSpeechBounds(audio.samples, audio.sampleRate);
-          final startIdx = (bounds.startSec * audio.sampleRate).round().clamp(
-            0,
-            audio.samples.length,
-          );
-          final endIdx = (bounds.endSec * audio.sampleRate).round().clamp(
-            0,
-            audio.samples.length,
-          );
-          final trimmed = startIdx < endIdx
-              ? audio.samples.sublist(startIdx, endIdx)
-              : audio.samples;
-          var out = trimmed;
-          if (out.isNotEmpty) {
-            applyEdgeFade(out, audio.sampleRate);
-          }
-
-          // Append the inter-chunk pause as baked silence. The player's speed
-          // stretches it, so the controller passes the already-compensated
-          // duration via bakedGapForRate.
           final gapSec = (message['gapSec'] as num?)?.toDouble() ?? 0.0;
-          final gapSamples = (gapSec * audio.sampleRate).round();
-          if (gapSamples > 0) {
-            final withGap = Float32List(out.length + gapSamples);
-            withGap.setAll(0, out);
-            out = withGap;
-          }
+          final out = _trimFadeAndGap(audio.samples, audio.sampleRate, gapSec);
 
           final ok = sherpa.writeWave(
             filename: outputPath,
@@ -158,6 +131,50 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             id,
             result: {
               'outputPath': outputPath,
+              'duration': duration,
+              'sampleRate': audio.sampleRate,
+              'waveform': peaks,
+            },
+          );
+          break;
+
+        case 'generateToBytes':
+          final engine = tts;
+          if (engine == null) {
+            reply(id, error: 'No model loaded in TTS isolate.');
+            break;
+          }
+          final text = message['text'] as String;
+          final speakerId = message['speakerId'] as int? ?? 0;
+          final speed = (message['speed'] as num?)?.toDouble() ?? 1.0;
+          final gapSec = (message['gapSec'] as num?)?.toDouble() ?? 0.0;
+
+          if (text.trim().isEmpty) {
+            reply(
+              id,
+              result: {
+                'wavBytes': Uint8List(0),
+                'duration': 0.0,
+                'sampleRate': engine.sampleRate,
+                'waveform': <double>[],
+              },
+            );
+            break;
+          }
+          final audio = engine.generate(
+            text: text,
+            sid: speakerId,
+            speed: speed,
+          );
+
+          final out = _trimFadeAndGap(audio.samples, audio.sampleRate, gapSec);
+          final wavBytes = encodeWavFromPcm(out, audio.sampleRate);
+          final duration = out.length / audio.sampleRate;
+          final peaks = _extractPeaks(out, targetBars: 64);
+          reply(
+            id,
+            result: {
+              'wavBytes': wavBytes,
               'duration': duration,
               'sampleRate': audio.sampleRate,
               'waveform': peaks,
@@ -260,6 +277,45 @@ sherpa.OfflineTtsModelConfig _sherpaConfigFromMessage(Map message) {
     default:
       throw SherpaTtsException('Unknown model type "$type"');
   }
+}
+
+/// Trims leading/trailing silence, applies edge fades, and appends [gapSec]
+/// of baked silence. Shared by the file and in-memory synthesis paths.
+///
+/// The buffer is freshly produced by the engine so ownership is unconditional
+/// — no aliasing concern with the caller.
+Float32List _trimFadeAndGap(
+  Float32List samples,
+  int sampleRate,
+  double gapSec,
+) {
+  final bounds = findSpeechBounds(samples, sampleRate);
+  final startIdx = (bounds.startSec * sampleRate).round().clamp(
+    0,
+    samples.length,
+  );
+  final endIdx = (bounds.endSec * sampleRate).round().clamp(
+    0,
+    samples.length,
+  );
+  final trimmed = startIdx < endIdx
+      ? samples.sublist(startIdx, endIdx)
+      : samples;
+  var out = trimmed;
+  if (out.isNotEmpty) {
+    applyEdgeFade(out, sampleRate);
+  }
+
+  // Append the inter-chunk pause as baked silence. The player's speed
+  // stretches it, so the controller passes the already-compensated
+  // duration via bakedGapForRate.
+  final gapSamples = (gapSec * sampleRate).round();
+  if (gapSamples > 0) {
+    final withGap = Float32List(out.length + gapSamples);
+    withGap.setAll(0, out);
+    out = withGap;
+  }
+  return out;
 }
 
 /// Computes normalized waveform amplitude peaks (0.12 to 1.0) from raw PCM samples.

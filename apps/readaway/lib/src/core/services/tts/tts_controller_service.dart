@@ -5,7 +5,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:mutex/mutex.dart';
-import 'package:path/path.dart' as p;
 import 'package:readaway_core_rust/readaway_core_rust.dart'
     show
         TtsChunk,
@@ -17,8 +16,8 @@ import 'package:rxdart/rxdart.dart';
 import '../../models/models.dart';
 import '../audio/audio_player_service.dart';
 import '../logging_service.dart';
-import '../path_service.dart';
 import '../settings_service.dart';
+import 'stream/paragraph_stream_audio_source.dart';
 import 'tts_chunker_service.dart';
 import 'tts_engine.dart';
 import 'tts_models.dart';
@@ -31,7 +30,6 @@ class TtsControllerService {
     this._engineRegistry,
     this._audioPlayer,
     this._chunkingService,
-    this._pathService,
     this._settingsService,
   ) {
     final gvs = _settingsService.settings.globalViewSettings;
@@ -45,7 +43,7 @@ class TtsControllerService {
   final TtsEngineRegistry _engineRegistry;
   final AudioPlayerService _audioPlayer;
   final TtsChunkingService _chunkingService;
-  final AppPathService _pathService;
+
   final SettingsService _settingsService;
 
   StreamSubscription<Settings>? _settingsSubscription;
@@ -401,8 +399,6 @@ class TtsControllerService {
       _chunkController.add(_masterQueue[startIndex]);
     }
     try {
-      final cacheDir = await _pathService.getTtsAudioCacheDirectory();
-
       if (_voice == null) {
         final voices = await getInstalledVoices();
         final targetVoiceKey =
@@ -428,7 +424,7 @@ class TtsControllerService {
       await engine.initialize();
 
       // 1. Pre-buffer: synthesize up to 2 initial chunks before starting playback
-      // to guarantee ExoPlayer never starves on Android.
+      // to guarantee the player never starves.
       const lookaheadInitialCount = 2;
       final initialEnd = (startIndex + lookaheadInitialCount).clamp(
         startIndex,
@@ -446,26 +442,16 @@ class TtsControllerService {
         final textToSpeak = chunk.speechContent;
         if (textToSpeak.trim().isEmpty) continue;
 
-        final filePath = p.join(
-          cacheDir.path,
-          'chunk_${sessionId}_$i.wav',
-        );
-
         try {
-          final result = await engine.synthesizeToFile(
+          final result = await engine.synthesizeToBytes(
             text: textToSpeak,
-            outputPath: filePath,
             voice: _voice!,
             speed: 1.0,
             pitch: 1.0,
             gapSec: _gapForChunk(chunk, i),
           );
           consecutiveErrors = 0;
-          if (sessionId != _activeSessionId) {
-            await _deleteFileSafe(result.file);
-            return;
-          }
-          _sessionTempFiles.add(result.file);
+          if (sessionId != _activeSessionId) return;
           _chunkWaveforms[i] = result.waveform;
           if (i == startIndex && !_waveformController.isClosed) {
             _waveformController.add(result.waveform);
@@ -484,7 +470,14 @@ class TtsControllerService {
           );
 
           initialSources.add(
-            AudioSource.file(result.file.path, tag: mediaItem),
+            ParagraphStreamAudioSource(
+              wavBytes: result.wavBytes,
+              duration: Duration(
+                milliseconds: (result.duration * 1000).round(),
+              ),
+              paragraphIndex: i,
+              tag: mediaItem,
+            ),
           );
         } catch (e) {
           if (sessionId != _activeSessionId) return;
@@ -528,26 +521,16 @@ class TtsControllerService {
         final textToSpeak = chunk.speechContent;
         if (textToSpeak.trim().isEmpty) continue;
 
-        final filePath = p.join(
-          cacheDir.path,
-          'chunk_${sessionId}_$i.wav',
-        );
-
         try {
-          final result = await engine.synthesizeToFile(
+          final result = await engine.synthesizeToBytes(
             text: textToSpeak,
-            outputPath: filePath,
             voice: _voice!,
             speed: 1.0,
             pitch: 1.0,
             gapSec: _gapForChunk(chunk, i),
           );
           consecutiveErrors = 0;
-          if (sessionId != _activeSessionId) {
-            await _deleteFileSafe(result.file);
-            return;
-          }
-          _sessionTempFiles.add(result.file);
+          if (sessionId != _activeSessionId) return;
           _chunkWaveforms[i] = result.waveform;
 
           final mediaItem = MediaItem(
@@ -563,7 +546,14 @@ class TtsControllerService {
           );
 
           await _audioPlayer.appendSource(
-            AudioSource.file(result.file.path, tag: mediaItem),
+            ParagraphStreamAudioSource(
+              wavBytes: result.wavBytes,
+              duration: Duration(
+                milliseconds: (result.duration * 1000).round(),
+              ),
+              paragraphIndex: i,
+              tag: mediaItem,
+            ),
             playIfIdle: true,
           );
         } catch (e) {
