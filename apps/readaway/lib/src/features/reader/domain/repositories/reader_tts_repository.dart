@@ -91,6 +91,7 @@ abstract interface class ReaderTtsRepository {
     String text, {
     MediaItem? tag,
     int? pageIndex,
+    void Function()? onComplete,
   });
 
   /// Pauses playback.
@@ -105,10 +106,7 @@ abstract interface class ReaderTtsRepository {
   /// Stops playback and disposes active playback session resources.
   TaskEither<Failure, Unit> stopPipeline();
 
-  /// Seeks to a specific sentence in the current page queue.
-  TaskEither<Failure, Unit> seekToQueueIndex(int index);
-
-  /// Alias for seeking to a chunk in the active sentence queue.
+  /// Seeks to a chunk in the active sentence queue.
   TaskEither<Failure, Unit> seekToChunk(int index);
 
   /// Skips to the next sentence chunk.

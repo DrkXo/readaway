@@ -137,6 +137,7 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
     String text, {
     MediaItem? tag,
     int? pageIndex,
+    void Function()? onComplete,
   }) {
     return TaskEither.tryCatch(
       () async {
@@ -145,7 +146,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
             'No voice model is selected or installed.',
           );
         }
-        await _ttsController.playText(text, tag: tag, pageIndex: pageIndex);
+        await _ttsController.playText(
+          text,
+          tag: tag,
+          pageIndex: pageIndex,
+          onComplete: onComplete,
+        );
         return unit;
       },
       (error, stack) {
@@ -213,21 +219,6 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
       },
       (error, stack) => TtsSynthesisFailure(
         'Failed to stop TTS pipeline: $error',
-        cause: error,
-        stackTrace: stack,
-      ),
-    );
-  }
-
-  @override
-  TaskEither<Failure, Unit> seekToQueueIndex(int index) {
-    return TaskEither.tryCatch(
-      () async {
-        await _ttsController.seekToChunk(index);
-        return unit;
-      },
-      (error, stack) => TtsSynthesisFailure(
-        'Failed to seek to chunk $index: $error',
         cause: error,
         stackTrace: stack,
       ),

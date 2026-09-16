@@ -215,6 +215,8 @@ class TtsControllerService {
   /// Paragraph index of the currently active chunk.
   int? get currentParagraphIndex => activeChunk?.paragraphIndex;
 
+  void Function()? _onPageCompletedCallback;
+
   /// Initializes stream listeners connecting the audio player to the TTS UI state.
   void start() {
     if (_pipelineStarted) return;
@@ -237,6 +239,7 @@ class TtsControllerService {
               const TtsPlaybackEvent(TtsPlaybackState.completed),
             );
           }
+          _onPageCompletedCallback?.call();
         }
         // If not pipelineDone, player temporarily reached end of buffered items;
         // background synthesis is continuing and will append more.
@@ -276,6 +279,7 @@ class TtsControllerService {
   /// and tears down chunking isolate.
   Future<void> stopPipeline() async {
     _activeSessionId++;
+    _onPageCompletedCallback = null;
     await _audioPlayer.stopSession();
     await _indexSubscription?.cancel();
     _indexSubscription = null;
@@ -293,10 +297,12 @@ class TtsControllerService {
     String text, {
     int startAtChunkIndex = 0,
     void Function()? onPlaybackStarted,
+    void Function()? onComplete,
     MediaItem? tag,
     int? pageIndex,
   }) => _pipelineMutex.protect(() async {
     _currentPageIndex = pageIndex;
+    _onPageCompletedCallback = onComplete;
     if (!_pageIndexController.isClosed) {
       _pageIndexController.add(pageIndex);
     }
@@ -314,6 +320,9 @@ class TtsControllerService {
     }
 
     final sessionId = ++_activeSessionId;
+    if (!_stateController.isClosed) {
+      _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.loading));
+    }
     await _audioPlayer.stopSession();
     await _cleanTempFiles();
 
@@ -398,6 +407,9 @@ class TtsControllerService {
     if (!_chunkController.isClosed && startIndex < _masterQueue.length) {
       _chunkController.add(_masterQueue[startIndex]);
     }
+    if (!_stateController.isClosed && autoPlay) {
+      _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.loading));
+    }
     try {
       if (_voice == null) {
         final voices = await getInstalledVoices();
@@ -440,7 +452,10 @@ class TtsControllerService {
         if (sessionId != _activeSessionId) return;
         final chunk = _masterQueue[i];
         final textToSpeak = chunk.speechContent;
-        if (textToSpeak.trim().isEmpty) continue;
+        if (textToSpeak.trim().isEmpty) {
+          consecutiveErrors = 0;
+          continue;
+        }
 
         try {
           final result = await engine.synthesizeToBytes(
@@ -519,7 +534,10 @@ class TtsControllerService {
         if (sessionId != _activeSessionId) return;
         final chunk = _masterQueue[i];
         final textToSpeak = chunk.speechContent;
-        if (textToSpeak.trim().isEmpty) continue;
+        if (textToSpeak.trim().isEmpty) {
+          consecutiveErrors = 0;
+          continue;
+        }
 
         try {
           final result = await engine.synthesizeToBytes(

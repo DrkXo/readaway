@@ -8,6 +8,8 @@ pub struct RustTtsChunk {
     pub start_offset: usize,
     pub end_offset: usize,
     pub estimated_duration_ms: u32,
+    pub is_paragraph_end: bool,
+    pub paragraph_index: i32,
 }
 
 #[derive(Debug, Clone)]

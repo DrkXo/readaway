@@ -938,6 +938,8 @@ impl SseDecode for crate::api::models::RustTtsChunk {
         let mut var_startOffset = <usize>::sse_decode(deserializer);
         let mut var_endOffset = <usize>::sse_decode(deserializer);
         let mut var_estimatedDurationMs = <u32>::sse_decode(deserializer);
+        let mut var_isParagraphEnd = <bool>::sse_decode(deserializer);
+        let mut var_paragraphIndex = <i32>::sse_decode(deserializer);
         return crate::api::models::RustTtsChunk {
             id: var_id,
             section_index: var_sectionIndex,
@@ -947,6 +949,8 @@ impl SseDecode for crate::api::models::RustTtsChunk {
             start_offset: var_startOffset,
             end_offset: var_endOffset,
             estimated_duration_ms: var_estimatedDurationMs,
+            is_paragraph_end: var_isParagraphEnd,
+            paragraph_index: var_paragraphIndex,
         };
     }
 }
@@ -1175,6 +1179,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::models::RustTtsChunk {
             self.start_offset.into_into_dart().into_dart(),
             self.end_offset.into_into_dart().into_dart(),
             self.estimated_duration_ms.into_into_dart().into_dart(),
+            self.is_paragraph_end.into_into_dart().into_dart(),
+            self.paragraph_index.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1368,6 +1374,8 @@ impl SseEncode for crate::api::models::RustTtsChunk {
         <usize>::sse_encode(self.start_offset, serializer);
         <usize>::sse_encode(self.end_offset, serializer);
         <u32>::sse_encode(self.estimated_duration_ms, serializer);
+        <bool>::sse_encode(self.is_paragraph_end, serializer);
+        <i32>::sse_encode(self.paragraph_index, serializer);
     }
 }
 

@@ -8,7 +8,7 @@ class TextChunker {
   /// Chunks [text] into normalized [TtsChunk]s.
   List<TtsChunk> chunkSentences(
     String text, {
-    int maxChunkChars = 350,
+    int maxChunkChars = 450,
     bool sanitizeForSpeech = true,
     int sectionIndex = 0,
     String language = 'en',
@@ -70,6 +70,7 @@ class TextChunker {
             startOffset: chunk.startOffset + start,
             endOffset: chunk.startOffset + end,
             isParagraphEnd: end >= text.length && chunk.isParagraphEnd,
+            paragraphIndex: chunk.paragraphIndex,
             language: chunk.language,
           ),
         );

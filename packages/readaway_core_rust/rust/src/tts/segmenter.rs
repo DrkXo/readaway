@@ -39,8 +39,8 @@ pub fn segment_sentences(text: &str, language: &str) -> Vec<SentenceSpan> {
         }
 
         // Compute char offsets corresponding to byte offsets or trimmed text
-        let start_pos = b.start_byte;
-        let end_pos = b.end_byte;
+        let start_pos = sanitized[..b.start_byte].chars().count();
+        let end_pos = sanitized[..b.end_byte].chars().count();
 
         spans.push(SentenceSpan {
             text: trimmed.to_string(),
@@ -81,5 +81,16 @@ mod tests {
         assert_eq!(spans.len(), 2);
         assert_eq!(spans[0].text, "First sentence.");
         assert_eq!(spans[1].text, "Second sentence.");
+    }
+
+    #[test]
+    fn test_non_ascii_char_offsets() {
+        let input = "こんにちは。世界です。";
+        let spans = segment_sentences(input, "ja");
+        assert_eq!(spans.len(), 2);
+        assert_eq!(spans[0].char_start, 0);
+        assert_eq!(spans[0].char_end, 6);
+        assert_eq!(spans[1].char_start, 6);
+        assert_eq!(spans[1].char_end, 11);
     }
 }

@@ -248,7 +248,27 @@ class _MiniPlayerPlayButton extends StatelessWidget {
     return StreamBuilder<TtsPlaybackEvent>(
       stream: tts.playbackState,
       builder: (context, snapshot) {
-        final isPlaying = snapshot.data?.state == TtsPlaybackState.playing;
+        final state = snapshot.data?.state;
+        final isPlaying = state == TtsPlaybackState.playing;
+        final isLoading = state == TtsPlaybackState.loading;
+
+        if (isLoading) {
+          return SizedBox(
+            width: 40,
+            height: 40,
+            child: Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          );
+        }
+
         return AppIconButton(
           icon: isPlaying ? LucideIcons.pause : LucideIcons.play,
           tooltip: isPlaying ? 'Pause' : 'Play',

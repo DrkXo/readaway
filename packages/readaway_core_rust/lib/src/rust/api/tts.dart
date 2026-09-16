@@ -5,7 +5,6 @@
 
 import '../frb_generated.dart';
 import 'models.dart';
-
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 /// Preprocesses raw HTML or plain text into normalized TTS chunks for speech synthesis.

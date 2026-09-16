@@ -7,14 +7,11 @@ import 'api/document.dart';
 import 'api/init.dart';
 import 'api/models.dart';
 import 'api/tts.dart';
-
 import 'dart:async';
 import 'dart:convert';
-
 import 'frb_generated.dart';
 import 'frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
-
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 /// Main entrypoint of the Rust API
@@ -928,8 +925,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustTtsChunk dco_decode_rust_tts_chunk(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 8)
-      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
     return RustTtsChunk(
       id: dco_decode_String(arr[0]),
       sectionIndex: dco_decode_i_32(arr[1]),
@@ -939,6 +936,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       startOffset: dco_decode_usize(arr[5]),
       endOffset: dco_decode_usize(arr[6]),
       estimatedDurationMs: dco_decode_u_32(arr[7]),
+      isParagraphEnd: dco_decode_bool(arr[8]),
+      paragraphIndex: dco_decode_i_32(arr[9]),
     );
   }
 
@@ -1189,6 +1188,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_startOffset = sse_decode_usize(deserializer);
     var var_endOffset = sse_decode_usize(deserializer);
     var var_estimatedDurationMs = sse_decode_u_32(deserializer);
+    var var_isParagraphEnd = sse_decode_bool(deserializer);
+    var var_paragraphIndex = sse_decode_i_32(deserializer);
     return RustTtsChunk(
       id: var_id,
       sectionIndex: var_sectionIndex,
@@ -1198,6 +1199,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       startOffset: var_startOffset,
       endOffset: var_endOffset,
       estimatedDurationMs: var_estimatedDurationMs,
+      isParagraphEnd: var_isParagraphEnd,
+      paragraphIndex: var_paragraphIndex,
     );
   }
 
@@ -1419,6 +1422,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_usize(self.startOffset, serializer);
     sse_encode_usize(self.endOffset, serializer);
     sse_encode_u_32(self.estimatedDurationMs, serializer);
+    sse_encode_bool(self.isParagraphEnd, serializer);
+    sse_encode_i_32(self.paragraphIndex, serializer);
   }
 
   @protected

@@ -95,6 +95,8 @@ sealed class TtsChunk with _$TtsChunk {
     startOffset: r.startOffset.toInt(),
     endOffset: r.endOffset.toInt(),
     estimatedDurationMs: r.estimatedDurationMs,
+    isParagraphEnd: r.isParagraphEnd,
+    paragraphIndex: r.paragraphIndex,
   );
 
   factory TtsChunk.fromJson(Map<String, dynamic> json) =>

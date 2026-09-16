@@ -36,6 +36,8 @@ void main() {
         startOffset: BigInt.from(45),
         endOffset: BigInt.from(69),
         estimatedDurationMs: 2500,
+        isParagraphEnd: true,
+        paragraphIndex: 1,
       );
 
       final dartChunk = TtsChunk.fromRust(rustChunk);
@@ -48,6 +50,8 @@ void main() {
       expect(dartChunk.startOffset, 45);
       expect(dartChunk.endOffset, 69);
       expect(dartChunk.estimatedDurationMs, 2500);
+      expect(dartChunk.isParagraphEnd, isTrue);
+      expect(dartChunk.paragraphIndex, 1);
     });
 
     test('equality and hashcode hold for identical chunks', () {

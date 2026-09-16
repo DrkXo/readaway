@@ -4,7 +4,6 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
-
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'models.freezed.dart';
@@ -118,6 +117,8 @@ class RustTtsChunk {
   final BigInt startOffset;
   final BigInt endOffset;
   final int estimatedDurationMs;
+  final bool isParagraphEnd;
+  final int paragraphIndex;
 
   const RustTtsChunk({
     required this.id,
@@ -128,6 +129,8 @@ class RustTtsChunk {
     required this.startOffset,
     required this.endOffset,
     required this.estimatedDurationMs,
+    required this.isParagraphEnd,
+    required this.paragraphIndex,
   });
 
   @override
@@ -139,7 +142,9 @@ class RustTtsChunk {
       spokenText.hashCode ^
       startOffset.hashCode ^
       endOffset.hashCode ^
-      estimatedDurationMs.hashCode;
+      estimatedDurationMs.hashCode ^
+      isParagraphEnd.hashCode ^
+      paragraphIndex.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -153,5 +158,7 @@ class RustTtsChunk {
           spokenText == other.spokenText &&
           startOffset == other.startOffset &&
           endOffset == other.endOffset &&
-          estimatedDurationMs == other.estimatedDurationMs;
+          estimatedDurationMs == other.estimatedDurationMs &&
+          isParagraphEnd == other.isParagraphEnd &&
+          paragraphIndex == other.paragraphIndex;
 }

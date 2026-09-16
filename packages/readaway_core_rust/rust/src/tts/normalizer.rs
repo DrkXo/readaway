@@ -95,15 +95,32 @@ pub fn expand_abbreviations(text: &str) -> String {
     result
 }
 
+/// Returns true if Latin characters (ASCII or Latin Extended) make up majority of alphabetic characters.
+fn is_latin_dominant(text: &str) -> bool {
+    let alpha_chars: Vec<char> = text.chars().filter(|c| c.is_alphabetic()).collect();
+    if alpha_chars.is_empty() {
+        return true;
+    }
+    let latin_count = alpha_chars
+        .iter()
+        .filter(|&&c| c.is_ascii_alphabetic() || ('\u{00C0}'..='\u{024F}').contains(&c))
+        .count();
+    (latin_count as f64 / alpha_chars.len() as f64) > 0.5
+}
+
 /// Normalizes text for speech by running Unicode sanitization,
 /// abbreviation expansion, and number spell-out.
 pub fn normalize_for_speech(text: &str) -> String {
     let unescaped = expand_abbreviations(text);
     let expanded = expand_numbers_and_currency(&unescaped);
-    // Transliterate accented or non-ASCII characters if needed
-    let ascii_approximated = deunicode::deunicode(&expanded);
+    // Transliterate accented or non-ASCII characters only when Latin-dominant
+    let transformed = if is_latin_dominant(&expanded) {
+        deunicode::deunicode(&expanded)
+    } else {
+        expanded
+    };
     // Collapse excess whitespace
-    ascii_approximated.split_whitespace().collect::<Vec<_>>().join(" ")
+    transformed.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 /// Estimates spoken audio duration in milliseconds based on word count.
@@ -151,5 +168,12 @@ mod tests {
         assert!(normalized.contains("three apples"));
         assert!(normalized.contains("five dollars"));
         assert!(normalized.contains("second day"));
+    }
+
+    #[test]
+    fn test_normalize_non_latin_preservation() {
+        let input = "こんにちは、世界！";
+        let normalized = normalize_for_speech(input);
+        assert_eq!(normalized, "こんにちは、世界！");
     }
 }
