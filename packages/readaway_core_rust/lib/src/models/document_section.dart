@@ -1,5 +1,11 @@
+import 'package:copy_with_extension/copy_with_extension.dart';
+import 'package:equatable/equatable.dart';
+
+part 'document_section.g.dart';
+
 /// A discrete reading section (chapter or spine item) within a reflowable document.
-class DocumentSection {
+@CopyWith()
+class DocumentSection extends Equatable {
   final String id;
   final int index;
   final String href;
@@ -13,18 +19,8 @@ class DocumentSection {
   });
 
   @override
-  String toString() =>
-      'DocumentSection(index: $index, href: $href, title: $title)';
+  bool get stringify => true;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is DocumentSection &&
-          runtimeType == other.runtimeType &&
-          id == other.id &&
-          index == other.index &&
-          href == other.href;
-
-  @override
-  int get hashCode => id.hashCode ^ index.hashCode ^ href.hashCode;
+  List<Object?> get props => [id, index, href];
 }

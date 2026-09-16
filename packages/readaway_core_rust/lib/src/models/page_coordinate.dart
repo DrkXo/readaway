@@ -1,5 +1,11 @@
+import 'package:copy_with_extension/copy_with_extension.dart';
+import 'package:equatable/equatable.dart';
+
+part 'page_coordinate.g.dart';
+
 /// The precise location of a page within a reflowable document.
-class PageCoordinate {
+@CopyWith()
+class PageCoordinate extends Equatable {
   final int chapterIndex;
   final int pageInChapter;
   final int totalPagesInChapter;
@@ -18,23 +24,13 @@ class PageCoordinate {
       : 0.0;
 
   @override
-  String toString() =>
-      'PageCoordinate(chapter: $chapterIndex, page: $pageInChapter/$totalPagesInChapter, global: $globalPage)';
+  bool get stringify => true;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is PageCoordinate &&
-          runtimeType == other.runtimeType &&
-          chapterIndex == other.chapterIndex &&
-          pageInChapter == other.pageInChapter &&
-          totalPagesInChapter == other.totalPagesInChapter &&
-          globalPage == other.globalPage;
-
-  @override
-  int get hashCode =>
-      chapterIndex.hashCode ^
-      pageInChapter.hashCode ^
-      totalPagesInChapter.hashCode ^
-      globalPage.hashCode;
+  List<Object?> get props => [
+    chapterIndex,
+    pageInChapter,
+    totalPagesInChapter,
+    globalPage,
+  ];
 }

@@ -33,6 +33,19 @@ migrate_working_dir/
 build/
 /coverage/
 
+# Generated code (build_runner / freezed / json_serializable / injectable / theme_tailor / flutter_gen / etc.)
+*.g.dart
+*.freezed.dart
+*.gen.dart
+*.mocks.dart
+*.config.dart
+*.gr.dart
+*.pb.dart
+*.pbjson.dart
+*.pbenum.dart
+*.tailor.dart
+*.theme.dart
+
 # Symbolication related
 app.*.symbols
 

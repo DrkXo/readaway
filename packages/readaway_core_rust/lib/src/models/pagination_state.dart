@@ -1,5 +1,11 @@
+import 'package:copy_with_extension/copy_with_extension.dart';
+import 'package:equatable/equatable.dart';
+
+part 'pagination_state.g.dart';
+
 /// Snapshot of the pagination engine state at a point in time.
-class PaginationState {
+@CopyWith()
+class PaginationState extends Equatable {
   final int chapterIndex;
   final int pageInChapter;
   final int totalPagesInChapter;
@@ -20,48 +26,15 @@ class PaginationState {
     this.chapterPageCounts = const {},
   });
 
-  PaginationState copyWith({
-    int? chapterIndex,
-    int? pageInChapter,
-    int? totalPagesInChapter,
-    int? globalPage,
-    int? totalPages,
-    double? viewportHeight,
-    Map<int, double>? chapterHeights,
-    Map<int, int>? chapterPageCounts,
-  }) {
-    return PaginationState(
-      chapterIndex: chapterIndex ?? this.chapterIndex,
-      pageInChapter: pageInChapter ?? this.pageInChapter,
-      totalPagesInChapter: totalPagesInChapter ?? this.totalPagesInChapter,
-      globalPage: globalPage ?? this.globalPage,
-      totalPages: totalPages ?? this.totalPages,
-      viewportHeight: viewportHeight ?? this.viewportHeight,
-      chapterHeights: chapterHeights ?? this.chapterHeights,
-      chapterPageCounts: chapterPageCounts ?? this.chapterPageCounts,
-    );
-  }
+  @override
+  bool get stringify => true;
 
   @override
-  String toString() =>
-      'PaginationState(globalPage: $globalPage/$totalPages, chapter: $chapterIndex, page: $pageInChapter/$totalPagesInChapter)';
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is PaginationState &&
-          runtimeType == other.runtimeType &&
-          chapterIndex == other.chapterIndex &&
-          pageInChapter == other.pageInChapter &&
-          totalPagesInChapter == other.totalPagesInChapter &&
-          globalPage == other.globalPage &&
-          totalPages == other.totalPages;
-
-  @override
-  int get hashCode =>
-      chapterIndex.hashCode ^
-      pageInChapter.hashCode ^
-      totalPagesInChapter.hashCode ^
-      globalPage.hashCode ^
-      totalPages.hashCode;
+  List<Object?> get props => [
+    chapterIndex,
+    pageInChapter,
+    totalPagesInChapter,
+    globalPage,
+    totalPages,
+  ];
 }

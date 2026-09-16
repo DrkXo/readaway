@@ -1,7 +1,13 @@
+import 'package:copy_with_extension/copy_with_extension.dart';
+import 'package:equatable/equatable.dart';
+
 import '../rust/api/models.dart';
 
+part 'outline_item.g.dart';
+
 /// A single entry in a document's table of contents / outline.
-class OutlineItem {
+@CopyWith()
+class OutlineItem extends Equatable {
   final String title;
   final String? href;
   final int level;
@@ -18,34 +24,22 @@ class OutlineItem {
 
   /// Factory recursively mapping native [RustTocItem] to [OutlineItem].
   factory OutlineItem.fromRust(RustTocItem r) => OutlineItem(
-        title: r.title,
-        href: r.href.isEmpty ? null : r.href,
-        level: r.level.toInt(),
-        chapterIndex: r.chapterIndex,
-        children: r.children.map(OutlineItem.fromRust).toList(),
-      );
+    title: r.title,
+    href: r.href.isEmpty ? null : r.href,
+    level: r.level.toInt(),
+    chapterIndex: r.chapterIndex,
+    children: r.children.map(OutlineItem.fromRust).toList(),
+  );
 
   /// Returns this item and all descendants in depth-first order.
   List<OutlineItem> flatten() => [
-        this,
-        for (final child in children) ...child.flatten(),
-      ];
+    this,
+    for (final child in children) ...child.flatten(),
+  ];
 
   @override
-  String toString() =>
-      'OutlineItem(title: $title, level: $level, chapterIndex: $chapterIndex, children: ${children.length})';
+  bool get stringify => true;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is OutlineItem &&
-          runtimeType == other.runtimeType &&
-          title == other.title &&
-          href == other.href &&
-          level == other.level &&
-          chapterIndex == other.chapterIndex;
-
-  @override
-  int get hashCode =>
-      title.hashCode ^ href.hashCode ^ level.hashCode ^ chapterIndex.hashCode;
+  List<Object?> get props => [title, href, level, chapterIndex];
 }

@@ -1,6 +1,12 @@
+import 'package:copy_with_extension/copy_with_extension.dart';
+import 'package:equatable/equatable.dart';
+
+part 'transform_context.g.dart';
+
 /// Context passed into [TextTransformer]s containing the HTML/text content
 /// and reader display settings.
-class TransformContext {
+@CopyWith()
+class TransformContext extends Equatable {
   final String content;
   final String? language;
   final bool vertical;
@@ -19,28 +25,6 @@ class TransformContext {
     this.extra = const {},
   });
 
-  TransformContext copyWith({
-    String? content,
-    String? language,
-    bool? vertical,
-    bool? replaceQuotationMarks,
-    String? convertChineseVariant,
-    bool? overrideLayout,
-    Map<String, dynamic>? extra,
-  }) {
-    return TransformContext(
-      content: content ?? this.content,
-      language: language ?? this.language,
-      vertical: vertical ?? this.vertical,
-      replaceQuotationMarks:
-          replaceQuotationMarks ?? this.replaceQuotationMarks,
-      convertChineseVariant:
-          convertChineseVariant ?? this.convertChineseVariant,
-      overrideLayout: overrideLayout ?? this.overrideLayout,
-      extra: extra ?? this.extra,
-    );
-  }
-
   factory TransformContext.fromJson(Map<String, dynamic> json) =>
       TransformContext(
         content: json['content'] as String? ?? '',
@@ -53,13 +37,27 @@ class TransformContext {
       );
 
   Map<String, dynamic> toJson() => {
-        'content': content,
-        if (language != null) 'language': language,
-        'vertical': vertical,
-        'replaceQuotationMarks': replaceQuotationMarks,
-        if (convertChineseVariant != null)
-          'convertChineseVariant': convertChineseVariant,
-        'overrideLayout': overrideLayout,
-        'extra': extra,
-      };
+    'content': content,
+    if (language != null) 'language': language,
+    'vertical': vertical,
+    'replaceQuotationMarks': replaceQuotationMarks,
+    if (convertChineseVariant != null)
+      'convertChineseVariant': convertChineseVariant,
+    'overrideLayout': overrideLayout,
+    'extra': extra,
+  };
+
+  @override
+  bool get stringify => true;
+
+  @override
+  List<Object?> get props => [
+    content,
+    language,
+    vertical,
+    replaceQuotationMarks,
+    convertChineseVariant,
+    overrideLayout,
+    extra,
+  ];
 }

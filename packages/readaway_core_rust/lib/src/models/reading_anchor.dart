@@ -1,5 +1,11 @@
+import 'package:copy_with_extension/copy_with_extension.dart';
+import 'package:equatable/equatable.dart';
+
+part 'reading_anchor.g.dart';
+
 /// Stable anchor representing a reading position within a reflowable document.
-class ReadingAnchor {
+@CopyWith()
+class ReadingAnchor extends Equatable {
   final int chapterIndex;
   final double progressionInChapter;
 
@@ -8,39 +14,20 @@ class ReadingAnchor {
     required this.progressionInChapter,
   });
 
-  ReadingAnchor copyWith({
-    int? chapterIndex,
-    double? progressionInChapter,
-  }) {
-    return ReadingAnchor(
-      chapterIndex: chapterIndex ?? this.chapterIndex,
-      progressionInChapter: progressionInChapter ?? this.progressionInChapter,
-    );
-  }
-
   factory ReadingAnchor.fromJson(Map<String, dynamic> json) => ReadingAnchor(
-        chapterIndex: (json['chapterIndex'] as num?)?.toInt() ?? 0,
-        progressionInChapter:
-            (json['progressionInChapter'] as num?)?.toDouble() ?? 0.0,
-      );
+    chapterIndex: (json['chapterIndex'] as num?)?.toInt() ?? 0,
+    progressionInChapter:
+        (json['progressionInChapter'] as num?)?.toDouble() ?? 0.0,
+  );
 
   Map<String, dynamic> toJson() => {
-        'chapterIndex': chapterIndex,
-        'progressionInChapter': progressionInChapter,
-      };
+    'chapterIndex': chapterIndex,
+    'progressionInChapter': progressionInChapter,
+  };
 
   @override
-  String toString() =>
-      'ReadingAnchor(chapterIndex: $chapterIndex, progressionInChapter: $progressionInChapter)';
+  bool get stringify => true;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ReadingAnchor &&
-          runtimeType == other.runtimeType &&
-          chapterIndex == other.chapterIndex &&
-          progressionInChapter == other.progressionInChapter;
-
-  @override
-  int get hashCode => chapterIndex.hashCode ^ progressionInChapter.hashCode;
+  List<Object?> get props => [chapterIndex, progressionInChapter];
 }
