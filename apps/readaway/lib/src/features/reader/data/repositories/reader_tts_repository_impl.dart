@@ -5,7 +5,7 @@ import 'package:readaway_core_rust/readaway_core_rust.dart' show TtsChunk;
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/services/audio/audio_player_service.dart';
-import '../../../../core/services/tts/tts_controller_service.dart';
+import '../../../../core/services/tts/controller/tts_controller_service.dart';
 import '../../../../core/services/tts/tts_models.dart';
 import '../../domain/repositories/reader_tts_repository.dart';
 
