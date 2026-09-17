@@ -15,6 +15,11 @@ export 'src/errors/document_exception.dart';
 // Extensions
 export 'src/extensions/extensions.dart';
 
+// Isolate
+export 'src/isolate/document_isolate_messages.dart';
+export 'src/isolate/document_isolate_worker.dart';
+export 'src/isolate/isolate_document_session.dart';
+
 // Lifecycle
 export 'src/lifecycle/disposable.dart';
 

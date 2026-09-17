@@ -1,11 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as p;
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
-import '../../../../core/services/document_cover_service.dart';
+import '../../../../core/services/path_service.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
 import '../../domain/repositories/library_repository.dart';
@@ -16,12 +20,12 @@ import '../datasources/library_local_data_source.dart';
 class LibraryRepositoryImpl implements LibraryRepository {
   final LibraryLocalDataSource _localDataSource;
   final FilePickerDataSource _filePickerDataSource;
-  final DocumentCoverService _coverService;
+  final AppPathService _pathService;
 
   LibraryRepositoryImpl(
     this._localDataSource,
     this._filePickerDataSource,
-    this._coverService,
+    this._pathService,
   );
 
   @override
@@ -130,37 +134,50 @@ class LibraryRepositoryImpl implements LibraryRepository {
     String title = doc.title;
     String? author;
     int pageCount = 0;
+    Uint8List? coverBytes;
 
     try {
-      final reader = await DocumentReaderFactory().open(doc.path);
-      final metaTitle = reader.title;
+      final session = await IsolateDocumentSession.open(doc.path);
+      final metaTitle = session.title;
       if (metaTitle != null && metaTitle.trim().isNotEmpty) {
         title = metaTitle.trim();
       }
-      final metaAuthor = reader.metadata?.creator;
+      final metaAuthor = session.metadata?.creator;
       if (metaAuthor != null && metaAuthor.trim().isNotEmpty) {
         author = metaAuthor.trim();
       }
-      if (reader is ReflowableDocumentReader) {
-        pageCount = reader.sectionCount;
+      pageCount = session.sectionCount;
+      final coverImgPath = session.coverImagePath;
+      if (coverImgPath != null) {
+        coverBytes = await session.loadAsset(coverImgPath);
       }
-      reader.dispose();
+      session.dispose();
     } catch (_) {
       // Non-critical if metadata extraction fails for picked file
     }
 
     String? coverPath;
-    try {
-      final coverUri = await _coverService.getCoverArtUri(
-        filePath: doc.path,
-        fileName: doc.fileName,
-        pageCount: pageCount > 0 ? pageCount : 1,
-      );
-      if (coverUri != null && coverUri.isScheme('file')) {
-        coverPath = coverUri.toFilePath();
+    if (coverBytes != null && coverBytes.isNotEmpty) {
+      try {
+        final coverDir = await _pathService.getCoversDirectory();
+        final fileHash = md5
+            .convert(utf8.encode(doc.path))
+            .toString()
+            .substring(0, 8);
+        final safeName = doc.fileName.replaceAll(
+          RegExp(r'[^a-zA-Z0-9_-]'),
+          '_',
+        );
+        final coverFile = File(
+          p.join(coverDir.path, 'cover_${safeName}_$fileHash.jpg'),
+        );
+        if (!await coverFile.exists()) {
+          await coverFile.writeAsBytes(coverBytes, flush: true);
+        }
+        coverPath = coverFile.path;
+      } catch (_) {
+        // Non-critical if saving cover file fails
       }
-    } catch (_) {
-      // Non-critical if cover extraction fails
     }
 
     final enrichedDoc = doc.copyWith(
@@ -183,18 +200,40 @@ class LibraryRepositoryImpl implements LibraryRepository {
           return some(document.coverPath!);
         }
 
-        final coverUri = await _coverService.getCoverArtUri(
-          filePath: document.path,
-          fileName: document.fileName,
-          pageCount: document.pageCount > 0 ? document.pageCount : 1,
-        );
+        try {
+          final coverDir = await _pathService.getCoversDirectory();
+          final fileHash = md5
+              .convert(utf8.encode(document.path))
+              .toString()
+              .substring(0, 8);
+          final safeName = document.fileName.replaceAll(
+            RegExp(r'[^a-zA-Z0-9_-]'),
+            '_',
+          );
+          final coverFile = File(
+            p.join(coverDir.path, 'cover_${safeName}_$fileHash.jpg'),
+          );
 
-        if (coverUri != null && coverUri.isScheme('file')) {
-          final newPath = coverUri.toFilePath();
-          final updatedDoc = document.copyWith(coverPath: newPath);
-          await _localDataSource.saveRecentDocument(updatedDoc);
-          return some(newPath);
-        }
+          if (await coverFile.exists()) {
+            final updatedDoc = document.copyWith(coverPath: coverFile.path);
+            await _localDataSource.saveRecentDocument(updatedDoc);
+            return some(coverFile.path);
+          }
+
+          final session = await IsolateDocumentSession.open(document.path);
+          final coverImgPath = session.coverImagePath;
+          if (coverImgPath != null) {
+            final bytes = await session.loadAsset(coverImgPath);
+            if (bytes != null && bytes.isNotEmpty) {
+              await coverFile.writeAsBytes(bytes, flush: true);
+              final updatedDoc = document.copyWith(coverPath: coverFile.path);
+              await _localDataSource.saveRecentDocument(updatedDoc);
+              session.dispose();
+              return some(coverFile.path);
+            }
+          }
+          session.dispose();
+        } catch (_) {}
 
         return none();
       },

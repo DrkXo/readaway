@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
@@ -9,8 +11,8 @@ import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/reader/supported_document_formats.dart';
-import '../../../../core/services/document_cover_service.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/path_service.dart';
 import '../../../../core/services/window_service.dart';
 import '../../../library/domain/entity/reading_status.dart';
 import '../../../library/domain/repositories/library_repository.dart';
@@ -20,15 +22,15 @@ import '../../domain/repositories/reader_repository.dart';
 class ReaderRepositoryImpl implements ReaderRepository {
   final WindowService _windowService;
   final NotificationService _notificationService;
-  final DocumentCoverService _coverService;
+  final AppPathService _pathService;
   final LibraryRepository _libraryRepository;
-  ReflowableDocumentReader? _reflowReader;
+  IsolateDocumentSession? _session;
   final Map<String, Uint8List> _assetCache = {};
 
   ReaderRepositoryImpl(
     this._windowService,
     this._notificationService,
-    this._coverService,
+    this._pathService,
     this._libraryRepository,
   );
 
@@ -49,35 +51,35 @@ class ReaderRepositoryImpl implements ReaderRepository {
           throw UnsupportedDocumentFormatFailure(ext.isEmpty ? 'unknown' : ext);
         }
 
-        _reflowReader?.dispose();
-        _reflowReader = null;
+        _session?.dispose();
+        _session = null;
         _assetCache.clear();
 
-        final DocumentReader reader;
+        final IsolateDocumentSession session;
         try {
-          reader = await DocumentReaderFactory().open(path);
+          session = await IsolateDocumentSession.open(path);
         } on UnsupportedFormatException {
           final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
           throw UnsupportedDocumentFormatFailure(ext.isEmpty ? 'unknown' : ext);
         }
-        if (reader is! ReflowableDocumentReader) {
+        if (!session.isReflowable) {
           final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
           throw UnsupportedDocumentFormatFailure(ext.isEmpty ? 'unknown' : ext);
         }
-        _reflowReader = reader;
+        _session = session;
 
-        final metaTitle = reader.title;
+        final metaTitle = session.title;
         final title = (metaTitle != null && metaTitle.isNotEmpty)
             ? metaTitle
             : (defaultTitle ?? file.uri.pathSegments.last);
-        final author = reader.metadata?.creator;
+        final author = session.metadata?.creator;
 
         return ReaderDocumentInfo(
           path: path,
           title: title,
           author: author,
-          pageCount: reader.sectionCount,
-          outline: reader.outline,
+          pageCount: session.sectionCount,
+          outline: session.outline,
         );
       },
       (error, stack) {
@@ -95,10 +97,10 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, ReaderPageData> loadPage(int pageIndex) {
     return TaskEither.tryCatch(
       () async {
-        if (_reflowReader != null &&
+        if (_session != null &&
             pageIndex >= 0 &&
-            pageIndex < _reflowReader!.sectionCount) {
-          final html = _reflowReader!.loadSectionHtml(pageIndex);
+            pageIndex < _session!.sectionCount) {
+          final html = await _session!.loadSectionHtml(pageIndex);
           return ReaderPageData(
             pageIndex: pageIndex,
             links: const [],
@@ -119,10 +121,10 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, String> extractPageText(int pageIndex) {
     return TaskEither.tryCatch(
       () async {
-        if (_reflowReader != null &&
+        if (_session != null &&
             pageIndex >= 0 &&
-            pageIndex < _reflowReader!.sectionCount) {
-          return _reflowReader!.extractSectionText(pageIndex);
+            pageIndex < _session!.sectionCount) {
+          return await _session!.extractSectionText(pageIndex);
         }
         throw DocumentParseFailure('Invalid section index: $pageIndex');
       },
@@ -138,10 +140,10 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, String> extractSpeechText(int pageIndex) {
     return TaskEither.tryCatch(
       () async {
-        if (_reflowReader != null &&
+        if (_session != null &&
             pageIndex >= 0 &&
-            pageIndex < _reflowReader!.sectionCount) {
-          return _reflowReader!.extractSectionSpeechText(pageIndex);
+            pageIndex < _session!.sectionCount) {
+          return await _session!.extractSectionSpeechText(pageIndex);
         }
         throw DocumentParseFailure('Invalid section index: $pageIndex');
       },
@@ -160,39 +162,14 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }) {
     return TaskEither.tryCatch(
       () async {
-        if (_reflowReader == null || url.trim().isEmpty) {
+        if (_session == null || url.trim().isEmpty) {
           return none();
         }
 
-        String? targetHref;
-        String? anchorId;
-        if (url.contains('#')) {
-          final parts = url.split('#');
-          targetHref = parts.first.trim().isEmpty ? null : parts.first.trim();
-          anchorId = parts.length > 1 ? parts[1].trim() : null;
-        } else {
-          targetHref = url.trim();
-        }
-
-        if (anchorId == null || anchorId.isEmpty) {
-          return none();
-        }
-
-        // Determine which section to search in
-        int? targetSectionIndex;
-        if (targetHref != null && targetHref.isNotEmpty) {
-          targetSectionIndex = _reflowReader!.resolveSectionIndex(targetHref);
-        }
-        targetSectionIndex ??= currentChapterIndex;
-
-        if (targetSectionIndex == null ||
-            targetSectionIndex < 0 ||
-            targetSectionIndex >= _reflowReader!.sectionCount) {
-          return none();
-        }
-
-        final html = _reflowReader!.loadSectionHtml(targetSectionIndex);
-        final footnote = FootnoteTransformer.findFootnote(html, anchorId);
+        final footnote = await _session!.resolveFootnote(
+          url,
+          currentChapterIndex: currentChapterIndex,
+        );
         if (footnote != null) {
           return some(footnote);
         }
@@ -214,11 +191,37 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }) {
     return TaskEither.tryCatch(
       () async {
-        return _coverService.getCoverArtUri(
-          filePath: filePath,
-          fileName: fileName,
-          pageCount: pageCount,
+        // 1. Check if recent document already has a valid cover path
+        final docsRes = await _libraryRepository.getRecentDocuments().run();
+        final doc = docsRes
+            .getOrElse((_) => [])
+            .where((d) => d.path == filePath)
+            .firstOrNull;
+        if (doc?.coverPath != null && await File(doc!.coverPath!).exists()) {
+          return File(doc.coverPath!).uri;
+        }
+
+        // 2. Check if cover file exists in cache directory
+        final coverDir = await _pathService.getCoversDirectory();
+        final fileHash =
+            md5.convert(utf8.encode(filePath)).toString().substring(0, 8);
+        final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+        final coverFile = File(
+          p.join(coverDir.path, 'cover_${safeName}_$fileHash.jpg'),
         );
+        if (await coverFile.exists()) {
+          return coverFile.uri;
+        }
+
+        // 3. Fallback to extract from active session
+        if (_session != null && _session!.coverImagePath != null) {
+          final bytes = await _session!.loadAsset(_session!.coverImagePath!);
+          if (bytes != null && bytes.isNotEmpty) {
+            await coverFile.writeAsBytes(bytes, flush: true);
+            return coverFile.uri;
+          }
+        }
+        return null;
       },
       (error, stack) => StorageReadFailure(
         filePath,
@@ -268,9 +271,9 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }) {
     return TaskEither.tryCatch(
       () async {
-        if (_reflowReader == null) {
+        if (_session == null) {
           logger.w(
-            '[ReaderRepository] loadAssetBytes: _reflowReader is null for asset: $assetPath',
+            '[ReaderRepository] loadAssetBytes: _session is null for asset: $assetPath',
           );
           return null;
         }
@@ -295,8 +298,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
         // 1. If pageIndex is provided, resolve relative to that section/chapter
         if (pageIndex != null && pageIndex >= 0) {
-          final resolved = _reflowReader!.resolveAssetPath(pageIndex, decoded);
-          final bytes = _reflowReader!.loadAsset(resolved);
+          final resolved = await _session!.resolveAssetPath(pageIndex, decoded);
+          final bytes = await _session!.loadAsset(resolved);
           if (bytes != null && bytes.isNotEmpty) {
             cache(bytes);
             return bytes;
@@ -304,7 +307,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
 
         // 2. Try direct decoded path
-        var bytes = _reflowReader!.loadAsset(decoded);
+        var bytes = await _session!.loadAsset(decoded);
         if (bytes != null && bytes.isNotEmpty) {
           cache(bytes);
           return bytes;
@@ -312,7 +315,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
         // 3. Try raw path
         if (cleanPath != decoded) {
-          bytes = _reflowReader!.loadAsset(cleanPath);
+          bytes = await _session!.loadAsset(cleanPath);
           if (bytes != null && bytes.isNotEmpty) {
             cache(bytes);
             return bytes;
@@ -324,7 +327,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
             ? decoded.substring(1)
             : decoded;
         if (noSlash != decoded) {
-          bytes = _reflowReader!.loadAsset(noSlash);
+          bytes = await _session!.loadAsset(noSlash);
           if (bytes != null && bytes.isNotEmpty) {
             cache(bytes);
             return bytes;
@@ -333,7 +336,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
         // 5. Try basename fallback
         final base = p.posix.basename(decoded);
-        bytes = _reflowReader!.loadAsset(base);
+        bytes = await _session!.loadAsset(base);
         if (bytes != null && bytes.isNotEmpty) {
           cache(bytes);
           return bytes;
@@ -362,7 +365,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
   @override
   TaskEither<Failure, int?> resolveReflowableLink(String uri) {
     return TaskEither.tryCatch(
-      () async => _reflowReader?.resolveSectionIndex(uri),
+      () async => _session != null ? await _session!.resolveSectionIndex(uri) : null,
       (error, stack) => CorruptDocumentFailure(
         'Failed to resolve reflowable link: $error',
         cause: error,
@@ -454,8 +457,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, Unit> closeDocument() {
     return TaskEither.tryCatch(
       () async {
-        _reflowReader?.dispose();
-        _reflowReader = null;
+        _session?.dispose();
+        _session = null;
         _assetCache.clear();
         return unit;
       },

@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:readaway/src/core/services/document_cover_service.dart';
 import 'package:readaway/src/core/services/notification_service.dart';
+import 'package:readaway/src/core/services/path_service.dart';
 import 'package:readaway/src/core/services/window_service.dart';
 import 'package:readaway/src/features/library/domain/repositories/library_repository.dart';
 import 'package:readaway/src/features/reader/data/repositories/reader_repository_impl.dart';
@@ -16,7 +16,7 @@ class MockWindowService extends Mock implements WindowService {}
 
 class MockNotificationService extends Mock implements NotificationService {}
 
-class MockDocumentCoverService extends Mock implements DocumentCoverService {}
+class MockAppPathService extends Mock implements AppPathService {}
 
 class MockLibraryRepository extends Mock implements LibraryRepository {}
 
@@ -112,13 +112,13 @@ void main() {
       when(() => windowService.setDefaultTitle()).thenAnswer((_) async {});
 
       final notifService = MockNotificationService();
-      final coverService = MockDocumentCoverService();
+      final pathService = MockAppPathService();
       final libRepo = MockLibraryRepository();
 
       repository = ReaderRepositoryImpl(
         windowService,
         notifService,
-        coverService,
+        pathService,
         libRepo,
       );
     });
