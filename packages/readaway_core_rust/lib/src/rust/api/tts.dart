@@ -5,16 +5,9 @@
 
 import '../frb_generated.dart';
 import 'models.dart';
+
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-/// Preprocesses raw HTML or plain text into normalized TTS chunks for speech synthesis.
-/// Performs:
-/// 1. HTML tag removal and footnote isolation (if HTML).
-/// 2. Unicode NFKC normalization and zero-width character stripping.
-/// 3. Sentence boundary segmentation with abbreviation disambiguation (`sentencex`).
-/// 4. Spoken text expansion ($42.50 -> forty-two dollars and fifty cents, Dr. -> Doctor).
-/// 5. Phonetic transliteration with `deunicode`.
-/// 6. Duration estimation and character offset tracking.
 List<RustTtsChunk> preprocessTextForTts({
   required String text,
   required int sectionIndex,
