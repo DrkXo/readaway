@@ -11,6 +11,7 @@ import '../../../../../core/widgets/core_widgets.dart';
 import '../../../domain/repositories/reader_tts_repository.dart';
 import '../../bloc/reader_bloc.dart';
 import 'live_speech_waveform.dart';
+import 'tts_sleep_timer_control.dart';
 
 class ReaderTtsMiniPlayerBar extends StatelessWidget {
   const ReaderTtsMiniPlayerBar({
@@ -224,12 +225,42 @@ class _MiniPlayerText extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 2),
-            AppCaption(
-              isOtherPage
-                  ? 'Playing on Page ${(ttsPage ?? 0) + 1} • Tap to open'
-                  : 'Drag ↑ / ↓ • Tap to open • Swipe ←/→ skip',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            BlocBuilder<ReaderBloc, ReaderState>(
+              buildWhen: (prev, curr) =>
+                  prev.ttsSleepTimerRemaining != curr.ttsSleepTimerRemaining,
+              builder: (context, timerState) {
+                final remaining = timerState.ttsSleepTimerRemaining;
+                return Row(
+                  children: [
+                    if (remaining != null) ...[
+                      Icon(
+                        LucideIcons.moonStar,
+                        size: 12,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        formatSleepDuration(remaining),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Expanded(
+                      child: AppCaption(
+                        isOtherPage
+                            ? 'Playing on Page ${(ttsPage ?? 0) + 1} • Tap to open'
+                            : 'Drag ↑ / ↓ • Tap to open • Swipe ←/→ skip',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         );

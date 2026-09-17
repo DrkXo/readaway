@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:readaway_core/readaway_core.dart' show TtsChunk;
 import 'package:rxdart/rxdart.dart';
@@ -10,8 +11,10 @@ import '../../../../../core/services/tts/tts_models.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../domain/repositories/reader_tts_repository.dart';
+import '../../bloc/reader_bloc.dart';
 import 'live_speech_waveform.dart';
 import 'tts_pitch_control_panel.dart';
+import 'tts_sleep_timer_control.dart';
 import 'tts_speed_control_panel.dart';
 import 'tts_voice_selection_panel.dart';
 import 'waveform_scrubber.dart';
@@ -38,6 +41,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
   bool _showSpeedPanel = false;
   bool _showVoicePanel = false;
   bool _showPitchPanel = false;
+  bool _showSleepTimerPanel = false;
   late final Stream<(PositionData, List<double>)> _waveformStream;
 
   @override
@@ -287,6 +291,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             if (_showVoicePanel) {
                               _showSpeedPanel = false;
                               _showPitchPanel = false;
+                              _showSleepTimerPanel = false;
                             }
                           });
                         },
@@ -317,6 +322,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             if (_showSpeedPanel) {
                               _showVoicePanel = false;
                               _showPitchPanel = false;
+                              _showSleepTimerPanel = false;
                             }
                           });
                         },
@@ -348,10 +354,48 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             if (_showPitchPanel) {
                               _showVoicePanel = false;
                               _showSpeedPanel = false;
+                              _showSleepTimerPanel = false;
                             }
                           });
                         },
                         onLongPress: () => tts.setPitch(1.0).run(),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // 3d. Sleep Timer Pill
+                Expanded(
+                  child: BlocBuilder<ReaderBloc, ReaderState>(
+                    buildWhen: (prev, curr) =>
+                        prev.ttsSleepTimerRemaining !=
+                        curr.ttsSleepTimerRemaining,
+                    builder: (context, state) {
+                      final remaining = state.ttsSleepTimerRemaining;
+                      final label = remaining == null
+                          ? 'Timer'
+                          : formatSleepDuration(remaining);
+                      return _buildSettingPill(
+                        scheme: scheme,
+                        icon: remaining == null
+                            ? LucideIcons.moon
+                            : LucideIcons.moonStar,
+                        label: label,
+                        isActive: _showSleepTimerPanel,
+                        tooltip: remaining == null
+                            ? 'Sleep Timer'
+                            : 'Sleep Timer: stops in $label',
+                        onTap: () {
+                          setState(() {
+                            _showSleepTimerPanel = !_showSleepTimerPanel;
+                            if (_showSleepTimerPanel) {
+                              _showVoicePanel = false;
+                              _showSpeedPanel = false;
+                              _showPitchPanel = false;
+                            }
+                          });
+                        },
                       );
                     },
                   ),
@@ -426,6 +470,25 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                                 tts.setPitch(newPitch).run(),
                             onClose: () {
                               setState(() => _showPitchPanel = false);
+                            },
+                          );
+                        },
+                      ),
+                    )
+                  : _showSleepTimerPanel
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: BlocBuilder<ReaderBloc, ReaderState>(
+                        buildWhen: (prev, curr) =>
+                            prev.ttsSleepTimerRemaining !=
+                                curr.ttsSleepTimerRemaining ||
+                            prev.ttsActive != curr.ttsActive,
+                        builder: (context, readerState) {
+                          return TtsSleepTimerControl(
+                            initialSelection:
+                                readerState.ttsSleepTimerRemaining,
+                            onClose: () {
+                              setState(() => _showSleepTimerPanel = false);
                             },
                           );
                         },

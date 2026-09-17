@@ -323,6 +323,7 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default('sentence') String ttsHighlightGranularity,
     dynamic ttsMediaMetadata,
     @Default('default') String ttsPlayerStyle,
+    @Default(-1) int ttsSleepTimerMinutes,
     @Default(false) bool translationEnabled,
     @Default('google') String translationProvider,
     @Default('en') String translateTargetLang,

@@ -74,6 +74,26 @@ extension TtsVoiceAndRate on TtsControllerService {
     }
   }
 
+  /// Persists the sleep-timer duration as a [GlobalViewSettings] preference.
+  /// A zero/negative duration disables the timer.
+  void setSleepTimer(Duration duration) {
+    final minutes = duration.inMinutes;
+    final currentSettings = _settingsService.settings;
+    if (currentSettings.globalViewSettings.ttsSleepTimerMinutes != minutes) {
+      _settingsService.scheduleSave(
+        currentSettings.copyWith(
+          globalViewSettings: currentSettings.globalViewSettings.copyWith(
+            ttsSleepTimerMinutes: minutes,
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Last persisted sleep-timer duration in minutes (-1 or 0 = off).
+  int get sleepTimerMinutes =>
+      _settingsService.settings.globalViewSettings.ttsSleepTimerMinutes;
+
   Future<void> setPitch(double pitch) async {
     _pitch = pitch;
     if (!_pitchController.isClosed) {

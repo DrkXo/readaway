@@ -94,6 +94,17 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   void start() => _ttsController.start();
 
   @override
+  void setSleepTimer(Duration duration) =>
+      _ttsController.setSleepTimer(duration);
+
+  @override
+  Duration? get sleepTimer {
+    final minutes = _ttsController.sleepTimerMinutes;
+    if (minutes <= 0) return null;
+    return Duration(minutes: minutes);
+  }
+
+  @override
   TaskEither<Failure, Unit> prepareForPlayback() {
     return TaskEither.tryCatch(
       () async {

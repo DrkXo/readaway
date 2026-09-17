@@ -19,6 +19,7 @@ abstract class ReaderState with _$ReaderState {
     UiFeedback? transientFeedback,
     @Default(false) bool ttsActive,
     int? ttsCurrentPage,
+    Duration? ttsSleepTimerRemaining,
     int? virtualPageCount,
     int? currentVirtualPage,
     ReadingAnchor? pendingRestoreAnchor,

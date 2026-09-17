@@ -50,6 +50,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_TtsErrorOccurred>(_onTtsErrorOccurred);
     on<_JumpToTtsPage>(_onJumpToTtsPage);
     on<_TtsPageAdvanced>(_onTtsPageAdvanced);
+    on<_SetSleepTimer>(_onSetSleepTimer);
+    on<_TtsSleepTimerFired>(_onTtsSleepTimerFired);
+    on<_TtsSleepTimerTick>(_onTtsSleepTimerTick);
     on<_VirtualPageChanged>(_onVirtualPageChanged);
     on<_ClearPendingRestore>(_onClearPendingRestore);
 
@@ -68,6 +71,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   }
 
   Timer? _progressDebounceTimer;
+  Timer? _sleepTimerTick;
 
   void _scheduleProgressSync(int page) {
     _progressDebounceTimer?.cancel();
@@ -112,6 +116,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   @override
   Future<void> close() async {
     _progressDebounceTimer?.cancel();
+    _cancelSleepTimer();
     _flushProgress();
     await _ttsStateSub?.cancel();
     await ttsRepository.stopPipeline().run();
@@ -310,8 +315,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           ttsCurrentPage: null,
           transientFeedback: UiFeedback(
             failure: const NotificationPermissionDeniedFailure(
-              message:
-                  'Audio notification permissions are required for background read-aloud.',
+              message: 'Audio notification permissions are required for background read-aloud.',
             ),
           ),
         ),
@@ -375,7 +379,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       }
     }
 
-    final textResult = await readerRepository.extractSpeechText(pageIndex).run();
+    final textResult = await readerRepository
+        .extractSpeechText(pageIndex)
+        .run();
     final text = textResult.getOrElse((_) => '');
     if (text.trim().isEmpty) return;
 
@@ -450,7 +456,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _autoAdvancing = true;
     try {
       // Natural pause between page transitions (scaled for playback rate)
-      final gapMs = (bakedGapForRate(kDefaultParagraphGapSec, ttsRepository.rate) * 1000).round();
+      final gapMs =
+          (bakedGapForRate(kDefaultParagraphGapSec, ttsRepository.rate) * 1000)
+              .round();
       if (gapMs > 0) {
         await Future<void>.delayed(Duration(milliseconds: gapMs));
       }
@@ -499,6 +507,72 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     Emitter<ReaderState> emit,
   ) async {
     await ttsRepository.stop().run();
+    _cancelSleepTimer();
+    emit(state.copyWith(ttsActive: false, ttsCurrentPage: null));
+  }
+
+  void _onSetSleepTimer(
+    _SetSleepTimer event,
+    Emitter<ReaderState> emit,
+  ) {
+    _sleepTimerTick?.cancel();
+    _sleepTimerTick = null;
+
+    if (event.duration <= Duration.zero) {
+      ttsRepository.setSleepTimer(Duration.zero);
+      emit(state.copyWith(ttsSleepTimerRemaining: null));
+      return;
+    }
+
+    ttsRepository.setSleepTimer(event.duration);
+    emit(state.copyWith(ttsSleepTimerRemaining: event.duration));
+
+    // The timer itself never emits; it only pokes an event so the tick handler
+    // can read current state and emit synchronously inside a handler.
+    _sleepTimerTick = Timer.periodic(const Duration(seconds: 1), (_) {
+      add(const ReaderEvent.ttsSleepTimerTick());
+    });
+  }
+
+  void _cancelSleepTimer() {
+    _sleepTimerTick?.cancel();
+    _sleepTimerTick = null;
+  }
+
+  /// Decrements the running sleep timer by one second each tick and fires
+  /// the stop flow when it reaches zero.
+  void _onTtsSleepTimerTick(
+    _TtsSleepTimerTick event,
+    Emitter<ReaderState> emit,
+  ) {
+    final remaining = state.ttsSleepTimerRemaining;
+    if (remaining == null) {
+      // Timer was cleared externally; stop ticking.
+      _sleepTimerTick?.cancel();
+      _sleepTimerTick = null;
+      return;
+    }
+
+    final next = remaining - const Duration(seconds: 1);
+    if (next <= Duration.zero) {
+      _sleepTimerTick?.cancel();
+      _sleepTimerTick = null;
+      emit(state.copyWith(ttsSleepTimerRemaining: null));
+      add(const ReaderEvent.ttsSleepTimerFired());
+    } else {
+      emit(state.copyWith(ttsSleepTimerRemaining: next));
+    }
+  }
+
+  void _onTtsSleepTimerFired(
+    _TtsSleepTimerFired event,
+    Emitter<ReaderState> emit,
+  ) {
+    _cancelSleepTimer();
+    // Full cleanup on timer end: stops playback and unloads the TTS engine
+    // (terminates the sherpa worker isolate), unlike a plain user close which
+    // only stops the session and keeps the engine warm.
+    ttsRepository.releaseResources().run();
     emit(state.copyWith(ttsActive: false, ttsCurrentPage: null));
   }
 

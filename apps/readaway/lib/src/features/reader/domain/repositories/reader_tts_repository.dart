@@ -106,6 +106,12 @@ abstract interface class ReaderTtsRepository {
   /// Stops playback and disposes active playback session resources.
   TaskEither<Failure, Unit> stopPipeline();
 
+  /// Sets the sleep-timer duration (0 = off) and persists it as a preference.
+  void setSleepTimer(Duration duration);
+
+  /// Last persisted sleep-timer duration, or null when off.
+  Duration? get sleepTimer;
+
   /// Seeks to a chunk in the active sentence queue.
   TaskEither<Failure, Unit> seekToChunk(int index);
 
