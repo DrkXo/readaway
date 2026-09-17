@@ -5,7 +5,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:mutex/mutex.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart'
+import 'package:readaway_core/readaway_core.dart'
     show
         TtsChunk,
         bakedGapForRate,

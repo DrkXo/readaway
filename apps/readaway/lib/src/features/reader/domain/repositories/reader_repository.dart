@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:fpdart/fpdart.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
 import '../entity/reader_document_info.dart';

@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 part 'reader_document_info.freezed.dart';
 

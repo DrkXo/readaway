@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 class OutlineItemTile extends StatelessWidget {
   const OutlineItemTile({

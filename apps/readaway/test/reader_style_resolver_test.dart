@@ -6,7 +6,7 @@ import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_extensions.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/viewport/page_content/html/reader_style_resolver.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 void main() {
   test('StyleResolver correctly resolves customCss from ReaderPreferences', () {

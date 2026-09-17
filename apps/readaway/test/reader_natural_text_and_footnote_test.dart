@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:readaway/src/features/reader/domain/entity/reader_document_info.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/overlay/reader_footnote_sheet.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 class FakeReflowableReader extends Fake implements ReflowableDocumentReader {
   @override
@@ -53,10 +53,6 @@ class FakeReflowableReader extends Fake implements ReflowableDocumentReader {
 }
 
 void main() {
-  setUpAll(() async {
-    await ensureRustInitialized();
-  });
-
   group('ReaderDocumentInfo Tests', () {
 
     test('instantiates with author and metadata', () {

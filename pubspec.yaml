@@ -6,7 +6,7 @@ environment:
 
 workspace:
   - apps/readaway
-  - packages/readaway_core_rust
+  - packages/readaway_core
 
 dev_dependencies:
   melos: ^8.0.0
@@ -47,9 +47,7 @@ melos:
 
     codegen:
       description: Run codegen in all apps
-      steps:
-        - melos exec --depends-on="build_runner" -- "fvm dart run build_runner build"
-        - melos exec --depends-on="flutter_rust_bridge" -- "fvm exec flutter_rust_bridge_codegen generate"
+      run: melos exec --depends-on="build_runner" -- "fvm dart run build_runner build"
 
     refresh:
       description: Refresh Apps & Packages Deps

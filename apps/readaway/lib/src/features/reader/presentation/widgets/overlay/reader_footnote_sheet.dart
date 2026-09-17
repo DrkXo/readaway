@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import 'package:readaway/src/core/theme/schemes/token_inspired.dart';
 import 'package:readaway/src/core/theme/theme.dart';

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart' show TtsChunk;
+import 'package:readaway_core/readaway_core.dart' show TtsChunk;
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../../core/services/audio/audio_player_service.dart';

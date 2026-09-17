@@ -1,5 +1,5 @@
 import 'package:injectable/injectable.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 /// Registers external (non-app) services with the DI container.
 @module

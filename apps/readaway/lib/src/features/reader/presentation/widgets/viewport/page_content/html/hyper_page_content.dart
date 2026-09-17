@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_extensions.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../../core/theme/schemes/token_inspired.dart';
 import '../../../../../../../core/theme/theme.dart';

@@ -1,6 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:readaway_core_rust/readaway_core_rust.dart' show TtsChunk;
+import 'package:readaway_core/readaway_core.dart' show TtsChunk;
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/services/audio/audio_player_service.dart';
