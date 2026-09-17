@@ -15,11 +15,16 @@ class ReaderDrawer extends StatelessWidget {
     final appColors = context.appColors;
 
     return Drawer(
-      backgroundColor: appColors.readerBackground,
+      backgroundColor: appColors.sheetBackground,
       elevation: 0,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          boxShadow: appColors.shadowLg,
+          border: Border(
+            right: BorderSide(
+              color: appColors.borderSubtle,
+              width: 1.0,
+            ),
+          ),
         ),
         child: SafeArea(
           child: ReaderTocContent(

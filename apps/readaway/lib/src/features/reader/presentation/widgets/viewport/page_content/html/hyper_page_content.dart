@@ -7,8 +7,8 @@ import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_extensions.dart';
 import 'package:readaway_core/readaway_core.dart';
 
-import '../../../../../../../core/theme/schemes/token_inspired.dart';
 import '../../../../../../../core/theme/theme.dart';
+import '../../../../../../../core/theme/theme_scheme.dart';
 import '../../../../../../../core/utils/lru_cache.dart';
 import '../../../../../../settings/domain/entity/reader_preferences.dart';
 import 'reader_style_resolver.dart';
@@ -83,8 +83,8 @@ class _HyperPageContentState extends State<HyperPageContent> {
     final appColors =
         Theme.of(context).extension<AppColors>() ??
         (Theme.of(context).brightness == Brightness.dark
-            ? tokenInspiredDark
-            : tokenInspiredLight);
+            ? ThemeSchemes.tokenInspired.dark
+            : ThemeSchemes.tokenInspired.light);
     final textColor = appColors.readerForeground;
     final linkColor = appColors.scheme.primary;
     final backgroundColor = appColors.readerBackground;
@@ -131,8 +131,9 @@ class _HyperPageContentState extends State<HyperPageContent> {
         content: preprocessedHtml,
         overrideLayout: widget.prefs.overrideLayout,
       );
-      processedHtml =
-          TextTransformPipeline.defaultPipeline.transform(transformCtx);
+      processedHtml = TextTransformPipeline.defaultPipeline.transform(
+        transformCtx,
+      );
       _transformedHtmlCache[cachedKey] = processedHtml;
     }
 

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:readaway_core/readaway_core.dart';
-
-import 'package:readaway/src/core/theme/schemes/token_inspired.dart';
 import 'package:readaway/src/core/theme/theme.dart';
+import 'package:readaway/src/core/theme/theme_scheme.dart';
 import 'package:readaway/src/core/widgets/core_widgets.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 /// Modal bottom sheet / popover that displays an interactive footnote preview.
 class ReaderFootnoteSheet extends StatelessWidget {
@@ -36,10 +35,11 @@ class ReaderFootnoteSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColors>() ??
+    final colors =
+        Theme.of(context).extension<AppColors>() ??
         (Theme.of(context).brightness == Brightness.dark
-            ? tokenInspiredDark
-            : tokenInspiredLight);
+            ? ThemeSchemes.tokenInspired.dark
+            : ThemeSchemes.tokenInspired.light);
     final plainText = HtmlTextExtractor.extractPageText(footnote.contentHtml);
     final isEndnote = footnote.type == 'endnote';
 
@@ -53,7 +53,10 @@ class ReaderFootnoteSheet extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 4.0,
+                ),
                 decoration: BoxDecoration(
                   color: colors.scheme.primaryContainer,
                   borderRadius: BorderRadius.circular(6.0),

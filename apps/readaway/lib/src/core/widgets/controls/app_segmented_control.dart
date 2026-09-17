@@ -83,7 +83,12 @@ class AppSegmentedControl<T> extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected ? scheme.surface : Colors.transparent,
                 borderRadius: BorderRadius.circular(9),
-                boxShadow: isSelected ? context.appColors.shadowSm : null,
+                border: isSelected
+                    ? Border.all(
+                        color: context.appColors.borderSubtle,
+                        width: 1.0,
+                      )
+                    : null,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

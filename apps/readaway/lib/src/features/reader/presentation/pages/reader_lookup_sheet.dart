@@ -71,13 +71,19 @@ class _ReaderLookupSheetState extends State<ReaderLookupSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.appColors.scheme;
+    final appColors = context.appColors;
+    final scheme = appColors.scheme;
 
     return Container(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
+        color: appColors.sheetBackground,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: context.appColors.shadowLg,
+        border: Border(
+          top: BorderSide(
+            color: appColors.borderSubtle,
+            width: 1.0,
+          ),
+        ),
       ),
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       child: Column(

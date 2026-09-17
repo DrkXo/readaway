@@ -63,9 +63,10 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
     final windowService = GetIt.I<WindowService>();
 
     final barHeight = height ?? (isDesktop ? desktopHeight : mobileHeight);
+    final appColors = context.appColors;
     final effectiveBgColor =
         backgroundColor ??
-        scheme.surface.withValues(alpha: isDesktop ? 0.96 : 0.92);
+        appColors.topbarBackground.withValues(alpha: isDesktop ? 0.96 : 0.92);
 
     Widget? titleWidget = title;
     if (titleWidget == null && titleText != null) {
@@ -108,7 +109,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
         border: showBottomBorder
             ? Border(
                 bottom: BorderSide(
-                  color: scheme.outlineVariant.withValues(alpha: 0.2),
+                  color: appColors.borderSubtle,
                   width: 1.0,
                 ),
               )

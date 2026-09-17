@@ -25,9 +25,16 @@ class ReaderTocSidePanel extends StatelessWidget {
     return SizedBox(
       width: _panelWidth,
       child: Material(
-        color: appColors.readerBackground,
+        color: appColors.sheetBackground,
         child: DecoratedBox(
-          decoration: BoxDecoration(boxShadow: appColors.shadowLg),
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(
+                color: appColors.borderSubtle,
+                width: 1.0,
+              ),
+            ),
+          ),
           child: SafeArea(
             child: ReaderTocContent(
               onJumpToPage: onJumpToPage,
@@ -97,9 +104,17 @@ class _ReaderTocPeekState extends State<ReaderTocPeek> {
                   duration: _peekDuration,
                   curve: Curves.easeOut,
                   child: Material(
-                    color: appColors.readerBackground,
-                    elevation: 8,
-                    child: SizedBox(
+                    color: appColors.sheetBackground,
+                    elevation: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          right: BorderSide(
+                            color: appColors.borderSubtle,
+                            width: 1.0,
+                          ),
+                        ),
+                      ),
                       width: _panelWidth,
                       height: double.infinity,
                       child: SafeArea(

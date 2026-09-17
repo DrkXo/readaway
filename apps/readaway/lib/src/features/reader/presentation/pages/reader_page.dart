@@ -318,7 +318,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                         child: Container(
                                           color: context
                                               .appColors
-                                              .readerBackground
+                                              .topbarBackground
                                               .withValues(alpha: 0.95),
                                           child: SafeArea(
                                             bottom: false,

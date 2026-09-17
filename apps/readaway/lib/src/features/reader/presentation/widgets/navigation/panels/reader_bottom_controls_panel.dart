@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../../core/models/models.dart';
-import '../../../../../../core/theme/schemes/token_inspired.dart';
 import '../../../../../../core/theme/theme.dart';
+import '../../../../../../core/theme/theme_scheme.dart';
 import 'reader_brightness_quick_view.dart';
 import 'reader_font_size_quick_view.dart';
 import 'reader_page_navigation_quick_view.dart';
@@ -61,9 +61,13 @@ class ReaderBottomControlsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final appColors = theme.extension<AppColors>() ?? tokenInspiredLight;
+    final appColors =
+        theme.extension<AppColors>() ??
+        (theme.brightness == Brightness.dark
+            ? ThemeSchemes.tokenInspired.dark
+            : ThemeSchemes.tokenInspired.light);
     final panelBgColor =
-        backgroundColor ?? scheme.surface.withValues(alpha: 0.95);
+        backgroundColor ?? appColors.sheetBackground.withValues(alpha: 0.98);
 
     final effectiveConstraints =
         constraints ??
@@ -84,10 +88,9 @@ class ReaderBottomControlsPanel extends StatelessWidget {
                   borderRadius ??
                   const BorderRadius.vertical(top: Radius.circular(20)),
               border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.25),
+                color: appColors.borderSubtle,
                 width: 1,
               ),
-              boxShadow: appColors.shadowLg,
             ),
         clipBehavior: Clip.antiAlias,
         child: Column(

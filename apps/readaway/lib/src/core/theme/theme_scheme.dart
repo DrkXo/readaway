@@ -1,3 +1,4 @@
+import 'schemes/flexoki.dart';
 import 'schemes/token_inspired.dart';
 import 'theme.dart';
 
@@ -30,16 +31,24 @@ class ThemeScheme {
 
 /// Registry of all available [ThemeScheme]s.
 abstract final class ThemeSchemes {
-  /// The built-in scheme, named "Token (Inspired)".
+  /// The built-in scheme, named "Token".
   static const tokenInspired = ThemeScheme(
     id: 'tokenInspired',
-    name: 'Token (Inspired)',
+    name: 'Token',
     light: tokenInspiredLight,
     dark: tokenInspiredDark,
   );
 
+  /// Paper-and-ink scheme, named "Flexoki".
+  static const flexoki = ThemeScheme(
+    id: 'flexoki',
+    name: 'Flexoki',
+    light: flexokiLight,
+    dark: flexokiDark,
+  );
+
   /// All available schemes, in display order.
-  static const all = <ThemeScheme>[tokenInspired];
+  static const all = <ThemeScheme>[tokenInspired, flexoki];
 
   /// Resolves a scheme by [id], falling back to [tokenInspired] when the id
   /// is unknown or null (e.g. a scheme was removed from the registry).

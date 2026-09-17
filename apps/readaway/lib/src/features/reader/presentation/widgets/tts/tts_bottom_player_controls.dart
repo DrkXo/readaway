@@ -67,18 +67,20 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
     final scheme = theme.colorScheme;
     final tts = widget.tts;
 
+    final appColors = context.appColors;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onVerticalDragUpdate: widget.onDragUpdate,
       onVerticalDragEnd: widget.onDragEnd,
       child: Container(
         decoration: BoxDecoration(
-          color: scheme.surface,
-          boxShadow: context.appColors.shadowMd,
+          color: appColors.sheetBackground,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           border: Border(
             top: BorderSide(
-              color: scheme.outlineVariant.withValues(alpha: 0.4),
+              color: appColors.borderSubtle,
+              width: 1.0,
             ),
           ),
         ),
@@ -114,7 +116,10 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                                 decoration: BoxDecoration(
                                   color: scheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(6),
-                                  boxShadow: context.appColors.shadowSm,
+                                  border: Border.all(
+                                    color: appColors.borderSubtle,
+                                    width: 0.5,
+                                  ),
                                 ),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(6),

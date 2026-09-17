@@ -55,7 +55,6 @@ class _ReaderChromeBarState extends State<ReaderChromeBar> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final appColors = context.appColors;
     final isTop = widget.position == ReaderChromePosition.top;
 
@@ -74,8 +73,22 @@ class _ReaderChromeBarState extends State<ReaderChromeBar> {
             height: widget.height,
             padding: widget.padding,
             decoration: BoxDecoration(
-              color: scheme.surface.withValues(alpha: widget.glassOpacity),
-              boxShadow: isTop ? appColors.shadowMd : appColors.shadowLg,
+              color: isTop
+                  ? appColors.topbarBackground.withValues(alpha: widget.glassOpacity)
+                  : appColors.bottombarBackground.withValues(alpha: widget.glassOpacity),
+              border: isTop
+                  ? Border(
+                      bottom: BorderSide(
+                        color: appColors.borderSubtle,
+                        width: 1.0,
+                      ),
+                    )
+                  : Border(
+                      top: BorderSide(
+                        color: appColors.borderSubtle,
+                        width: 1.0,
+                      ),
+                    ),
               borderRadius: isTop
                   ? const BorderRadius.vertical(
                       bottom: Radius.circular(16),

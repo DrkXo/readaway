@@ -83,7 +83,7 @@ class _MiniPlayerCover extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: scheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(5),
-                  boxShadow: appColors.shadowSm,
+                  border: Border.all(color: appColors.borderSubtle, width: 0.5),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(5),

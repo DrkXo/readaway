@@ -42,10 +42,9 @@ class BookCoverWidget extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: borderRadius,
           border: Border.all(
-            color: scheme.outlineVariant.withValues(alpha: 0.7),
+            color: appColors.borderSubtle,
             width: 1,
           ),
-          boxShadow: appColors.shadowSm,
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(

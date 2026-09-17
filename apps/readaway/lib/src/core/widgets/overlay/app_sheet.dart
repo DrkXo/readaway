@@ -31,51 +31,63 @@ class AppSheet extends StatelessWidget {
         final isCompact = bp == AppBreakpoint.compact;
 
         final surface = Material(
-          color: scheme.surfaceContainerLow,
+          color: appColors.sheetBackground,
           elevation: 0,
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(isCompact ? 20 : 16),
           ),
           clipBehavior: Clip.antiAlias,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (isCompact && showDragHandle)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10, bottom: 4),
-                  child: Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(2),
+          child: Container(
+            decoration: isCompact
+                ? BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: appColors.borderSubtle,
+                        width: 1.0,
+                      ),
+                    ),
+                  )
+                : null,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (isCompact && showDragHandle)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10, bottom: 4),
+                    child: Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              if (title != null || onClose != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-                  child: Row(
-                    children: [
-                      if (title != null)
-                        Expanded(
-                          child: AppHeading(title!, level: 2),
-                        ),
-                      if (onClose != null)
-                        AppIconButton(
-                          icon: LucideIcons.x,
-                          tooltip: 'Close',
-                          onPressed: onClose,
-                          size: AppIconButtonSize.small,
-                        ),
-                    ],
+                if (title != null || onClose != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+                    child: Row(
+                      children: [
+                        if (title != null)
+                          Expanded(
+                            child: AppHeading(title!, level: 2),
+                          ),
+                        if (onClose != null)
+                          AppIconButton(
+                            icon: LucideIcons.x,
+                            tooltip: 'Close',
+                            onPressed: onClose,
+                            size: AppIconButtonSize.small,
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              Flexible(child: SingleChildScrollView(child: child)),
-            ],
+                Flexible(child: SingleChildScrollView(child: child)),
+              ],
+            ),
           ),
         );
 
@@ -83,14 +95,17 @@ class AppSheet extends StatelessWidget {
           return surface;
         }
 
-        // Wide: centered popover card with scrim.
+        // Wide: centered popover card with scrim and subtle border.
         return Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: appColors.shadowLg,
+                border: Border.all(
+                  color: appColors.borderSubtle,
+                  width: 1.0,
+                ),
               ),
               child: surface,
             ),
