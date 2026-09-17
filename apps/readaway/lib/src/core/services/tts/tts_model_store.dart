@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:injectable/injectable.dart';
 
 import '../storage/hive/app_storage_service.dart';
@@ -30,25 +28,16 @@ class TtsModelStore {
   /// The persisted catalog, or null when none is stored (or it failed to
   /// decode).
   List<SherpaTtsModelInfo>? loadCatalog() {
-    final raw = _storage.readAsString(_catalogKey);
-    if (raw == null || raw.isEmpty) return null;
-    try {
-      final list = jsonDecode(raw) as List<dynamic>;
-      return list
-          .whereType<Map<String, dynamic>>()
-          .map(SherpaTtsModelInfo.fromJson)
-          .toList();
-    } catch (e) {
-      return null;
+    final raw = _storage.ttsBox.get(_catalogKey);
+    if (raw is List) {
+      return raw.whereType<SherpaTtsModelInfo>().toList();
     }
+    return null;
   }
 
   Future<void> saveCatalog(List<SherpaTtsModelInfo> models) async {
-    await _storage.writeAsString(
-      _catalogKey,
-      jsonEncode(models.map((m) => m.toJson()).toList()),
-    );
-    await _storage.writeAsInt(
+    await _storage.ttsBox.put(_catalogKey, models);
+    await _storage.ttsBox.put(
       _catalogTimestampKey,
       DateTime.now().millisecondsSinceEpoch,
     );
@@ -56,7 +45,7 @@ class TtsModelStore {
 
   /// Whether the persisted catalog was written within [catalogFreshness].
   bool isCatalogFresh() {
-    final ts = _storage.readAsInt(_catalogTimestampKey);
+    final ts = _storage.ttsBox.get(_catalogTimestampKey) as int?;
     if (ts == null) return false;
     return DateTime.now().difference(
           DateTime.fromMillisecondsSinceEpoch(ts),
@@ -67,40 +56,34 @@ class TtsModelStore {
   // --- Checksums ---
 
   Map<String, String> loadChecksums() {
-    final raw = _storage.readAsString(_checksumsKey);
-    if (raw == null || raw.isEmpty) return const {};
-    try {
-      final map = jsonDecode(raw) as Map<String, dynamic>;
-      return map.map((k, v) => MapEntry(k, v.toString()));
-    } catch (e) {
-      return const {};
+    final raw = _storage.ttsBox.get(_checksumsKey);
+    if (raw is Map) {
+      return raw.cast<String, String>();
     }
+    return const {};
   }
 
   Future<void> saveChecksums(Map<String, String> checksums) async {
-    await _storage.writeAsString(_checksumsKey, jsonEncode(checksums));
+    await _storage.ttsBox.put(_checksumsKey, checksums);
   }
 
   // --- Downloaded model ids ---
 
   Set<String> loadDownloadedIds() {
-    final raw = _storage.readAsString(_downloadedKey);
-    if (raw == null || raw.isEmpty) return {};
-    try {
-      final list = jsonDecode(raw) as List<dynamic>;
-      return list.whereType<String>().toSet();
-    } catch (e) {
-      return {};
+    final raw = _storage.ttsBox.get(_downloadedKey);
+    if (raw is List) {
+      return raw.whereType<String>().toSet();
     }
+    return {};
   }
 
   Future<void> markDownloaded(String modelId) async {
     final ids = loadDownloadedIds()..add(modelId);
-    await _storage.writeAsString(_downloadedKey, jsonEncode(ids.toList()));
+    await _storage.ttsBox.put(_downloadedKey, ids.toList());
   }
 
   Future<void> unmarkDownloaded(String modelId) async {
     final ids = loadDownloadedIds()..remove(modelId);
-    await _storage.writeAsString(_downloadedKey, jsonEncode(ids.toList()));
+    await _storage.ttsBox.put(_downloadedKey, ids.toList());
   }
 }

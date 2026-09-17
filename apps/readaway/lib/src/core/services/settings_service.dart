@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
@@ -28,21 +27,16 @@ class SettingsService {
 
   @PostConstruct(preResolve: true)
   Future<void> init() async {
-    final raw = _storage.readAsString(_key);
+    final stored = _storage.settingsBox.get(_key);
 
-    if (raw == null) {
+    if (stored == null) {
       logger.d('No stored settings found, creating defaults');
       await save(const Settings());
       return;
     }
 
-    try {
-      _settings = Settings.fromJson(jsonDecode(raw));
-      logger.d('Settings loaded');
-    } catch (e) {
-      logger.e('Failed to parse stored settings, resetting to defaults: $e');
-      await save(const Settings());
-    }
+    _settings = stored;
+    logger.d('Settings loaded');
   }
 
   Future<void> save(Settings settings) async {
@@ -50,7 +44,7 @@ class SettingsService {
     _flushTimer = null;
     _settings = settings;
     try {
-      await _storage.writeAsString(_key, jsonEncode(settings.toJson()));
+      await _storage.settingsBox.put(_key, settings);
       _changesController.add(settings);
     } catch (e) {
       logger.e('Failed to persist settings: $e');

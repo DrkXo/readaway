@@ -33,10 +33,10 @@ class AppPathService {
   Future<Directory> get tempDirectory async =>
       _tempDir ??= await getTemporaryDirectory();
 
-  /// Directory where Hive configuration and boxes live: `<app>/config`.
+  /// Directory where Hive storage boxes live: `<app>/storage`.
   Future<Directory> getHiveDirectory() async {
     final app = await appDirectory;
-    final dir = Directory(p.join(app.path, 'config'));
+    final dir = Directory(p.join(app.path, 'storage'));
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
