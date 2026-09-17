@@ -293,12 +293,20 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
       _pending.clear();
     }
 
+    final disposeId = _nextRequestId++;
+    final disposeCompleter = Completer<DocumentResponse>();
+    _pending[disposeId] = disposeCompleter;
+
     try {
-      _workerSendPort.send(DocumentRequest.dispose(id: _nextRequestId++));
+      _workerSendPort.send(DocumentRequest.dispose(id: disposeId));
     } catch (_) {}
 
-    _subscription.cancel();
-    _hostReceivePort.close();
-    _isolate.kill(priority: Isolate.beforeNextEvent);
+    disposeCompleter.future
+        .timeout(const Duration(seconds: 2))
+        .whenComplete(() {
+      _subscription.cancel();
+      _hostReceivePort.close();
+      _isolate.kill(priority: Isolate.beforeNextEvent);
+    }).ignore();
   }
 }

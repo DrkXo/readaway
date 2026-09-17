@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:readaway/src/core/theme/theme.dart';
+import 'package:readaway/src/core/utils/lru_cache.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 import 'package:readaway_core/readaway_core.dart';
@@ -50,7 +51,8 @@ class _ReaderViewportState extends State<ReaderViewport> {
   int? _lastInitializedChapterCount;
   double? _lastViewportHeight;
   bool _isPaginationUpdateScheduled = false;
-  final Map<String, List<int>> _assetCache = {};
+  final LruCache<String, List<int>> _assetCache =
+      LruCache<String, List<int>>(maximumSize: 40);
 
   @override
   void initState() {

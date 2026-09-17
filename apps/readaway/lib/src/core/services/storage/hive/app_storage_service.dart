@@ -45,7 +45,7 @@ class AppStorageService {
     _ttsBox = await Hive.openBox<dynamic>(HiveBoxes.tts);
   }
 
-  Future<void> resetStorage() async {
+  Future<void> resetStorage({bool reopen = false}) async {
     try {
       await Future.wait([
         _settingsBox.close(),
@@ -56,6 +56,12 @@ class AppStorageService {
       final files = await _config.getAllBoxFiles();
       for (final file in files) {
         if (await file.exists()) await file.delete();
+      }
+      if (reopen) {
+        _settingsBox = await Hive.openBox<Settings>(HiveBoxes.settings);
+        _libraryBox = await Hive.openBox<RecentDocument>(HiveBoxes.library);
+        _readerBox = await Hive.openBox<ReaderPreferences>(HiveBoxes.reader);
+        _ttsBox = await Hive.openBox<dynamic>(HiveBoxes.tts);
       }
     } catch (e) {
       throw AppStorageException('Failed to reset Hive storage: $e');

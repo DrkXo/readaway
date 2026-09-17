@@ -174,34 +174,45 @@ class HtmlTextExtractor {
     return results;
   }
 
+  static final RegExp _entityRe = RegExp(
+    r'&(?:nbsp|amp|lt|gt|quot|#39|apos|mdash|ndash|hellip|laquo|raquo|#\d+|#x[0-9a-fA-F]+);',
+    caseSensitive: false,
+  );
+
+  static const Map<String, String> _namedEntities = {
+    '&nbsp;': ' ',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+    '&mdash;': '—',
+    '&ndash;': '–',
+    '&hellip;': '…',
+    '&laquo;': '«',
+    '&raquo;': '»',
+  };
+
   static String decodeHtmlEntities(String text) {
-    var result = text
-        .replaceAll('&nbsp;', ' ')
-        .replaceAll('&amp;', '&')
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&quot;', '"')
-        .replaceAll('&#39;', "'")
-        .replaceAll('&apos;', "'")
-        .replaceAll('&mdash;', '—')
-        .replaceAll('&ndash;', '–')
-        .replaceAll('&hellip;', '…')
-        .replaceAll('&laquo;', '«')
-        .replaceAll('&raquo;', '»');
+    if (!text.contains('&')) return text;
+    return text.replaceAllMapped(_entityRe, (match) {
+      final entity = match.group(0)!;
+      final named = _namedEntities[entity.toLowerCase()];
+      if (named != null) return named;
 
-    // Decode decimal numeric entities &#1234;
-    result = result.replaceAllMapped(RegExp(r'&#(\d+);'), (m) {
-      final code = int.tryParse(m.group(1)!);
-      return code != null ? String.fromCharCode(code) : m.group(0)!;
+      if (entity.startsWith('&#x') || entity.startsWith('&#X')) {
+        final hexStr = entity.substring(3, entity.length - 1);
+        final code = int.tryParse(hexStr, radix: 16);
+        if (code != null) return String.fromCharCode(code);
+      } else if (entity.startsWith('&#')) {
+        final decStr = entity.substring(2, entity.length - 1);
+        final code = int.tryParse(decStr);
+        if (code != null) return String.fromCharCode(code);
+      }
+
+      return entity;
     });
-
-    // Decode hex numeric entities &#x1F600;
-    result = result.replaceAllMapped(RegExp(r'&#x([0-9a-fA-F]+);'), (m) {
-      final code = int.tryParse(m.group(1)!, radix: 16);
-      return code != null ? String.fromCharCode(code) : m.group(0)!;
-    });
-
-    return result;
   }
 }
 

@@ -9,6 +9,7 @@ import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../../core/theme/schemes/token_inspired.dart';
 import '../../../../../../../core/theme/theme.dart';
+import '../../../../../../../core/utils/lru_cache.dart';
 import '../../../../../../settings/domain/entity/reader_preferences.dart';
 import 'reader_style_resolver.dart';
 
@@ -32,6 +33,9 @@ class HyperPageContent extends StatefulWidget {
 }
 
 class _HyperPageContentState extends State<HyperPageContent> {
+  static final LruCache<String, String> _transformedHtmlCache =
+      LruCache<String, String>(maximumSize: 40);
+
   late DocumentNode _document;
   late Color _textColor;
   late Color _linkColor;
@@ -40,7 +44,8 @@ class _HyperPageContentState extends State<HyperPageContent> {
 
   final ReaderStyleResolver _styleResolver = const ReaderStyleResolver();
   final HtmlAdapter _htmlAdapter = HtmlAdapter();
-  final Map<String, Uint8List> _assetBytesCache = {};
+  final LruCache<String, Uint8List> _assetBytesCache =
+      LruCache<String, Uint8List>(maximumSize: 30);
   final Map<String, Future<Uint8List?>> _inFlightAssetRequests = {};
 
   Future<Uint8List?> _resolveAssetBytes(String src) {
@@ -106,6 +111,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
 
   DocumentNode _parseDocument() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final customCss = _styleResolver.buildCustomCss(
       prefs: widget.prefs,
       textColor: _textColor,
@@ -114,16 +120,21 @@ class _HyperPageContentState extends State<HyperPageContent> {
       isDarkMode: isDark,
     );
 
-    // Pre-process HTML to convert SVG image wrappers (commonly used for EPUB covers) into <img> tags
-    final preprocessedHtml = _preprocessHtml(widget.html);
+    final cachedKey = '${widget.html.hashCode}_${widget.prefs.overrideLayout}';
+    var processedHtml = _transformedHtmlCache[cachedKey];
+    if (processedHtml == null) {
+      // Pre-process HTML to convert SVG image wrappers (commonly used for EPUB covers) into <img> tags
+      final preprocessedHtml = _preprocessHtml(widget.html);
 
-    // Apply pre-render natural reading text transformations
-    final transformCtx = TransformContext(
-      content: preprocessedHtml,
-      overrideLayout: widget.prefs.overrideLayout,
-    );
-    final processedHtml =
-        TextTransformPipeline.defaultPipeline.transform(transformCtx);
+      // Apply pre-render natural reading text transformations
+      final transformCtx = TransformContext(
+        content: preprocessedHtml,
+        overrideLayout: widget.prefs.overrideLayout,
+      );
+      processedHtml =
+          TextTransformPipeline.defaultPipeline.transform(transformCtx);
+      _transformedHtmlCache[cachedKey] = processedHtml;
+    }
 
     // 1. Parse HTML into DocumentNode
     final document = _htmlAdapter.parse(processedHtml);
@@ -157,6 +168,10 @@ class _HyperPageContentState extends State<HyperPageContent> {
   /// into standard `<img>` tags so [HtmlAdapter] parses them into image nodes.
   String _preprocessHtml(String rawHtml) {
     if (rawHtml.isEmpty) return rawHtml;
+    final lower = rawHtml.toLowerCase();
+    if (!lower.contains('<svg') && !lower.contains('<image')) {
+      return rawHtml;
+    }
 
     // 1. Convert <svg ...><image ... xlink:href/href="..." .../></svg> blocks into <img> tags
     var result = rawHtml.replaceAllMapped(

@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../../../../core/theme/theme.dart';
+import '../../../../../../core/utils/lru_cache.dart';
 import '../../../../../../features/settings/domain/entity/reader_preferences.dart';
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
@@ -54,7 +56,8 @@ class ReflowableReaderPage extends StatefulWidget {
 class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   late final ScrollController _scrollController;
   late final ReflowableScrollCoordinator _scrollCoordinator;
-  final Map<String, List<int>> _assetCache = {};
+  final LruCache<String, List<int>> _assetCache =
+      LruCache<String, List<int>>(maximumSize: 30);
   final Map<String, Future<List<int>?>> _inFlightAssetRequests = {};
 
   @override
@@ -238,23 +241,14 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
         .run();
     return res.fold(
       (failure) {
-        debugPrint(
-          '[ReflowableReaderPage] Failed to load asset "$src" for page ${widget.index}: $failure',
-        );
-        return null;
-      },
-      (bytes) {
-        if (bytes != null && bytes.isNotEmpty) {
+        if (kDebugMode) {
           debugPrint(
-            '[ReflowableReaderPage] Successfully loaded asset "$src" (${bytes.length} bytes)',
-          );
-        } else {
-          debugPrint(
-            '[ReflowableReaderPage] Asset "$src" returned null or empty for page ${widget.index}',
+            '[ReflowableReaderPage] Failed to load asset "$src" for page ${widget.index}: $failure',
           );
         }
-        return bytes;
+        return null;
       },
+      (bytes) => bytes,
     );
   }
 

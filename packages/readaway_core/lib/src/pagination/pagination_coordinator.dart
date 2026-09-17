@@ -211,6 +211,10 @@ class PaginationCoordinator {
   }
 
   void dispose() {
+    _chapterHeights.clear();
+    _chapterPageCounts.clear();
+    _chapterOffsets.clear();
+    _chapterLineBounds.clear();
     _stateSubject.close();
   }
 

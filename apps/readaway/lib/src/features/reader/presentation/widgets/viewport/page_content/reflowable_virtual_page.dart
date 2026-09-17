@@ -46,10 +46,13 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   final GlobalKey _contentKey = GlobalKey();
   Size? _lastConstraints;
   StreamSubscription<PaginationState>? _coordinatorSubscription;
+  List<double>? _lastOffsets;
 
   @override
   void initState() {
     super.initState();
+    _lastOffsets =
+        widget.coordinator.getChapterPageOffsets(widget.chapterIndex);
     _coordinatorSubscription = widget.coordinator.state.listen(
       (_) => _onCoordinatorUpdated(),
     );
@@ -57,7 +60,23 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   }
 
   void _onCoordinatorUpdated() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    final currentOffsets =
+        widget.coordinator.getChapterPageOffsets(widget.chapterIndex);
+    if (_lastOffsets == null ||
+        !_listEquals(_lastOffsets!, currentOffsets)) {
+      _lastOffsets = currentOffsets;
+      setState(() {});
+    }
+  }
+
+  static bool _listEquals(List<double> a, List<double> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override
@@ -69,8 +88,11 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
         (_) => _onCoordinatorUpdated(),
       );
     }
-    if (oldWidget.chapterIndex != widget.chapterIndex ||
-        oldWidget.prefs != widget.prefs ||
+    if (oldWidget.chapterIndex != widget.chapterIndex) {
+      _lastOffsets =
+          widget.coordinator.getChapterPageOffsets(widget.chapterIndex);
+      _scheduleMeasurement();
+    } else if (oldWidget.prefs != widget.prefs ||
         oldWidget.state.pageHtmls?[widget.chapterIndex] !=
             widget.state.pageHtmls?[widget.chapterIndex]) {
       _scheduleMeasurement();

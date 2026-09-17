@@ -15,6 +15,7 @@ class CbzDocumentReader with DisposableMixin implements DocumentReader {
   final List<String> _pagePaths;
   final String? _title;
   final Map<String, ArchiveFile> _entriesByName;
+  final InputFileStream? _inputStream;
   final Map<int, Uint8List> _imageCache = {};
   final Map<String, Uint8List> _assetCache = {};
 
@@ -23,6 +24,7 @@ class CbzDocumentReader with DisposableMixin implements DocumentReader {
     required List<String> pagePaths,
     required this._entriesByName,
     this._title,
+    this._inputStream,
   }) : _pagePaths = List.unmodifiable(pagePaths);
 
   /// Opens a CBZ comic archive from [filePath].
@@ -31,8 +33,19 @@ class CbzDocumentReader with DisposableMixin implements DocumentReader {
     if (!file.existsSync()) {
       throw DocumentOpenException('CBZ file not found: $filePath');
     }
-    final bytes = file.readAsBytesSync();
-    return fromBytes(bytes, filePath: filePath);
+    final stream = InputFileStream(filePath);
+    final Archive archive;
+    try {
+      archive = ZipDecoder().decodeStream(stream, verify: false);
+    } catch (e) {
+      await stream.close();
+      throw DocumentParseException('Failed to parse CBZ zip archive: $e');
+    }
+    return _fromArchive(
+      archive,
+      filePath: filePath,
+      inputStream: stream,
+    );
   }
 
   /// Opens a CBZ comic archive from in-memory [bytes].
@@ -46,7 +59,14 @@ class CbzDocumentReader with DisposableMixin implements DocumentReader {
     } catch (e) {
       throw DocumentParseException('Failed to parse CBZ zip archive: $e');
     }
+    return _fromArchive(archive, filePath: filePath);
+  }
 
+  static Future<CbzDocumentReader> _fromArchive(
+    Archive archive, {
+    required String filePath,
+    InputFileStream? inputStream,
+  }) async {
     final entriesByName = <String, ArchiveFile>{};
     final imagePaths = <String>[];
 
@@ -74,6 +94,7 @@ class CbzDocumentReader with DisposableMixin implements DocumentReader {
       pagePaths: imagePaths,
       entriesByName: entriesByName,
       title: p.basenameWithoutExtension(filePath),
+      inputStream: inputStream,
     );
   }
 
@@ -111,7 +132,7 @@ class CbzDocumentReader with DisposableMixin implements DocumentReader {
     final file = _entriesByName[norm] ?? _entriesByName[assetPath];
     if (file == null) return null;
 
-    final bytes = Uint8List.fromList(file.content as List<int>);
+    final bytes = _extractBytes(file);
     _assetCache[assetPath] = bytes;
     _assetCache[norm] = bytes;
     return bytes;
@@ -146,6 +167,11 @@ class CbzDocumentReader with DisposableMixin implements DocumentReader {
     _imageCache.clear();
     _assetCache.clear();
     _entriesByName.clear();
+    _inputStream?.close();
+  }
+
+  static Uint8List _extractBytes(ArchiveFile file) {
+    return file.readBytes() ?? Uint8List(0);
   }
 
   static bool _isImageFile(String name) {

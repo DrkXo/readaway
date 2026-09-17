@@ -156,6 +156,11 @@ class IsolateService {
         })
         .doOnListen(() {
           instance.sendPort!.send(command);
+        })
+        .doOnCancel(() {
+          try {
+            instance.sendPort?.send({'action': 'cancel', 'id': id});
+          } catch (_) {}
         });
 
     return stream;

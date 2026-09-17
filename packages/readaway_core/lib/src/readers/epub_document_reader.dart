@@ -23,6 +23,7 @@ class EpubDocumentReader
   final Archive _archive;
   final Map<String, ArchiveFile> _entriesByName;
   final String _opfDir;
+  final InputFileStream? _inputStream;
 
   final Map<int, String> _sectionHtmlCache = {};
   final Map<String, Uint8List?> _assetCache = {};
@@ -36,6 +37,7 @@ class EpubDocumentReader
     required this._archive,
     required this._entriesByName,
     required this._opfDir,
+    this._inputStream,
   }) : _outline = List.unmodifiable(outline),
        _sections = List.unmodifiable(sections),
        _spineHrefs = List.unmodifiable(spineHrefs);
@@ -46,8 +48,19 @@ class EpubDocumentReader
     if (!file.existsSync()) {
       throw DocumentOpenException('EPUB file not found: $filePath');
     }
-    final bytes = file.readAsBytesSync();
-    return fromBytes(bytes, filePath: filePath);
+    final stream = InputFileStream(filePath);
+    final Archive archive;
+    try {
+      archive = ZipDecoder().decodeStream(stream, verify: false);
+    } catch (e) {
+      await stream.close();
+      throw DocumentParseException('Failed to parse EPUB zip archive: $e');
+    }
+    return _fromArchive(
+      archive,
+      filePath: filePath,
+      inputStream: stream,
+    );
   }
 
   /// Opens an EPUB document from in-memory [bytes].
@@ -61,6 +74,14 @@ class EpubDocumentReader
     } catch (e) {
       throw DocumentParseException('Failed to parse EPUB zip archive: $e');
     }
+    return _fromArchive(archive, filePath: filePath);
+  }
+
+  static Future<EpubDocumentReader> _fromArchive(
+    Archive archive, {
+    required String filePath,
+    InputFileStream? inputStream,
+  }) async {
 
     final entriesByName = <String, ArchiveFile>{};
     for (final file in archive) {
@@ -81,7 +102,7 @@ class EpubDocumentReader
     }
 
     final containerXmlStr = utf8.decode(
-      containerFile.content as List<int>,
+      _extractBytes(containerFile),
       allowMalformed: true,
     );
     final containerXml = XmlDocument.parse(containerXmlStr);
@@ -102,7 +123,7 @@ class EpubDocumentReader
 
     final opfDir = p.posix.dirname(normalizedOpfPath);
     final opfXmlStr = utf8.decode(
-      opfFile.content as List<int>,
+      _extractBytes(opfFile),
       allowMalformed: true,
     );
     final opfXml = XmlDocument.parse(opfXmlStr);
@@ -268,7 +289,7 @@ class EpubDocumentReader
       if (ncxFile != null) {
         try {
           final ncxXmlStr = utf8.decode(
-            ncxFile.content as List<int>,
+            _extractBytes(ncxFile),
             allowMalformed: true,
           );
           outline = _parseNcxDocument(
@@ -289,6 +310,7 @@ class EpubDocumentReader
       archive: archive,
       entriesByName: entriesByName,
       opfDir: opfDir,
+      inputStream: inputStream,
     );
   }
 
@@ -333,7 +355,7 @@ class EpubDocumentReader
     }
 
     try {
-      final html = utf8.decode(file.content as List<int>, allowMalformed: true);
+      final html = utf8.decode(_extractBytes(file), allowMalformed: true);
       _sectionHtmlCache[index] = html;
       return html;
     } catch (e) {
@@ -353,7 +375,7 @@ class EpubDocumentReader
     final file = _findFile(assetPath);
     if (file == null) return null;
 
-    final bytes = Uint8List.fromList(file.content as List<int>);
+    final bytes = _extractBytes(file);
     _assetCache[assetPath] = bytes;
     return bytes;
   }
@@ -407,6 +429,11 @@ class EpubDocumentReader
     _sectionHtmlCache.clear();
     _assetCache.clear();
     _entriesByName.clear();
+    _inputStream?.close();
+  }
+
+  static Uint8List _extractBytes(ArchiveFile file) {
+    return file.readBytes() ?? Uint8List(0);
   }
 
   ArchiveFile? _findFile(String path) {

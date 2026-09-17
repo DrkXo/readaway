@@ -68,7 +68,8 @@ class BackGroundDownloaderService {
   /// downloader is ready before any screen needs it. Also safe to call
   /// again manually — it's idempotent.
   @PostConstruct(preResolve: true)
-  Future<void> init() => ensureInitialized();
+  Future<void> init() =>
+      ensureInitialized(requestNotificationPermission: false);
 
   /// Idempotent, re-entrant-safe initialization. Safe to call multiple
   /// times/from multiple places; only runs once.
@@ -88,7 +89,9 @@ class BackGroundDownloaderService {
 
       // Activates persistent DB tracking + reconciles tasks that finished
       // or were interrupted while the app was suspended/terminated.
-      await _downloader.start(autoCleanDatabase: autoCleanDatabase);
+
+      ///TODO: need to figure out if app should automatically start downloads during app start
+      // await _downloader.start(autoCleanDatabase: autoCleanDatabase);
 
       _downloader.configureNotification(
         running: const TaskNotification('Downloading', '{filename}'),
