@@ -497,6 +497,58 @@ class SherpaOnnxTtsService {
     }
   }
 
+  /// Synthesizes text to an in-memory WAV byte buffer inside the worker
+  /// isolate, avoiding disk I/O. The returned bytes are ready to be served by
+  /// a [ParagraphStreamAudioSource].
+  Future<
+    ({
+      Uint8List wavBytes,
+      double duration,
+      int sampleRate,
+      List<double> waveform,
+    })
+  >
+  generateToBytes({
+    required String text,
+    int speakerId = 0,
+    double speed = 1.0,
+    double gapSec = 0.0,
+  }) async {
+    if (!hasLoadedModel) {
+      throw const TtsModelNotLoadedException();
+    }
+    try {
+      final result = await _isolateService.sendCommand<Map>(
+        sherpaTtsIsolateName,
+        {
+          'id': _nextId(),
+          'type': 'generateToBytes',
+          'text': text,
+          'speakerId': speakerId,
+          'speed': speed,
+          'gapSec': gapSec,
+        },
+      );
+      final rawWaveform = result['waveform'] as List<dynamic>?;
+      final waveform =
+          rawWaveform
+              ?.map((e) => (e as num).toDouble())
+              .toList(growable: false) ??
+          const <double>[];
+
+      return (
+        wavBytes: result['wavBytes'] as Uint8List,
+        duration: (result['duration'] as num).toDouble(),
+        sampleRate: (result['sampleRate'] as num).toInt(),
+        waveform: waveform,
+      );
+    } catch (e, st) {
+      logger.e('Failed to generate WAV bytes with Sherpa ONNX', e, st);
+      if (e is TtsException) rethrow;
+      throw TtsSynthesisException('Synthesis to bytes failed: $e', e);
+    }
+  }
+
   Stream<Float32List> generateStreaming({
     required String text,
     int speakerId = 0,

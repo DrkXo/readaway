@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
-import 'package:readaway_core/readaway_core.dart';
+import 'package:readaway_core_rust/readaway_core_rust.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/ui_feedback.dart';
@@ -449,6 +449,13 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
     _autoAdvancing = true;
     try {
+      // Natural pause between page transitions (scaled for playback rate)
+      final gapMs = (bakedGapForRate(kDefaultParagraphGapSec, ttsRepository.rate) * 1000).round();
+      if (gapMs > 0) {
+        await Future<void>.delayed(Duration(milliseconds: gapMs));
+      }
+      if (!state.ttsActive) return;
+
       int? next;
       for (var i = basePage + 1; i < state.pageCount; i++) {
         final textResult = await readerRepository.extractSpeechText(i).run();

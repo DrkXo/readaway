@@ -7,7 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
-import 'package:readaway_core/readaway_core.dart';
+import 'package:readaway_core_rust/readaway_core_rust.dart';
 
 import '../utils/reader/reader_image_utils.dart';
 import 'logging_service.dart';

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:injectable/injectable.dart';
-import 'package:readaway_core/readaway_core.dart';
+import 'package:readaway_core_rust/readaway_core_rust.dart';
 
 import '../isolate_service.dart';
 import '../logging_service.dart';
@@ -25,7 +25,7 @@ void _textChunkerIsolateEntryPoint(SendPort mainSendPort) {
     if (message is Map && message['id'] != null) {
       final Object id = message['id'];
       final text = message['text'] as String;
-      final maxChunkChars = message['maxChunkChars'] as int? ?? 350;
+      final maxChunkChars = message['maxChunkChars'] as int? ?? 450;
       final sanitizeForSpeech = message['sanitizeForSpeech'] as bool? ?? true;
 
       try {
@@ -86,7 +86,7 @@ class TtsChunkingService {
   /// metadata, speech sanitization, word boundaries, and inferred language.
   Future<List<TtsChunk>> chunkText(
     String text, {
-    int maxChunkChars = 350,
+    int maxChunkChars = 450,
     bool sanitizeForSpeech = true,
   }) async {
     if (text.trim().isEmpty) return const [];

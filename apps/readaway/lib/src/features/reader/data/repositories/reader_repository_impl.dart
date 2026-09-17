@@ -5,7 +5,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 import 'package:readaway/src/core/services/logging_service.dart';
-import 'package:readaway_core/readaway_core.dart';
+import 'package:readaway_core_rust/readaway_core_rust.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/reader/supported_document_formats.dart';

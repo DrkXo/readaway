@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/toc/outline_item_tile.dart';
-import 'package:readaway_core/readaway_core.dart';
+import 'package:readaway_core_rust/readaway_core_rust.dart';
 
 void main() {
   const threadColors = [Colors.blue, Colors.green, Colors.purple];

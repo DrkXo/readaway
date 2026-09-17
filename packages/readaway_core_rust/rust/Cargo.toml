@@ -1,0 +1,24 @@
+[package]
+name = "readaway_core_rust"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+flutter_rust_bridge = "=2.12.0"
+sentencex = "0.1"
+num2words = "0.3"
+unicode-normalization = "0.1"
+deunicode = "1.6"
+regex = "1.10"
+lol_html = "2.1"
+rbook = "0.5"
+zip = { version = "2.2", default-features = false, features = ["deflate"] }
+serde = { version = "1.0", features = ["derive"] }
+once_cell = "1.19"
+log = "0.4"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

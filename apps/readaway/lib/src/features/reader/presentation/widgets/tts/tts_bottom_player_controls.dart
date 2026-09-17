@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:readaway_core/readaway_core.dart' show TtsChunk;
+import 'package:readaway_core_rust/readaway_core_rust.dart' show TtsChunk;
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../../core/services/audio/audio_player_service.dart';
@@ -463,8 +463,9 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
             StreamBuilder<TtsPlaybackEvent>(
               stream: tts.playbackState,
               builder: (context, snapshot) {
-                final isPlaying =
-                    snapshot.data?.state == TtsPlaybackState.playing;
+                final state = snapshot.data?.state;
+                final isPlaying = state == TtsPlaybackState.playing;
+                final isLoading = state == TtsPlaybackState.loading;
 
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -494,17 +495,32 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                         foregroundColor: scheme.onPrimary,
                         elevation: 1,
                       ),
-                      icon: Icon(
-                        isPlaying ? LucideIcons.pause : LucideIcons.play,
-                      ),
-                      tooltip: isPlaying ? 'Pause' : 'Play',
-                      onPressed: () {
-                        if (isPlaying) {
-                          tts.pause().run();
-                        } else {
-                          tts.resume().run();
-                        }
-                      },
+                      icon: isLoading
+                          ? SizedBox(
+                              width: 30,
+                              height: 30,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                color: scheme.onPrimary,
+                              ),
+                            )
+                          : Icon(
+                              isPlaying ? LucideIcons.pause : LucideIcons.play,
+                            ),
+                      tooltip: isLoading
+                          ? 'Loading speech…'
+                          : isPlaying
+                          ? 'Pause'
+                          : 'Play',
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              if (isPlaying) {
+                                tts.pause().run();
+                              } else {
+                                tts.resume().run();
+                              }
+                            },
                     ),
 
                     // Skip Next Sentence

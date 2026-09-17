@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'tts_models.dart';
 
@@ -11,6 +12,21 @@ class TtsSynthesisResult {
 
   const TtsSynthesisResult({
     required this.file,
+    required this.duration,
+    this.sampleRate = 22050,
+    this.waveform = const [],
+  });
+}
+
+/// Result of a speech synthesis operation to an in-memory WAV byte buffer.
+class TtsSynthesisBytesResult {
+  final Uint8List wavBytes;
+  final double duration;
+  final int sampleRate;
+  final List<double> waveform;
+
+  const TtsSynthesisBytesResult({
+    required this.wavBytes,
     required this.duration,
     this.sampleRate = 22050,
     this.waveform = const [],
@@ -47,6 +63,19 @@ abstract interface class TtsEngine {
   Future<TtsSynthesisResult> synthesizeToFile({
     required String text,
     required String outputPath,
+    required TtsVoiceOption voice,
+    double speed = 1.0,
+    double pitch = 1.0,
+    double gapSec = 0.0,
+  });
+
+  /// Synthesizes [text] to an in-memory WAV byte buffer.
+  ///
+  /// [gapSec] is trailing silence baked into the buffer so the pause before
+  /// the next chunk matches the natural-voice curve. Rate and pitch are
+  /// expected to be controlled by the audio player, not the engine.
+  Future<TtsSynthesisBytesResult> synthesizeToBytes({
+    required String text,
     required TtsVoiceOption voice,
     double speed = 1.0,
     double pitch = 1.0,
