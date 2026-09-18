@@ -287,15 +287,17 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     );
   }
 
-  void _onCloseDocument(
+  Future<void> _onCloseDocument(
     _CloseDocument event,
     Emitter<ReaderState> emit,
-  ) {
+  ) async {
     _progressDebounceTimer?.cancel();
+    _cancelSleepTimer();
     _flushProgress();
     _coverUri = null;
-    readerRepository.closeDocument().run();
-    readerRepository.updateWindowTitle(null).run();
+    await ttsRepository.releaseResources().run();
+    await readerRepository.closeDocument().run();
+    await readerRepository.updateWindowTitle(null).run();
     emit(const ReaderState());
   }
 
@@ -518,12 +520,12 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     }
   }
 
-  /// Stops playback and hides the TTS player.
+  /// Stops playback, terminates worker isolates, and hides the TTS player.
   Future<void> _onTtsClose(
     _TtsClose event,
     Emitter<ReaderState> emit,
   ) async {
-    await ttsRepository.stop().run();
+    await ttsRepository.releaseResources().run();
     _cancelSleepTimer();
     emit(state.copyWith(ttsActive: false, ttsCurrentPage: null));
   }
