@@ -343,20 +343,34 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       return;
     }
 
+    int targetChapter = state.currentPage;
     double? startProgression;
     final coordinator = GetIt.I.isRegistered<PaginationCoordinator>()
         ? GetIt.I<PaginationCoordinator>()
         : null;
     if (coordinator != null && coordinator.chapterCount > 0) {
-      final anchor = coordinator.currentAnchor;
-      if (anchor.chapterIndex == state.currentPage) {
-        startProgression = anchor.progressionInChapter;
+      final globalPage =
+          state.currentVirtualPage ?? coordinator.currentState.globalPage;
+      final coord = coordinator.coordinateFromGlobalPage(globalPage);
+      targetChapter = coord.chapterIndex;
+      final offsets = coordinator.getChapterPageOffsets(targetChapter);
+      final height = coordinator.getChapterHeight(targetChapter);
+      if (coord.pageInChapter < offsets.length &&
+          height != null &&
+          height > 0) {
+        startProgression = (offsets[coord.pageInChapter] / height).clamp(
+          0.0,
+          1.0,
+        );
+      } else if (coord.totalPagesInChapter > 0) {
+        startProgression = (coord.pageInChapter / coord.totalPagesInChapter)
+            .clamp(0.0, 1.0);
       }
     }
 
-    emit(state.copyWith(ttsActive: true, ttsCurrentPage: state.currentPage));
+    emit(state.copyWith(ttsActive: true, ttsCurrentPage: targetChapter));
     await _beginPageTts(
-      state.currentPage,
+      targetChapter,
       emit,
       startProgression,
     );

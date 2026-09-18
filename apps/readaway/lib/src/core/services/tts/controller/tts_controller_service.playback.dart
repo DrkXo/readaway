@@ -169,9 +169,30 @@ extension TtsPlaybackControl on TtsControllerService {
     _masterQueue = chunks;
     _baseTag = tag;
     _currentIndex = -1;
-    final startIndex = (startProgression != null && _masterQueue.isNotEmpty)
-        ? ((_masterQueue.length - 1) * startProgression.clamp(0.0, 1.0)).round().clamp(0, _masterQueue.length - 1)
-        : startAtChunkIndex.clamp(0, _masterQueue.length - 1);
+    int startIndex = startAtChunkIndex.clamp(0, math.max<int>(0, _masterQueue.length - 1));
+    if (startProgression != null && _masterQueue.isNotEmpty) {
+      if (startProgression <= 0.0) {
+        startIndex = 0;
+      } else {
+        final totalChars = _masterQueue.last.endOffset;
+        if (totalChars > 0) {
+          final targetChar = totalChars * startProgression.clamp(0.0, 1.0);
+          final matchIndex = _masterQueue.indexWhere((c) {
+            final mid = c.startOffset + (c.endOffset - c.startOffset) * 0.5;
+            return mid >= targetChar;
+          });
+          if (matchIndex != -1) {
+            startIndex = matchIndex;
+          } else {
+            startIndex = _masterQueue.length - 1;
+          }
+        } else {
+          startIndex = ((_masterQueue.length) * startProgression.clamp(0.0, 1.0))
+              .round()
+              .clamp(0, _masterQueue.length - 1);
+        }
+      }
+    }
     _lastKnownIndex = startIndex;
     _pipelineStartIndex = startIndex;
     _chunkWaveforms.clear();

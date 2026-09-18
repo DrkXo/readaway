@@ -137,6 +137,8 @@ class PaginationCoordinator {
     return const [0.0];
   }
 
+  double? getChapterHeight(int chapterIndex) => _chapterHeights[chapterIndex];
+
   ReadingAnchor createAnchor(PageCoordinate coordinate) => ReadingAnchor(
     chapterIndex: coordinate.chapterIndex,
     progressionInChapter: coordinate.progressionInChapter,
