@@ -122,13 +122,13 @@ class _ScopeChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        color: theme.colorScheme.secondary.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(3),
       ),
       child: Text(
         label,
         style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.primary,
+          color: theme.colorScheme.onSecondary,
           fontWeight: FontWeight.w600,
         ),
       ),

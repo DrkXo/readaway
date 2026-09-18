@@ -42,8 +42,8 @@ class LibraryFilterBar extends StatelessWidget {
                 icon,
                 size: 14,
                 color: isSelected
-                    ? scheme.primary
-                    : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    ? scheme.onPrimary
+                    : scheme.onSecondary,
               ),
               label: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -56,8 +56,8 @@ class LibraryFilterBar extends StatelessWidget {
                           ? FontWeight.w600
                           : FontWeight.normal,
                       color: isSelected
-                          ? scheme.onSurface
-                          : scheme.onSurfaceVariant,
+                          ? scheme.onPrimary
+                          : scheme.onSecondary,
                     ),
                   ),
                   const SizedBox(width: 5),
@@ -68,16 +68,18 @@ class LibraryFilterBar extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? scheme.primary.withValues(alpha: 0.15)
-                          : scheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(10),
+                          ? scheme.onPrimary.withValues(alpha: 0.2)
+                          : scheme.onSecondary.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
                       '$count',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: isSelected ? scheme.primary : scheme.outline,
+                        color: isSelected
+                            ? scheme.onPrimary
+                            : scheme.onSecondary,
                       ),
                     ),
                   ),
@@ -85,17 +87,9 @@ class LibraryFilterBar extends StatelessWidget {
               ),
               selected: isSelected,
               showCheckmark: false,
-              selectedColor: scheme.primaryContainer.withValues(alpha: 0.45),
-              backgroundColor: scheme.surfaceContainerLow,
-              side: BorderSide(
-                color: isSelected
-                    ? scheme.primary.withValues(alpha: 0.4)
-                    : scheme.outlineVariant.withValues(alpha: 0.5),
-                width: 1,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
+              backgroundColor: isSelected
+                  ? scheme.primary
+                  : scheme.secondary,
               onSelected: (_) => onSelectFilter(filter),
             ),
           );

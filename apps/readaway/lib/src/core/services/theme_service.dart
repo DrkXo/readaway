@@ -163,6 +163,38 @@ class ThemeService {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         ),
       ),
+      chipTheme: ChipThemeData(
+        backgroundColor: vsTheme.buttonSecondaryBackground,
+        selectedColor: vsTheme.buttonBackground,
+        labelStyle: TextStyle(color: vsTheme.buttonSecondaryForeground),
+        secondaryLabelStyle: TextStyle(color: vsTheme.buttonForeground),
+        checkmarkColor: vsTheme.buttonForeground,
+        side: BorderSide.none,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(3),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return vsTheme.buttonForeground;
+          }
+          return scheme.outline;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return vsTheme.buttonBackground;
+          }
+          return scheme.surfaceContainerHighest;
+        }),
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.transparent;
+          }
+          return scheme.outline;
+        }),
+      ),
       listTileTheme: ListTileThemeData(
         selectedTileColor: vsTheme.listActiveSelectionBackground,
         selectedColor: vsTheme.listActiveSelectionForeground,

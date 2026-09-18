@@ -68,22 +68,17 @@ class LibrarySortSheet extends StatelessWidget {
                         ? LucideIcons.arrowUpNarrowWide
                         : LucideIcons.arrowDownWideNarrow,
                     size: 16,
-                    color: scheme.primary,
+                    color: scheme.onSecondary,
                   ),
                   label: Text(
                     sortAscending ? 'Ascending' : 'Descending',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: scheme.primary,
+                      color: scheme.onSecondary,
                     ),
                   ),
-                  backgroundColor: scheme.primaryContainer.withValues(
-                    alpha: 0.35,
-                  ),
-                  side: BorderSide(
-                    color: scheme.primary.withValues(alpha: 0.3),
-                  ),
+                  backgroundColor: scheme.secondary,
                   onPressed: onToggleAscending,
                 ),
               ],

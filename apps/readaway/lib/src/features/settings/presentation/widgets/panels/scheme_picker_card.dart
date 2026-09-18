@@ -8,11 +8,18 @@ import '../../bloc/settings/settings_bloc.dart';
 
 /// Lets the user pick a color scheme.
 ///
-/// Each available scheme is shown as a tappable option with a light and dark
-/// swatch preview plus a checkmark for the active selection. The choice is
-/// persisted through [SettingsBloc] (see `GlobalViewSettings.selectedScheme`).
-class SchemePickerCard extends StatelessWidget {
+/// An expandable row that shows the active scheme with light/dark swatch
+/// previews; expanding it reveals every scheme as a full-width tappable row
+/// with a checkmark on the current selection.
+class SchemePickerCard extends StatefulWidget {
   const SchemePickerCard({super.key});
+
+  @override
+  State<SchemePickerCard> createState() => _SchemePickerCardState();
+}
+
+class _SchemePickerCardState extends State<SchemePickerCard> {
+  final _controller = ExpansibleController();
 
   @override
   Widget build(BuildContext context) {
@@ -22,29 +29,77 @@ class SchemePickerCard extends StatelessWidget {
           curr.appSettings.globalViewSettings.selectedScheme,
       builder: (context, state) {
         final selectedId = state.appSettings.globalViewSettings.selectedScheme;
-        return Column(
+        final selected = ThemeSchemes.byId(selectedId);
+        final colorScheme = Theme.of(context).colorScheme;
+        final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
+        return ExpansionTile(
+          controller: _controller,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.only(bottom: 8),
+          backgroundColor: Colors.transparent,
+          collapsedBackgroundColor: Colors.transparent,
+          iconColor: colorScheme.onSurfaceVariant,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          title: AnimatedSwitcher(
+            duration: reduceMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 200),
+            child: Column(
+              key: ValueKey(selected.id),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  selected.name,
+                  style: Theme.of(context).textTheme.bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _SwatchStrip(colors: _previewColors(selected.light)),
+                    const SizedBox(width: 8),
+                    _SwatchStrip(colors: _previewColors(selected.dark)),
+                  ],
+                ),
+              ],
+            ),
+          ),
           children: [
-            for (final scheme in ThemeSchemes.all)
+            for (final (index, scheme) in ThemeSchemes.all.indexed) ...[
+              if (index > 0)
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
               _SchemeOption(
                 scheme: scheme,
                 selected: scheme.id == selectedId,
                 onTap: () {
-                  final settings = state.appSettings;
-                  context.read<SettingsBloc>().add(
-                    SettingsEvent.updateAppSettings(
-                      settings.copyWith(
-                        globalViewSettings: settings.globalViewSettings
-                            .copyWith(
-                              selectedScheme: scheme.id,
-                            ),
-                      ),
-                    ),
-                  );
+                  _selectScheme(context, scheme.id);
+                  _controller.collapse();
                 },
               ),
+            ],
           ],
         );
       },
+    );
+  }
+
+  void _selectScheme(BuildContext context, String schemeId) {
+    final settings = context.read<SettingsBloc>().state.appSettings;
+    context.read<SettingsBloc>().add(
+      SettingsEvent.updateAppSettings(
+        settings.copyWith(
+          globalViewSettings: settings.globalViewSettings.copyWith(
+            selectedScheme: schemeId,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -66,7 +121,7 @@ class _SchemeOption extends StatelessWidget {
     final schemeColors = theme.colorScheme;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: const BorderRadius.all(Radius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -82,15 +137,6 @@ class _SchemeOption extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (scheme.originalRepoLink != null) ...[
-                    const SizedBox(height: 2),
-                    SelectableText(
-                      scheme.originalRepoLink!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: schemeColors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -118,7 +164,6 @@ class _SchemeOption extends StatelessWidget {
   }
 }
 
-/// Representative colors of a [VsCodeTheme] palette, used for the preview.
 List<Color> _previewColors(VsCodeTheme theme) => [
   theme.badgeBackground ?? theme.scheme.primary,
   theme.scheme.secondary,
