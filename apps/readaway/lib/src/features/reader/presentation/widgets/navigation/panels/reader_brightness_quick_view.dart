@@ -11,9 +11,11 @@ class ReaderBrightnessQuickView extends StatelessWidget {
   const ReaderBrightnessQuickView({
     super.key,
     required this.onClose,
+    this.documentPath,
   });
 
   final VoidCallback onClose;
+  final String? documentPath;
 
   void _updateBrightness(
     BuildContext context,
@@ -21,6 +23,7 @@ class ReaderBrightnessQuickView extends StatelessWidget {
   ) {
     context.read<SettingsBloc>().updateReaderPrefs(
       (p) => p.copyWith(brightnessOverlay: newBrightness),
+      documentPath: documentPath,
     );
   }
 
@@ -48,13 +51,13 @@ class ReaderBrightnessQuickView extends StatelessWidget {
 
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.brightnessOverlay !=
-              curr.globalReaderPrefs.brightnessOverlay ||
+          prev.effectiveReaderPrefs(documentPath).brightnessOverlay !=
+              curr.effectiveReaderPrefs(documentPath).brightnessOverlay ||
           prev.appSettings.globalViewSettings.theme !=
               curr.appSettings.globalViewSettings.theme,
       builder: (context, settingsState) {
         final currentTheme = settingsState.appSettings.globalViewSettings.theme;
-        final prefs = settingsState.globalReaderPrefs;
+        final prefs = settingsState.effectiveReaderPrefs(documentPath);
         final brightnessOverlay = prefs.brightnessOverlay;
 
         return Padding(

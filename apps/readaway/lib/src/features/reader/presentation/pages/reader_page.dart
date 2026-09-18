@@ -358,6 +358,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                             .chromeAnimationDuration,
                                         curve: Curves.easeOutCubic,
                                         child: ReaderBottomBar(
+                                          documentPath: documentPath,
                                           onOpenDrawer: () => _scaffoldKey
                                               .currentState
                                               ?.openDrawer(),

@@ -148,6 +148,7 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
     String text, {
     MediaItem? tag,
     int? pageIndex,
+    double? startProgression,
     void Function()? onComplete,
   }) {
     return TaskEither.tryCatch(
@@ -161,6 +162,7 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
           text,
           tag: tag,
           pageIndex: pageIndex,
+          startProgression: startProgression,
           onComplete: onComplete,
         );
         return unit;

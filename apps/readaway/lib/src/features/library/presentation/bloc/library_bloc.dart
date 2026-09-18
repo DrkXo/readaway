@@ -70,26 +70,34 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
   }
 
   Future<void> _populateMissingCovers(List<RecentDocument> documents) async {
-    for (final doc in documents) {
-      if (doc.coverPath == null || doc.coverPath!.isEmpty) {
-        final coverResult = await _repository.getCoverArtPath(doc).run();
-        coverResult.fold(
-          (_) {},
-          (optionPath) {
-            optionPath.fold(
-              () {},
-              (path) {
-                add(
-                  LibraryEvent.coverUpdated(
-                    path: doc.path,
-                    coverPath: path,
-                  ),
-                );
-              },
-            );
-          },
-        );
-      }
+    final missing = documents
+        .where((d) => d.coverPath == null || d.coverPath!.isEmpty)
+        .toList();
+    if (missing.isEmpty) return;
+
+    for (var i = 0; i < missing.length; i += 5) {
+      final chunk = missing.skip(i).take(5);
+      await Future.wait(
+        chunk.map((doc) async {
+          final coverResult = await _repository.getCoverArtPath(doc).run();
+          coverResult.fold(
+            (_) {},
+            (optionPath) {
+              optionPath.fold(
+                () {},
+                (path) {
+                  add(
+                    LibraryEvent.coverUpdated(
+                      path: doc.path,
+                      coverPath: path,
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        }),
+      );
     }
   }
 

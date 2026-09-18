@@ -91,6 +91,7 @@ abstract interface class ReaderTtsRepository {
     String text, {
     MediaItem? tag,
     int? pageIndex,
+    double? startProgression,
     void Function()? onComplete,
   });
 

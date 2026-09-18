@@ -3,7 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../bloc/library_bloc.dart';
 
-class LibrarySortSheet extends StatelessWidget {
+class LibrarySortSheet extends StatefulWidget {
   const LibrarySortSheet({
     super.key,
     required this.currentSortBy,
@@ -41,6 +41,38 @@ class LibrarySortSheet extends StatelessWidget {
   }
 
   @override
+  State<LibrarySortSheet> createState() => _LibrarySortSheetState();
+}
+
+class _LibrarySortSheetState extends State<LibrarySortSheet> {
+  late LibrarySortBy _selectedSortBy;
+  late bool _sortAscending;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSortBy = widget.currentSortBy;
+    _sortAscending = widget.sortAscending;
+  }
+
+  void _handleSortSelection(LibrarySortBy sort) {
+    if (_selectedSortBy == sort) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() => _selectedSortBy = sort);
+    widget.onSortChanged(sort);
+    Future.delayed(const Duration(milliseconds: 180), () {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  void _handleToggleAscending() {
+    setState(() => _sortAscending = !_sortAscending);
+    widget.onToggleAscending();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
@@ -64,22 +96,23 @@ class LibrarySortSheet extends StatelessWidget {
                 ),
                 ActionChip(
                   avatar: Icon(
-                    sortAscending
+                    _sortAscending
                         ? LucideIcons.arrowUpNarrowWide
                         : LucideIcons.arrowDownWideNarrow,
                     size: 16,
-                    color: scheme.onSecondary,
+                    color: scheme.primary,
                   ),
                   label: Text(
-                    sortAscending ? 'Ascending' : 'Descending',
+                    _sortAscending ? 'Ascending' : 'Descending',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: scheme.onSecondary,
+                      color: scheme.primary,
                     ),
                   ),
-                  backgroundColor: scheme.secondary,
-                  onPressed: onToggleAscending,
+                  backgroundColor: scheme.primaryContainer.withValues(alpha: 0.3),
+                  side: BorderSide.none,
+                  onPressed: _handleToggleAscending,
                 ),
               ],
             ),
@@ -87,7 +120,7 @@ class LibrarySortSheet extends StatelessWidget {
             const Divider(height: 1),
             const SizedBox(height: 6),
             ...LibrarySortBy.values.map((sort) {
-              final isSelected = sort == currentSortBy;
+              final isSelected = sort == _selectedSortBy;
               return ListTile(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -122,10 +155,7 @@ class LibrarySortSheet extends StatelessWidget {
                 tileColor: isSelected
                     ? scheme.primaryContainer.withValues(alpha: 0.25)
                     : Colors.transparent,
-                onTap: () {
-                  onSortChanged(sort);
-                  Navigator.of(context).pop();
-                },
+                onTap: () => _handleSortSelection(sort),
               );
             }),
             const SizedBox(height: 12),

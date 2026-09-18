@@ -116,6 +116,7 @@ extension TtsPlaybackControl on TtsControllerService {
   Future<void> playText(
     String text, {
     int startAtChunkIndex = 0,
+    double? startProgression,
     void Function()? onPlaybackStarted,
     void Function()? onComplete,
     MediaItem? tag,
@@ -168,7 +169,9 @@ extension TtsPlaybackControl on TtsControllerService {
     _masterQueue = chunks;
     _baseTag = tag;
     _currentIndex = -1;
-    final startIndex = startAtChunkIndex.clamp(0, _masterQueue.length - 1);
+    final startIndex = (startProgression != null && _masterQueue.isNotEmpty)
+        ? ((_masterQueue.length - 1) * startProgression.clamp(0.0, 1.0)).round().clamp(0, _masterQueue.length - 1)
+        : startAtChunkIndex.clamp(0, _masterQueue.length - 1);
     _lastKnownIndex = startIndex;
     _pipelineStartIndex = startIndex;
     _chunkWaveforms.clear();

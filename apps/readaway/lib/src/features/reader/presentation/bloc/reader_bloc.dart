@@ -341,8 +341,23 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       return;
     }
 
+    double? startProgression;
+    final coordinator = GetIt.I.isRegistered<PaginationCoordinator>()
+        ? GetIt.I<PaginationCoordinator>()
+        : null;
+    if (coordinator != null && coordinator.chapterCount > 0) {
+      final anchor = coordinator.currentAnchor;
+      if (anchor.chapterIndex == state.currentPage) {
+        startProgression = anchor.progressionInChapter;
+      }
+    }
+
     emit(state.copyWith(ttsActive: true, ttsCurrentPage: state.currentPage));
-    await _beginPageTts(state.currentPage, emit);
+    await _beginPageTts(
+      state.currentPage,
+      emit,
+      startProgression,
+    );
   }
 
   /// Starts TTS playback for the page at [pageIndex]: sets the active voice
@@ -350,6 +365,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   Future<void> _beginPageTts(
     int pageIndex, [
     Emitter<ReaderState>? emit,
+    double? startProgression,
   ]) async {
     final prepResult = await ttsRepository.prepareForPlayback().run();
     final prepFailure = prepResult.getLeft().toNullable();
@@ -407,6 +423,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         .playText(
           text,
           pageIndex: pageIndex,
+          startProgression: startProgression,
           tag: MediaItem(
             id: 'page-${pageIndex + 1}',
             title: 'Page ${pageIndex + 1}',

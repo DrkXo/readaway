@@ -134,14 +134,8 @@ mixin ReaderBottomBarMixin on State<ReaderBottomBar>, TickerProvider {
 
     return OverlayEntry(
       builder: (overlayContext) {
-        final theme = Theme.of(context);
-        final scheme = theme.colorScheme;
         final mediaQuery = MediaQuery.of(context);
         final bottomPadding = mediaQuery.padding.bottom;
-        final cardBgColor =
-            widget.panelBackgroundColor ??
-            widget.backgroundColor ??
-            scheme.surface.withValues(alpha: 0.95);
 
         return MultiBlocProvider(
           providers: [
@@ -177,7 +171,8 @@ mixin ReaderBottomBarMixin on State<ReaderBottomBar>, TickerProvider {
                         child: ReaderBottomControlsPanel(
                           width: widget.panelWidth,
                           maxWidth: widget.panelMaxWidth,
-                          backgroundColor: cardBgColor,
+                          backgroundColor: widget.panelBackgroundColor ?? widget.backgroundColor,
+                          documentPath: widget.documentPath,
                           panelNotifier: panelNotifier,
                           onClose: closePanel,
                           onPreviousPage: widget.onPreviousPage,

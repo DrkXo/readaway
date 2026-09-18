@@ -78,11 +78,12 @@ extension UDTNodeExtensions on UDTNode {
             ? node.style.fontSize
             : prefs.fontSize;
 
+        node.style.fontSize = effectiveFontSize;
+        node.style.markExplicitlySet('font-size');
+
         if (prefs.overrideFont) {
           node.style.fontFamily = prefs.resolvedFont;
           node.style.markExplicitlySet('font-family');
-          node.style.fontSize = effectiveFontSize;
-          node.style.markExplicitlySet('font-size');
           node.style.fontWeight = _fontWeightFromString(prefs.fontWeight);
           node.style.markExplicitlySet('font-weight');
         }

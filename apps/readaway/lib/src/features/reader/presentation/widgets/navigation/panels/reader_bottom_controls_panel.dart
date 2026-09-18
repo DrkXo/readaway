@@ -18,6 +18,7 @@ class ReaderBottomControlsPanel extends StatelessWidget {
     required this.onPreviousPage,
     required this.onNextPage,
     required this.onSeekToPage,
+    this.documentPath,
     this.width = double.infinity,
     this.maxWidth = double.infinity,
     this.constraints,
@@ -32,6 +33,7 @@ class ReaderBottomControlsPanel extends StatelessWidget {
   final VoidCallback onPreviousPage;
   final VoidCallback onNextPage;
   final ValueChanged<int> onSeekToPage;
+  final String? documentPath;
 
   /// Optional fixed width. Defaults to [double.infinity] to fill max available width.
   final double? width;
@@ -115,6 +117,7 @@ class ReaderBottomControlsPanel extends StatelessWidget {
                   child: switch (panel) {
                     ReaderBottomPanel.brightness => ReaderBrightnessQuickView(
                       key: const ValueKey('brightness'),
+                      documentPath: documentPath,
                       onClose: onClose,
                     ),
                     ReaderBottomPanel.pageNavigation =>
@@ -127,6 +130,7 @@ class ReaderBottomControlsPanel extends StatelessWidget {
                       ),
                     ReaderBottomPanel.fontSize => ReaderFontSizeQuickView(
                       key: const ValueKey('fontSize'),
+                      documentPath: documentPath,
                       onClose: onClose,
                     ),
                   },

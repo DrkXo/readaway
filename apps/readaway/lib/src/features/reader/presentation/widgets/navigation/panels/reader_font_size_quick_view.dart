@@ -11,9 +11,11 @@ class ReaderFontSizeQuickView extends StatelessWidget {
   const ReaderFontSizeQuickView({
     super.key,
     required this.onClose,
+    this.documentPath,
   });
 
   final VoidCallback onClose;
+  final String? documentPath;
   static const double defaultFontSize = 18.0;
 
   void _updateFontSize(
@@ -22,6 +24,7 @@ class ReaderFontSizeQuickView extends StatelessWidget {
   ) {
     context.read<SettingsBloc>().updateReaderPrefs(
       (p) => p.copyWith(fontSize: newSize),
+      documentPath: documentPath,
     );
   }
 
@@ -32,9 +35,10 @@ class ReaderFontSizeQuickView extends StatelessWidget {
 
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs.fontSize != curr.globalReaderPrefs.fontSize,
+          prev.effectiveReaderPrefs(documentPath).fontSize !=
+          curr.effectiveReaderPrefs(documentPath).fontSize,
       builder: (context, settingsState) {
-        final prefs = settingsState.globalReaderPrefs;
+        final prefs = settingsState.effectiveReaderPrefs(documentPath);
         final fontSize = prefs.fontSize;
 
         return Padding(

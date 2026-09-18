@@ -14,80 +14,78 @@ class SettingsAppearancePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = context.readerPrefsDocumentPath();
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      builder: (context, state) {
-        void resetTheme() {
-          final settings = state.appSettings;
-          context.read<SettingsBloc>().add(
-            SettingsEvent.updateAppSettings(
-              settings.copyWith(
-                globalViewSettings: settings.globalViewSettings.copyWith(
-                  theme: 'system',
-                  selectedScheme: 'flexoki',
-                ),
-              ),
-            ),
-          );
-        }
+    final bloc = context.read<SettingsBloc>();
 
-        void resetDisplayAdjustment() {
-          context.read<SettingsBloc>().updateReaderPrefs(
-            (p) => p.copyWith(
-              brightnessOverlay: 0.0,
-              contrastOverlay: 0.0,
+    void resetTheme() {
+      final settings = bloc.state.appSettings;
+      bloc.add(
+        SettingsEvent.updateAppSettings(
+          settings.copyWith(
+            globalViewSettings: settings.globalViewSettings.copyWith(
+              theme: 'system',
+              selectedScheme: 'flexoki',
             ),
-            documentPath: path,
-          );
-        }
+          ),
+        ),
+      );
+    }
 
-        void resetReading() {
-          final settings = state.appSettings;
-          context.read<SettingsBloc>().add(
-            SettingsEvent.updateAppSettings(
-              settings.copyWith(
-                globalViewSettings: settings.globalViewSettings.copyWith(
-                  highlightOpacity: 0.3,
-                  invertImgColorInDark: true,
-                  applyThemeToPdf: true,
-                ),
-              ),
-            ),
-          );
-        }
+    void resetDisplayAdjustment() {
+      bloc.updateReaderPrefs(
+        (p) => p.copyWith(
+          brightnessOverlay: 0.0,
+          contrastOverlay: 0.0,
+        ),
+        documentPath: path,
+      );
+    }
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          children: [
-            SettingsSection(
-              title: 'Theme',
-              onReset: resetTheme,
-              rows: const [
-                _ThemeModeCard(),
-                SchemePickerCard(),
-              ],
+    void resetReading() {
+      final settings = bloc.state.appSettings;
+      bloc.add(
+        SettingsEvent.updateAppSettings(
+          settings.copyWith(
+            globalViewSettings: settings.globalViewSettings.copyWith(
+              highlightOpacity: 0.3,
+              invertImgColorInDark: true,
+              applyThemeToPdf: true,
             ),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'Display adjustment',
-              onReset: resetDisplayAdjustment,
-              rows: const [
-                _BrightnessOverlayRow(),
-                _ContrastOverlayRow(),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'Reading',
-              onReset: resetReading,
-              rows: const [
-                _HighlightOpacityRow(),
-                _InvertImgColorRow(),
-                _ApplyThemeToPdfRow(),
-              ],
-            ),
+          ),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        SettingsSection(
+          title: 'Theme',
+          onReset: resetTheme,
+          rows: const [
+            _ThemeModeCard(),
+            SchemePickerCard(),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 24),
+        SettingsSection(
+          title: 'Display adjustment',
+          onReset: resetDisplayAdjustment,
+          rows: const [
+            _BrightnessOverlayRow(),
+            _ContrastOverlayRow(),
+          ],
+        ),
+        const SizedBox(height: 24),
+        SettingsSection(
+          title: 'Reading',
+          onReset: resetReading,
+          rows: const [
+            _HighlightOpacityRow(),
+            _InvertImgColorRow(),
+            _ApplyThemeToPdfRow(),
+          ],
+        ),
+      ],
     );
   }
 }

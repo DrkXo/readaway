@@ -26,6 +26,7 @@ class ReaderBottomBar extends StatefulWidget {
     required this.onPreviousPage,
     required this.onNextPage,
     required this.onSeekToPage,
+    this.documentPath,
     this.onOpenDrawer,
     this.onOutlineTap,
     this.panelWidth = double.infinity,
@@ -37,6 +38,7 @@ class ReaderBottomBar extends StatefulWidget {
   final VoidCallback onPreviousPage;
   final VoidCallback onNextPage;
   final ValueChanged<int> onSeekToPage;
+  final String? documentPath;
   final VoidCallback? onOutlineTap;
   final VoidCallback? onOpenDrawer;
 

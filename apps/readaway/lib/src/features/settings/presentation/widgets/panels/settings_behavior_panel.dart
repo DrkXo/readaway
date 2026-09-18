@@ -14,81 +14,76 @@ class SettingsBehaviorPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = context.readerPrefsDocumentPath();
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.globalReaderPrefs != curr.globalReaderPrefs ||
-          prev.appSettings != curr.appSettings,
-      builder: (context, state) {
-        final settings = state.appSettings;
+    final bloc = context.read<SettingsBloc>();
 
-        void resetPageTurning() {
-          context.read<SettingsBloc>().updateReaderPrefs(
-            (p) => p.copyWith(
-              scrollDirection: ReaderScrollDirection.horizontal,
-              pageTransition: ReaderPageTransition.slide,
-              pageSnap: true,
-            ),
-            documentPath: path,
-          );
-        }
+    void resetPageTurning() {
+      bloc.updateReaderPrefs(
+        (p) => p.copyWith(
+          scrollDirection: ReaderScrollDirection.horizontal,
+          pageTransition: ReaderPageTransition.slide,
+          pageSnap: true,
+        ),
+        documentPath: path,
+      );
+    }
 
-        void resetNavigation() {
-          context.read<SettingsBloc>().add(
-            SettingsEvent.updateAppSettings(
-              settings.copyWith(
-                globalViewSettings: settings.globalViewSettings.copyWith(
-                  volumeKeysToFlip: false,
-                  pageTurnStyle: 'slide',
-                ),
-              ),
+    void resetNavigation() {
+      final settings = bloc.state.appSettings;
+      bloc.add(
+        SettingsEvent.updateAppSettings(
+          settings.copyWith(
+            globalViewSettings: settings.globalViewSettings.copyWith(
+              volumeKeysToFlip: false,
+              pageTurnStyle: 'slide',
             ),
-          );
-        }
+          ),
+        ),
+      );
+    }
 
-        void resetSystem() {
-          context.read<SettingsBloc>().add(
-            SettingsEvent.updateAppSettings(
-              settings.copyWith(screenWakeLock: false),
-            ),
-          );
-          context.read<SettingsBloc>().updateReaderPrefs(
-            (p) => p.copyWith(showStatusBar: true),
-            documentPath: path,
-          );
-        }
+    void resetSystem() {
+      final settings = bloc.state.appSettings;
+      bloc.add(
+        SettingsEvent.updateAppSettings(
+          settings.copyWith(screenWakeLock: false),
+        ),
+      );
+      bloc.updateReaderPrefs(
+        (p) => p.copyWith(showStatusBar: true),
+        documentPath: path,
+      );
+    }
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          children: [
-            SettingsSection(
-              title: 'Page turning',
-              onReset: resetPageTurning,
-              rows: const [
-                _ScrollDirectionRow(),
-                _PageTransitionRow(),
-                _PageSnapRow(),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'Navigation',
-              onReset: resetNavigation,
-              rows: const [
-                _VolumeKeysToFlipRow(),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'System',
-              onReset: resetSystem,
-              rows: const [
-                _KeepScreenOnRow(),
-                _ShowStatusBarRow(),
-              ],
-            ),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        SettingsSection(
+          title: 'Page turning',
+          onReset: resetPageTurning,
+          rows: const [
+            _ScrollDirectionRow(),
+            _PageTransitionRow(),
+            _PageSnapRow(),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 24),
+        SettingsSection(
+          title: 'Navigation',
+          onReset: resetNavigation,
+          rows: const [
+            _VolumeKeysToFlipRow(),
+          ],
+        ),
+        const SizedBox(height: 24),
+        SettingsSection(
+          title: 'System',
+          onReset: resetSystem,
+          rows: const [
+            _KeepScreenOnRow(),
+            _ShowStatusBarRow(),
+          ],
+        ),
+      ],
     );
   }
 }
