@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../../../../core/theme/theme.dart';
@@ -116,7 +117,12 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
           }
         }
       });
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: SpinKitPulsingGrid(
+          color: Theme.of(context).colorScheme.primary,
+          size: 28.0,
+        ),
+      );
     }
 
     final double extraBottom = (!widget.isContinuous && widget.state.ttsActive)

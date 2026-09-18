@@ -564,13 +564,9 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                         elevation: 1,
                       ),
                       icon: isLoading
-                          ? SizedBox(
-                              width: 30,
-                              height: 30,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3,
-                                color: scheme.onPrimary,
-                              ),
+                          ? SpinKitPulsingGrid(
+                              color: scheme.onPrimary,
+                              size: 24,
                             )
                           : Icon(
                               isPlaying ? LucideIcons.pause : LucideIcons.play,

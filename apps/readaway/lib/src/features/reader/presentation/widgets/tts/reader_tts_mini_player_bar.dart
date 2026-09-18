@@ -288,13 +288,9 @@ class _MiniPlayerPlayButton extends StatelessWidget {
             width: 40,
             height: 40,
             child: Center(
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.2,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              child: SpinKitPulsingGrid(
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
               ),
             ),
           );

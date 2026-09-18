@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -12,6 +13,7 @@ import '../routes/routes.dart';
 import '../services/services.dart';
 import '../theme/theme.dart';
 
+export 'package:flutter_spinkit/flutter_spinkit.dart';
 export 'error/error_widgets.dart';
 
 part 'adaptive/adaptive_value.dart';

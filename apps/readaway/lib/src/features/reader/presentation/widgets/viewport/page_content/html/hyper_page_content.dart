@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_extensions.dart';
 import 'package:readaway_core/readaway_core.dart';
@@ -444,11 +445,10 @@ class _HyperReflowableImageState extends State<_HyperReflowableImage> {
   Widget _buildLoadingPlaceholder() {
     return Container(
       color: const Color(0x08000000),
-      child: const Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
+      child: Center(
+        child: SpinKitPulsingGrid(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+          size: 20,
         ),
       ),
     );

@@ -249,6 +249,7 @@ class BackGroundDownloaderService {
     OnTaskFinishedCallback? onTaskFinished,
   }) async {
     await ensureInitialized();
+    await _ensurePermission(PermissionType.notifications);
 
     final resolvedOptions =
         options ??
@@ -394,6 +395,7 @@ class BackGroundDownloaderService {
     void Function(int succeeded, int failed)? onProgress,
   }) async {
     await ensureInitialized();
+    await _ensurePermission(PermissionType.notifications);
     final transfers = await _downloader.transfers.startAll(
       tasks,
       onProgress: onProgress,

@@ -3,7 +3,7 @@ part of '../core_widgets.dart';
 /// Reusable feedback states: loading, empty, error, and skeleton placeholders.
 ///
 /// All variants are theme-aware, responsive, and support optional actions
-/// (e.g. retry). Use these instead of ad-hoc `CircularProgressIndicator` /
+/// (e.g. retry). Use these instead of ad-hoc progress indicators /
 /// `Text` combinations so states stay consistent across the app.
 
 /// Centered loading indicator with optional label.
@@ -12,25 +12,28 @@ class AppLoadingView extends StatelessWidget {
     super.key,
     this.label,
     this.compact = false,
+    this.size,
+    this.color,
   });
 
   final String? label;
   final bool compact;
+  final double? size;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final effectiveSize = size ?? (compact ? 24.0 : 36.0);
+    final effectiveColor = color ?? scheme.primary;
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: compact ? 20 : 28,
-            height: compact ? 20 : 28,
-            child: CircularProgressIndicator(
-              strokeWidth: compact ? 2.5 : 3,
-              color: scheme.primary,
-            ),
+          SpinKitPulsingGrid(
+            color: effectiveColor,
+            size: effectiveSize,
           ),
           if (label != null) ...[
             const SizedBox(height: 12),
@@ -38,6 +41,30 @@ class AppLoadingView extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Standalone pulsing grid loading indicator.
+class AppLoadingIndicator extends StatelessWidget {
+  const AppLoadingIndicator({
+    super.key,
+    this.size = 24.0,
+    this.color,
+    this.boxShape = BoxShape.circle,
+  });
+
+  final double size;
+  final Color? color;
+  final BoxShape boxShape;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return SpinKitPulsingGrid(
+      color: color ?? scheme.primary,
+      size: size,
+      boxShape: boxShape,
     );
   }
 }

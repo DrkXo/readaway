@@ -239,56 +239,67 @@ class SherpaTtsModelDownloaderService {
     return digest.toString();
   }
 
-  Future<void> _ensureEspeakData(Directory modelsRoot) {
+  Future<void> _ensureEspeakData(Directory modelDir) {
     return _espeakInstallFuture ??= _installEspeakData(
-      modelsRoot,
+      modelDir,
     ).whenComplete(() => _espeakInstallFuture = null);
   }
 
-  Future<void> _installEspeakData(Directory modelsRoot) async {
-    final espeakDir = Directory(p.join(modelsRoot.path, 'espeak-ng-data'));
+  Future<void> _installEspeakData(Directory modelDir) async {
+    final espeakDir = Directory(p.join(modelDir.path, 'espeak-ng-data'));
     if (await espeakDir.exists()) return;
 
     final tmpDir = await _pathService.tempDirectory;
     final archivePath = p.join(tmpDir.path, 'espeak-ng-data.tar.bz2');
     final archiveFile = File(archivePath);
 
-    final transfer = await _backgroundDownloader.download(
-      url: _catalog.espeakDataUrl,
-      filename: 'espeak-ng-data.tar.bz2',
-      saveDirectory: tmpDir,
-      userInitiated: true,
-    );
-    final result = await transfer.result;
-    if (result.status == TaskStatus.canceled) {
-      throw const _DownloadCanceledException();
+    var needDownload = true;
+    if (await archiveFile.exists()) {
+      try {
+        await _verifyChecksum(archiveFile, 'espeak-ng-data.tar.bz2');
+        needDownload = false;
+      } catch (_) {
+        needDownload = true;
+      }
     }
-    if (result.status != TaskStatus.complete) {
-      throw SherpaTtsException(
-        'Failed to download espeak-ng-data: '
-        '${result.exception?.description ?? result.status.name}',
+
+    if (needDownload) {
+      final transfer = await _backgroundDownloader.download(
+        url: _catalog.espeakDataUrl,
+        filename: 'espeak-ng-data.tar.bz2',
+        saveDirectory: tmpDir,
+        userInitiated: true,
       );
+      final result = await transfer.result;
+      if (result.status == TaskStatus.canceled) {
+        throw const _DownloadCanceledException();
+      }
+      if (result.status != TaskStatus.complete) {
+        throw SherpaTtsException(
+          'Failed to download espeak-ng-data: '
+          '${result.exception?.description ?? result.status.name}',
+        );
+      }
+      await _verifyChecksum(archiveFile, 'espeak-ng-data.tar.bz2');
     }
-    await _verifyChecksum(archiveFile, 'espeak-ng-data.tar.bz2');
 
     final bytes = await archiveFile.readAsBytes();
 
     await compute(_extractEspeakArchiveWorker, (
       bytes: bytes,
       archivePath: archivePath,
-      modelsRootPath: modelsRoot.path,
+      modelDirPath: modelDir.path,
       espeakDirPath: espeakDir.path,
     ));
 
-    await archiveFile.delete();
     if (!await espeakDir.exists()) {
       throw SherpaTtsException(
-        'espeak-ng-data archive did not produce an espeak-ng-data directory',
+        'espeak-ng-data archive did not produce an espeak-ng-data directory in ${modelDir.path}',
       );
     }
   }
 
-  /// Downloads the optional vocoder and shared espeak-ng-data for [model]
+  /// Downloads the optional vocoder and scoped espeak-ng-data for [model]
   /// if they are missing. Shared by the normal download flow and by
   /// [reconcileModel].
   Future<void> _installAuxiliaryFiles(
@@ -308,7 +319,7 @@ class SherpaTtsModelDownloaderService {
       }
     }
     if (model.needsEspeakData) {
-      await _ensureEspeakData(destDir.parent);
+      await _ensureEspeakData(destDir);
     }
   }
 
@@ -390,7 +401,7 @@ Future<void> _extractEspeakArchiveWorker(
   ({
     Uint8List bytes,
     String archivePath,
-    String modelsRootPath,
+    String modelDirPath,
     String espeakDirPath,
   })
   args,
@@ -403,7 +414,7 @@ Future<void> _extractEspeakArchiveWorker(
   final hasTopLevelDir = files.any(
     (e) => e.name.replaceAll('\\', '/').startsWith('espeak-ng-data/'),
   );
-  final basePath = hasTopLevelDir ? args.modelsRootPath : args.espeakDirPath;
+  final basePath = hasTopLevelDir ? args.modelDirPath : args.espeakDirPath;
   for (final entry in files) {
     final outFile = File(p.join(basePath, entry.name));
     await outFile.parent.create(recursive: true);

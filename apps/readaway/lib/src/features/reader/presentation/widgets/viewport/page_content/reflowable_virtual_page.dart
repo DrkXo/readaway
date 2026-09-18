@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway_core/readaway_core.dart';
 
@@ -175,7 +176,12 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
           }
         }
       });
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: SpinKitPulsingGrid(
+          color: Theme.of(context).colorScheme.primary,
+          size: 28.0,
+        ),
+      );
     }
 
     final Color bgColor =

@@ -50,7 +50,7 @@ class _TtsView extends StatelessWidget {
           prev.ttsActiveModelId != curr.ttsActiveModelId,
       builder: (context, state) {
         if (state.ttsAvailableModels.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return const AppLoadingView(label: 'Loading TTS models...');
         }
 
         final active = state.ttsAvailableModels
@@ -226,13 +226,9 @@ class _VoiceTile extends StatelessWidget {
                             ),
                             if (isBusy) ...[
                               const SizedBox(width: 8),
-                              SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: scheme.primary,
-                                ),
+                              SpinKitPulsingGrid(
+                                color: scheme.primary,
+                                size: 14,
                               ),
                             ],
                           ],

@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/core_widgets.dart';
 import '../../domain/entity/reader_lookup.dart';
 
 /// In-app results sheet for dictionary / translate lookups, opened from the
@@ -151,7 +152,7 @@ class _ReaderLookupSheetState extends State<ReaderLookupSheet> {
                     }
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 32),
-                      child: Center(child: CircularProgressIndicator()),
+                      child: AppLoadingView(label: 'Looking up…', compact: true),
                     );
                   },
                 ),
