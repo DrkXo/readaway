@@ -327,19 +327,21 @@ class WindowService with WindowListener {
   Future<void> onWindowClose() async {
     if (!isDesktop || _isShuttingDown) return;
     _isShuttingDown = true;
-
     if (!_closeSubject.isClosed) _closeSubject.add(null);
-
     try {
       if (isDesktop && _wm.hasListeners) {
         _wm.removeListener(this);
       }
     } catch (e, st) {
-      Logger(
-        'WindowService',
-      ).warning('Error removing window listener: $e', e, st);
+      Logger('WindowService')
+          .warning('Error removing window listener: $e', e, st);
     } finally {
-      await _wm.destroy();
+      if (Platform.isLinux) {
+        await _wm.setPreventClose(false);
+        await _wm.close();
+      } else {
+        await _wm.destroy();
+      }
     }
   }
 
