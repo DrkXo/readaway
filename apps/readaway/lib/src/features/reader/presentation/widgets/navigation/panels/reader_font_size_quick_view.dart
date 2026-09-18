@@ -16,7 +16,7 @@ class ReaderFontSizeQuickView extends StatelessWidget {
 
   final VoidCallback onClose;
   final String? documentPath;
-  static const double defaultFontSize = 18.0;
+  static const double defaultFontSize = 16.0;
 
   void _updateFontSize(
     BuildContext context,

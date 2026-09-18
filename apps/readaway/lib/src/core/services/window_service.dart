@@ -9,6 +9,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../../../flavors.dart';
+import 'audio/audio_player_service.dart';
 
 @Singleton()
 class WindowService with WindowListener {
@@ -328,6 +329,17 @@ class WindowService with WindowListener {
     if (!isDesktop || _isShuttingDown) return;
     _isShuttingDown = true;
     if (!_closeSubject.isClosed) _closeSubject.add(null);
+    // Release the audio session/media handler before the window disappears,
+    // so TTS/playback does not leak the session or leave a lingering handler.
+    try {
+      await audioPlayerService.shutdown();
+    } catch (e, st) {
+      Logger('WindowService').warning(
+        'Error shutting down audio on window close: $e',
+        e,
+        st,
+      );
+    }
     try {
       if (isDesktop && _wm.hasListeners) {
         _wm.removeListener(this);

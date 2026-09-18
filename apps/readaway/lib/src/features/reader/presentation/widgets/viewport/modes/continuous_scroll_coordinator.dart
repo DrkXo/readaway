@@ -218,8 +218,16 @@ class ContinuousScrollCoordinator {
     });
   }
 
+  double _lastScanOffset = double.nan;
+
   void detectVisiblePage() {
     if (_isProgrammaticScroll || !_scrollController.hasClients) return;
+
+    // Scroll notifications can fire without the offset changing; skip the
+    // O(pages) scan unless the scroll actually moved.
+    final offset = _scrollController.offset;
+    if (offset == _lastScanOffset) return;
+    _lastScanOffset = offset;
 
     int? candidatePage;
     var minDistance = double.infinity;

@@ -486,6 +486,8 @@ class EpubDocumentReader
       final navMap = doc.findAllElements('navMap').firstOrNull;
       if (navMap == null) return const [];
 
+      final spineIndex = _buildSpineIndex(spineHrefs);
+
       List<OutlineItem> parsePoints(XmlElement parent, int level) {
         final items = <OutlineItem>[];
         for (final navPoint in parent.findElements('navPoint')) {
@@ -508,16 +510,9 @@ class EpubDocumentReader
               ? _resolveRelative(ncxDir, src)
               : null;
 
-          int? chapterIndex;
-          if (resolvedHref != null) {
-            final cleanHref = resolvedHref.split('#').first;
-            chapterIndex = spineHrefs.indexWhere(
-              (s) =>
-                  _normalizePath(s) == _normalizePath(cleanHref) ||
-                  p.posix.basename(s) == p.posix.basename(cleanHref),
-            );
-            if (chapterIndex == -1) chapterIndex = null;
-          }
+          int? chapterIndex = (resolvedHref == null)
+              ? null
+              : _chapterIndexForHref(resolvedHref, spineIndex);
 
           final children = parsePoints(navPoint, level + 1);
 
@@ -559,6 +554,8 @@ class EpubDocumentReader
       final ol = tocNav.findElements('ol').firstOrNull;
       if (ol == null) return const [];
 
+      final spineIndex = _buildSpineIndex(spineHrefs);
+
       List<OutlineItem> parseOl(XmlElement parentOl, int level) {
         final items = <OutlineItem>[];
         for (final li in parentOl.findElements('li')) {
@@ -572,16 +569,9 @@ class EpubDocumentReader
               ? _resolveRelative(navDir, href)
               : null;
 
-          int? chapterIndex;
-          if (resolvedHref != null) {
-            final cleanHref = resolvedHref.split('#').first;
-            chapterIndex = spineHrefs.indexWhere(
-              (s) =>
-                  _normalizePath(s) == _normalizePath(cleanHref) ||
-                  p.posix.basename(s) == p.posix.basename(cleanHref),
-            );
-            if (chapterIndex == -1) chapterIndex = null;
-          }
+          int? chapterIndex = (resolvedHref == null)
+              ? null
+              : _chapterIndexForHref(resolvedHref, spineIndex);
 
           final childOl = li.findElements('ol').firstOrNull;
           final children = childOl != null
@@ -605,5 +595,26 @@ class EpubDocumentReader
     } catch (_) {
       return const [];
     }
+  }
+
+  /// Builds an O(1) lookup from normalized path / basename to spine index,
+  /// replacing the previous O(n·m) `indexWhere` scan used per outline item.
+  static Map<String, int> _buildSpineIndex(List<String> spineHrefs) {
+    final index = <String, int>{};
+    for (var i = 0; i < spineHrefs.length; i++) {
+      final s = spineHrefs[i];
+      index[_normalizePath(s)] = i;
+      // First entry wins for basename, matching the old `indexWhere` scan.
+      index.putIfAbsent(p.posix.basename(s), () => i);
+    }
+    return index;
+  }
+
+  /// Maps a resolved outline href to its spine index, preferring an exact
+  /// normalized-path match and falling back to basename matching.
+  static int? _chapterIndexForHref(String resolvedHref, Map<String, int> index) {
+    final cleanHref = resolvedHref.split('#').first;
+    return index[_normalizePath(cleanHref)] ??
+        index[p.posix.basename(cleanHref)];
   }
 }

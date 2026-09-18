@@ -39,14 +39,38 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
   int _lastScrolledIndex = -1;
   TocTab _activeTab = TocTab.chapters;
 
+  List<OutlineItem>? _outlineForIndex;
+  int _currentPageForIndex = -1;
+  int _cachedIndexOfCurrent = -1;
+
   /// Index of the outline item covering [currentPage], -1 if none.
-  static int _indexOfCurrent(List<OutlineItem> outline, int currentPage) {
-    var index = -1;
-    for (var i = 0; i < outline.length; i++) {
-      final target = outline[i].chapterIndex;
-      if (target != null && target >= 0 && target <= currentPage) index = i;
+  /// Memoized on (outline, currentPage); outline is shared across rebuilds.
+  int _indexOfCurrent(List<OutlineItem> outline, int currentPage) {
+    if (!identical(_outlineForIndex, outline) ||
+        _currentPageForIndex != currentPage) {
+      _outlineForIndex = outline;
+      _currentPageForIndex = currentPage;
+      var index = -1;
+      for (var i = 0; i < outline.length; i++) {
+        final target = outline[i].chapterIndex;
+        if (target != null && target >= 0 && target <= currentPage) {
+          index = i;
+        }
+      }
+      _cachedIndexOfCurrent = index;
     }
-    return index;
+    return _cachedIndexOfCurrent;
+  }
+
+  List<OutlineItem>? _outlineForCount;
+  int _cachedTopLevelCount = 0;
+
+  int _topLevelCount(List<OutlineItem> outline) {
+    if (!identical(_outlineForCount, outline)) {
+      _outlineForCount = outline;
+      _cachedTopLevelCount = outline.where((o) => o.level == 0).length;
+    }
+    return _cachedTopLevelCount;
   }
 
   void _reveal(int index) {
@@ -152,7 +176,7 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                   AppCaption(
                     hasOutline
                         ? (_activeTab == TocTab.chapters
-                              ? '${outline.where((o) => o.level == 0).length} chapters'
+                              ? '${_topLevelCount(outline)} chapters'
                               : '${state.pageCount} pages')
                         : '${state.pageCount} pages',
                   ),

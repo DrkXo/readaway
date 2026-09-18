@@ -1,3 +1,5 @@
+import 'dart:ui' show AppExitResponse;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -17,10 +19,20 @@ class ReadAway extends StatefulWidget {
 class _ReadAwayState extends State<ReadAway> {
   late final AppLifecycleListener _lifecycleListener;
 
+  Future<AppExitResponse> _onExitRequested() async {
+    // Release the audio session/media handler on real app exit so playback
+    // does not leak an active session after the app is closed.
+    await audioPlayerService.shutdown();
+    return AppExitResponse.exit;
+  }
+
   @override
   void initState() {
     super.initState();
-    _lifecycleListener = AppLifecycleListener();
+    _lifecycleListener = AppLifecycleListener(
+      onExitRequested: _onExitRequested,
+      onDetach: () => audioPlayerService.shutdown(),
+    );
   }
 
   @override

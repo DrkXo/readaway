@@ -66,11 +66,31 @@ class PaginationCoordinator {
     required double contentHeight,
     List<({double top, double bottom})>? lineBounds,
   }) {
+    // Skip redundant re-registrations (e.g. a page turn that re-measures the
+    // same full chapter) so we don't recompute slices and wake every listener
+    // when nothing changed.
+    final prevHeight = _chapterHeights[chapterIndex];
+    if (prevHeight == contentHeight &&
+        _lineBoundsEqual(_chapterLineBounds[chapterIndex], lineBounds)) {
+      return;
+    }
     _chapterHeights[chapterIndex] = contentHeight;
     _chapterLineBounds[chapterIndex] = lineBounds;
     _recomputeChapter(chapterIndex);
     _recomputeTotalPages();
     _emit();
+  }
+
+  static bool _lineBoundsEqual(
+    List<({double top, double bottom})>? a,
+    List<({double top, double bottom})>? b,
+  ) {
+    if (identical(a, b)) return true;
+    if (a == null || b == null || a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].top != b[i].top || a[i].bottom != b[i].bottom) return false;
+    }
+    return true;
   }
 
   void setCurrentGlobalPage(int globalPage) {
@@ -195,6 +215,19 @@ class PaginationCoordinator {
         ),
       ),
     );
+  }
+
+  /// Invalidates measurements that depend on font/layout metrics after a
+  /// reader-preference change. Cached [contentHeight] values are retained for
+  /// continuity so page counts don't collapse; chapters re-measure on their
+  /// next mount (each [ReflowableVirtualPage] re-registers after a prefs
+  /// change), at which point offsets/counts for that chapter are recomputed.
+  void invalidate() {
+    _chapterOffsets.clear();
+    _chapterPageCounts.clear();
+    _chapterLineBounds.clear();
+    _recomputeAll();
+    _emit();
   }
 
   void reset() {

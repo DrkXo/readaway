@@ -36,6 +36,21 @@ class _HyperPageContentState extends State<HyperPageContent> {
   static final LruCache<String, String> _transformedHtmlCache =
       LruCache<String, String>(maximumSize: 40);
 
+  /// Cache of fully parsed, CSS-resolved, preference-styled documents.
+  /// Multiple page instances of the same chapter (page transitions, adjacent
+  /// virtual pages, continuous-scroll chapters) share one immutable
+  /// [DocumentNode]; HyperRender only reads the tree during build/layout.
+  static final LruCache<String, DocumentNode> _documentCache =
+      LruCache<String, DocumentNode>(maximumSize: 40);
+
+  String _buildDocumentCacheKey() {
+    final prefs = widget.prefs;
+    final prefsSig = prefs.toJson().hashCode;
+    return '${widget.html.length}:${widget.html.hashCode}:$prefsSig:'
+        '${_textColor.toARGB32()}:${_linkColor.toARGB32()}:'
+        '${Theme.of(context).brightness == Brightness.dark}';
+  }
+
   late DocumentNode _document;
   late Color _textColor;
   late Color _linkColor;
@@ -106,6 +121,10 @@ class _HyperPageContentState extends State<HyperPageContent> {
   }
 
   DocumentNode _parseDocument() {
+    final cacheKey = _buildDocumentCacheKey();
+    final cached = _documentCache[cacheKey];
+    if (cached != null) return cached;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final customCss = _styleResolver.buildCustomCss(
@@ -116,7 +135,8 @@ class _HyperPageContentState extends State<HyperPageContent> {
       isDarkMode: isDark,
     );
 
-    final cachedKey = '${widget.html.hashCode}_${widget.prefs.overrideLayout}';
+    final cachedKey =
+        '${widget.html.length}:${widget.html.hashCode}_${widget.prefs.overrideLayout}';
     var processedHtml = _transformedHtmlCache[cachedKey];
     if (processedHtml == null) {
       // Pre-process HTML to convert SVG image wrappers (commonly used for EPUB covers) into <img> tags
@@ -139,10 +159,14 @@ class _HyperPageContentState extends State<HyperPageContent> {
     // 2. Extract embedded CSS from <style> tags in the chapter HTML
     final docCss = _htmlAdapter.extractCss(processedHtml);
 
-    // 3. Resolve CSS cascade: docCss first, customCss with !important rules
-    // second, then the user's custom stylesheet with highest precedence.
+    // 3. Resolve CSS cascade: base (px element sizes derived from the reader's
+    // font size) first, then doc CSS so authored rules win at equal
+    // specificity, then customCss (with !important overrides), then the
+    // user's custom stylesheet with highest precedence.
+    final baseCss = _styleResolver.buildBaseCss(prefs: widget.prefs);
     final userCss = widget.prefs.userStylesheet.trim();
     final combinedCss = [
+      baseCss,
       if (docCss.isNotEmpty) docCss,
       customCss,
       if (userCss.isNotEmpty) userCss,
@@ -157,6 +181,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
       linkColor: _linkColor,
     );
 
+    _documentCache[cacheKey] = document;
     return document;
   }
 

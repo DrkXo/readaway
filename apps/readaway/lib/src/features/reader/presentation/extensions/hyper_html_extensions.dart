@@ -141,6 +141,14 @@ extension UDTNodeExtensions on UDTNode {
         node.style.lineHeight = currentBlock.style.lineHeight;
       }
 
+      // Font size: applyReaderPreferences sets the block font-size AFTER
+      // resolveStyles, so text nodes still carry the pre-inheritance default.
+      // Re-sync them with their containing block's font size (authored inline
+      // sizes like `<span style="font-size:20px">` are preserved).
+      if (!node.style.isExplicitlySet('font-size')) {
+        node.style.fontSize = currentBlock.style.fontSize;
+      }
+
       // CJK font: apply the user's CJK font to text runs containing CJK
       // characters (Han ideographs, kana, hangul). This is applied per text
       // node — mixed Latin/CJK nodes use the CJK font for the whole run, which

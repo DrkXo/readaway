@@ -128,6 +128,27 @@ class ReaderStyleResolver {
     return buffer.toString();
   }
 
+  /// Base element sizes (headings, sub/sup, small) expressed as concrete px
+  /// derived from [ReaderPreferences.fontSize], so the whole hierarchy scales
+  /// with the user's font-size setting. This must be layered *before* the
+  /// book's own CSS (see [HyperPageContent]) — at equal specificity the
+  /// authored rule that comes later wins — and books that pin their own
+  /// heading sizes keep them.
+  String buildBaseCss({required ReaderPreferences prefs}) {
+    final size = prefs.fontSize;
+    String px(double factor) => (factor * size).toStringAsFixed(2);
+    return '''
+      h1 { font-size: ${px(1.9)}px; }
+      h2 { font-size: ${px(1.5)}px; }
+      h3 { font-size: ${px(1.17)}px; }
+      h4 { font-size: ${px(1.0)}px; }
+      h5 { font-size: ${px(0.83)}px; }
+      h6 { font-size: ${px(0.67)}px; }
+      sub, sup { font-size: ${px(0.75)}px; }
+      small { font-size: ${px(0.8)}px; }
+    ''';
+  }
+
   /// Builds a Flutter [TextStyle] reflecting user typography settings.
   TextStyle buildBaseTextStyle({
     required ReaderPreferences prefs,

@@ -396,17 +396,78 @@ class AudioPlayerService {
 
   Future<void> resume() => play();
 
-  /// Ends the current audio session, stops player, clears playlist, and deactivates AudioSession.
+  /// Ends the current audio session, stops player, clears playlist, and
+  /// deactivates AudioSession. Deactivation is guaranteed to run even if
+  /// stopping the handler/player throws, so the session never leaks.
   Future<void> stopSession() => _playlistMutex.protect(() async {
     try {
       await _audioHandler?.stop();
+    } catch (e, st) {
+      logger.e('Failed to stop audio handler', e, st);
+    }
+    try {
       await _sessionPlayer.stop();
+    } catch (e, st) {
+      logger.e('Failed to stop audio player', e, st);
+    }
+    try {
       await _sessionPlayer.clearAudioSources();
+    } catch (e, st) {
+      logger.e('Failed to clear audio sources', e, st);
+    }
+    try {
       await _audioSessionInstance.setActive(false);
     } catch (e, st) {
-      logger.e('Failed to stop audio session cleanly', e, st);
+      logger.e('Failed to deactivate audio session', e, st);
     }
   });
+
+  bool _shutdown = false;
+
+  /// Releases all audio resources for app exit: cancels session listeners,
+  /// stops the media handler (clears the Android foreground notification),
+  /// disposes both players, and deactivates the audio session. Terminal and
+  /// idempotent — [init] cannot be called again after this. The MPRIS D-Bus
+  /// name (Linux) needs no explicit teardown here: it is auto-released when
+  /// the process exits.
+  Future<void> shutdown() async {
+    if (_shutdown) return;
+    _shutdown = true;
+
+    await _interruptionSub?.cancel();
+    await _becomingNoisySub?.cancel();
+    _interruptionSub = null;
+    _becomingNoisySub = null;
+
+    try {
+      await _audioHandler?.stop();
+    } catch (e, st) {
+      logger.e('Failed to stop audio handler during shutdown', e, st);
+    }
+    try {
+      await _audioHandler?.shutdown();
+    } catch (e, st) {
+      logger.e('Failed to shut down audio handler', e, st);
+    }
+    try {
+      await _sessionPlayer.dispose();
+    } catch (e, st) {
+      logger.e('Failed to dispose session player', e, st);
+    }
+    try {
+      await _previewPlayer?.dispose();
+    } catch (e, st) {
+      logger.e('Failed to dispose preview player', e, st);
+    }
+    try {
+      await _audioSessionInstance.setActive(false);
+    } catch (e, st) {
+      logger.e('Failed to deactivate audio session during shutdown', e, st);
+    }
+
+    _audioHandler = null;
+    _previewPlayer = null;
+  }
 
   // ==========================================
   // PREVIEW PLAYER

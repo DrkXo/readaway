@@ -113,6 +113,13 @@ class _ReaderViewportState extends State<ReaderViewport> {
         widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
         !widget.prefs.pageSnap;
 
+    if (oldWidget.prefs != widget.prefs) {
+      // Font/layout metrics changed: cached page offsets no longer match the
+      // new text dimensions. Existing chapter heights stay for continuity;
+      // each mounted page re-measures and re-registers in the next frame.
+      _paginationCoordinator.invalidate();
+    }
+
     if (wasContinuous != nowContinuous) {
       final bloc = context.read<ReaderBloc>();
       final state = bloc.state;
