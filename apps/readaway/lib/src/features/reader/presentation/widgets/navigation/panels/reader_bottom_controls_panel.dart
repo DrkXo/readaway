@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../../../core/models/models.dart';
 import '../../../../../../core/theme/theme.dart';
-import '../../../../../../core/theme/theme_scheme.dart';
 import 'reader_brightness_quick_view.dart';
 import 'reader_font_size_quick_view.dart';
 import 'reader_page_navigation_quick_view.dart';
@@ -61,11 +60,7 @@ class ReaderBottomControlsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final appColors =
-        theme.extension<AppColors>() ??
-        (theme.brightness == Brightness.dark
-            ? ThemeSchemes.tokenInspired.dark
-            : ThemeSchemes.tokenInspired.light);
+    final appColors = context.appColors;
     final panelBgColor =
         backgroundColor ?? appColors.sheetBackground.withValues(alpha: 0.98);
 

@@ -148,9 +148,7 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
       );
     }
 
-    final Color bgColor =
-        Theme.of(context).extension<AppColors>()?.readerBackground ??
-        context.appColors.readerBackground;
+    final Color bgColor = context.appColors.readerBackground;
 
     // In continuous scrolling mode (or unconstrained vertical parent), render directly
     if (widget.isContinuous) {

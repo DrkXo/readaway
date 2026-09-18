@@ -48,7 +48,8 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   static const double desktopHeight = 42.0;
   static const double mobileHeight = 56.0;
 
-  bool get _isDesktop => GetIt.I<WindowService>().isDesktop;
+  bool get _isDesktop =>
+      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
   @override
   Size get preferredSize => Size.fromHeight(
@@ -60,13 +61,13 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isDesktop = _isDesktop;
-    final windowService = GetIt.I<WindowService>();
+    final windowService = GetIt.I.isRegistered<WindowService>()
+        ? GetIt.I<WindowService>()
+        : null;
 
     final barHeight = height ?? (isDesktop ? desktopHeight : mobileHeight);
     final appColors = context.appColors;
-    final effectiveBgColor =
-        backgroundColor ??
-        appColors.topbarBackground.withValues(alpha: isDesktop ? 0.96 : 0.92);
+    final effectiveBgColor = backgroundColor ?? appColors.topbarBackground;
 
     Widget? titleWidget = title;
     if (titleWidget == null && titleText != null) {
@@ -80,9 +81,11 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                 ? theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.2,
+                    color: appColors.topbarForeground,
                   )
                 : theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
+                    color: appColors.topbarForeground,
                   ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -93,7 +96,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
             Text(
               subtitleText!,
               style: theme.textTheme.labelSmall?.copyWith(
-                color: scheme.onSurfaceVariant,
+                color: appColors.topbarForeground.withValues(alpha: 0.7),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -109,7 +112,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
         border: showBottomBorder
             ? Border(
                 bottom: BorderSide(
-                  color: appColors.borderSubtle,
+                  color: appColors.topbarBorder,
                   width: 1.0,
                 ),
               )
@@ -138,10 +141,12 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
               Expanded(
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
-                  onPanStart: isDesktop
+                  onPanStart: isDesktop && windowService != null
                       ? (_) => windowService.startDragging()
                       : null,
-                  onDoubleTap: isDesktop ? windowService.toggleMaximize : null,
+                  onDoubleTap: isDesktop && windowService != null
+                      ? windowService.toggleMaximize
+                      : null,
                   child: Container(
                     padding:
                         contentPadding ??
@@ -166,7 +171,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
 
               // Desktop Window Caption Controls
-              if (showCaptionControls && isDesktop) ...[
+              if (showCaptionControls && isDesktop && windowService != null) ...[
                 const SizedBox(width: 4),
                 Container(
                   height: 18,

@@ -15,13 +15,16 @@ class ReaderDrawer extends StatelessWidget {
     final appColors = context.appColors;
 
     return Drawer(
-      backgroundColor: appColors.sheetBackground,
+      backgroundColor: appColors.sidebarBackground,
       elevation: 0,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+      ),
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(
             right: BorderSide(
-              color: appColors.borderSubtle,
+              color: appColors.sidebarBorder,
               width: 1.0,
             ),
           ),

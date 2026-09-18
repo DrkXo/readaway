@@ -15,8 +15,12 @@ class WindowCaptionControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final windowService = service ?? GetIt.I<WindowService>();
-    if (!windowService.isDesktop) return const SizedBox.shrink();
+    if (kIsWeb || (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS)) {
+      return const SizedBox.shrink();
+    }
+    final windowService = service ??
+        (GetIt.I.isRegistered<WindowService>() ? GetIt.I<WindowService>() : null);
+    if (windowService == null) return const SizedBox.shrink();
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -112,8 +116,7 @@ class _WindowCaptionButtonState extends State<_WindowCaptionButton> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final appColors = context.appColors;
 
     Color backgroundColor;
     Color iconColor;
@@ -127,18 +130,18 @@ class _WindowCaptionButtonState extends State<_WindowCaptionButton> {
         iconColor = Colors.white;
       } else {
         backgroundColor = Colors.transparent;
-        iconColor = scheme.onSurfaceVariant;
+        iconColor = appColors.topbarForeground.withValues(alpha: 0.85);
       }
     } else {
       if (_pressed) {
-        backgroundColor = scheme.onSurface.withValues(alpha: 0.14);
-        iconColor = scheme.onSurface;
+        backgroundColor = appColors.listActiveSelectionBackground;
+        iconColor = appColors.topbarForeground;
       } else if (_hovered) {
-        backgroundColor = scheme.onSurface.withValues(alpha: 0.08);
-        iconColor = scheme.onSurface;
+        backgroundColor = appColors.listHoverBackground;
+        iconColor = appColors.topbarForeground;
       } else {
         backgroundColor = Colors.transparent;
-        iconColor = scheme.onSurfaceVariant;
+        iconColor = appColors.topbarForeground.withValues(alpha: 0.85);
       }
     }
 

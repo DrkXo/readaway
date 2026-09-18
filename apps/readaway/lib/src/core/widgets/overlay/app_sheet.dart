@@ -23,7 +23,6 @@ class AppSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final appColors = context.appColors;
 
     return AdaptiveLayout(
@@ -31,18 +30,18 @@ class AppSheet extends StatelessWidget {
         final isCompact = bp == AppBreakpoint.compact;
 
         final surface = Material(
-          color: appColors.sheetBackground,
+          color: appColors.editorWidgetBackground,
           elevation: 0,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(isCompact ? 20 : 16),
-          ),
+          borderRadius: isCompact
+              ? const BorderRadius.vertical(top: Radius.circular(8))
+              : BorderRadius.circular(6),
           clipBehavior: Clip.antiAlias,
           child: Container(
             decoration: isCompact
                 ? BoxDecoration(
                     border: Border(
                       top: BorderSide(
-                        color: appColors.borderSubtle,
+                        color: appColors.editorWidgetBorder,
                         width: 1.0,
                       ),
                     ),
@@ -54,21 +53,21 @@ class AppSheet extends StatelessWidget {
               children: [
                 if (isCompact && showDragHandle)
                   Padding(
-                    padding: const EdgeInsets.only(top: 10, bottom: 4),
+                    padding: const EdgeInsets.only(top: 8, bottom: 4),
                     child: Center(
                       child: Container(
-                        width: 36,
-                        height: 4,
+                        width: 32,
+                        height: 3,
                         decoration: BoxDecoration(
-                          color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(2),
+                          color: appColors.borderSubtle,
+                          borderRadius: BorderRadius.circular(1.5),
                         ),
                       ),
                     ),
                   ),
                 if (title != null || onClose != null)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+                    padding: const EdgeInsets.fromLTRB(16, 10, 8, 6),
                     child: Row(
                       children: [
                         if (title != null)
@@ -95,17 +94,18 @@ class AppSheet extends StatelessWidget {
           return surface;
         }
 
-        // Wide: centered popover card with scrim and subtle border.
+        // Wide: centered command palette card with crisp 1px border.
         return Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: appColors.borderSubtle,
+                  color: appColors.editorWidgetBorder,
                   width: 1.0,
                 ),
+                boxShadow: appColors.shadowMd,
               ),
               child: surface,
             ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 
 import '../models/models.dart';
+import '../theme/theme.dart';
 import '../theme/theme_scheme.dart';
 import 'settings_service.dart';
 
@@ -54,31 +55,156 @@ class ThemeService {
     _themeController.add(mode);
   }
 
-  ThemeData getLightTheme() {
-    final scheme = currentScheme.light.scheme;
+  ThemeData _buildThemeData(VsCodeTheme vsTheme) {
+    final scheme = vsTheme.scheme;
     return ThemeData(
       colorScheme: scheme,
-      extensions: [currentScheme.light],
+      extensions: [VsCodeThemeExtension(vsTheme)],
       useMaterial3: true,
-      textSelectionTheme: _selectionTheme(scheme),
+      scaffoldBackgroundColor: vsTheme.readerBackground,
+      canvasColor: vsTheme.readerBackground,
+      cardColor: vsTheme.panelBackground,
+      dividerColor: vsTheme.borderSubtle,
+      dividerTheme: DividerThemeData(
+        color: vsTheme.borderSubtle,
+        space: 1,
+        thickness: 1,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: vsTheme.topbarBackground,
+        foregroundColor: vsTheme.topbarForeground,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        shape: Border(
+          bottom: BorderSide(
+            color: vsTheme.topbarBorder,
+            width: 1.0,
+          ),
+        ),
+      ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: vsTheme.sidebarBackground,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: vsTheme.sheetBackground,
+        modalBackgroundColor: vsTheme.sheetBackground,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+          side: BorderSide(
+            color: vsTheme.editorWidgetBorder,
+            width: 1.0,
+          ),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: vsTheme.editorWidgetBackground,
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+          side: BorderSide(
+            color: vsTheme.editorWidgetBorder,
+            width: 1.0,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: vsTheme.inputBackground,
+        hintStyle: TextStyle(
+          color: vsTheme.inputPlaceholderForeground,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 8,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(4),
+          borderSide: BorderSide(
+            color: vsTheme.inputBorder,
+            width: 1.0,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(4),
+          borderSide: BorderSide(
+            color: vsTheme.inputBorder,
+            width: 1.0,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(4),
+          borderSide: BorderSide(
+            color: vsTheme.focusBorder,
+            width: 1.5,
+          ),
+        ),
+      ),
+      tabBarTheme: TabBarThemeData(
+        indicatorColor: vsTheme.badgeBackground ?? vsTheme.scheme.primary,
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: vsTheme.borderSubtle,
+        labelColor: vsTheme.readerForeground,
+        unselectedLabelColor: vsTheme.readerForeground.withValues(alpha: 0.6),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: vsTheme.buttonBackground,
+          foregroundColor: vsTheme.buttonForeground,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(3),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        selectedTileColor: vsTheme.listActiveSelectionBackground,
+        selectedColor: vsTheme.listActiveSelectionForeground,
+        textColor: vsTheme.readerForeground,
+        iconColor: vsTheme.readerForeground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(3),
+        ),
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: vsTheme.badgeBackground ?? vsTheme.scheme.primary,
+        inactiveTrackColor: vsTheme.borderSubtle,
+        thumbColor: vsTheme.badgeBackground ?? vsTheme.scheme.primary,
+        overlayColor: (vsTheme.badgeBackground ?? vsTheme.scheme.primary)
+            .withValues(alpha: 0.15),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: vsTheme.dropdownBackground,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(
+            color: vsTheme.dropdownBorder,
+            width: 1.0,
+          ),
+        ),
+      ),
+      textSelectionTheme: _selectionTheme(vsTheme),
     );
   }
 
-  ThemeData getDarkTheme() {
-    final scheme = currentScheme.dark.scheme;
-    return ThemeData(
-      colorScheme: scheme,
-      extensions: [currentScheme.dark],
-      useMaterial3: true,
-      textSelectionTheme: _selectionTheme(scheme),
-    );
-  }
+  ThemeData getLightTheme() => _buildThemeData(currentScheme.light);
 
-  TextSelectionThemeData _selectionTheme(ColorScheme scheme) {
+  ThemeData getDarkTheme() => _buildThemeData(currentScheme.dark);
+
+  TextSelectionThemeData _selectionTheme(VsCodeTheme vsTheme) {
+    final primary = vsTheme.badgeBackground ?? vsTheme.scheme.primary;
     return TextSelectionThemeData(
-      cursorColor: scheme.primary,
-      selectionColor: scheme.primary.withValues(alpha: 0.25),
-      selectionHandleColor: scheme.primary,
+      cursorColor: primary,
+      selectionColor:
+          vsTheme.editorSelectionBackground ?? primary.withValues(alpha: 0.25),
+      selectionHandleColor: primary,
     );
   }
 

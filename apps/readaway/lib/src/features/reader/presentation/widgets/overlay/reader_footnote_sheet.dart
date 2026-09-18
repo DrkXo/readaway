@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/core/theme/theme_scheme.dart';
 import 'package:readaway/src/core/widgets/core_widgets.dart';
 import 'package:readaway_core/readaway_core.dart';
 
@@ -35,11 +34,7 @@ class ReaderFootnoteSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors =
-        Theme.of(context).extension<AppColors>() ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? ThemeSchemes.tokenInspired.dark
-            : ThemeSchemes.tokenInspired.light);
+    final colors = context.appColors;
     final plainText = HtmlTextExtractor.extractPageText(footnote.contentHtml);
     final isEndnote = footnote.type == 'endnote';
 

@@ -36,19 +36,18 @@ class ToastWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appColors = Theme.of(context).extension<AppColors>();
-    final scheme = Theme.of(context).colorScheme;
+    final appColors = context.appColors;
 
-    final bg = scheme.surfaceContainerHigh;
-    final border = scheme.outlineVariant.withValues(alpha: 0.6);
-    final text = scheme.onSurface;
-    final subtleText = scheme.onSurfaceVariant;
+    final bg = appColors.notificationBackground;
+    final border = appColors.notificationBorder;
+    final text = appColors.notificationForeground;
+    final subtleText = appColors.notificationForeground.withValues(alpha: 0.75);
 
     final Color accent = switch (type) {
-      ToastType.success => appColors?.success ?? const Color(0xFF2E6C38),
-      ToastType.error => scheme.error,
-      ToastType.warning => appColors?.warning ?? const Color(0xFFD97706),
-      ToastType.info => scheme.primary,
+      ToastType.success => appColors.success,
+      ToastType.error => appColors.error,
+      ToastType.warning => appColors.warning,
+      ToastType.info => appColors.badgeBackground ?? appColors.scheme.primary,
     };
 
     final effectiveIcon = icon ?? _defaultIcon(type);
@@ -59,22 +58,14 @@ class ToastWidget extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(4),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: bg,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(4),
               border: Border.all(color: border, width: 1),
-              boxShadow:
-                  appColors?.shadowMd ??
-                  const [
-                    BoxShadow(
-                      color: Color(0x1A000000),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
+              boxShadow: appColors.shadowMd,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

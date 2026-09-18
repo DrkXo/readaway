@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
@@ -332,11 +331,13 @@ class WindowService with WindowListener {
     if (!_closeSubject.isClosed) _closeSubject.add(null);
 
     try {
-      await GetIt.I.reset();
+      if (isDesktop && _wm.hasListeners) {
+        _wm.removeListener(this);
+      }
     } catch (e, st) {
       Logger(
         'WindowService',
-      ).severe('Error during graceful shutdown: $e', e, st);
+      ).warning('Error removing window listener: $e', e, st);
     } finally {
       await _wm.destroy();
     }

@@ -42,6 +42,11 @@ export 'src/readers/html_text_extractor.dart';
 export 'src/readers/plain_text_document_reader.dart';
 export 'src/readers/single_html_document_reader.dart';
 
+// Theme
+export 'package:vscode_theme_parser/vscode_theme_parser.dart';
+export 'src/theme/builtin_vscode_themes.dart';
+export 'src/theme/vscode_theme_color.dart';
+
 // Transformers
 export 'src/transformers/transformers.dart';
 

@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -48,7 +50,8 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
   final GlobalKey _contentKey = GlobalKey(debugLabel: 'reader_content_key');
 
   bool _tocPinned = false;
-  bool get isDesktop => GetIt.I<WindowService>().isDesktop;
+  bool get isDesktop =>
+      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
   @override
   void initState() {

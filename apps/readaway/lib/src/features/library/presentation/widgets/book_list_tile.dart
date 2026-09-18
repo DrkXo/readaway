@@ -36,12 +36,24 @@ class BookListTile extends StatelessWidget {
         ? 'Page ${document.lastReadPage + 1} of ${document.pageCount} (${document.progressFormatted})'
         : document.readingStatus.label;
 
-    return InkWell(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    return Material(
+      color: isSelected ? appColors.listActiveSelectionBackground : Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        hoverColor: appColors.listHoverBackground,
+        child: Container(
+          decoration: isSelected
+              ? BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: appColors.badgeBackground ?? appColors.scheme.primary,
+                      width: 3.0,
+                    ),
+                  ),
+                )
+              : null,
+          padding: EdgeInsets.fromLTRB(isSelected ? 9 : 12, 8, 12, 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -202,6 +214,7 @@ class BookListTile extends StatelessWidget {
             ],
           ],
         ),
+      ),
       ),
     );
   }

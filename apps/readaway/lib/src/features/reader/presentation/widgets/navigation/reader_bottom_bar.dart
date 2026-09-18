@@ -75,8 +75,7 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
         if (!readerState.hasDocument) return const SizedBox.shrink();
 
         final appColors = context.appColors;
-        final barBgColor =
-            widget.backgroundColor ?? appColors.bottombarBackground.withValues(alpha: 0.95);
+        final barBgColor = widget.backgroundColor ?? appColors.bottombarBackground;
 
         return Container(
           height: ReaderBottomBar.height,
@@ -84,7 +83,7 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
             color: barBgColor,
             border: Border(
               top: BorderSide(
-                color: appColors.borderSubtle,
+                color: appColors.bottombarBorder,
                 width: 1.0,
               ),
             ),

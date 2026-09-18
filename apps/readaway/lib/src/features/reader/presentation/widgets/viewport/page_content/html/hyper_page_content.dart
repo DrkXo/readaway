@@ -8,7 +8,6 @@ import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../../core/theme/theme.dart';
-import '../../../../../../../core/theme/theme_scheme.dart';
 import '../../../../../../../core/utils/lru_cache.dart';
 import '../../../../../../settings/domain/entity/reader_preferences.dart';
 import 'reader_style_resolver.dart';
@@ -80,13 +79,9 @@ class _HyperPageContentState extends State<HyperPageContent> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final appColors =
-        Theme.of(context).extension<AppColors>() ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? ThemeSchemes.tokenInspired.dark
-            : ThemeSchemes.tokenInspired.light);
+    final appColors = context.appColors;
     final textColor = appColors.readerForeground;
-    final linkColor = appColors.scheme.primary;
+    final linkColor = appColors.badgeBackground ?? appColors.scheme.primary;
     final backgroundColor = appColors.readerBackground;
 
     if (!_hasDependencies ||

@@ -1,11 +1,12 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/routes/routes.dart';
-import '../../../../../core/services/services.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../../router/router.dart';
 import '../../bloc/reader_bloc.dart';
@@ -25,7 +26,8 @@ class ReaderTopBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onOpenDrawer;
   final VoidCallback? onCloseDocument;
 
-  bool get _isDesktop => GetIt.I<WindowService>().isDesktop;
+  bool get _isDesktop =>
+      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
   @override
   Size get preferredSize => Size.fromHeight(

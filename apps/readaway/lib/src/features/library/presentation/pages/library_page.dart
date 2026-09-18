@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/routes/routes.dart';
 import '../../../../core/services/toast/toast_service.dart';
+import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
@@ -209,12 +210,28 @@ class _LibraryViewState extends State<_LibraryView> {
                   child: TextField(
                     controller: _searchController,
                     autofocus: true,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.appColors.inputForeground,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Search by title, author, or format...',
-                      prefixIcon: const Icon(LucideIcons.search, size: 18),
+                      hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: context.appColors.inputPlaceholderForeground,
+                      ),
+                      prefixIcon: Icon(
+                        LucideIcons.search,
+                        size: 16,
+                        color: context.appColors.inputPlaceholderForeground,
+                      ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(LucideIcons.x, size: 16),
+                              icon: Icon(
+                                LucideIcons.x,
+                                size: 14,
+                                color: context.appColors.inputForeground,
+                              ),
                               onPressed: () {
                                 _searchController.clear();
                                 bloc.add(
@@ -225,16 +242,29 @@ class _LibraryViewState extends State<_LibraryView> {
                           : null,
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
+                        horizontal: 12,
+                        vertical: 8,
                       ),
                       filled: true,
-                      fillColor: scheme.surfaceContainerHighest.withValues(
-                        alpha: 0.5,
-                      ),
+                      fillColor: context.appColors.inputBackground,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                        borderRadius: BorderRadius.circular(4),
+                        borderSide: BorderSide(
+                          color: context.appColors.inputBorder,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(4),
+                        borderSide: BorderSide(
+                          color: context.appColors.inputBorder,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(4),
+                        borderSide: BorderSide(
+                          color: context.appColors.focusBorder,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     onChanged: (val) =>
@@ -344,16 +374,16 @@ class _LibraryViewState extends State<_LibraryView> {
   }
 
   Widget _buildFabBar(BuildContext context, LibraryBloc bloc) {
-    final scheme = Theme.of(context).colorScheme;
+    final appColors = context.appColors;
 
     return Material(
-      color: scheme.primaryContainer,
-      elevation: 3,
-      shadowColor: scheme.shadow.withValues(alpha: 0.25),
+      color: appColors.buttonBackground,
+      elevation: 2,
+      shadowColor: appColors.shadowMd.first.color,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(4),
         side: BorderSide(
-          color: scheme.outlineVariant.withValues(alpha: 0.35),
+          color: appColors.borderSubtle,
           width: 0.8,
         ),
       ),
@@ -369,24 +399,24 @@ class _LibraryViewState extends State<_LibraryView> {
                 onTap: () => bloc.add(const LibraryEvent.addDocuments()),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: 14,
+                    vertical: 10,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         LucideIcons.bookPlus,
-                        size: 19,
-                        color: scheme.onPrimaryContainer,
+                        size: 16,
+                        color: appColors.buttonForeground,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Text(
                         'Add Book',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: scheme.onPrimaryContainer,
+                          color: appColors.buttonForeground,
                         ),
                       ),
                     ],
@@ -397,9 +427,9 @@ class _LibraryViewState extends State<_LibraryView> {
             VerticalDivider(
               width: 1,
               thickness: 1,
-              indent: 8,
-              endIndent: 8,
-              color: scheme.onPrimaryContainer.withValues(alpha: 0.2),
+              indent: 6,
+              endIndent: 6,
+              color: appColors.buttonForeground.withValues(alpha: 0.3),
             ),
             // Open Book directly without adding to library
             Tooltip(
@@ -408,24 +438,24 @@ class _LibraryViewState extends State<_LibraryView> {
                 onTap: () => bloc.add(const LibraryEvent.openDirectly()),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: 14,
+                    vertical: 10,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         LucideIcons.bookOpen,
-                        size: 19,
-                        color: scheme.onPrimaryContainer,
+                        size: 16,
+                        color: appColors.buttonForeground,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Text(
                         'Open Book',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: scheme.onPrimaryContainer,
+                          color: appColors.buttonForeground,
                         ),
                       ),
                     ],
@@ -544,15 +574,16 @@ class _LibraryViewState extends State<_LibraryView> {
     LibraryState state,
     LibraryBloc bloc,
   ) {
-    final scheme = Theme.of(context).colorScheme;
+    final appColors = context.appColors;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
+        color: appColors.bottombarBackground,
         border: Border(
           top: BorderSide(
-            color: scheme.outlineVariant.withValues(alpha: 0.6),
+            color: appColors.bottombarBorder,
+            width: 1.0,
           ),
         ),
       ),
@@ -561,8 +592,15 @@ class _LibraryViewState extends State<_LibraryView> {
         child: Row(
           children: [
             Expanded(
-              child: FilledButton.tonalIcon(
-                icon: const Icon(LucideIcons.circleCheck, size: 16),
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: appColors.buttonBackground,
+                  foregroundColor: appColors.buttonForeground,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                icon: const Icon(LucideIcons.circleCheck, size: 15),
                 label: const Text('Mark Finished'),
                 onPressed: () => bloc.add(
                   const LibraryEvent.batchUpdateStatusSelected(
@@ -571,13 +609,16 @@ class _LibraryViewState extends State<_LibraryView> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             IconButton.filled(
               style: IconButton.styleFrom(
-                backgroundColor: scheme.errorContainer,
-                foregroundColor: scheme.onErrorContainer,
+                backgroundColor: appColors.error,
+                foregroundColor: appColors.onError,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(3),
+                ),
               ),
-              icon: const Icon(LucideIcons.trash2, size: 18),
+              icon: const Icon(LucideIcons.trash2, size: 16),
               tooltip: 'Delete selected',
               onPressed: () =>
                   bloc.add(const LibraryEvent.batchDeleteSelected()),

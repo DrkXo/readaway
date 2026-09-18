@@ -118,13 +118,13 @@ class _SchemeOption extends StatelessWidget {
   }
 }
 
-/// Representative colors of an [AppColors] palette, used for the preview.
-List<Color> _previewColors(AppColors colors) => [
-  colors.scheme.primary,
-  colors.scheme.secondary,
-  colors.scheme.tertiary,
-  colors.scheme.surface,
-  colors.readerBackground,
+/// Representative colors of a [VsCodeTheme] palette, used for the preview.
+List<Color> _previewColors(VsCodeTheme theme) => [
+  theme.badgeBackground ?? theme.scheme.primary,
+  theme.scheme.secondary,
+  theme.sheetBackground,
+  theme.readerBackground,
+  theme.readerForeground,
 ];
 
 class _SwatchStrip extends StatelessWidget {

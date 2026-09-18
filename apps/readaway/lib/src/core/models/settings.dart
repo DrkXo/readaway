@@ -262,7 +262,7 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default(false) bool autoScrollRunning,
     @Default(1.0) double zoomLevel,
     @Default('system') String theme,
-    @Default('tokenInspired') String selectedScheme,
+    @Default('flexoki') String selectedScheme,
     String? backgroundTextureId,
     @Default(1.0) double backgroundOpacity,
     @Default('cover') String backgroundSize,

@@ -23,7 +23,7 @@ class SettingsAppearancePanel extends StatelessWidget {
               settings.copyWith(
                 globalViewSettings: settings.globalViewSettings.copyWith(
                   theme: 'system',
-                  selectedScheme: 'tokenInspired',
+                  selectedScheme: 'flexoki',
                 ),
               ),
             ),

@@ -68,12 +68,11 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
   @override
   Widget build(BuildContext context) {
     final appColors = context.appColors;
-    final scheme = appColors.scheme;
     final threadColors = <Color>[
-      scheme.primary,
-      scheme.secondary,
-      scheme.tertiary,
-      scheme.error,
+      appColors.badgeBackground ?? appColors.scheme.primary,
+      appColors.scheme.secondary,
+      appColors.warning,
+      appColors.success,
     ];
 
     return BlocBuilder<ReaderBloc, ReaderState>(
@@ -110,58 +109,59 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+            const SizedBox(height: 12),
+            Container(
+              color: appColors.sidebarSectionHeaderBackground,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
+                children: [
+                  AppText(
+                    hasOutline ? 'TABLE OF CONTENTS' : 'CHAPTERS',
+                    variant: AppTextVariant.label,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w700,
+                    color: appColors.sidebarSectionHeaderForeground,
+                  ),
+                  const Spacer(),
+                  ?widget.headerAction,
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText(
-                          hasOutline ? 'CONTENTS' : 'CHAPTERS',
-                          variant: AppTextVariant.label,
-                          letterSpacing: 1.4,
-                          fontWeight: FontWeight.w700,
-                          color: scheme.primary,
-                        ),
-                        const SizedBox(height: 8),
-                        if (bookTitle != null && bookTitle.isNotEmpty)
-                          AppText(
-                            bookTitle,
-                            variant: AppTextVariant.title,
-                            fontWeight: FontWeight.w600,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        if (author != null && author.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          AppCaption(
-                            author,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                        const SizedBox(height: 4),
-                        AppCaption(
-                          hasOutline
-                              ? (_activeTab == TocTab.chapters
-                                    ? '${outline.where((o) => o.level == 0).length} chapters'
-                                    : '${state.pageCount} chapters')
-                              : '${state.pageCount} chapters',
-                        ),
-                      ],
+                  if (bookTitle != null && bookTitle.isNotEmpty)
+                    AppText(
+                      bookTitle,
+                      variant: AppTextVariant.title,
+                      fontWeight: FontWeight.w600,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                  if (author != null && author.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    AppCaption(
+                      author,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 4),
+                  AppCaption(
+                    hasOutline
+                        ? (_activeTab == TocTab.chapters
+                              ? '${outline.where((o) => o.level == 0).length} chapters'
+                              : '${state.pageCount} pages')
+                        : '${state.pageCount} pages',
                   ),
-                  ?widget.headerAction,
                 ],
               ),
             ),
             if (hasOutline) ...[
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: SizedBox(
                   width: double.infinity,
                   child: AppSegmentedControl<TocTab>(
@@ -173,7 +173,7 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                       ),
                       AppSegment(
                         value: TocTab.pages,
-                        label: 'All Chapters',
+                        label: 'All Pages',
                         icon: LucideIcons.bookOpen,
                       ),
                     ],
@@ -195,7 +195,7 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
             Divider(
               height: 1,
               thickness: 1,
-              color: scheme.outlineVariant,
+              color: appColors.sidebarBorder,
             ),
             Expanded(
               child: effectiveTab == TocTab.chapters && hasOutline
@@ -260,70 +260,73 @@ class _PageItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final appColors = context.appColors;
     final pageNumber = pageIndex + 1;
 
     return Semantics(
       button: true,
       selected: isCurrent,
-      label: 'Chapter $pageNumber',
+      label: 'Page $pageNumber',
       child: Material(
         color: isCurrent
-            ? scheme.primaryContainer.withValues(alpha: 0.35)
+            ? appColors.sidebarActiveBackground
             : Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          hoverColor: appColors.sidebarHoverBackground,
+          child: Container(
+            decoration: isCurrent
+                ? BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: appColors.badgeBackground ?? appColors.scheme.primary,
+                        width: 3.0,
+                      ),
+                    ),
+                  )
+                : null,
+            padding: EdgeInsets.fromLTRB(isCurrent ? 13 : 16, 8, 16, 8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: isCurrent
-                        ? scheme.primary
-                        : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    LucideIcons.bookOpen,
-                    size: 18,
-                    color: isCurrent
-                        ? scheme.onPrimary
-                        : scheme.onSurfaceVariant,
-                  ),
+                Icon(
+                  LucideIcons.fileText,
+                  size: 16,
+                  color: isCurrent
+                      ? (appColors.badgeBackground ?? appColors.scheme.primary)
+                      : appColors.sidebarForeground.withValues(alpha: 0.6),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Chapter $pageNumber',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                    'Page $pageNumber',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
                       color: isCurrent
-                          ? scheme.primary
-                          : theme.textTheme.bodyMedium?.color,
+                          ? appColors.sidebarActiveForeground
+                          : appColors.sidebarForeground,
                     ),
                   ),
                 ),
                 if (isCurrent)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
+                      horizontal: 6,
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: scheme.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      color: (appColors.badgeBackground ?? appColors.scheme.primary)
+                          .withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
-                      'Current',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: scheme.primary,
-                        fontWeight: FontWeight.w600,
+                      'CURRENT',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: appColors.badgeBackground ?? appColors.scheme.primary,
                       ),
                     ),
                   ),

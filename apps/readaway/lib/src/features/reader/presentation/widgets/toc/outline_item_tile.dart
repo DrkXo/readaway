@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:readaway_core/readaway_core.dart';
+import '../../../../../core/theme/theme.dart';
 
 class OutlineItemTile extends StatelessWidget {
   const OutlineItemTile({
@@ -20,7 +21,7 @@ class OutlineItemTile extends StatelessWidget {
     final title = item.title;
     if (title.isEmpty) return const SizedBox.shrink();
 
-    final theme = Theme.of(context);
+    final appColors = context.appColors;
     final color = threadColors[item.level % threadColors.length];
     final isTopLevel = item.level == 0;
 
@@ -32,80 +33,82 @@ class OutlineItemTile extends StatelessWidget {
           : title,
       child: Material(
         color: isCurrent
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35)
+            ? appColors.sidebarActiveBackground
             : Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+          hoverColor: appColors.sidebarHoverBackground,
+          child: Container(
+            decoration: isCurrent
+                ? BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: appColors.badgeBackground ?? appColors.scheme.primary,
+                        width: 3.0,
+                      ),
+                    ),
+                  )
+                : null,
+            padding: EdgeInsets.fromLTRB(isCurrent ? 13 : 16, 6, 16, 6),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(width: 20),
                 for (var l = 0; l < item.level; l++)
                   Container(
-                    width: 2,
-                    margin: const EdgeInsets.only(right: 10),
-                    color: threadColors[l % threadColors.length].withValues(
-                      alpha: 0.35,
-                    ),
+                    width: 1.5,
+                    height: 24,
+                    margin: const EdgeInsets.only(right: 8),
+                    color: appColors.borderSubtle,
                   ),
                 if (isTopLevel)
                   Container(
-                    margin: const EdgeInsets.only(top: 4, right: 12),
-                    width: 6,
-                    height: 6,
+                    margin: const EdgeInsets.only(right: 8),
+                    width: 5,
+                    height: 5,
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
                     ),
                   ),
                 Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: isCurrent ? 8.0 : 20.0),
-                    child: Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          (isTopLevel
-                                  ? theme.textTheme.bodyMedium
-                                  : theme.textTheme.bodySmall)
-                              ?.copyWith(
-                                fontWeight: isCurrent
-                                    ? FontWeight.w700
-                                    : isTopLevel
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                                color: isCurrent
-                                    ? theme.colorScheme.primary
-                                    : isTopLevel
-                                    ? theme.textTheme.bodyMedium?.color
-                                    : theme.colorScheme.onSurfaceVariant,
-                              ),
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: isTopLevel ? 13 : 12,
+                      fontWeight: isCurrent
+                          ? FontWeight.w600
+                          : isTopLevel
+                          ? FontWeight.w500
+                          : FontWeight.w400,
+                      color: isCurrent
+                          ? appColors.sidebarActiveForeground
+                          : isTopLevel
+                          ? appColors.sidebarForeground
+                          : appColors.sidebarForeground.withValues(alpha: 0.8),
                     ),
                   ),
                 ),
                 if (isCurrent)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(
-                          alpha: 0.15,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Current',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (appColors.badgeBackground ?? appColors.scheme.primary)
+                          .withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      'Current',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: appColors.badgeBackground ?? appColors.scheme.primary,
                       ),
                     ),
                   ),
