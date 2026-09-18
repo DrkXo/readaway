@@ -239,14 +239,34 @@ class SherpaTtsModelDownloaderService {
     return digest.toString();
   }
 
-  Future<void> _ensureEspeakData(Directory modelDir) {
+  /// Ensures shared espeak-ng-data directory exists in the models root.
+  Future<void> ensureSharedEspeakData([Directory? rootDir]) async {
+    final root = rootDir ?? await _pathService.getTtsModelsDirectory();
+    final sharedEspeakDir = Directory(p.join(root.path, 'espeak-ng-data'));
+    if (await sharedEspeakDir.exists()) return;
+
     return _espeakInstallFuture ??= _installEspeakData(
-      modelDir,
+      root,
+      sharedEspeakDir,
     ).whenComplete(() => _espeakInstallFuture = null);
   }
 
-  Future<void> _installEspeakData(Directory modelDir) async {
-    final espeakDir = Directory(p.join(modelDir.path, 'espeak-ng-data'));
+  Future<void> _ensureEspeakData(Directory modelDir) async {
+    final root = await _pathService.getTtsModelsDirectory();
+    final sharedEspeakDir = Directory(p.join(root.path, 'espeak-ng-data'));
+    final modelEspeakDir = Directory(p.join(modelDir.path, 'espeak-ng-data'));
+    if (await sharedEspeakDir.exists() || await modelEspeakDir.exists()) return;
+
+    return _espeakInstallFuture ??= _installEspeakData(
+      root,
+      sharedEspeakDir,
+    ).whenComplete(() => _espeakInstallFuture = null);
+  }
+
+  Future<void> _installEspeakData(
+    Directory targetDir,
+    Directory espeakDir,
+  ) async {
     if (await espeakDir.exists()) return;
 
     final tmpDir = await _pathService.tempDirectory;
@@ -288,13 +308,13 @@ class SherpaTtsModelDownloaderService {
     await compute(_extractEspeakArchiveWorker, (
       bytes: bytes,
       archivePath: archivePath,
-      modelDirPath: modelDir.path,
+      modelDirPath: targetDir.path,
       espeakDirPath: espeakDir.path,
     ));
 
     if (!await espeakDir.exists()) {
       throw SherpaTtsException(
-        'espeak-ng-data archive did not produce an espeak-ng-data directory in ${modelDir.path}',
+        'espeak-ng-data archive did not produce an espeak-ng-data directory in ${targetDir.path}',
       );
     }
   }

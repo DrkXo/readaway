@@ -1,6 +1,6 @@
 import 'dart:isolate';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:readaway_core/readaway_core.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 
@@ -35,9 +35,16 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
           tts?.free();
           tts = null;
 
-          final modelConfig = _sherpaConfigFromMessage(message);
+          final modelConfig = buildSherpaConfigFromMessage(message);
+          final ruleFsts = message['ruleFsts'] as String? ?? '';
+          final ruleFars = message['ruleFars'] as String? ?? '';
+          final silenceScale =
+              (message['silenceScale'] as num?)?.toDouble() ?? 0.2;
           final config = sherpa.OfflineTtsConfig(
             model: modelConfig,
+            ruleFsts: ruleFsts,
+            ruleFars: ruleFars,
+            silenceScale: silenceScale,
             maxNumSenetences: 1,
           );
           final newTts = sherpa.OfflineTts(config);
@@ -58,8 +65,6 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             break;
           }
           final text = message['text'] as String;
-          final speakerId = message['speakerId'] as int? ?? 0;
-          final speed = (message['speed'] as num?)?.toDouble() ?? 1.0;
 
           if (text.trim().isEmpty) {
             reply(
@@ -71,10 +76,10 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             );
             break;
           }
-          final audio = engine.generate(
+          final genConfig = buildGenerationConfigFromMessage(message);
+          final audio = engine.generateWithConfig(
             text: text,
-            sid: speakerId,
-            speed: speed,
+            config: genConfig,
           );
           reply(
             id,
@@ -93,8 +98,6 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
           }
           final text = message['text'] as String;
           final outputPath = message['outputPath'] as String;
-          final speakerId = message['speakerId'] as int? ?? 0;
-          final speed = (message['speed'] as num?)?.toDouble() ?? 1.0;
 
           if (text.trim().isEmpty) {
             reply(
@@ -107,10 +110,10 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             );
             break;
           }
-          final audio = engine.generate(
+          final genConfig = buildGenerationConfigFromMessage(message);
+          final audio = engine.generateWithConfig(
             text: text,
-            sid: speakerId,
-            speed: speed,
+            config: genConfig,
           );
 
           final gapSec = (message['gapSec'] as num?)?.toDouble() ?? 0.0;
@@ -145,8 +148,6 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             break;
           }
           final text = message['text'] as String;
-          final speakerId = message['speakerId'] as int? ?? 0;
-          final speed = (message['speed'] as num?)?.toDouble() ?? 1.0;
           final gapSec = (message['gapSec'] as num?)?.toDouble() ?? 0.0;
 
           if (text.trim().isEmpty) {
@@ -161,10 +162,10 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             );
             break;
           }
-          final audio = engine.generate(
+          final genConfig = buildGenerationConfigFromMessage(message);
+          final audio = engine.generateWithConfig(
             text: text,
-            sid: speakerId,
-            speed: speed,
+            config: genConfig,
           );
 
           final out = _trimFadeAndGap(audio.samples, audio.sampleRate, gapSec);
@@ -189,14 +190,12 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             break;
           }
           final text = message['text'] as String;
-          final speakerId = message['speakerId'] as int? ?? 0;
-          final speed = (message['speed'] as num?)?.toDouble() ?? 1.0;
+          final genConfig = buildGenerationConfigFromMessage(message);
 
-          engine.generateWithCallback(
+          engine.generateWithConfig(
             text: text,
-            sid: speakerId,
-            speed: speed,
-            callback: (samples) {
+            config: genConfig,
+            onProgress: (samples, progress) {
               mainSendPort.send({'id': id, 'chunk': samples});
               return 1;
             },
@@ -219,7 +218,23 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
   });
 }
 
-sherpa.OfflineTtsModelConfig _sherpaConfigFromMessage(Map message) {
+@visibleForTesting
+sherpa.OfflineTtsGenerationConfig buildGenerationConfigFromMessage(Map message) {
+  final speakerId = message['speakerId'] as int? ?? 0;
+  final speed = (message['speed'] as num?)?.toDouble() ?? 1.0;
+  final silenceScale = (message['silenceScale'] as num?)?.toDouble() ?? 0.2;
+  final numSteps = message['numSteps'] as int? ?? 5;
+
+  return sherpa.OfflineTtsGenerationConfig(
+    sid: speakerId,
+    speed: speed,
+    silenceScale: silenceScale,
+    numSteps: numSteps,
+  );
+}
+
+@visibleForTesting
+sherpa.OfflineTtsModelConfig buildSherpaConfigFromMessage(Map message) {
   final type = message['modelType'] as String;
   final numThreads = message['numThreads'] as int? ?? 2;
   final debug = message['debug'] as bool? ?? false;
@@ -227,6 +242,9 @@ sherpa.OfflineTtsModelConfig _sherpaConfigFromMessage(Map message) {
   final lexicon = message['lexicon'] as String? ?? '';
   final dataDir = message['dataDir'] as String? ?? '';
   final dictDir = message['dictDir'] as String? ?? '';
+  final noiseScale = (message['noiseScale'] as num?)?.toDouble() ?? 0.667;
+  final noiseScaleW = (message['noiseScaleW'] as num?)?.toDouble() ?? 0.8;
+  final lengthScale = (message['lengthScale'] as num?)?.toDouble() ?? 1.0;
 
   switch (type) {
     case 'vits':
@@ -237,6 +255,9 @@ sherpa.OfflineTtsModelConfig _sherpaConfigFromMessage(Map message) {
           lexicon: lexicon,
           dataDir: dataDir,
           dictDir: dictDir,
+          noiseScale: noiseScale,
+          noiseScaleW: noiseScaleW,
+          lengthScale: lengthScale,
         ),
         numThreads: numThreads,
         debug: debug,
@@ -253,6 +274,7 @@ sherpa.OfflineTtsModelConfig _sherpaConfigFromMessage(Map message) {
           dictDir: dictDir,
           lexicon: lexicon,
           lang: message['lang'] as String? ?? '',
+          lengthScale: lengthScale,
         ),
         numThreads: numThreads,
         debug: debug,
@@ -268,6 +290,8 @@ sherpa.OfflineTtsModelConfig _sherpaConfigFromMessage(Map message) {
           lexicon: lexicon,
           dataDir: dataDir,
           dictDir: dictDir,
+          noiseScale: noiseScale,
+          lengthScale: lengthScale,
         ),
         numThreads: numThreads,
         debug: debug,

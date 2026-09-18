@@ -24,27 +24,33 @@ extension TtsVoiceAndRate on TtsControllerService {
     }
 
     final targetVoiceKey = gvs.ttsVoice;
-    if (targetVoiceKey == null || targetVoiceKey.isEmpty) return;
+    if (targetVoiceKey == null || targetVoiceKey.isEmpty) {
+      if (_voice != null) {
+        _voice = null;
+        if (!_voiceController.isClosed) {
+          _voiceController.add(null);
+        }
+      }
+      return;
+    }
     if (_voice?.matchesKey(targetVoiceKey) ?? false) return;
 
-    if (_cachedInstalledVoices.isNotEmpty) {
-      final match = _cachedInstalledVoices
+    unawaited(() async {
+      final voices = await getInstalledVoices();
+      final match = voices
           .where((v) => v.matchesKey(targetVoiceKey))
           .firstOrNull;
       if (match != null) {
-        unawaited(setVoice(match));
-      }
-    } else {
-      unawaited(() async {
-        final voices = await getInstalledVoices();
-        final match = voices
-            .where((v) => v.matchesKey(targetVoiceKey))
-            .firstOrNull;
-        if (match != null) {
-          await setVoice(match);
+        await setVoice(match);
+      } else {
+        if (_voice != null && !voices.any((v) => v.id == _voice!.id)) {
+          _voice = null;
+          if (!_voiceController.isClosed) {
+            _voiceController.add(null);
+          }
         }
-      }());
-    }
+      }
+    }());
   }
 
   Future<List<TtsVoiceOption>> getInstalledVoices() async {

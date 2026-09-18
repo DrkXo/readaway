@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_initializing_formals
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -9,6 +11,7 @@ import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 import '../../isolate_service.dart';
 import '../../logging_service.dart';
 import '../../path_service.dart';
+import '../../settings_service.dart';
 import '../tts_model_store.dart';
 import '../tts_models.dart';
 import 'sherpa_isolate_worker_service.dart';
@@ -18,18 +21,25 @@ import 'sherpa_tts_model_downloader.dart';
 @lazySingleton
 class SherpaOnnxTtsService {
   SherpaOnnxTtsService({
-    required this._downloader,
-    required this._sherpaTtsModelCatalog,
-    required this._isolateService,
-    required this._pathService,
-    required this._store,
-  });
+    required SherpaTtsModelDownloaderService downloader,
+    required SherpaTtsModelCatalogService sherpaTtsModelCatalog,
+    required IsolateService isolateService,
+    required AppPathService pathService,
+    required TtsModelStore store,
+    required SettingsService settingsService,
+  }) : _downloader = downloader,
+       _sherpaTtsModelCatalog = sherpaTtsModelCatalog,
+       _isolateService = isolateService,
+       _pathService = pathService,
+       _store = store,
+       _settingsService = settingsService;
 
   final SherpaTtsModelDownloaderService _downloader;
   final SherpaTtsModelCatalogService _sherpaTtsModelCatalog;
   final IsolateService _isolateService;
   final AppPathService _pathService;
   final TtsModelStore _store;
+  final SettingsService _settingsService;
 
   SherpaTtsModelInfo? _activeModel;
   Directory? _modelsRootDir;
@@ -246,6 +256,10 @@ class SherpaOnnxTtsService {
     String modelId, {
     int numThreads = 2,
     bool debugLogging = false,
+    double? noiseScale,
+    double? noiseScaleW,
+    double? lengthScale,
+    double? silenceScale,
   }) async {
     await ensureInitialized();
     final model = _sherpaTtsModelCatalog.byId(modelId);
@@ -257,12 +271,28 @@ class SherpaOnnxTtsService {
       throw SherpaTtsException('Model $modelId is not downloaded yet.');
     }
 
-    final files = await _indexModelFiles(dir);
+    var files = await _indexModelFiles(dir);
+    if (model.needsEspeakData && files.espeakDataDir == null) {
+      final rootDir = _modelsRootDir ?? await _resolveModelsRootDir();
+      await _downloader.ensureSharedEspeakData(rootDir);
+      files = await _indexModelFiles(dir);
+    }
+
+    final gvs = _settingsService.settings.globalViewSettings;
+    final effectiveSilenceScale = silenceScale ?? gvs.ttsSilenceScale;
+    final effectiveNoiseScale = noiseScale ?? gvs.ttsNoiseScale;
+    final effectiveNoiseScaleW = noiseScaleW ?? gvs.ttsNoiseScaleW;
+    final effectiveLengthScale = lengthScale ?? gvs.ttsLengthScale;
+
     final message = _buildLoadModelMessage(
       model,
       files,
       numThreads: numThreads,
       debug: debugLogging,
+      noiseScale: effectiveNoiseScale,
+      noiseScaleW: effectiveNoiseScaleW,
+      lengthScale: effectiveLengthScale,
+      silenceScale: effectiveSilenceScale,
     );
 
     final result = await _isolateService.sendCommand<Map>(
@@ -276,25 +306,28 @@ class SherpaOnnxTtsService {
   }
 
   Future<_ModelFiles> _indexModelFiles(Directory dir) async {
-    String? onnxA, onnxB, tokens, voicesBin, dataDir, dictDir;
+    final onnxFiles = <String>[];
+    String? tokens, voicesBin, dataDir, dictDir;
 
     final lexiconFiles = <String>[];
+    final ruleFstFiles = <String>[];
+    final ruleFarFiles = <String>[];
     final entries = await dir.list(recursive: true).toList();
 
     for (final e in entries) {
       final name = p.basename(e.path);
       if (e is File && name.endsWith('.onnx')) {
-        if (onnxA == null) {
-          onnxA = e.path;
-        } else {
-          onnxB = e.path;
-        }
+        onnxFiles.add(e.path);
       } else if (e is File && name == 'tokens.txt') {
         tokens = e.path;
       } else if (e is File &&
           name.startsWith('lexicon') &&
           name.endsWith('.txt')) {
         lexiconFiles.add(e.path);
+      } else if (e is File && name.endsWith('.fst')) {
+        ruleFstFiles.add(e.path);
+      } else if (e is File && name.endsWith('.far')) {
+        ruleFarFiles.add(e.path);
       } else if (e is File &&
           (name.endsWith('.bin') && name.contains('voices'))) {
         voicesBin = e.path;
@@ -319,12 +352,16 @@ class SherpaOnnxTtsService {
     }
 
     lexiconFiles.sort();
+    ruleFstFiles.sort();
+    ruleFarFiles.sort();
+    onnxFiles.sort();
 
     return _ModelFiles(
-      onnxPrimary: onnxA,
-      onnxSecondary: onnxB,
+      onnxFiles: onnxFiles,
       tokens: tokens,
       lexicon: lexiconFiles.isEmpty ? null : lexiconFiles.join(','),
+      ruleFsts: ruleFstFiles.isEmpty ? null : ruleFstFiles.join(','),
+      ruleFars: ruleFarFiles.isEmpty ? null : ruleFarFiles.join(','),
       voicesBin: voicesBin,
       espeakDataDir: dataDir,
       dictDir: dictDir,
@@ -336,6 +373,10 @@ class SherpaOnnxTtsService {
     _ModelFiles files, {
     required int numThreads,
     required bool debug,
+    double noiseScale = 0.667,
+    double noiseScaleW = 0.8,
+    double lengthScale = 1.0,
+    double silenceScale = 0.2,
   }) {
     final base = <String, dynamic>{
       'id': _nextId(),
@@ -344,13 +385,19 @@ class SherpaOnnxTtsService {
       'debug': debug,
       'tokens': files.tokens,
       'lexicon': files.lexicon ?? '',
+      'ruleFsts': files.ruleFsts ?? '',
+      'ruleFars': files.ruleFars ?? '',
+      'silenceScale': silenceScale,
       'dataDir': files.espeakDataDir ?? '',
       'dictDir': files.dictDir ?? '',
+      'noiseScale': noiseScale,
+      'noiseScaleW': noiseScaleW,
+      'lengthScale': lengthScale,
     };
 
     switch (model.type) {
       case SherpaTtsModelType.vits:
-        if (files.onnxPrimary == null) {
+        if (files.onnxFiles.isEmpty) {
           throw SherpaTtsException(
             'No .onnx file found for VITS model ${model.id}',
           );
@@ -358,11 +405,11 @@ class SherpaOnnxTtsService {
         return {
           ...base,
           'modelType': 'vits',
-          'modelPath': files.onnxPrimary,
+          'modelPath': files.onnxFiles.first,
         };
 
       case SherpaTtsModelType.kokoro:
-        if (files.onnxPrimary == null || files.voicesBin == null) {
+        if (files.onnxFiles.isEmpty || files.voicesBin == null) {
           throw SherpaTtsException(
             'Kokoro model ${model.id} needs both a .onnx file and a voices .bin file.',
           );
@@ -380,7 +427,7 @@ class SherpaOnnxTtsService {
         return {
           ...base,
           'modelType': 'kokoro',
-          'modelPath': files.onnxPrimary,
+          'modelPath': files.onnxFiles.first,
           'voicesPath': files.voicesBin,
           'lang': isMultiLingual ? '' : model.languageCode,
         };
@@ -388,9 +435,12 @@ class SherpaOnnxTtsService {
       case SherpaTtsModelType.matcha:
         final vocoderName = model.vocoderFileName;
         String? acoustic, vocoder;
-        for (final f in [files.onnxPrimary, files.onnxSecondary]) {
-          if (f == null) continue;
-          if (vocoderName != null && p.basename(f) == vocoderName) {
+        for (final f in files.onnxFiles) {
+          final baseName = p.basename(f).toLowerCase();
+          if ((vocoderName != null && p.basename(f) == vocoderName) ||
+              baseName.contains('vocos') ||
+              baseName.contains('hifigan') ||
+              baseName.contains('vocoder')) {
             vocoder = f;
           } else {
             acoustic = f;
@@ -434,10 +484,16 @@ class SherpaOnnxTtsService {
     required String text,
     int speakerId = 0,
     double speed = 1.0,
+    double? silenceScale,
+    int? numSteps,
   }) async {
     if (!hasLoadedModel) {
       throw SherpaTtsException('No model loaded. Call loadModel() first.');
     }
+    final gvs = _settingsService.settings.globalViewSettings;
+    final effectiveSilenceScale = silenceScale ?? gvs.ttsSilenceScale;
+    final effectiveNumSteps = numSteps ?? gvs.ttsNumSteps;
+
     final result = await _isolateService.sendCommand<Map>(
       sherpaTtsIsolateName,
       {
@@ -446,6 +502,8 @@ class SherpaOnnxTtsService {
         'text': text,
         'speakerId': speakerId,
         'speed': speed,
+        'silenceScale': effectiveSilenceScale,
+        'numSteps': effectiveNumSteps,
       },
     );
     return TtsAudio(
@@ -461,10 +519,16 @@ class SherpaOnnxTtsService {
     int speakerId = 0,
     double speed = 1.0,
     double gapSec = 0.0,
+    double? silenceScale,
+    int? numSteps,
   }) async {
     if (!hasLoadedModel) {
       throw const TtsModelNotLoadedException();
     }
+    final gvs = _settingsService.settings.globalViewSettings;
+    final effectiveSilenceScale = silenceScale ?? gvs.ttsSilenceScale;
+    final effectiveNumSteps = numSteps ?? gvs.ttsNumSteps;
+
     try {
       final result = await _isolateService.sendCommand<Map>(
         sherpaTtsIsolateName,
@@ -476,6 +540,8 @@ class SherpaOnnxTtsService {
           'speakerId': speakerId,
           'speed': speed,
           'gapSec': gapSec,
+          'silenceScale': effectiveSilenceScale,
+          'numSteps': effectiveNumSteps,
         },
       );
       final rawWaveform = result['waveform'] as List<dynamic>?;
@@ -513,10 +579,16 @@ class SherpaOnnxTtsService {
     int speakerId = 0,
     double speed = 1.0,
     double gapSec = 0.0,
+    double? silenceScale,
+    int? numSteps,
   }) async {
     if (!hasLoadedModel) {
       throw const TtsModelNotLoadedException();
     }
+    final gvs = _settingsService.settings.globalViewSettings;
+    final effectiveSilenceScale = silenceScale ?? gvs.ttsSilenceScale;
+    final effectiveNumSteps = numSteps ?? gvs.ttsNumSteps;
+
     try {
       final result = await _isolateService.sendCommand<Map>(
         sherpaTtsIsolateName,
@@ -527,6 +599,8 @@ class SherpaOnnxTtsService {
           'speakerId': speakerId,
           'speed': speed,
           'gapSec': gapSec,
+          'silenceScale': effectiveSilenceScale,
+          'numSteps': effectiveNumSteps,
         },
       );
       final rawWaveform = result['waveform'] as List<dynamic>?;
@@ -553,10 +627,16 @@ class SherpaOnnxTtsService {
     required String text,
     int speakerId = 0,
     double speed = 1.0,
+    double? silenceScale,
+    int? numSteps,
   }) {
     if (!hasLoadedModel) {
       throw SherpaTtsException('No model loaded. Call loadModel() first.');
     }
+    final gvs = _settingsService.settings.globalViewSettings;
+    final effectiveSilenceScale = silenceScale ?? gvs.ttsSilenceScale;
+    final effectiveNumSteps = numSteps ?? gvs.ttsNumSteps;
+
     return _isolateService.sendStreamCommand<Float32List>(
       sherpaTtsIsolateName,
       {
@@ -565,6 +645,8 @@ class SherpaOnnxTtsService {
         'text': text,
         'speakerId': speakerId,
         'speed': speed,
+        'silenceScale': effectiveSilenceScale,
+        'numSteps': effectiveNumSteps,
       },
     );
   }
@@ -574,11 +656,15 @@ class SherpaOnnxTtsService {
     required String outputPath,
     int speakerId = 0,
     double speed = 1.0,
+    double? silenceScale,
+    int? numSteps,
   }) async {
     final audio = await generate(
       text: text,
       speakerId: speakerId,
       speed: speed,
+      silenceScale: silenceScale,
+      numSteps: numSteps,
     );
     final ok = sherpa.writeWave(
       filename: outputPath,
@@ -594,20 +680,25 @@ class SherpaOnnxTtsService {
 
 class _ModelFiles {
   _ModelFiles({
-    this.onnxPrimary,
-    this.onnxSecondary,
+    required this.onnxFiles,
     required this.tokens,
     this.lexicon,
+    this.ruleFsts,
+    this.ruleFars,
     this.voicesBin,
     this.espeakDataDir,
     this.dictDir,
   });
 
-  final String? onnxPrimary;
-  final String? onnxSecondary;
+  final List<String> onnxFiles;
   final String tokens;
   final String? lexicon;
+  final String? ruleFsts;
+  final String? ruleFars;
   final String? voicesBin;
   final String? espeakDataDir;
   final String? dictDir;
+
+  String? get onnxPrimary => onnxFiles.isNotEmpty ? onnxFiles.first : null;
+  String? get onnxSecondary => onnxFiles.length > 1 ? onnxFiles[1] : null;
 }

@@ -32,8 +32,15 @@ extension _TtsSynthesisPipeline on TtsControllerService {
       _stateController.add(const TtsPlaybackEvent(TtsPlaybackState.loading));
     }
     try {
-      if (_voice == null) {
-        final voices = await getInstalledVoices();
+      final voices = await getInstalledVoices();
+      final isCurrentVoiceValid = _voice != null &&
+          voices.any(
+            (v) =>
+                v.id == _voice!.id &&
+                v.sherpaSpeakerId == _voice!.sherpaSpeakerId,
+          );
+
+      if (!isCurrentVoiceValid) {
         final targetVoiceKey =
             _settingsService.settings.globalViewSettings.ttsVoice;
         TtsVoiceOption? resolvedVoice;
@@ -47,6 +54,10 @@ extension _TtsSynthesisPipeline on TtsControllerService {
         if (resolvedVoice != null) {
           await setVoice(resolvedVoice);
         } else {
+          _voice = null;
+          if (!_voiceController.isClosed) {
+            _voiceController.add(null);
+          }
           throw const SherpaTtsException(
             'No TTS voice available. Download a voice first.',
           );

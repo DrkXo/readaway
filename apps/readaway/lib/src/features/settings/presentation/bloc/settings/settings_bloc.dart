@@ -248,12 +248,16 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
               .getOrElse((_) => const Settings())
               .globalViewSettings
               .ttsVoice;
-          if (persisted != null && downloadedIds.contains(persisted)) {
+          final persistedModelId = persisted != null && persisted.contains('@')
+              ? persisted.split('@').first
+              : persisted;
+          if (persistedModelId != null &&
+              downloadedIds.contains(persistedModelId)) {
             final loadResult = await ttsModelRepository
-                .activateModel(persisted)
+                .activateModel(persistedModelId)
                 .run();
             if (loadResult.isRight()) {
-              activeModelId = persisted;
+              activeModelId = persistedModelId;
             }
           }
         }
@@ -428,22 +432,24 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         );
       },
       (_) async {
-        final wasActive = state.ttsActiveModelId == id;
-        if (wasActive) {
-          final settingsResult = await settingsRepository.getSettings().run();
-          final current = settingsResult.getOrElse((_) => const Settings());
-          if (current.globalViewSettings.ttsVoice == id) {
-            await settingsRepository
-                .saveSettings(
-                  current.copyWith(
-                    globalViewSettings: current.globalViewSettings.copyWith(
-                      ttsVoice: null,
-                    ),
+        final settingsResult = await settingsRepository.getSettings().run();
+        final current = settingsResult.getOrElse((_) => const Settings());
+        final currentVoice = current.globalViewSettings.ttsVoice;
+        final currentModelId = currentVoice != null && currentVoice.contains('@')
+            ? currentVoice.split('@').first
+            : currentVoice;
+        if (currentModelId == id) {
+          await settingsRepository
+              .saveSettings(
+                current.copyWith(
+                  globalViewSettings: current.globalViewSettings.copyWith(
+                    ttsVoice: null,
                   ),
-                )
-                .run();
-          }
+                ),
+              )
+              .run();
         }
+        final wasActive = state.ttsActiveModelId == id;
         emit(
           state.copyWith(
             ttsDownloadedIds: state.ttsDownloadedIds

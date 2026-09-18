@@ -18,12 +18,27 @@ extension TtsPlaybackControl on TtsControllerService {
           .firstOrNull;
     }
 
-    resolvedVoice ??= _voice ?? voices.firstOrNull;
+    if (resolvedVoice == null && _voice != null) {
+      resolvedVoice = voices
+          .where(
+            (v) =>
+                v.id == _voice!.id &&
+                v.sherpaSpeakerId == _voice!.sherpaSpeakerId,
+          )
+          .firstOrNull;
+    }
+
+    resolvedVoice ??= voices.firstOrNull;
 
     if (resolvedVoice != null) {
       await setVoice(resolvedVoice);
       final engine = _engineRegistry.getEngineForVoice(resolvedVoice);
       await engine.initialize();
+    } else {
+      _voice = null;
+      if (!_voiceController.isClosed) {
+        _voiceController.add(null);
+      }
     }
     await _audioPlayer.setSpeed(_rate);
     await _audioPlayer.setPitch(_pitch);

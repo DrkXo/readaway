@@ -377,7 +377,7 @@ types:
         index: 1
   GlobalViewSettings:
     typeId: 16
-    nextIndex: 109
+    nextIndex: 114
     fields:
       marginTopPx:
         index: 0
@@ -597,6 +597,16 @@ types:
         index: 107
       ttsSleepTimerMinutes:
         index: 108
+      ttsSilenceScale:
+        index: 109
+      ttsNoiseScale:
+        index: 110
+      ttsNoiseScaleW:
+        index: 111
+      ttsLengthScale:
+        index: 112
+      ttsNumSteps:
+        index: 113
   ParagraphMode:
     typeId: 17
     nextIndex: 3
