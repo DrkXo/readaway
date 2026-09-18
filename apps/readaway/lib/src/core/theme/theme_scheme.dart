@@ -1,4 +1,5 @@
-import 'schemes/flexoki.dart';
+import 'schemes/flexoki_inspired.dart';
+import 'schemes/kanagawa_dragon_inspired.dart';
 import 'schemes/token_inspired.dart';
 import 'theme.dart';
 
@@ -12,6 +13,7 @@ class ThemeScheme {
   const ThemeScheme({
     required this.id,
     required this.name,
+    this.originalRepoLink,
     required this.light,
     required this.dark,
   });
@@ -22,6 +24,9 @@ class ThemeScheme {
   /// Human-readable name shown to users (e.g. in a scheme picker).
   final String name;
 
+  /// Optional original repository / project URL.
+  final String? originalRepoLink;
+
   /// Light-mode color tokens.
   final AppColors light;
 
@@ -31,24 +36,35 @@ class ThemeScheme {
 
 /// Registry of all available [ThemeScheme]s.
 abstract final class ThemeSchemes {
-  /// The built-in scheme, named "Token".
+  /// The built-in scheme, named "Token (Inspired)".
   static const tokenInspired = ThemeScheme(
     id: 'tokenInspired',
-    name: 'Token',
+    name: 'Token (Inspired)',
+    originalRepoLink: 'https://github.com/ThorstenRhau/token',
     light: tokenInspiredLight,
     dark: tokenInspiredDark,
   );
 
-  /// Paper-and-ink scheme, named "Flexoki".
+  /// Paper-and-ink scheme, named "Flexoki (Inspired)".
   static const flexoki = ThemeScheme(
     id: 'flexoki',
-    name: 'Flexoki',
+    name: 'Flexoki (Inspired)',
+    originalRepoLink: 'https://github.com/kepano/flexoki',
     light: flexokiLight,
     dark: flexokiDark,
   );
 
+  /// Kanagawa Dragon scheme, named "Kanagawa Dragon (Inspired)".
+  static const kanagawaDragon = ThemeScheme(
+    id: 'kanagawaDragon',
+    name: 'Kanagawa Dragon (Inspired)',
+    originalRepoLink: 'https://github.com/paccodes/kanagawa-vscode-theme',
+    light: kanagawaDragonLight,
+    dark: kanagawaDragonDark,
+  );
+
   /// All available schemes, in display order.
-  static const all = <ThemeScheme>[tokenInspired, flexoki];
+  static const all = <ThemeScheme>[tokenInspired, flexoki, kanagawaDragon];
 
   /// Resolves a scheme by [id], falling back to [tokenInspired] when the id
   /// is unknown or null (e.g. a scheme was removed from the registry).

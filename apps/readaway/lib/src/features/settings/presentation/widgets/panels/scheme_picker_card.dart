@@ -70,6 +70,7 @@ class _SchemeOption extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Column(
@@ -81,6 +82,15 @@ class _SchemeOption extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (scheme.originalRepoLink != null) ...[
+                    const SizedBox(height: 2),
+                    SelectableText(
+                      scheme.originalRepoLink!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: schemeColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -93,10 +103,13 @@ class _SchemeOption extends StatelessWidget {
               ),
             ),
             if (selected)
-              Icon(
-                LucideIcons.check,
-                color: schemeColors.primary,
-                size: 20,
+              Padding(
+                padding: const EdgeInsets.only(top: 2.0),
+                child: Icon(
+                  LucideIcons.check,
+                  color: schemeColors.primary,
+                  size: 20,
+                ),
               ),
           ],
         ),

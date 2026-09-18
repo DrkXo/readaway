@@ -102,6 +102,7 @@ class _LibraryViewState extends State<_LibraryView> {
 
         return Scaffold(
           appBar: AppTopBar(
+            showBottomBorder: false,
             titleText: state.isSelectMode
                 ? '${state.selectedPaths.length} selected'
                 : 'ReadAway',

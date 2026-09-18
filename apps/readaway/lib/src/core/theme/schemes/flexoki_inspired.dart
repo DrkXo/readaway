@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-/// Light-mode [ColorScheme] for the Flexoki scheme.
+/// Light-mode [ColorScheme] for the Flexoki (Inspired) scheme.
 const flexokiLightScheme = ColorScheme(
   brightness: Brightness.light,
   primary: Color(0xFFBC5215), // orange-600
@@ -38,7 +38,7 @@ const flexokiLightScheme = ColorScheme(
   surfaceContainerHighest: Color(0xFFCECDC3), // base-200
 );
 
-/// Light-mode [AppColors] tokens for the Flexoki scheme.
+/// Light-mode [AppColors] tokens for the Flexoki (Inspired) scheme.
 const flexokiLight = AppColors(
   scheme: flexokiLightScheme,
   readerBackground: Color(0xFFFFFCF0), // paper
@@ -60,7 +60,7 @@ const flexokiLight = AppColors(
   onWarning: Color(0xFFFFFCF0),
 );
 
-/// Dark-mode [ColorScheme] for the Flexoki scheme.
+/// Dark-mode [ColorScheme] for the Flexoki (Inspired) scheme.
 const flexokiDarkScheme = ColorScheme(
   brightness: Brightness.dark,
   primary: Color(0xFFDA702C), // orange-400
@@ -96,7 +96,7 @@ const flexokiDarkScheme = ColorScheme(
   surfaceContainerHighest: Color(0xFF403E3C), // base-800
 );
 
-/// Dark-mode [AppColors] tokens for the Flexoki scheme.
+/// Dark-mode [AppColors] tokens for the Flexoki (Inspired) scheme.
 const flexokiDark = AppColors(
   scheme: flexokiDarkScheme,
   readerBackground: Color(0xFF100F0F), // black
