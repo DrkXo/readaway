@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/theme.dart';
-
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
+import '../bloc/library_bloc.dart';
 import 'book_cover_widget.dart';
 
 class BookDetailsSheet extends StatelessWidget {
   const BookDetailsSheet({
     super.key,
     required this.document,
+    required this.bloc,
     required this.onOpenReader,
     required this.onToggleFavorite,
     required this.onUpdateStatus,
@@ -19,6 +21,7 @@ class BookDetailsSheet extends StatelessWidget {
   });
 
   final RecentDocument document;
+  final LibraryBloc bloc;
   final VoidCallback onOpenReader;
   final VoidCallback onToggleFavorite;
   final ValueChanged<ReadingStatus> onUpdateStatus;
@@ -27,6 +30,7 @@ class BookDetailsSheet extends StatelessWidget {
   static Future<void> show(
     BuildContext context, {
     required RecentDocument document,
+    required LibraryBloc bloc,
     required VoidCallback onOpenReader,
     required VoidCallback onToggleFavorite,
     required ValueChanged<ReadingStatus> onUpdateStatus,
@@ -42,6 +46,7 @@ class BookDetailsSheet extends StatelessWidget {
       ),
       builder: (_) => BookDetailsSheet(
         document: document,
+        bloc: bloc,
         onOpenReader: onOpenReader,
         onToggleFavorite: onToggleFavorite,
         onUpdateStatus: onUpdateStatus,
@@ -70,6 +75,19 @@ class BookDetailsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<LibraryBloc, LibraryState>(
+      bloc: bloc,
+      builder: (context, state) {
+        final doc = state.recentDocuments.firstWhere(
+          (d) => d.path == document.path,
+          orElse: () => document,
+        );
+        return _buildBody(context, doc);
+      },
+    );
+  }
+
+  Widget _buildBody(BuildContext context, RecentDocument doc) {
     final appColors = context.appColors;
     final scheme = appColors.scheme;
 
@@ -88,11 +106,11 @@ class BookDetailsSheet extends StatelessWidget {
                   width: 72,
                   height: 108,
                   child: BookCoverWidget(
-                    coverPath: document.coverPath,
-                    title: document.displayTitle,
-                    author: document.displayAuthor,
-                    format: document.format,
-                    progressPercent: document.progressPercent,
+                    coverPath: doc.coverPath,
+                    title: doc.displayTitle,
+                    author: doc.displayAuthor,
+                    format: doc.format,
+                    progressPercent: doc.progressPercent,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -101,7 +119,7 @@ class BookDetailsSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        document.displayTitle,
+                        doc.displayTitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -111,10 +129,10 @@ class BookDetailsSheet extends StatelessWidget {
                           color: scheme.onSurface,
                         ),
                       ),
-                      if (document.displayAuthor != null) ...[
+                      if (doc.displayAuthor != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          document.displayAuthor!,
+                          doc.displayAuthor!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -130,19 +148,19 @@ class BookDetailsSheet extends StatelessWidget {
                         runSpacing: 4,
                         children: [
                           _Badge(
-                            label: document.formatBadge,
+                            label: doc.formatBadge,
                             color: scheme.primaryContainer,
                             textColor: scheme.onPrimaryContainer,
                           ),
-                          if (document.formattedFileSize.isNotEmpty)
+                          if (doc.formattedFileSize.isNotEmpty)
                             _Badge(
-                              label: document.formattedFileSize,
+                              label: doc.formattedFileSize,
                               color: scheme.surfaceContainerHighest,
                               textColor: scheme.onSurfaceVariant,
                             ),
-                          if (document.pageCount > 0)
+                          if (doc.pageCount > 0)
                             _Badge(
-                              label: '${document.pageCount} pages',
+                              label: '${doc.pageCount} pages',
                               color: scheme.surfaceContainerHighest,
                               textColor: scheme.onSurfaceVariant,
                             ),
@@ -185,7 +203,7 @@ class BookDetailsSheet extends StatelessWidget {
                   icon: Icon(LucideIcons.circleCheck, size: 14),
                 ),
               ],
-              selected: {document.readingStatus},
+              selected: {doc.readingStatus},
               onSelectionChanged: (selected) {
                 if (selected.isNotEmpty) {
                   onUpdateStatus(selected.first);
@@ -209,33 +227,33 @@ class BookDetailsSheet extends StatelessWidget {
                   _InfoRow(
                     icon: LucideIcons.calendarPlus,
                     label: 'Date Added',
-                    value: _formatDate(document.dateAdded),
+                    value: _formatDate(doc.dateAdded),
                   ),
                   const Divider(height: 1),
                   _InfoRow(
                     icon: LucideIcons.history,
                     label: 'Last Opened',
-                    value: _formatDate(document.lastOpened),
+                    value: _formatDate(doc.lastOpened),
                   ),
                   const Divider(height: 1),
                   _InfoRow(
                     icon: LucideIcons.percent,
                     label: 'Progress',
-                    value: document.pageCount > 0
-                        ? 'Page ${document.lastReadPage + 1} of ${document.pageCount} (${document.progressFormatted})'
-                        : document.readingStatus.label,
+                    value: doc.pageCount > 0
+                        ? 'Page ${doc.lastReadPage + 1} of ${doc.pageCount} (${doc.progressFormatted})'
+                        : doc.readingStatus.label,
                   ),
                   const Divider(height: 1),
                   _InfoRow(
                     icon: LucideIcons.folder,
                     label: 'File Path',
-                    value: document.path,
+                    value: doc.path,
                     isTruncated: true,
                     trailing: IconButton(
                       icon: const Icon(LucideIcons.copy, size: 16),
                       tooltip: 'Copy file path',
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: document.path));
+                        Clipboard.setData(ClipboardData(text: doc.path));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Path copied to clipboard'),
@@ -268,11 +286,9 @@ class BookDetailsSheet extends StatelessWidget {
                 IconButton.filledTonal(
                   icon: Icon(
                     LucideIcons.star,
-                    color: document.isFavorite
-                        ? appColors.warning
-                        : scheme.primary,
+                    color: doc.isFavorite ? appColors.warning : scheme.primary,
                   ),
-                  tooltip: document.isFavorite
+                  tooltip: doc.isFavorite
                       ? 'Remove favorite'
                       : 'Add to favorites',
                   onPressed: onToggleFavorite,

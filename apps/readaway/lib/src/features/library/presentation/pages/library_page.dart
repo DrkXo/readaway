@@ -58,6 +58,7 @@ class _LibraryViewState extends State<_LibraryView> {
     BookDetailsSheet.show(
       context,
       document: doc,
+      bloc: bloc,
       onOpenReader: () => _navigateToReader(context, doc.path, doc.fileName),
       onToggleFavorite: () => bloc.add(LibraryEvent.toggleFavorite(doc.path)),
       onUpdateStatus: (status) =>
@@ -475,6 +476,8 @@ class _LibraryViewState extends State<_LibraryView> {
     LibraryState state,
     LibraryBloc bloc,
   ) {
+    final bottomInset = 88.0 + MediaQuery.paddingOf(context).bottom;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -490,10 +493,10 @@ class _LibraryViewState extends State<_LibraryView> {
             : 6;
 
         return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 80),
+          padding: EdgeInsets.fromLTRB(14, 8, 14, bottomInset),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            childAspectRatio: 0.52,
+            childAspectRatio: 0.56,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
           ),
@@ -535,8 +538,10 @@ class _LibraryViewState extends State<_LibraryView> {
     LibraryState state,
     LibraryBloc bloc,
   ) {
+    final bottomInset = 88.0 + MediaQuery.paddingOf(context).bottom;
+
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 80),
+      padding: EdgeInsets.fromLTRB(12, 6, 12, bottomInset),
       itemCount: documents.length,
       separatorBuilder: (_, _) => const Divider(height: 1, indent: 70),
       itemBuilder: (context, index) {

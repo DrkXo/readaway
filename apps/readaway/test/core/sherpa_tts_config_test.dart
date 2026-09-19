@@ -8,7 +8,7 @@ void main() {
       final defaultGen = buildGenerationConfigFromMessage({});
       expect(defaultGen.sid, 0);
       expect(defaultGen.speed, 1.0);
-      expect(defaultGen.silenceScale, 0.5);
+      expect(defaultGen.silenceScale, 0.2);
       expect(defaultGen.numSteps, 5);
 
       final customGen = buildGenerationConfigFromMessage({
@@ -93,14 +93,14 @@ void main() {
 
     test('GlobalViewSettings has Sherpa TTS fine-tuning defaults and serializes cleanly', () {
       const gvs = GlobalViewSettings();
-      expect(gvs.ttsSilenceScale, 0.5);
+      expect(gvs.ttsSilenceScale, 0.2);
       expect(gvs.ttsNoiseScale, 0.667);
       expect(gvs.ttsNoiseScaleW, 0.8);
       expect(gvs.ttsLengthScale, 1.0);
       expect(gvs.ttsNumSteps, 5);
 
       final json = gvs.toJson();
-      expect(json['ttsSilenceScale'], 0.5);
+      expect(json['ttsSilenceScale'], 0.2);
       expect(json['ttsNoiseScale'], 0.667);
       expect(json['ttsNoiseScaleW'], 0.8);
       expect(json['ttsLengthScale'], 1.0);

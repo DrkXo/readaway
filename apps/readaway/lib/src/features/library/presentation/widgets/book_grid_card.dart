@@ -36,121 +36,124 @@ class BookGridCard extends StatelessWidget {
         padding: const EdgeInsets.all(6.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
             // Cover Stack
-            Stack(
-              children: [
-                BookCoverWidget(
-                  coverPath: document.coverPath,
-                  title: document.displayTitle,
-                  author: document.displayAuthor,
-                  format: document.format,
-                  progressPercent: document.progressPercent,
-                  aspectRatio: 2 / 3,
-                ),
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  BookCoverWidget(
+                    coverPath: document.coverPath,
+                    title: document.displayTitle,
+                    author: document.displayAuthor,
+                    format: document.format,
+                    progressPercent: document.progressPercent,
+                  ),
 
-                // Format badge overlay (top-left)
-                Positioned(
-                  top: 6,
-                  left: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: scheme.inverseSurface.withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      document.formatBadge,
-                      style: TextStyle(
-                        color: scheme.onInverseSurface,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.4,
+                  // Format badge overlay (top-left)
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: scheme.inverseSurface.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        document.formatBadge,
+                        style: TextStyle(
+                          color: scheme.onInverseSurface,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.4,
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                // Top-right status / select indicator
-                if (isSelectMode)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? scheme.primary
-                            : scheme.inverseSurface.withValues(alpha: 0.6),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        isSelected ? LucideIcons.check : LucideIcons.circle,
-                        size: 14,
-                        color: isSelected
-                            ? scheme.onPrimary
-                            : scheme.onInverseSurface,
-                      ),
-                    ),
-                  )
-                else ...[
-                  if (document.isFavorite)
+                  // Top-right status / select indicator
+                  if (isSelectMode)
                     Positioned(
                       top: 6,
                       right: 6,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
-                          color: scheme.inverseSurface.withValues(alpha: 0.75),
+                          color: isSelected
+                              ? scheme.primary
+                              : scheme.inverseSurface.withValues(alpha: 0.6),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          LucideIcons.star,
-                          size: 13,
-                          color: appColors.warning,
+                          isSelected ? LucideIcons.check : LucideIcons.circle,
+                          size: 14,
+                          color: isSelected
+                              ? scheme.onPrimary
+                              : scheme.onInverseSurface,
                         ),
                       ),
                     )
-                  else if (document.isFinished)
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: appColors.success,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              LucideIcons.check,
-                              size: 10,
-                              color: appColors.onSuccess,
+                  else ...[
+                    if (document.isFavorite)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: scheme.inverseSurface.withValues(
+                              alpha: 0.75,
                             ),
-                            const SizedBox(width: 2),
-                            Text(
-                              'Done',
-                              style: TextStyle(
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            LucideIcons.star,
+                            size: 13,
+                            color: appColors.warning,
+                          ),
+                        ),
+                      )
+                    else if (document.isFinished)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: appColors.success,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                LucideIcons.check,
+                                size: 10,
                                 color: appColors.onSuccess,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 2),
+                              Text(
+                                'Done',
+                                style: TextStyle(
+                                  color: appColors.onSuccess,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
 
             const SizedBox(height: 8),

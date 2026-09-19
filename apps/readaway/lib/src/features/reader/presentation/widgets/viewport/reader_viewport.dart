@@ -226,7 +226,7 @@ class _ReaderViewportState extends State<ReaderViewport> {
             widget.prefs.pageSnap;
 
         final double miniPlayerPadding = state.ttsActive
-            ? (ReaderTtsMiniPlayerBar.height + 12.0)
+            ? (ReaderTtsMiniPlayerBar.height + 24.0)
             : 0.0;
 
         return LayoutBuilder(

@@ -88,7 +88,239 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 1. Current Active Sentence Info Header (Clean, wide, prominent text)
+            // 1. Expandable Top-Shelf Settings Panel (Voice list, Speed slider, Pitch slider, or Sleep Timer)
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.bottomCenter,
+              child: _showVoicePanel
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: StreamBuilder<List<TtsVoiceOption>>(
+                        stream: tts.availableVoicesStream,
+                        initialData: tts.availableVoices,
+                        builder: (context, voicesSnap) {
+                          final voices = voicesSnap.data ?? tts.availableVoices;
+                          return StreamBuilder<TtsVoiceOption?>(
+                            stream: tts.currentVoiceOption,
+                            initialData: tts.currentVoice,
+                            builder: (context, voiceSnap) {
+                              final currentVoice =
+                                  voiceSnap.data ?? tts.currentVoice;
+                              return TtsVoiceSelectionPanel(
+                                currentVoice: currentVoice,
+                                availableVoices: voices,
+                                onVoiceSelected: (voice) {
+                                  tts.setVoice(voice);
+                                },
+                                onClose: () {
+                                  setState(() => _showVoicePanel = false);
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    )
+                  : _showSpeedPanel
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: StreamBuilder<double>(
+                        stream: tts.rateStream,
+                        initialData: tts.rate,
+                        builder: (context, rateSnap) {
+                          final rate = rateSnap.data ?? 1.0;
+                          return TtsSpeedControlPanel(
+                            rate: rate,
+                            onRateChanged: (newRate) =>
+                                tts.setRate(newRate).run(),
+                            onClose: () {
+                              setState(() => _showSpeedPanel = false);
+                            },
+                          );
+                        },
+                      ),
+                    )
+                  : _showPitchPanel
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: StreamBuilder<double>(
+                        stream: tts.pitchStream,
+                        initialData: tts.pitch,
+                        builder: (context, pitchSnap) {
+                          final pitch = pitchSnap.data ?? 1.0;
+                          return TtsPitchControlPanel(
+                            pitch: pitch,
+                            onPitchChanged: (newPitch) =>
+                                tts.setPitch(newPitch).run(),
+                            onClose: () {
+                              setState(() => _showPitchPanel = false);
+                            },
+                          );
+                        },
+                      ),
+                    )
+                  : _showSleepTimerPanel
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: BlocBuilder<ReaderBloc, ReaderState>(
+                        buildWhen: (prev, curr) =>
+                            prev.ttsSleepTimerRemaining !=
+                                curr.ttsSleepTimerRemaining ||
+                            prev.ttsActive != curr.ttsActive,
+                        builder: (context, readerState) {
+                          return TtsSleepTimerControl(
+                            initialSelection:
+                                readerState.ttsSleepTimerRemaining,
+                            onClose: () {
+                              setState(() => _showSleepTimerPanel = false);
+                            },
+                          );
+                        },
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+
+            // 2. Full-Width Uniform Speech Settings Toolbar (Voice, Speed, Pitch, Timer)
+            Row(
+              children: [
+                // 2a. Voice Selection Pill
+                Expanded(
+                  child: StreamBuilder<TtsVoiceOption?>(
+                    stream: tts.currentVoiceOption,
+                    initialData: tts.currentVoice,
+                    builder: (context, voiceSnap) {
+                      final voice = voiceSnap.data ?? tts.currentVoice;
+                      final label = voice?.label ?? 'Voice';
+
+                      return _buildSettingPill(
+                        scheme: scheme,
+                        icon: LucideIcons.mic,
+                        label: label,
+                        isActive: _showVoicePanel,
+                        tooltip: 'Voice: $label',
+                        onTap: () {
+                          setState(() {
+                            _showVoicePanel = !_showVoicePanel;
+                            if (_showVoicePanel) {
+                              _showSpeedPanel = false;
+                              _showPitchPanel = false;
+                              _showSleepTimerPanel = false;
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 6),
+
+                // 2b. Playback Speed Pill
+                Expanded(
+                  child: StreamBuilder<double>(
+                    stream: tts.rateStream,
+                    initialData: tts.rate,
+                    builder: (context, rateSnap) {
+                      final rate = rateSnap.data ?? 1.0;
+                      final label = TtsSpeedControlPanel.formatRate(rate);
+
+                      return _buildSettingPill(
+                        scheme: scheme,
+                        icon: LucideIcons.gauge,
+                        label: label,
+                        isActive: _showSpeedPanel,
+                        tooltip: 'Speed: $label (Long press to reset)',
+                        onTap: () {
+                          setState(() {
+                            _showSpeedPanel = !_showSpeedPanel;
+                            if (_showSpeedPanel) {
+                              _showVoicePanel = false;
+                              _showPitchPanel = false;
+                              _showSleepTimerPanel = false;
+                            }
+                          });
+                        },
+                        onLongPress: () => tts.setRate(1.0).run(),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 6),
+
+                // 2c. Voice Pitch Pill
+                Expanded(
+                  child: StreamBuilder<double>(
+                    stream: tts.pitchStream,
+                    initialData: tts.pitch,
+                    builder: (context, pitchSnap) {
+                      final pitch = pitchSnap.data ?? tts.pitch;
+                      final label = TtsPitchControlPanel.formatPitch(pitch);
+
+                      return _buildSettingPill(
+                        scheme: scheme,
+                        icon: LucideIcons.audioWaveform,
+                        label: label,
+                        isActive: _showPitchPanel,
+                        tooltip: 'Pitch: $label (Long press to reset)',
+                        onTap: () {
+                          setState(() {
+                            _showPitchPanel = !_showPitchPanel;
+                            if (_showPitchPanel) {
+                              _showVoicePanel = false;
+                              _showSpeedPanel = false;
+                              _showSleepTimerPanel = false;
+                            }
+                          });
+                        },
+                        onLongPress: () => tts.setPitch(1.0).run(),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 6),
+
+                // 2d. Sleep Timer Pill
+                Expanded(
+                  child: BlocBuilder<ReaderBloc, ReaderState>(
+                    buildWhen: (prev, curr) =>
+                        prev.ttsSleepTimerRemaining !=
+                        curr.ttsSleepTimerRemaining,
+                    builder: (context, state) {
+                      final remaining = state.ttsSleepTimerRemaining;
+                      final label = remaining == null
+                          ? 'Timer'
+                          : formatSleepDuration(remaining);
+                      return _buildSettingPill(
+                        scheme: scheme,
+                        icon: remaining == null
+                            ? LucideIcons.moon
+                            : LucideIcons.moonStar,
+                        label: label,
+                        isActive: _showSleepTimerPanel,
+                        tooltip: remaining == null
+                            ? 'Sleep Timer'
+                            : 'Sleep Timer: stops in $label',
+                        onTap: () {
+                          setState(() {
+                            _showSleepTimerPanel = !_showSleepTimerPanel;
+                            if (_showSleepTimerPanel) {
+                              _showVoicePanel = false;
+                              _showSpeedPanel = false;
+                              _showPitchPanel = false;
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // 3. Current Active Sentence Info Header (Clean, wide, prominent text)
             StreamBuilder<TtsChunk>(
               stream: tts.currentChunk,
               builder: (context, snapshot) {
@@ -226,7 +458,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
               },
             ),
 
-            // 2. Error Display Banner (if error occurred)
+            // 4. Error Display Banner (if error occurred)
             StreamBuilder<TtsPlaybackEvent>(
               stream: tts.playbackState,
               builder: (context, snapshot) {
@@ -270,239 +502,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
               },
             ),
 
-            const SizedBox(height: 10),
-
-            // 3. Unified Speech Settings Toolbar (Voice, Speed, Pitch)
-            Row(
-              children: [
-                // 3a. Voice Selection Pill
-                Expanded(
-                  child: StreamBuilder<TtsVoiceOption?>(
-                    stream: tts.currentVoiceOption,
-                    initialData: tts.currentVoice,
-                    builder: (context, voiceSnap) {
-                      final voice = voiceSnap.data ?? tts.currentVoice;
-                      final label = voice?.label ?? 'Voice';
-
-                      return _buildSettingPill(
-                        scheme: scheme,
-                        icon: LucideIcons.mic,
-                        label: label,
-                        isActive: _showVoicePanel,
-                        tooltip: 'Voice: $label',
-                        onTap: () {
-                          setState(() {
-                            _showVoicePanel = !_showVoicePanel;
-                            if (_showVoicePanel) {
-                              _showSpeedPanel = false;
-                              _showPitchPanel = false;
-                              _showSleepTimerPanel = false;
-                            }
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // 3b. Playback Speed Pill
-                Expanded(
-                  child: StreamBuilder<double>(
-                    stream: tts.rateStream,
-                    initialData: tts.rate,
-                    builder: (context, rateSnap) {
-                      final rate = rateSnap.data ?? 1.0;
-                      final label = TtsSpeedControlPanel.formatRate(rate);
-
-                      return _buildSettingPill(
-                        scheme: scheme,
-                        icon: LucideIcons.gauge,
-                        label: label,
-                        isActive: _showSpeedPanel,
-                        tooltip: 'Speed: $label (Long press to reset)',
-                        onTap: () {
-                          setState(() {
-                            _showSpeedPanel = !_showSpeedPanel;
-                            if (_showSpeedPanel) {
-                              _showVoicePanel = false;
-                              _showPitchPanel = false;
-                              _showSleepTimerPanel = false;
-                            }
-                          });
-                        },
-                        onLongPress: () => tts.setRate(1.0).run(),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // 3c. Voice Pitch Pill
-                Expanded(
-                  child: StreamBuilder<double>(
-                    stream: tts.pitchStream,
-                    initialData: tts.pitch,
-                    builder: (context, pitchSnap) {
-                      final pitch = pitchSnap.data ?? tts.pitch;
-                      final label = TtsPitchControlPanel.formatPitch(pitch);
-
-                      return _buildSettingPill(
-                        scheme: scheme,
-                        icon: LucideIcons.audioWaveform,
-                        label: label,
-                        isActive: _showPitchPanel,
-                        tooltip: 'Pitch: $label (Long press to reset)',
-                        onTap: () {
-                          setState(() {
-                            _showPitchPanel = !_showPitchPanel;
-                            if (_showPitchPanel) {
-                              _showVoicePanel = false;
-                              _showSpeedPanel = false;
-                              _showSleepTimerPanel = false;
-                            }
-                          });
-                        },
-                        onLongPress: () => tts.setPitch(1.0).run(),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // 3d. Sleep Timer Pill
-                Expanded(
-                  child: BlocBuilder<ReaderBloc, ReaderState>(
-                    buildWhen: (prev, curr) =>
-                        prev.ttsSleepTimerRemaining !=
-                        curr.ttsSleepTimerRemaining,
-                    builder: (context, state) {
-                      final remaining = state.ttsSleepTimerRemaining;
-                      final label = remaining == null
-                          ? 'Timer'
-                          : formatSleepDuration(remaining);
-                      return _buildSettingPill(
-                        scheme: scheme,
-                        icon: remaining == null
-                            ? LucideIcons.moon
-                            : LucideIcons.moonStar,
-                        label: label,
-                        isActive: _showSleepTimerPanel,
-                        tooltip: remaining == null
-                            ? 'Sleep Timer'
-                            : 'Sleep Timer: stops in $label',
-                        onTap: () {
-                          setState(() {
-                            _showSleepTimerPanel = !_showSleepTimerPanel;
-                            if (_showSleepTimerPanel) {
-                              _showVoicePanel = false;
-                              _showSpeedPanel = false;
-                              _showPitchPanel = false;
-                            }
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-
-            // 4. Expandable Settings Panel (Voice list, Speed slider, or Pitch slider)
-            AnimatedSize(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: _showVoicePanel
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: StreamBuilder<List<TtsVoiceOption>>(
-                        stream: tts.availableVoicesStream,
-                        initialData: tts.availableVoices,
-                        builder: (context, voicesSnap) {
-                          final voices = voicesSnap.data ?? tts.availableVoices;
-                          return StreamBuilder<TtsVoiceOption?>(
-                            stream: tts.currentVoiceOption,
-                            initialData: tts.currentVoice,
-                            builder: (context, voiceSnap) {
-                              final currentVoice =
-                                  voiceSnap.data ?? tts.currentVoice;
-                              return TtsVoiceSelectionPanel(
-                                currentVoice: currentVoice,
-                                availableVoices: voices,
-                                onVoiceSelected: (voice) {
-                                  tts.setVoice(voice);
-                                },
-                                onClose: () {
-                                  setState(() => _showVoicePanel = false);
-                                },
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    )
-                  : _showSpeedPanel
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: StreamBuilder<double>(
-                        stream: tts.rateStream,
-                        initialData: tts.rate,
-                        builder: (context, rateSnap) {
-                          final rate = rateSnap.data ?? 1.0;
-                          return TtsSpeedControlPanel(
-                            rate: rate,
-                            onRateChanged: (newRate) =>
-                                tts.setRate(newRate).run(),
-                            onClose: () {
-                              setState(() => _showSpeedPanel = false);
-                            },
-                          );
-                        },
-                      ),
-                    )
-                  : _showPitchPanel
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: StreamBuilder<double>(
-                        stream: tts.pitchStream,
-                        initialData: tts.pitch,
-                        builder: (context, pitchSnap) {
-                          final pitch = pitchSnap.data ?? 1.0;
-                          return TtsPitchControlPanel(
-                            pitch: pitch,
-                            onPitchChanged: (newPitch) =>
-                                tts.setPitch(newPitch).run(),
-                            onClose: () {
-                              setState(() => _showPitchPanel = false);
-                            },
-                          );
-                        },
-                      ),
-                    )
-                  : _showSleepTimerPanel
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: BlocBuilder<ReaderBloc, ReaderState>(
-                        buildWhen: (prev, curr) =>
-                            prev.ttsSleepTimerRemaining !=
-                                curr.ttsSleepTimerRemaining ||
-                            prev.ttsActive != curr.ttsActive,
-                        builder: (context, readerState) {
-                          return TtsSleepTimerControl(
-                            initialSelection:
-                                readerState.ttsSleepTimerRemaining,
-                            onClose: () {
-                              setState(() => _showSleepTimerPanel = false);
-                            },
-                          );
-                        },
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
             // 5. Intra-Sentence Interactive Waveform Progress Scrubber
             StreamBuilder<(PositionData, List<double>)>(
@@ -525,7 +525,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
               },
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
 
             // 6. Transport Controls Row (Stop, Prev, Play/Pause, Next, Replay)
             StreamBuilder<TtsPlaybackEvent>(
@@ -628,18 +628,19 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
         child: InkWell(
           onTap: onTap,
           onLongPress: onLongPress,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(
-              horizontal: 8,
+              horizontal: 6,
               vertical: 7,
             ),
+            constraints: const BoxConstraints(minHeight: 36),
             decoration: BoxDecoration(
               color: isActive
                   ? scheme.primary
                   : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isActive
                     ? scheme.primary
@@ -652,29 +653,30 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
               children: [
                 Icon(
                   icon,
-                  size: 14,
+                  size: 13,
                   color: isActive ? scheme.onPrimary : scheme.primary,
                 ),
-                const SizedBox(width: 5),
+                const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: isActive ? scheme.onPrimary : scheme.onSurface,
-                      fontSize: 11.5,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(width: 3),
+                const SizedBox(width: 2),
                 Icon(
-                  isActive ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                  size: 12,
+                  isActive ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                  size: 11,
                   color: isActive
                       ? scheme.onPrimary.withValues(alpha: 0.8)
-                      : scheme.onSurfaceVariant,
+                      : scheme.onSurfaceVariant.withValues(alpha: 0.7),
                 ),
               ],
             ),

@@ -9,6 +9,9 @@ const int kSleepTimerMinMinutes = 5;
 const int kSleepTimerMaxMinutes = 360; // 6h
 const int kSleepTimerStepMinutes = 5;
 
+/// Sleep-timer preset quick options (minutes).
+const List<int> kSleepTimerPresetMinutes = [15, 30, 45, 60];
+
 /// Formats [d] as compact `h m` / `m` / `mm:ss` label for pills and chips.
 String formatSleepDuration(Duration d) {
   final totalMinutes = d.inMinutes;
@@ -24,11 +27,9 @@ String formatSleepDuration(Duration d) {
 
 /// A compact sleep-timer picker panel for the TTS player.
 ///
-/// Uses a 5-minute-step slider (5 min – 6 h) plus an "Off" toggle, and shows a
-/// live countdown while an active timer is running. The authoritative state
-/// lives on [ReaderBloc] (`ttsSleepTimerRemaining`); this widget only renders
-/// it and dispatches [ReaderEvent.setSleepTimer] /
-/// [ReaderEvent.ttsSleepTimerFired].
+/// Uses quick 1-tap preset chips, a 5-minute-step slider (5 min – 6 h),
+/// an "Off" toggle, and shows a live countdown while an active timer is running.
+/// The authoritative state lives on [ReaderBloc] (`ttsSleepTimerRemaining`).
 class TtsSleepTimerControl extends StatefulWidget {
   const TtsSleepTimerControl({
     required this.initialSelection,
@@ -54,21 +55,19 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
     super.initState();
     _minutes =
         widget.initialSelection?.inMinutes ??
-        kSleepTimerMaxMinutes; // default to max while off
+        30; // default to 30 min if off
   }
 
   @override
   void didUpdateWidget(TtsSleepTimerControl oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Sync the slider value only on a fresh arm (off -> active). While the
-    // countdown runs, `initialSelection` shrinks every second; we must keep
-    // showing the originally chosen duration so the slider doesn't drift.
     if (oldWidget.initialSelection == null && widget.initialSelection != null) {
       _minutes = widget.initialSelection!.inMinutes;
     }
   }
 
   void _arm(int minutes) {
+    setState(() => _minutes = minutes);
     context.read<ReaderBloc>().add(
       ReaderEvent.setSleepTimer(Duration(minutes: minutes)),
     );
@@ -76,7 +75,8 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final isActive = widget.initialSelection != null;
     final sliderValue = _minutes.toDouble().clamp(
       kSleepTimerMinMinutes.toDouble(),
@@ -97,15 +97,19 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header: title + live countdown readout when active + close.
+          // 1. Header: Icon, Title, Live countdown readout & Close button
           Row(
             children: [
-              Icon(LucideIcons.moon, size: 16, color: scheme.primary),
+              Icon(
+                isActive ? LucideIcons.moonStar : LucideIcons.moon,
+                size: 16,
+                color: scheme.primary,
+              ),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   'Sleep Timer',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: scheme.onSurface,
                   ),
@@ -128,78 +132,148 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
                       color: scheme.primaryContainer.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      'Stops in ${formatSleepDuration(remaining)}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: scheme.primary,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          LucideIcons.timer,
+                          size: 12,
+                          color: scheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Stops in ${formatSleepDuration(remaining)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: scheme.primary,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
               ),
+              if (isActive) ...[
+                const SizedBox(width: 6),
+                IconButton(
+                  tooltip: 'Turn off timer',
+                  visualDensity: VisualDensity.compact,
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(40, 40),
+                    padding: const EdgeInsets.all(6),
+                  ),
+                  onPressed: () {
+                    context.read<ReaderBloc>().add(
+                      const ReaderEvent.setSleepTimer(Duration.zero),
+                    );
+                  },
+                  icon: Icon(
+                    LucideIcons.power,
+                    size: 16,
+                    color: scheme.error,
+                  ),
+                ),
+              ],
               if (widget.onClose != null) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 2),
                 IconButton(
                   tooltip: 'Close sleep timer',
                   visualDensity: VisualDensity.compact,
                   style: IconButton.styleFrom(
-                    minimumSize: const Size(44, 44),
-                    padding: const EdgeInsets.all(8),
+                    minimumSize: const Size(40, 40),
+                    padding: const EdgeInsets.all(6),
                   ),
                   onPressed: widget.onClose,
-                  icon: Text(
-                    'Close',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  icon: Icon(
+                    LucideIcons.x,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ],
           ),
+
           const SizedBox(height: 10),
 
-          // Slider (5–360 min, 5-min steps). Releasing the thumb arms the
-          // countdown at the chosen duration (even if it was off).
-          Row(
-            children: [
-              Icon(LucideIcons.timer, size: 16, color: scheme.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Slider(
-                  value: sliderValue,
-                  min: kSleepTimerMinMinutes.toDouble(),
-                  max: kSleepTimerMaxMinutes.toDouble(),
-                  divisions:
-                      ((kSleepTimerMaxMinutes - kSleepTimerMinMinutes) ~/
-                      kSleepTimerStepMinutes),
-                  label: formatSleepDuration(Duration(minutes: _minutes)),
-                  onChanged: (value) {
-                    setState(() => _minutes = value.round());
-                  },
-                  onChangeEnd: (value) {
-                    setState(() => _minutes = value.round());
-                    _arm(_minutes);
-                  },
-                ),
-              ),
-            ],
+          // 2. Instant 1-Tap Quick Preset Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: kSleepTimerPresetMinutes.map((presetMin) {
+                final isSelected = isActive && _minutes == presetMin;
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    onTap: () => _arm(presetMin),
+                    borderRadius: BorderRadius.circular(14),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      constraints: const BoxConstraints(
+                        minHeight: 36,
+                        minWidth: 54,
+                      ),
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? scheme.primary
+                            : scheme.surfaceContainerHighest.withValues(
+                                alpha: 0.5,
+                              ),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isSelected
+                              ? scheme.primary
+                              : scheme.outlineVariant.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        '$presetMin min',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? scheme.onPrimary
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(growable: false),
+            ),
           ),
-          const SizedBox(height: 2),
+
+          const SizedBox(height: 10),
+
+          // 3. Custom Duration Slider (5 min – 6 hours)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Icon(
+                LucideIcons.timer,
+                size: 15,
+                color: scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
               Text(
-                formatSleepDuration(Duration(minutes: kSleepTimerMinMinutes)),
+                'Custom: ${formatSleepDuration(Duration(minutes: _minutes))}',
                 style: TextStyle(
-                  fontSize: 11,
-                  color: scheme.onSurfaceVariant,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurface,
                 ),
               ),
+              const Spacer(),
               Text(
                 formatSleepDuration(Duration(minutes: kSleepTimerMaxMinutes)),
                 style: TextStyle(
@@ -209,53 +283,31 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          // Current selection + cancel (Off) action. Cancelling must NOT stop
-          // playback — only the countdown reaching zero does.
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  isActive
-                      ? 'Selected: ${formatSleepDuration(Duration(minutes: _minutes))}'
-                      : 'Timer is off — drag the slider to set one',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    color: isActive
-                        ? scheme.onSurface
-                        : scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              if (isActive)
-                TextButton.icon(
-                  onPressed: () {
-                    context.read<ReaderBloc>().add(
-                      ReaderEvent.setSleepTimer(Duration.zero),
-                    );
-                  },
-                  icon: Icon(
-                    LucideIcons.power,
-                    size: 16,
-                    color: scheme.error,
-                  ),
-                  label: Text(
-                    'Off',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: scheme.error,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    minimumSize: const Size(0, 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                  ),
-                ),
-            ],
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 4,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+              activeTrackColor: scheme.primary,
+              inactiveTrackColor: scheme.surfaceContainerHighest,
+              thumbColor: scheme.primary,
+              valueIndicatorColor: scheme.primary,
+            ),
+            child: Slider(
+              value: sliderValue,
+              min: kSleepTimerMinMinutes.toDouble(),
+              max: kSleepTimerMaxMinutes.toDouble(),
+              divisions:
+                  ((kSleepTimerMaxMinutes - kSleepTimerMinMinutes) ~/
+                  kSleepTimerStepMinutes),
+              label: formatSleepDuration(Duration(minutes: _minutes)),
+              onChanged: (value) {
+                setState(() => _minutes = value.round());
+              },
+              onChangeEnd: (value) {
+                _arm(value.round());
+              },
+            ),
           ),
         ],
       ),

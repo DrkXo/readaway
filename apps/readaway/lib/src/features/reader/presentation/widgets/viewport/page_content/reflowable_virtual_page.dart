@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -9,6 +10,7 @@ import 'package:readaway_core/readaway_core.dart';
 import '../../../../../../core/theme/theme.dart';
 import '../../../../../settings/domain/entity/reader_preferences.dart';
 import '../../../bloc/reader_bloc.dart';
+import '../../tts/reader_tts_mini_player_bar.dart';
 import 'html/hyper_page_content.dart';
 
 /// Renders a single discrete virtual screen page of a reflowable chapter.
@@ -52,8 +54,9 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   @override
   void initState() {
     super.initState();
-    _lastOffsets =
-        widget.coordinator.getChapterPageOffsets(widget.chapterIndex);
+    _lastOffsets = widget.coordinator.getChapterPageOffsets(
+      widget.chapterIndex,
+    );
     _coordinatorSubscription = widget.coordinator.state.listen(
       (_) => _onCoordinatorUpdated(),
     );
@@ -62,10 +65,10 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
 
   void _onCoordinatorUpdated() {
     if (!mounted) return;
-    final currentOffsets =
-        widget.coordinator.getChapterPageOffsets(widget.chapterIndex);
-    if (_lastOffsets == null ||
-        !_listEquals(_lastOffsets!, currentOffsets)) {
+    final currentOffsets = widget.coordinator.getChapterPageOffsets(
+      widget.chapterIndex,
+    );
+    if (_lastOffsets == null || !_listEquals(_lastOffsets!, currentOffsets)) {
       _lastOffsets = currentOffsets;
       setState(() {});
     }
@@ -90,8 +93,9 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
       );
     }
     if (oldWidget.chapterIndex != widget.chapterIndex) {
-      _lastOffsets =
-          widget.coordinator.getChapterPageOffsets(widget.chapterIndex);
+      _lastOffsets = widget.coordinator.getChapterPageOffsets(
+        widget.chapterIndex,
+      );
       _scheduleMeasurement();
     } else if (oldWidget.prefs != widget.prefs ||
         oldWidget.state.pageHtmls?[widget.chapterIndex] !=
@@ -229,6 +233,39 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
               ? math.max(0.0, math.min(availableHeight, sliceBottom - sliceTop))
               : availableHeight;
 
+          final double extraBottom = widget.state.ttsActive
+              ? (ReaderTtsMiniPlayerBar.height + 16.0)
+              : 0.0;
+
+          final contentWidget = Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: availableWidth,
+              height: sliceHeight,
+              child: ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.topCenter,
+                  minWidth: availableWidth,
+                  maxWidth: availableWidth,
+                  minHeight: 0.0,
+                  maxHeight: double.infinity,
+                  child: Transform.translate(
+                    offset: Offset(0.0, -sliceTop),
+                    child: KeyedSubtree(
+                      key: _contentKey,
+                      child: HyperPageContent(
+                        html: html,
+                        prefs: widget.prefs,
+                        onResolveAssetBytes: widget.onResolveAssetBytes,
+                        onLinkTap: widget.onLinkTap,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
           return Padding(
             padding: EdgeInsets.only(
               top: widget.prefs.marginTop,
@@ -239,34 +276,15 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
             child: SizedBox(
               width: availableWidth,
               height: availableHeight,
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: SizedBox(
-                  width: availableWidth,
-                  height: sliceHeight,
-                  child: ClipRect(
-                    child: OverflowBox(
-                      alignment: Alignment.topCenter,
-                      minWidth: availableWidth,
-                      maxWidth: availableWidth,
-                      minHeight: 0.0,
-                      maxHeight: double.infinity,
-                      child: Transform.translate(
-                        offset: Offset(0.0, -sliceTop),
-                        child: KeyedSubtree(
-                          key: _contentKey,
-                          child: HyperPageContent(
-                            html: html,
-                            prefs: widget.prefs,
-                            onResolveAssetBytes: widget.onResolveAssetBytes,
-                            onLinkTap: widget.onLinkTap,
-                          ),
-                        ),
+              child: extraBottom > 0
+                  ? SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: extraBottom),
+                        child: contentWidget,
                       ),
-                    ),
-                  ),
-                ),
-              ),
+                    )
+                  : contentWidget,
             ),
           );
         },

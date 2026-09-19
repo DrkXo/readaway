@@ -354,22 +354,28 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
       padding: const EdgeInsets.only(right: 6),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: isSelected
                 ? scheme.primary
-                : scheme.secondary,
-            borderRadius: BorderRadius.circular(3),
+                : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? scheme.primary
+                  : scheme.outlineVariant.withValues(alpha: 0.3),
+              width: 1,
+            ),
           ),
           child: Text(
             label,
             style: TextStyle(
               fontSize: 11,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? scheme.onPrimary : scheme.onSecondary,
+              color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
             ),
           ),
         ),

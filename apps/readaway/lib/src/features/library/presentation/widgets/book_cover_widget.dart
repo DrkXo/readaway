@@ -12,7 +12,7 @@ class BookCoverWidget extends StatelessWidget {
     required this.title,
     this.author,
     required this.format,
-    this.aspectRatio = 2 / 3,
+    this.aspectRatio,
     this.progressPercent,
     this.borderRadius = const BorderRadius.all(Radius.circular(8)),
     this.showSpine = true,
@@ -22,7 +22,7 @@ class BookCoverWidget extends StatelessWidget {
   final String title;
   final String? author;
   final String format;
-  final double aspectRatio;
+  final double? aspectRatio;
   final double? progressPercent;
   final BorderRadius borderRadius;
   final bool showSpine;
@@ -36,19 +36,17 @@ class BookCoverWidget extends StatelessWidget {
         : null;
     final hasImage = file != null && file.existsSync();
 
-    return AspectRatio(
-      aspectRatio: aspectRatio,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: borderRadius,
-          border: Border.all(
-            color: appColors.borderSubtle,
-            width: 1,
-          ),
+    final coverBox = Container(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        border: Border.all(
+          color: appColors.borderSubtle,
+          width: 1,
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
           children: [
             if (hasImage)
               Image.file(
@@ -109,8 +107,16 @@ class BookCoverWidget extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
+      );
+
+    if (aspectRatio != null) {
+      return AspectRatio(
+        aspectRatio: aspectRatio!,
+        child: coverBox,
+      );
+    }
+
+    return coverBox;
   }
 }
 
