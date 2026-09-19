@@ -119,38 +119,28 @@ class _SettingsPageState extends State<SettingsPage> {
 
                 TabBar(
                   isScrollable: false,
-                  tabAlignment: TabAlignment.fill,
-                  indicatorSize: TabBarIndicatorSize.label,
+                  indicatorSize: TabBarIndicatorSize.tab,
                   dividerColor: Colors.transparent,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 6),
                   tabs: const [
                     Tab(
-                      icon: Icon(
-                        LucideIcons.type,
-                      ),
+                      icon: Icon(LucideIcons.type, size: 18),
                       text: 'Font',
                     ),
                     Tab(
-                      icon: Icon(
-                        LucideIcons.space,
-                      ),
+                      icon: Icon(LucideIcons.space, size: 18),
                       text: 'Layout',
                     ),
                     Tab(
-                      icon: Icon(
-                        LucideIcons.hand,
-                      ),
+                      icon: Icon(LucideIcons.hand, size: 18),
                       text: 'Behavior',
                     ),
                     Tab(
-                      icon: Icon(
-                        LucideIcons.palette,
-                      ),
+                      icon: Icon(LucideIcons.palette, size: 18),
                       text: 'Appearance',
                     ),
                     Tab(
-                      icon: Icon(
-                        LucideIcons.mic,
-                      ),
+                      icon: Icon(LucideIcons.mic, size: 18),
                       text: 'TTS',
                     ),
                   ],

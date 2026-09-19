@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:isolate';
 import 'dart:typed_data';
 
@@ -8,12 +9,77 @@ import '../readers/html_text_extractor.dart';
 import '../transformers/footnote_transformer.dart';
 import 'document_isolate_messages.dart';
 
+/// Lightweight LinkedHashMap-based LRU cache for the document isolate worker.
+class _IsolateLruCache<K, V> {
+  _IsolateLruCache({this.maximumSize = 50});
+
+  final int maximumSize;
+  final LinkedHashMap<K, V> _map = LinkedHashMap<K, V>();
+
+  V? get(K key) {
+    final value = _map.remove(key);
+    if (value != null) {
+      _map[key] = value;
+    }
+    return value;
+  }
+
+  void put(K key, V value) {
+    _map.remove(key);
+    _map[key] = value;
+    if (_map.length > maximumSize) {
+      _map.remove(_map.keys.first);
+    }
+  }
+
+  bool containsKey(K key) => _map.containsKey(key);
+
+  void clear() => _map.clear();
+}
+
 /// Entry point function executed inside the dedicated document isolate.
 void documentIsolateEntryPoint(SendPort hostSendPort) {
   final receivePort = ReceivePort();
   hostSendPort.send(receivePort.sendPort);
 
   DocumentReader? reader;
+
+  // Single-source-of-truth isolate memory caches
+  final htmlCache = _IsolateLruCache<int, String>(maximumSize: 40);
+  final textCache = _IsolateLruCache<int, String>(maximumSize: 40);
+  final speechTextCache = _IsolateLruCache<int, String>(maximumSize: 40);
+  final assetCache = _IsolateLruCache<String, Uint8List>(maximumSize: 60);
+
+  void clearCaches() {
+    htmlCache.clear();
+    textCache.clear();
+    speechTextCache.clear();
+    assetCache.clear();
+  }
+
+  void schedulePrefetch(int currentIndex, int sectionCount) {
+    // Lazily warm neighboring chapters in the isolate during idle time
+    Future.microtask(() {
+      if (reader is! ReflowableDocumentReader) return;
+      final reflow = reader as ReflowableDocumentReader;
+
+      final next = currentIndex + 1;
+      if (next < sectionCount && !htmlCache.containsKey(next)) {
+        try {
+          final html = reflow.loadSectionHtml(next);
+          htmlCache.put(next, html);
+        } catch (_) {}
+      }
+
+      final prev = currentIndex - 1;
+      if (prev >= 0 && !htmlCache.containsKey(prev)) {
+        try {
+          final html = reflow.loadSectionHtml(prev);
+          htmlCache.put(prev, html);
+        } catch (_) {}
+      }
+    });
+  }
 
   receivePort.listen((message) async {
     if (message is! DocumentRequest) return;
@@ -22,11 +88,20 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
       await message.when(
         open: (id, filePath) async {
           reader?.dispose();
+          clearCaches();
           final opened = await DocumentReaderFactory().open(filePath);
           reader = opened;
 
           final sectionCount =
               opened is ReflowableDocumentReader ? opened.sectionCount : 0;
+
+          // Warm up section 0 if available
+          if (sectionCount > 0 && opened is ReflowableDocumentReader) {
+            try {
+              final html = opened.loadSectionHtml(0);
+              htmlCache.put(0, html);
+            } catch (_) {}
+          }
 
           hostSendPort.send(
             DocumentResponse.opened(
@@ -45,8 +120,16 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           if (reader is! ReflowableDocumentReader) {
             throw StateError('Current document is not reflowable');
           }
-          final html =
-              (reader as ReflowableDocumentReader).loadSectionHtml(sectionIndex);
+          final reflow = reader as ReflowableDocumentReader;
+
+          String? html = htmlCache.get(sectionIndex);
+          if (html == null) {
+            html = reflow.loadSectionHtml(sectionIndex);
+            htmlCache.put(sectionIndex, html);
+          }
+
+          schedulePrefetch(sectionIndex, reflow.sectionCount);
+
           hostSendPort.send(
             DocumentResponse.sectionHtml(id: id, html: html),
           );
@@ -55,8 +138,14 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           if (reader is! ReflowableDocumentReader) {
             throw StateError('Current document is not reflowable');
           }
-          final text =
-              (reader as ReflowableDocumentReader).extractSectionText(sectionIndex);
+          final reflow = reader as ReflowableDocumentReader;
+
+          String? text = textCache.get(sectionIndex);
+          if (text == null) {
+            text = reflow.extractSectionText(sectionIndex);
+            textCache.put(sectionIndex, text);
+          }
+
           hostSendPort.send(
             DocumentResponse.sectionText(id: id, text: text),
           );
@@ -65,10 +154,14 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           if (reader is! ReflowableDocumentReader) {
             throw StateError('Current document is not reflowable');
           }
-          final speechText =
-              (reader as ReflowableDocumentReader).extractSectionSpeechText(
-                sectionIndex,
-              );
+          final reflow = reader as ReflowableDocumentReader;
+
+          String? speechText = speechTextCache.get(sectionIndex);
+          if (speechText == null) {
+            speechText = reflow.extractSectionSpeechText(sectionIndex);
+            speechTextCache.put(sectionIndex, speechText);
+          }
+
           hostSendPort.send(
             DocumentResponse.sectionSpeechText(
               id: id,
@@ -111,7 +204,9 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           if (targetSectionIndex != null &&
               targetSectionIndex >= 0 &&
               targetSectionIndex < reflow.sectionCount) {
-            final html = reflow.loadSectionHtml(targetSectionIndex);
+            final html = htmlCache.get(targetSectionIndex) ??
+                reflow.loadSectionHtml(targetSectionIndex);
+            htmlCache.put(targetSectionIndex, html);
             final footnote = FootnoteTransformer.findFootnote(html, anchorId);
             hostSendPort.send(
               DocumentResponse.footnoteResolved(id: id, footnote: footnote),
@@ -128,13 +223,20 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
             throw StateError('No document is currently open');
           }
 
-          Uint8List? bytes;
-          if (sectionIndex != null && reader is ReflowableDocumentReader) {
-            final resolved = (reader as ReflowableDocumentReader)
-                .resolveAssetPath(sectionIndex, assetPath);
-            bytes = reader!.loadAsset(resolved) ?? reader!.loadAsset(assetPath);
-          } else {
-            bytes = reader!.loadAsset(assetPath);
+          final cacheKey = '$sectionIndex:$assetPath';
+          Uint8List? bytes = assetCache.get(cacheKey);
+
+          if (bytes == null) {
+            if (sectionIndex != null && reader is ReflowableDocumentReader) {
+              final resolved = (reader as ReflowableDocumentReader)
+                  .resolveAssetPath(sectionIndex, assetPath);
+              bytes = reader!.loadAsset(resolved) ?? reader!.loadAsset(assetPath);
+            } else {
+              bytes = reader!.loadAsset(assetPath);
+            }
+            if (bytes != null && bytes.isNotEmpty) {
+              assetCache.put(cacheKey, bytes);
+            }
           }
 
           final transferable = bytes != null && bytes.isNotEmpty
@@ -172,6 +274,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           );
         },
         dispose: (id) {
+          clearCaches();
           reader?.dispose();
           reader = null;
           hostSendPort.send(DocumentResponse.disposed(id: id));
@@ -189,3 +292,4 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
     }
   });
 }
+

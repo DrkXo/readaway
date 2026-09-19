@@ -292,7 +292,7 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
 
             final chromeAnim = _chromeAnimation.value;
             final effectiveControlBarHeight =
-                ReaderBottomBar.height * chromeAnim;
+                (ReaderBottomBar.height + bottomPadding) * chromeAnim;
             final effectiveBottomPadding = (1.0 - chromeAnim) * bottomPadding;
             final dragExtent = _calculateDragExtent(
               overlayHeight: overlayHeight,

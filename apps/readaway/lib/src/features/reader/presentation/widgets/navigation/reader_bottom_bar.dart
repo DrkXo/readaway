@@ -80,7 +80,6 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
         final barBgColor = widget.backgroundColor ?? appColors.bottombarBackground;
 
         return Container(
-          height: ReaderBottomBar.height,
           decoration: BoxDecoration(
             color: barBgColor,
             border: Border(
@@ -92,10 +91,12 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
           ),
           child: SafeArea(
             top: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
+            child: SizedBox(
+              height: ReaderBottomBar.height,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
                 // 1. Outline (Chapters / TOC)
                 AppIconButton(
                   icon: LucideIcons.panelLeft,
@@ -150,8 +151,9 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
               ],
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 }

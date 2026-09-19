@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../../core/theme/theme.dart';
 import '../bloc/library_bloc.dart';
 
 class LibraryFilterBar extends StatelessWidget {
@@ -18,20 +17,12 @@ class LibraryFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appColors = context.appColors;
+    final scheme = Theme.of(context).colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: appColors.borderSubtle,
-            width: 0.8,
-          ),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Row(
           children: ReadingStatusFilter.values.map((filter) {
             final isSelected = filter == selectedFilter;
@@ -45,69 +36,74 @@ class LibraryFilterBar extends StatelessWidget {
               ReadingStatusFilter.favorites => LucideIcons.star,
             };
 
-            final fgColor = isSelected
-                ? appColors.buttonForeground
-                : appColors.buttonSecondaryForeground;
-            final bgColor = isSelected
-                ? appColors.buttonBackground
-                : appColors.buttonSecondaryBackground;
-
             return Padding(
-              padding: const EdgeInsets.only(right: 6.0),
-              child: FilterChip(
-                avatar: Icon(
-                  icon,
-                  size: 13,
-                  color: fgColor,
-                ),
-                label: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      filter.label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        color: fgColor,
+              padding: const EdgeInsets.symmetric(horizontal: 3.0),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onSelectFilter(filter),
+                  borderRadius: BorderRadius.circular(20),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? scheme.primary.withValues(alpha: 0.12)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected
+                            ? scheme.primary.withValues(alpha: 0.28)
+                            : Colors.transparent,
+                        width: 1,
                       ),
                     ),
-                    const SizedBox(width: 5),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: fgColor.withValues(alpha: isSelected ? 0.25 : 0.12),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: Text(
-                        '$count',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: fgColor,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          icon,
+                          size: 13,
+                          color: isSelected
+                              ? scheme.primary
+                              : scheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
-                      ),
+                        const SizedBox(width: 5),
+                        Text(
+                          filter.label,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? scheme.primary
+                                : scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        if (count > 0) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            '$count',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? scheme.primary
+                                  : scheme.outline,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-                selected: isSelected,
-                showCheckmark: false,
-                backgroundColor: bgColor,
-                selectedColor: bgColor,
-                side: BorderSide(
-                  color: isSelected ? Colors.transparent : appColors.borderSubtle,
-                  width: 0.8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                onSelected: (_) => onSelectFilter(filter),
               ),
             );
           }).toList(),
