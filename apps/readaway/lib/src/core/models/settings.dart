@@ -317,6 +317,7 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default(500) int ttsSentenceGap,
     @Default(1000) int ttsParagraphGap,
     String? ttsVoice,
+    @Default('balanced') String ttsNarrationStyle,
     @Default(0.2) double ttsSilenceScale,
     @Default(0.667) double ttsNoiseScale,
     @Default(0.8) double ttsNoiseScaleW,

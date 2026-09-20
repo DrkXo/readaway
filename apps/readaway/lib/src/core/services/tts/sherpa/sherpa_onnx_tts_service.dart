@@ -45,6 +45,15 @@ class SherpaOnnxTtsService {
   Directory? _modelsRootDir;
   int? _sampleRate;
   int? _speakerCount;
+  String? _loadedNarrationStyle;
+
+  /// Whether the loaded model needs to be reloaded to apply changed style/noise settings.
+  bool get needsModelReload {
+    if (_activeModel == null) return false;
+    final gvs = _settingsService.settings.globalViewSettings;
+    return _loadedNarrationStyle != null &&
+        _loadedNarrationStyle != gvs.ttsNarrationStyle;
+  }
 
   int _commandId = 0;
   String _nextId() =>
@@ -94,6 +103,7 @@ class SherpaOnnxTtsService {
       await _isolateService.disposeIsolate(sherpaTtsIsolateName);
     }
     _activeModel = null;
+    _loadedNarrationStyle = null;
     _sampleRate = null;
     _speakerCount = null;
   }
@@ -280,8 +290,30 @@ class SherpaOnnxTtsService {
 
     final gvs = _settingsService.settings.globalViewSettings;
     final effectiveSilenceScale = silenceScale ?? gvs.ttsSilenceScale;
-    final effectiveNoiseScale = noiseScale ?? gvs.ttsNoiseScale;
-    final effectiveNoiseScaleW = noiseScaleW ?? gvs.ttsNoiseScaleW;
+
+    // Map narration style to VITS / Piper noise parameters
+    double styleNoiseScale = 0.667;
+    double styleNoiseScaleW = 0.80;
+    switch (gvs.ttsNarrationStyle) {
+      case 'audiobook':
+        styleNoiseScale = 0.33;
+        styleNoiseScaleW = 0.50;
+        break;
+      case 'expressive':
+        styleNoiseScale = 0.85;
+        styleNoiseScaleW = 0.90;
+        break;
+      case 'balanced':
+      default:
+        styleNoiseScale = 0.667;
+        styleNoiseScaleW = 0.80;
+        break;
+    }
+
+    final effectiveNoiseScale = noiseScale ??
+        (gvs.ttsNoiseScale != 0.667 ? gvs.ttsNoiseScale : styleNoiseScale);
+    final effectiveNoiseScaleW = noiseScaleW ??
+        (gvs.ttsNoiseScaleW != 0.80 ? gvs.ttsNoiseScaleW : styleNoiseScaleW);
     final effectiveLengthScale = lengthScale ?? gvs.ttsLengthScale;
 
     final message = _buildLoadModelMessage(
@@ -301,6 +333,7 @@ class SherpaOnnxTtsService {
     );
 
     _activeModel = model;
+    _loadedNarrationStyle = gvs.ttsNarrationStyle;
     _sampleRate = result['sampleRate'] as int;
     _speakerCount = result['speakerCount'] as int;
   }
@@ -526,6 +559,7 @@ class SherpaOnnxTtsService {
       throw const TtsModelNotLoadedException();
     }
     final gvs = _settingsService.settings.globalViewSettings;
+    final effectiveSentenceGap = gvs.ttsSentenceGap;
     final effectiveSilenceScale = silenceScale ?? gvs.ttsSilenceScale;
     final effectiveNumSteps = numSteps ?? gvs.ttsNumSteps;
 
@@ -540,6 +574,7 @@ class SherpaOnnxTtsService {
           'speakerId': speakerId,
           'speed': speed,
           'gapSec': gapSec,
+          'sentenceGapMs': effectiveSentenceGap,
           'silenceScale': effectiveSilenceScale,
           'numSteps': effectiveNumSteps,
         },
@@ -586,6 +621,7 @@ class SherpaOnnxTtsService {
       throw const TtsModelNotLoadedException();
     }
     final gvs = _settingsService.settings.globalViewSettings;
+    final effectiveSentenceGap = gvs.ttsSentenceGap;
     final effectiveSilenceScale = silenceScale ?? gvs.ttsSilenceScale;
     final effectiveNumSteps = numSteps ?? gvs.ttsNumSteps;
 
@@ -599,6 +635,7 @@ class SherpaOnnxTtsService {
           'speakerId': speakerId,
           'speed': speed,
           'gapSec': gapSec,
+          'sentenceGapMs': effectiveSentenceGap,
           'silenceScale': effectiveSilenceScale,
           'numSteps': effectiveNumSteps,
         },

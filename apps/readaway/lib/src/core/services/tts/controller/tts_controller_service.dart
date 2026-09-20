@@ -7,11 +7,7 @@ import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:mutex/mutex.dart';
 import 'package:readaway_core/readaway_core.dart'
-    show
-        TtsChunk,
-        bakedGapForRate,
-        kDefaultParagraphGapSec,
-        kDefaultSentenceGapSec;
+    show TtsChunk, computeChunkGapSec;
 import 'package:rxdart/rxdart.dart';
 
 import '../../../models/models.dart';

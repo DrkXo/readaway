@@ -93,6 +93,9 @@ void main() {
 
     test('GlobalViewSettings has Sherpa TTS fine-tuning defaults and serializes cleanly', () {
       const gvs = GlobalViewSettings();
+      expect(gvs.ttsNarrationStyle, 'balanced');
+      expect(gvs.ttsSentenceGap, 500);
+      expect(gvs.ttsParagraphGap, 1000);
       expect(gvs.ttsSilenceScale, 0.2);
       expect(gvs.ttsNoiseScale, 0.667);
       expect(gvs.ttsNoiseScaleW, 0.8);
@@ -100,6 +103,9 @@ void main() {
       expect(gvs.ttsNumSteps, 5);
 
       final json = gvs.toJson();
+      expect(json['ttsNarrationStyle'], 'balanced');
+      expect(json['ttsSentenceGap'], 500);
+      expect(json['ttsParagraphGap'], 1000);
       expect(json['ttsSilenceScale'], 0.2);
       expect(json['ttsNoiseScale'], 0.667);
       expect(json['ttsNoiseScaleW'], 0.8);

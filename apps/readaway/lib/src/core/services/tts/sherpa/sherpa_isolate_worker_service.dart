@@ -77,15 +77,21 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             break;
           }
           final genConfig = buildGenerationConfigFromMessage(message);
-          final audio = engine.generateWithConfig(
-            text: text,
-            config: genConfig,
+          final gapSec = (message['gapSec'] as num?)?.toDouble() ?? 0.0;
+          final sentenceGapMs =
+              (message['sentenceGapMs'] as num?)?.toInt() ?? 0;
+          final out = _synthesizeWithProsody(
+            engine,
+            text,
+            genConfig,
+            gapSec,
+            sentenceGapMs: sentenceGapMs,
           );
           reply(
             id,
             result: {
-              'samples': audio.samples,
-              'sampleRate': audio.sampleRate,
+              'samples': out,
+              'sampleRate': engine.sampleRate,
             },
           );
           break;
@@ -111,31 +117,34 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             break;
           }
           final genConfig = buildGenerationConfigFromMessage(message);
-          final audio = engine.generateWithConfig(
-            text: text,
-            config: genConfig,
-          );
-
           final gapSec = (message['gapSec'] as num?)?.toDouble() ?? 0.0;
-          final out = _trimFadeAndGap(audio.samples, audio.sampleRate, gapSec);
+          final sentenceGapMs =
+              (message['sentenceGapMs'] as num?)?.toInt() ?? 0;
+          final out = _synthesizeWithProsody(
+            engine,
+            text,
+            genConfig,
+            gapSec,
+            sentenceGapMs: sentenceGapMs,
+          );
 
           final ok = sherpa.writeWave(
             filename: outputPath,
             samples: out,
-            sampleRate: audio.sampleRate,
+            sampleRate: engine.sampleRate,
           );
           if (!ok) {
             reply(id, error: 'Failed to write WAV to $outputPath');
             break;
           }
-          final duration = out.length / audio.sampleRate;
+          final duration = out.length / engine.sampleRate;
           final peaks = _extractPeaks(out, targetBars: 64);
           reply(
             id,
             result: {
               'outputPath': outputPath,
               'duration': duration,
-              'sampleRate': audio.sampleRate,
+              'sampleRate': engine.sampleRate,
               'waveform': peaks,
             },
           );
@@ -149,6 +158,8 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
           }
           final text = message['text'] as String;
           final gapSec = (message['gapSec'] as num?)?.toDouble() ?? 0.0;
+          final sentenceGapMs =
+              (message['sentenceGapMs'] as num?)?.toInt() ?? 0;
 
           if (text.trim().isEmpty) {
             reply(
@@ -163,21 +174,22 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
             break;
           }
           final genConfig = buildGenerationConfigFromMessage(message);
-          final audio = engine.generateWithConfig(
-            text: text,
-            config: genConfig,
+          final out = _synthesizeWithProsody(
+            engine,
+            text,
+            genConfig,
+            gapSec,
+            sentenceGapMs: sentenceGapMs,
           );
-
-          final out = _trimFadeAndGap(audio.samples, audio.sampleRate, gapSec);
-          final wavBytes = encodeWavFromPcm(out, audio.sampleRate);
-          final duration = out.length / audio.sampleRate;
+          final wavBytes = encodeWavFromPcm(out, engine.sampleRate);
+          final duration = out.length / engine.sampleRate;
           final peaks = _extractPeaks(out, targetBars: 64);
           reply(
             id,
             result: {
               'wavBytes': wavBytes,
               'duration': duration,
-              'sampleRate': audio.sampleRate,
+              'sampleRate': engine.sampleRate,
               'waveform': peaks,
             },
           );
@@ -301,6 +313,77 @@ sherpa.OfflineTtsModelConfig buildSherpaConfigFromMessage(Map message) {
     default:
       throw SherpaTtsException('Unknown model type "$type"');
   }
+}
+
+/// Synthesizes [text] by splitting into punctuation-aware prosody spans,
+/// generating speech for each span, applying speech boundary trimming and
+/// edge fades, and inserting physical zero-PCM silence gaps.
+///
+/// If [gapSec] > 0, it is applied after the final span; otherwise the final
+/// span's prosodic pause is used.
+Float32List _synthesizeWithProsody(
+  sherpa.OfflineTts engine,
+  String text,
+  sherpa.OfflineTtsGenerationConfig genConfig,
+  double gapSec, {
+  int sentenceGapMs = 0,
+}) {
+  final spans = splitProsodySpans(
+    text,
+    sentenceGapMs: sentenceGapMs,
+    silenceScaleMultiplier: 1.0,
+  );
+
+  if (spans.isEmpty) {
+    return Float32List(0);
+  }
+
+  // Fast path for single span without internal punctuation breaks
+  if (spans.length == 1) {
+    final audio = engine.generateWithConfig(
+      text: spans.first.text,
+      config: genConfig,
+    );
+    final effectiveGap = gapSec > 0 ? gapSec : spans.first.pauseAfterSec;
+    return _trimFadeAndGap(audio.samples, audio.sampleRate, effectiveGap);
+  }
+
+  // Multi-span prosody synthesis
+  final buffers = <Float32List>[];
+  var totalLength = 0;
+  final sampleRate = engine.sampleRate;
+
+  for (var i = 0; i < spans.length; i++) {
+    final span = spans[i];
+    if (span.text.trim().isEmpty) continue;
+
+    final audio = engine.generateWithConfig(
+      text: span.text,
+      config: genConfig,
+    );
+
+    final isLast = (i == spans.length - 1);
+    final pauseSec = isLast
+        ? (gapSec > 0 ? gapSec : span.pauseAfterSec)
+        : span.pauseAfterSec;
+
+    final processed = _trimFadeAndGap(audio.samples, sampleRate, pauseSec);
+    if (processed.isNotEmpty) {
+      buffers.add(processed);
+      totalLength += processed.length;
+    }
+  }
+
+  if (buffers.isEmpty) return Float32List(0);
+  if (buffers.length == 1) return buffers.first;
+
+  final combined = Float32List(totalLength);
+  var offset = 0;
+  for (final buf in buffers) {
+    combined.setAll(offset, buf);
+    offset += buf.length;
+  }
+  return combined;
 }
 
 /// Trims leading/trailing silence, applies edge fades, and appends [gapSec]

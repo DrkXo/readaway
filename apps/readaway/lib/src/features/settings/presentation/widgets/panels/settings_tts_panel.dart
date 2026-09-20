@@ -47,7 +47,9 @@ class _TtsView extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.ttsAvailableModels != curr.ttsAvailableModels ||
           prev.ttsDownloadedIds != curr.ttsDownloadedIds ||
-          prev.ttsActiveModelId != curr.ttsActiveModelId,
+          prev.ttsActiveModelId != curr.ttsActiveModelId ||
+          prev.appSettings.globalViewSettings !=
+              curr.appSettings.globalViewSettings,
       builder: (context, state) {
         if (state.ttsAvailableModels.isEmpty) {
           return const AppLoadingView(label: 'Loading TTS models...');
@@ -79,6 +81,100 @@ class _TtsView extends StatelessWidget {
                   label: 'Active voice',
                   description: active?.displayName ?? 'None selected',
                   trailing: previewButton,
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SettingsSection(
+              title: 'Reading Prosody & Timing',
+              rows: [
+                SettingsSelectRow<String>(
+                  label: 'Narration style',
+                  description: 'Adjusts voice expression and pitch variance',
+                  value: state.appSettings.globalViewSettings.ttsNarrationStyle,
+                  entries: const [
+                    SettingsSelectEntry(
+                      value: 'audiobook',
+                      label: 'Audiobook (Calm & steady)',
+                    ),
+                    SettingsSelectEntry(
+                      value: 'balanced',
+                      label: 'Balanced (Standard)',
+                    ),
+                    SettingsSelectEntry(
+                      value: 'expressive',
+                      label: 'Expressive (Dynamic)',
+                    ),
+                  ],
+                  onChanged: (style) {
+                    final gvs = state.appSettings.globalViewSettings;
+                    final updated = state.appSettings.copyWith(
+                      globalViewSettings: gvs.copyWith(ttsNarrationStyle: style),
+                    );
+                    context.read<SettingsBloc>().add(
+                          SettingsEvent.updateAppSettings(updated),
+                        );
+                  },
+                ),
+                SettingsSliderRow(
+                  label: 'Sentence pause',
+                  value: state.appSettings.globalViewSettings.ttsSentenceGap
+                      .toDouble(),
+                  min: 0,
+                  max: 1000,
+                  divisions: 20,
+                  format: (v) => '${v.round()} ms',
+                  onChanged: (val) {
+                    final gvs = state.appSettings.globalViewSettings;
+                    final updated = state.appSettings.copyWith(
+                      globalViewSettings: gvs.copyWith(
+                        ttsSentenceGap: val.round(),
+                      ),
+                    );
+                    context.read<SettingsBloc>().add(
+                          SettingsEvent.updateAppSettings(updated),
+                        );
+                  },
+                ),
+                SettingsSliderRow(
+                  label: 'Paragraph pause',
+                  value: state.appSettings.globalViewSettings.ttsParagraphGap
+                      .toDouble(),
+                  min: 200,
+                  max: 2500,
+                  divisions: 23,
+                  format: (v) => '${v.round()} ms',
+                  onChanged: (val) {
+                    final gvs = state.appSettings.globalViewSettings;
+                    final updated = state.appSettings.copyWith(
+                      globalViewSettings: gvs.copyWith(
+                        ttsParagraphGap: val.round(),
+                      ),
+                    );
+                    context.read<SettingsBloc>().add(
+                          SettingsEvent.updateAppSettings(updated),
+                        );
+                  },
+                ),
+                SettingsSliderRow(
+                  label: 'Model silence scale',
+                  value:
+                      state.appSettings.globalViewSettings.ttsSilenceScale,
+                  min: 0.0,
+                  max: 1.0,
+                  divisions: 10,
+                  format: (v) => '${(v * 100).round()}%',
+                  onChanged: (val) {
+                    final gvs = state.appSettings.globalViewSettings;
+                    final updated = state.appSettings.copyWith(
+                      globalViewSettings: gvs.copyWith(
+                        ttsSilenceScale: (val * 100).round() / 100.0,
+                      ),
+                    );
+                    context.read<SettingsBloc>().add(
+                          SettingsEvent.updateAppSettings(updated),
+                        );
+                  },
                 ),
               ],
             ),

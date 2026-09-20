@@ -377,7 +377,7 @@ types:
         index: 1
   GlobalViewSettings:
     typeId: 16
-    nextIndex: 114
+    nextIndex: 115
     fields:
       marginTopPx:
         index: 0
@@ -607,6 +607,8 @@ types:
         index: 112
       ttsNumSteps:
         index: 113
+      ttsNarrationStyle:
+        index: 114
   ParagraphMode:
     typeId: 17
     nextIndex: 3

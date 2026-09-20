@@ -10,10 +10,12 @@ import '../../../../../core/services/audio/audio_player_service.dart';
 import '../../../../../core/services/tts/tts_models.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
+import '../../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../../domain/repositories/reader_tts_repository.dart';
 import '../../bloc/reader_bloc.dart';
 import 'live_speech_waveform.dart';
 import 'tts_pitch_control_panel.dart';
+import 'tts_prosody_control_panel.dart';
 import 'tts_sleep_timer_control.dart';
 import 'tts_speed_control_panel.dart';
 import 'tts_voice_selection_panel.dart';
@@ -42,6 +44,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
   bool _showVoicePanel = false;
   bool _showPitchPanel = false;
   bool _showSleepTimerPanel = false;
+  bool _showProsodyPanel = false;
   late final Stream<(PositionData, List<double>)> _waveformStream;
 
   @override
@@ -88,7 +91,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 1. Expandable Top-Shelf Settings Panel (Voice list, Speed slider, Pitch slider, or Sleep Timer)
+            // 1. Expandable Top-Shelf Settings Panel (Voice list, Speed slider, Pitch slider, Prosody, or Sleep Timer)
             AnimatedSize(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,
@@ -160,6 +163,83 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                         },
                       ),
                     )
+                  : _showProsodyPanel
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: BlocBuilder<SettingsBloc, SettingsState>(
+                        builder: (context, settingsState) {
+                          final gvs =
+                              settingsState.appSettings.globalViewSettings;
+                          return TtsProsodyControlPanel(
+                            narrationStyle: gvs.ttsNarrationStyle,
+                            sentenceGapMs: gvs.ttsSentenceGap,
+                            paragraphGapMs: gvs.ttsParagraphGap,
+                            silenceScale: gvs.ttsSilenceScale,
+                            onNarrationStyleChanged: (style) {
+                              final updated =
+                                  settingsState.appSettings.copyWith(
+                                globalViewSettings: gvs.copyWith(
+                                  ttsNarrationStyle: style,
+                                ),
+                              );
+                              context.read<SettingsBloc>().add(
+                                    SettingsEvent.updateAppSettings(updated),
+                                  );
+                            },
+                            onSentenceGapChanged: (gap) {
+                              final updated =
+                                  settingsState.appSettings.copyWith(
+                                globalViewSettings: gvs.copyWith(
+                                  ttsSentenceGap: gap,
+                                ),
+                              );
+                              context.read<SettingsBloc>().add(
+                                    SettingsEvent.updateAppSettings(updated),
+                                  );
+                            },
+                            onParagraphGapChanged: (gap) {
+                              final updated =
+                                  settingsState.appSettings.copyWith(
+                                globalViewSettings: gvs.copyWith(
+                                  ttsParagraphGap: gap,
+                                ),
+                              );
+                              context.read<SettingsBloc>().add(
+                                    SettingsEvent.updateAppSettings(updated),
+                                  );
+                            },
+                            onSilenceScaleChanged: (scale) {
+                              final updated =
+                                  settingsState.appSettings.copyWith(
+                                globalViewSettings: gvs.copyWith(
+                                  ttsSilenceScale: scale,
+                                ),
+                              );
+                              context.read<SettingsBloc>().add(
+                                    SettingsEvent.updateAppSettings(updated),
+                                  );
+                            },
+                            onReset: () {
+                              final updated =
+                                  settingsState.appSettings.copyWith(
+                                globalViewSettings: gvs.copyWith(
+                                  ttsNarrationStyle: 'balanced',
+                                  ttsSentenceGap: 500,
+                                  ttsParagraphGap: 1000,
+                                  ttsSilenceScale: 0.2,
+                                ),
+                              );
+                              context.read<SettingsBloc>().add(
+                                    SettingsEvent.updateAppSettings(updated),
+                                  );
+                            },
+                            onClose: () {
+                              setState(() => _showProsodyPanel = false);
+                            },
+                          );
+                        },
+                      ),
+                    )
                   : _showSleepTimerPanel
                   ? Padding(
                       padding: const EdgeInsets.only(bottom: 10),
@@ -182,7 +262,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                   : const SizedBox.shrink(),
             ),
 
-            // 2. Full-Width Uniform Speech Settings Toolbar (Voice, Speed, Pitch, Timer)
+            // 2. Full-Width Uniform Speech Settings Toolbar (Voice, Speed, Pitch, Prosody, Timer)
             Row(
               children: [
                 // 2a. Voice Selection Pill
@@ -206,6 +286,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             if (_showVoicePanel) {
                               _showSpeedPanel = false;
                               _showPitchPanel = false;
+                              _showProsodyPanel = false;
                               _showSleepTimerPanel = false;
                             }
                           });
@@ -214,7 +295,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     },
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
 
                 // 2b. Playback Speed Pill
                 Expanded(
@@ -237,6 +318,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             if (_showSpeedPanel) {
                               _showVoicePanel = false;
                               _showPitchPanel = false;
+                              _showProsodyPanel = false;
                               _showSleepTimerPanel = false;
                             }
                           });
@@ -246,7 +328,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     },
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
 
                 // 2c. Voice Pitch Pill
                 Expanded(
@@ -269,6 +351,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             if (_showPitchPanel) {
                               _showVoicePanel = false;
                               _showSpeedPanel = false;
+                              _showProsodyPanel = false;
                               _showSleepTimerPanel = false;
                             }
                           });
@@ -278,9 +361,47 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     },
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
 
-                // 2d. Sleep Timer Pill
+                // 2d. Prosody & Timing Pill
+                Expanded(
+                  child: BlocBuilder<SettingsBloc, SettingsState>(
+                    buildWhen: (prev, curr) =>
+                        prev.appSettings.globalViewSettings !=
+                        curr.appSettings.globalViewSettings,
+                    builder: (context, state) {
+                      final style = state.appSettings.globalViewSettings
+                          .ttsNarrationStyle;
+                      final label = switch (style) {
+                        'audiobook' => 'Audiobook',
+                        'expressive' => 'Expressive',
+                        _ => 'Balanced',
+                      };
+
+                      return _buildSettingPill(
+                        scheme: scheme,
+                        icon: LucideIcons.slidersHorizontal,
+                        label: label,
+                        isActive: _showProsodyPanel,
+                        tooltip: 'Prosody: $label (Pauses & Style)',
+                        onTap: () {
+                          setState(() {
+                            _showProsodyPanel = !_showProsodyPanel;
+                            if (_showProsodyPanel) {
+                              _showVoicePanel = false;
+                              _showSpeedPanel = false;
+                              _showPitchPanel = false;
+                              _showSleepTimerPanel = false;
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 5),
+
+                // 2e. Sleep Timer Pill
                 Expanded(
                   child: BlocBuilder<ReaderBloc, ReaderState>(
                     buildWhen: (prev, curr) =>
@@ -308,6 +429,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                               _showVoicePanel = false;
                               _showSpeedPanel = false;
                               _showPitchPanel = false;
+                              _showProsodyPanel = false;
                             }
                           });
                         },

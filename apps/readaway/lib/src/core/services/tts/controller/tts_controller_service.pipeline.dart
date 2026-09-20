@@ -7,11 +7,15 @@ extension _TtsSynthesisPipeline on TtsControllerService {
   /// chunk follows the natural-voice curve. The final chunk carries no
   /// trailing pause.
   double _gapForChunk(TtsChunk chunk, int index) {
-    if (index >= _masterQueue.length - 1) return 0;
-    final base = chunk.isParagraphEnd
-        ? kDefaultParagraphGapSec
-        : kDefaultSentenceGapSec;
-    return bakedGapForRate(base, _rate <= 0 ? 1.0 : _rate);
+    if (index >= _masterQueue.length - 1) return 0.0;
+    final gvs = _settingsService.settings.globalViewSettings;
+    return computeChunkGapSec(
+      chunk,
+      sentenceGapMs: gvs.ttsSentenceGap,
+      paragraphGapMs: gvs.ttsParagraphGap,
+      rate: _rate <= 0 ? 1.0 : _rate,
+      isLastChunk: index >= _masterQueue.length - 1,
+    );
   }
 
   /// Lookahead synthesis pipeline: pre-synthesizes initial buffer, starts playback,

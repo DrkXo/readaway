@@ -69,7 +69,8 @@ class SherpaOnnxTtsEngine implements TtsEngine {
     double pitch = 1.0,
     double gapSec = 0.0,
   }) async {
-    if (_sherpaService.activeModel?.id != voice.id) {
+    if (_sherpaService.activeModel?.id != voice.id ||
+        _sherpaService.needsModelReload) {
       await _sherpaService.loadModel(voice.id);
     }
 
@@ -97,7 +98,8 @@ class SherpaOnnxTtsEngine implements TtsEngine {
     double pitch = 1.0,
     double gapSec = 0.0,
   }) async {
-    if (_sherpaService.activeModel?.id != voice.id) {
+    if (_sherpaService.activeModel?.id != voice.id ||
+        _sherpaService.needsModelReload) {
       await _sherpaService.loadModel(voice.id);
     }
 
