@@ -145,6 +145,11 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
               HyperPageContent(
                 html: html,
                 prefs: widget.prefs,
+                chapterIndex: widget.index,
+                cacheNamespace:
+                    widget.state.documentPath ??
+                    widget.state.fileName ??
+                    '',
                 onResolveAssetBytes: _resolveAssetBytes,
                 onLinkTap: (url) => _onTapUrl(context, url),
               ),

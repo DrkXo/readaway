@@ -10,6 +10,7 @@ class LruCache<K, V> {
   int get length => _map.length;
   bool get isEmpty => _map.isEmpty;
   bool get isNotEmpty => _map.isNotEmpty;
+  Iterable<V> get values => _map.values;
 
   bool containsKey(K key) => _map.containsKey(key);
 

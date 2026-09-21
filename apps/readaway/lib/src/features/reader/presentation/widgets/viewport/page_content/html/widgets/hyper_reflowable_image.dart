@@ -1,39 +1,40 @@
-import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:hyper_render/hyper_render.dart';
 
-/// Renders a single reflowable image node, resolving bytes from the
-/// document/EPUB container, data URIs, or the network, with loading and
-/// error placeholders.
+/// Renders a single reflowable image node.
+///
+/// Decoded frames come from [ReflowableImageCache], so a page recreated by
+/// pagination reflow paints its images on the first frame instead of flashing
+/// a loading placeholder. Unresolved images show a static placeholder box (no
+/// animated spinner — animation churn during re-layout is itself flicker).
 class HyperReflowableImage extends StatefulWidget {
   const HyperReflowableImage({
     super.key,
     required this.node,
-    required this.onResolveBytes,
-    this.initialBytes,
+    required this.onResolveDecoded,
+    this.initialDecoded,
   });
 
   final AtomicNode node;
-  final Uint8List? initialBytes;
-  final Future<Uint8List?> Function() onResolveBytes;
+  final ui.Image? initialDecoded;
+  final Future<ui.Image?> Function() onResolveDecoded;
 
   @override
   State<HyperReflowableImage> createState() => _HyperReflowableImageState();
 }
 
 class _HyperReflowableImageState extends State<HyperReflowableImage> {
-  Uint8List? _bytes;
+  ui.Image? _decoded;
   bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
-    _bytes = widget.initialBytes;
-    if (_bytes == null) {
-      _resolveImageBytes();
+    _decoded = widget.initialDecoded;
+    if (_decoded == null) {
+      _resolveDecoded();
     }
   }
 
@@ -41,68 +42,67 @@ class _HyperReflowableImageState extends State<HyperReflowableImage> {
   void didUpdateWidget(covariant HyperReflowableImage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.node.src != widget.node.src) {
-      _bytes = widget.initialBytes;
+      _decoded = null;
       _hasError = false;
-      if (_bytes == null) {
-        _resolveImageBytes();
+      _resolveDecoded();
+    } else if (_decoded == null && widget.initialDecoded != null) {
+      _decoded = widget.initialDecoded;
+      if (_hasError && _decoded != null) {
+        _hasError = false;
       }
-    } else if (_bytes == null && widget.initialBytes != null) {
-      _bytes = widget.initialBytes;
     }
   }
 
-  Future<void> _resolveImageBytes() async {
+  Future<void> _resolveDecoded() async {
     final src = widget.node.src;
     if (src == null || src.isEmpty) {
-      setState(() => _hasError = true);
+      _hasError = true;
       return;
     }
 
-    // 1. External HTTP / HTTPS image (handled by Image.network)
+    // External HTTP / HTTPS images are handled by Image.network, which has its
+    // own platform image cache.
     if (src.startsWith('http://') || src.startsWith('https://')) {
       return;
     }
 
-    // 2. Data URI (data:image/...;base64,...)
-    if (src.startsWith('data:')) {
-      final commaIndex = src.indexOf(',');
-      if (commaIndex != -1) {
-        try {
-          final decoded = base64Decode(src.substring(commaIndex + 1));
-          final uint8 = Uint8List.fromList(decoded);
-          if (mounted) {
-            setState(() => _bytes = uint8);
-          }
-          return;
-        } catch (_) {
-          if (mounted) setState(() => _hasError = true);
-          return;
-        }
-      }
-    }
-
-    // 3. Document / EPUB container asset
     try {
-      final bytes = await widget.onResolveBytes();
-      if (bytes != null && bytes.isNotEmpty) {
-        if (mounted) {
-          setState(() {
-            _bytes = bytes;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _hasError = true;
-          });
-        }
-      }
-    } catch (_) {
+      final decoded = await widget.onResolveDecoded();
       if (mounted) {
+        // Persist real dimensions on the shared document node so later page
+        // instances render this image at its true size from the first frame
+        // (RenderHyperBox sizes fresh boxes from node.style before its
+        // per-instance async decode lands). Mirrors HyperPageContent
+        // seedImageDimensions — fills only the implicit dimensions.
+        if (decoded != null) {
+          final imgW = decoded.width.toDouble();
+          final imgH = decoded.height.toDouble();
+          if (widget.node.style.width == null &&
+              widget.node.style.height == null) {
+            widget.node.style.width = imgW;
+            widget.node.style.height = imgH;
+          } else if (widget.node.style.width != null &&
+              widget.node.style.height == null) {
+            widget.node.style.height = imgW > 0
+                ? widget.node.style.width! * (imgH / imgW)
+                : null;
+          } else if (widget.node.style.width == null &&
+              widget.node.style.height != null) {
+            widget.node.style.width = imgH > 0
+                ? widget.node.style.height! * (imgW / imgH)
+                : null;
+          }
+        }
         setState(() {
-          _hasError = true;
+          if (decoded != null) {
+            _decoded = decoded;
+          } else {
+            _hasError = true;
+          }
         });
       }
+    } catch (_) {
+      if (mounted) setState(() => _hasError = true);
     }
   }
 
@@ -138,6 +138,10 @@ class _HyperReflowableImageState extends State<HyperReflowableImage> {
         src,
         fit: fit,
         gaplessPlayback: true,
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded || frame != null) return child;
+          return _buildLoadingPlaceholder();
+        },
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return _buildLoadingPlaceholder();
@@ -146,14 +150,11 @@ class _HyperReflowableImageState extends State<HyperReflowableImage> {
           return _buildErrorPlaceholder();
         },
       );
-    } else if (_bytes != null) {
-      content = Image.memory(
-        _bytes!,
+    } else if (_decoded != null) {
+      content = RawImage(
+        image: _decoded!,
         fit: fit,
-        gaplessPlayback: true,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildErrorPlaceholder();
-        },
+        filterQuality: FilterQuality.medium,
       );
     } else {
       content = _buildLoadingPlaceholder();
@@ -169,15 +170,12 @@ class _HyperReflowableImageState extends State<HyperReflowableImage> {
     return content;
   }
 
+  /// Static, non-animated placeholder so pending images never pulse during the
+  /// pagination re-layout that follows a decode.
   Widget _buildLoadingPlaceholder() {
     return Container(
       color: const Color(0x08000000),
-      child: Center(
-        child: SpinKitPulsingGrid(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
-          size: 20,
-        ),
-      ),
+      child: const SizedBox.expand(),
     );
   }
 

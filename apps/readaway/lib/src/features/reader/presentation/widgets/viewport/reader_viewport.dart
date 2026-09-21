@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/core/utils/lru_cache.dart';
 import 'package:readaway/src/core/widgets/core_widgets.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
@@ -49,11 +48,10 @@ class _ReaderViewportState extends State<ReaderViewport> {
   late final PaginationCoordinator _paginationCoordinator;
   StreamSubscription<PaginationState>? _paginationSubscription;
   int _currentGlobalPage = 0;
+  int _lastReportedTotalPages = 0;
   int? _lastInitializedChapterCount;
   double? _lastViewportHeight;
   bool _isPaginationUpdateScheduled = false;
-  final LruCache<String, List<int>> _assetCache =
-      LruCache<String, List<int>>(maximumSize: 40);
 
   @override
   void initState() {
@@ -74,23 +72,29 @@ class _ReaderViewportState extends State<ReaderViewport> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _isPaginationUpdateScheduled = false;
       if (!mounted) return;
-      final bloc = context.read<ReaderBloc>();
+
       final isContinuous =
           widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
           !widget.prefs.pageSnap;
 
+      // Coalesce: only rebuild/sync when the pagination result actually moved,
+      // so a mere re-measure (e.g. an image decode nudging content height a
+      // hair) doesn't rebuild the whole viewport tree every frame.
       if (!isContinuous) {
         final totalPages = _paginationCoordinator.currentState.totalPages;
+        final derivedGlobal = _paginationCoordinator.currentState.globalPage;
+        if (totalPages == _lastReportedTotalPages &&
+            derivedGlobal == _currentGlobalPage) {
+          return;
+        }
+        _lastReportedTotalPages = totalPages;
+        _currentGlobalPage = derivedGlobal;
         widget.viewportController.updatePageCount(totalPages);
         if (totalPages > 0) {
-          // The coordinator derives the current global page from the anchor,
-          // keeping the position stable as chapters measure and reflow.
-          final derivedGlobal = _paginationCoordinator.currentState.globalPage;
-          _currentGlobalPage = derivedGlobal;
           final coord = _paginationCoordinator.coordinateFromGlobalPage(
             derivedGlobal,
           );
-          bloc.add(
+          context.read<ReaderBloc>().add(
             ReaderEvent.virtualPageChanged(
               globalPage: derivedGlobal,
               totalPages: totalPages,
@@ -98,8 +102,8 @@ class _ReaderViewportState extends State<ReaderViewport> {
             ),
           );
         }
+        setState(() {});
       }
-      setState(() {});
     });
   }
 
@@ -156,7 +160,6 @@ class _ReaderViewportState extends State<ReaderViewport> {
   @override
   void dispose() {
     _paginationSubscription?.cancel();
-    _assetCache.clear();
     super.dispose();
   }
 
@@ -378,18 +381,13 @@ class _ReaderViewportState extends State<ReaderViewport> {
   }
 
   Future<List<int>?> _resolveAssetBytes(int chapterIndex, String src) async {
-    final cacheKey = '$chapterIndex:$src';
-    if (_assetCache.containsKey(cacheKey)) {
-      return _assetCache[cacheKey];
-    }
+    // Bytes are cached and deduplicated by the shared ReflowableImageCache in
+    // HyperPageContent, so every page instance hits memory instead of the
+    // EPUB container.
     final res = await GetIt.I<ReaderRepository>()
         .loadAssetBytes(src, pageIndex: chapterIndex)
         .run();
-    final bytes = res.getRight().toNullable();
-    if (bytes != null) {
-      _assetCache[cacheKey] = bytes;
-    }
-    return bytes;
+    return res.getRight().toNullable();
   }
 
   Future<void> _onLinkTap(BuildContext context, String url) async {

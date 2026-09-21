@@ -256,6 +256,11 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
                       child: HyperPageContent(
                         html: html,
                         prefs: widget.prefs,
+                        chapterIndex: widget.chapterIndex,
+                        cacheNamespace:
+                            widget.state.documentPath ??
+                            widget.state.fileName ??
+                            '',
                         onResolveAssetBytes: widget.onResolveAssetBytes,
                         onLinkTap: widget.onLinkTap,
                       ),

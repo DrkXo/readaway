@@ -10,6 +10,7 @@ import '../../../../../../../core/theme/theme.dart';
 import '../../../../../../../core/utils/lru_cache.dart';
 import '../../../../../../settings/domain/entity/reader_preferences.dart';
 import 'reader_style_resolver.dart';
+import 'reflowable_image_cache.dart';
 import 'widgets/hyper_reflowable_image.dart';
 
 /// Renders reflowable HTML content with HyperRender, fully styled according to [ReaderPreferences].
@@ -18,14 +19,63 @@ class HyperPageContent extends StatefulWidget {
     super.key,
     required this.html,
     required this.prefs,
+    required this.chapterIndex,
     required this.onLinkTap,
+    this.cacheNamespace = '',
     this.onResolveAssetBytes,
   });
 
   final String html;
   final ReaderPreferences prefs;
+
+  /// Chapter index this content belongs to. Part of the shared image-cache key.
+  final int chapterIndex;
+
+  /// Identifies the current document so cached images from one book never
+  /// leak into the next (chapter indices and asset paths repeat).
+  final String cacheNamespace;
+
   final void Function(String) onLinkTap;
   final Future<List<int>?> Function(String src)? onResolveAssetBytes;
+
+  /// Stamps the real pixel dimensions of already-decoded images onto the
+  /// (shared) document nodes so RenderHyperBox lays them out at their true
+  /// size on the very first frame of a freshly created page.
+  ///
+  /// Without this, every new page instance creates a RenderHyperBox with an
+  /// empty internal image cache, so each `<img>` is first sized at the 200×112
+  /// placeholder and only jumps to its real size after an async per-instance
+  /// decode + re-layout — the size jump visible as flicker on page changes.
+  static void seedImageDimensions(
+    DocumentNode document, {
+    required String cacheNamespace,
+    required int chapterIndex,
+  }) {
+    final cache = ReflowableImageCache.instance;
+    document.traverse((node) {
+      if (node is! AtomicNode || node.tagName != 'img') return;
+      final src = node.src;
+      if (src == null || src.isEmpty) return;
+      final image = cache.peekDecoded(cacheNamespace, chapterIndex, src);
+      if (image == null) return;
+      final imgW = image.width.toDouble();
+      final imgH = image.height.toDouble();
+      // Fill only dimensions the document itself never specified; explicit
+      // CSS keeps priority. Mirrors RenderHyperBox's loaded-image sizing so a
+      // fresh box lays out at the real size from its first frame instead of
+      // the 200×112 (or 16:9) placeholder, which jumps on every page change.
+      final styleWidth = node.style.width;
+      final styleHeight = node.style.height;
+      if (styleWidth == null && styleHeight == null) {
+        node.style.width = imgW;
+        node.style.height = imgH;
+      } else if (styleWidth != null && styleHeight == null) {
+        node.style.height = imgW > 0 ? styleWidth * (imgH / imgW) : null;
+      } else if (styleWidth == null && styleHeight != null) {
+        node.style.width = imgH > 0 ? styleHeight * (imgW / imgH) : null;
+      }
+    });
+  }
 
   @override
   State<HyperPageContent> createState() => _HyperPageContentState();
@@ -43,8 +93,12 @@ class _HyperPageContentState extends State<HyperPageContent> {
       LruCache<String, DocumentNode>(maximumSize: 40);
 
   String _buildDocumentCacheKey() {
+    // prefs.hashCode is value-based (freezed). prefs.toJson().hashCode was
+    // identity-based on a fresh Map, so the cache never hit and every
+    // color/prefs/theme change re-parsed the document and re-created every
+    // image widget.
     final prefs = widget.prefs;
-    final prefsSig = prefs.toJson().hashCode;
+    final prefsSig = prefs.hashCode;
     return '${widget.html.length}:${widget.html.hashCode}:$prefsSig:'
         '${_textColor.toARGB32()}:${_linkColor.toARGB32()}:'
         '${Theme.of(context).brightness == Brightness.dark}';
@@ -58,37 +112,24 @@ class _HyperPageContentState extends State<HyperPageContent> {
 
   final ReaderStyleResolver _styleResolver = const ReaderStyleResolver();
   final HtmlAdapter _htmlAdapter = HtmlAdapter();
-  final LruCache<String, Uint8List> _assetBytesCache =
-      LruCache<String, Uint8List>(maximumSize: 30);
-  final Map<String, Future<Uint8List?>> _inFlightAssetRequests = {};
+
+  Future<Uint8List?> _loadBytesFor(String src) async {
+    final onResolve = widget.onResolveAssetBytes;
+    if (onResolve == null) return null;
+    final raw = await onResolve(src);
+    if (raw == null) return null;
+    return raw is Uint8List ? raw : Uint8List.fromList(raw);
+  }
 
   Future<Uint8List?> _resolveAssetBytes(String src) {
-    final cached = _assetBytesCache[src];
-    if (cached != null) return Future.value(cached);
-
-    final inFlight = _inFlightAssetRequests[src];
-    if (inFlight != null) return inFlight;
-
-    if (widget.onResolveAssetBytes == null) {
-      return Future.value(null);
-    }
-
-    final future = () async {
-      try {
-        final raw = await widget.onResolveAssetBytes!(src);
-        if (raw != null && raw.isNotEmpty) {
-          final bytes = raw is Uint8List ? raw : Uint8List.fromList(raw);
-          _assetBytesCache[src] = bytes;
-          return bytes;
-        }
-        return null;
-      } finally {
-        _inFlightAssetRequests.remove(src);
-      }
-    }();
-
-    _inFlightAssetRequests[src] = future;
-    return future;
+    // Shared, namespace-scoped cache: a page recreated by pagination reflow
+    // resolves bytes synchronously instead of re-fetching from the container.
+    return ReflowableImageCache.instance.resolveBytes(
+      widget.cacheNamespace,
+      widget.chapterIndex,
+      src,
+      load: () => _loadBytesFor(src),
+    );
   }
 
   @override
@@ -180,6 +221,11 @@ class _HyperPageContentState extends State<HyperPageContent> {
       linkColor: _linkColor,
     );
 
+    HyperPageContent.seedImageDimensions(
+      document,
+      cacheNamespace: widget.cacheNamespace,
+      chapterIndex: widget.chapterIndex,
+    );
     _documentCache[cacheKey] = document;
     return document;
   }
@@ -263,11 +309,24 @@ class _HyperPageContentState extends State<HyperPageContent> {
       // Float images are painted on canvas by RenderHyperBox._paintFloatImages
       if (node.style.float != HyperFloat.none) return null;
 
+      final cache = ReflowableImageCache.instance;
+      final chapterIndex = widget.chapterIndex;
       return HyperReflowableImage(
-        key: ValueKey('hyper_img_${node.hashCode}_$src'),
+        // node.id (not hashCode) is stable for the lifetime of the cached
+        // DocumentNode, so image state survives rebuilds within a chapter.
+        key: ValueKey('hyper_img_${node.id}_$src'),
         node: node,
-        initialBytes: _assetBytesCache[src],
-        onResolveBytes: () => _resolveAssetBytes(src),
+        initialDecoded: cache.peekDecoded(
+          widget.cacheNamespace,
+          chapterIndex,
+          src,
+        ),
+        onResolveDecoded: () => cache.decode(
+          widget.cacheNamespace,
+          chapterIndex,
+          src,
+          load: () => _loadBytesFor(src),
+        ),
       );
     }
     return null;
