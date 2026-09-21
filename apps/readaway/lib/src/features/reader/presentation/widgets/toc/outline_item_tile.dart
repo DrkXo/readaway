@@ -1,20 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:readaway_core/readaway_core.dart';
+
 import '../../../../../core/theme/theme.dart';
+
+/// The classic serif used for reading text, so the contents list reads like
+/// the book it belongs to.
+const String tocSerifFont = 'Noto Serif';
 
 class OutlineItemTile extends StatelessWidget {
   const OutlineItemTile({
     super.key,
     required this.item,
     required this.isCurrent,
-    required this.threadColors,
     required this.onTap,
+    this.isExpanded = false,
   });
 
   final OutlineItem item;
   final bool isCurrent;
-  final List<Color> threadColors;
   final VoidCallback onTap;
+
+  /// Whether this node has children, i.e. tapping toggles instead of jumping.
+  bool get _hasChildren => item.children.isNotEmpty;
+
+  /// Whether the row's children are currently shown.
+  final bool isExpanded;
 
   @override
   Widget build(BuildContext context) {
@@ -22,11 +33,15 @@ class OutlineItemTile extends StatelessWidget {
     if (title.isEmpty) return const SizedBox.shrink();
 
     final appColors = context.appColors;
-    final color = threadColors[item.level % threadColors.length];
+    final accent = appColors.badgeBackground ?? appColors.scheme.primary;
     final isTopLevel = item.level == 0;
+    final fg = isCurrent
+        ? appColors.sidebarActiveForeground
+        : appColors.sidebarForeground;
 
     return Semantics(
       button: true,
+      toggled: _hasChildren ? isExpanded : null,
       selected: isCurrent,
       label: item.chapterIndex != null
           ? '$title, Chapter ${item.chapterIndex! + 1}'
@@ -42,76 +57,51 @@ class OutlineItemTile extends StatelessWidget {
             decoration: isCurrent
                 ? BoxDecoration(
                     border: Border(
-                      left: BorderSide(
-                        color: appColors.badgeBackground ?? appColors.scheme.primary,
-                        width: 3.0,
-                      ),
+                      left: BorderSide(color: accent, width: 3.0),
                     ),
                   )
                 : null,
-            padding: EdgeInsets.fromLTRB(isCurrent ? 13 : 16, 6, 16, 6),
+            padding: EdgeInsets.fromLTRB(isCurrent ? 17 : 20, 6, 16, 6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                for (var l = 0; l < item.level; l++)
-                  Container(
-                    width: 1.5,
-                    height: 24,
-                    margin: const EdgeInsets.only(right: 8),
-                    color: appColors.borderSubtle,
-                  ),
-                if (isTopLevel)
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                // Indentation only — depth is shown by spacing, not bars.
+                SizedBox(width: item.level * 16.0),
                 Expanded(
                   child: Text(
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: isTopLevel ? 13 : 12,
+                      fontFamily: tocSerifFont,
+                      fontSize: isTopLevel ? 14 : 13,
+                      height: 1.3,
                       fontWeight: isCurrent
                           ? FontWeight.w600
                           : isTopLevel
                           ? FontWeight.w500
                           : FontWeight.w400,
                       color: isCurrent
-                          ? appColors.sidebarActiveForeground
+                          ? fg
                           : isTopLevel
-                          ? appColors.sidebarForeground
-                          : appColors.sidebarForeground.withValues(alpha: 0.8),
+                          ? fg
+                          : fg.withValues(alpha: 0.8),
                     ),
                   ),
                 ),
-                if (isCurrent)
-                  Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: (appColors.badgeBackground ?? appColors.scheme.primary)
-                          .withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      'Current',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                        color: appColors.badgeBackground ?? appColors.scheme.primary,
-                      ),
+                if (_hasChildren) ...[
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.25 : 0.0,
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOut,
+                    child: Icon(
+                      LucideIcons.chevronRight,
+                      size: 15,
+                      color: fg.withValues(alpha: 0.45),
                     ),
                   ),
+                ],
               ],
             ),
           ),

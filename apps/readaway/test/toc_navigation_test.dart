@@ -1,11 +1,12 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/toc/outline_item_tile.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 void main() {
-  const threadColors = [Colors.blue, Colors.green, Colors.purple];
-
   group('OutlineItemTile Widget Tests', () {
     testWidgets('renders outline title and handles tap correctly', (
       tester,
@@ -24,7 +25,6 @@ void main() {
             body: OutlineItemTile(
               item: item,
               isCurrent: false,
-              threadColors: threadColors,
               onTap: () => tapped = true,
             ),
           ),
@@ -32,13 +32,12 @@ void main() {
       );
 
       expect(find.text('Prologue'), findsOneWidget);
-      expect(find.text('Current'), findsNothing);
 
       await tester.tap(find.text('Prologue'));
       expect(tapped, isTrue);
     });
 
-    testWidgets('displays Current badge and semantic Chapter label', (
+    testWidgets('marks the current row and exposes a semantic Chapter label', (
       tester,
     ) async {
       final item = OutlineItem(
@@ -54,7 +53,6 @@ void main() {
             body: OutlineItemTile(
               item: item,
               isCurrent: true,
-              threadColors: threadColors,
               onTap: () {},
             ),
           ),
@@ -62,10 +60,13 @@ void main() {
       );
 
       expect(find.text('Chapter 1: The Heart of a Demon'), findsOneWidget);
-      expect(find.text('Current'), findsOneWidget);
 
       final semantics = tester.getSemantics(find.byType(OutlineItemTile));
       expect(semantics.label, contains('Chapter 2'));
+      expect(
+        semantics.getSemanticsData().flagsCollection.isSelected,
+        Tristate.isTrue,
+      );
     });
 
     testWidgets('falls back to plain title when chapterIndex is null', (
@@ -82,7 +83,6 @@ void main() {
             body: OutlineItemTile(
               item: item,
               isCurrent: false,
-              threadColors: threadColors,
               onTap: () {},
             ),
           ),
@@ -92,6 +92,65 @@ void main() {
       final semantics = tester.getSemantics(find.byType(OutlineItemTile));
       expect(semantics.label, contains('Introduction to Algorithms'));
       expect(semantics.label, isNot(contains('Chapter')));
+    });
+
+    testWidgets('parent rows show a chevron and a toggled semantic state', (
+      tester,
+    ) async {
+      final item = OutlineItem(
+        title: 'Volume 1',
+        href: 'OEBPS/vol1.xhtml',
+        chapterIndex: 0,
+        level: 0,
+        children: [
+          OutlineItem(
+            title: 'Chapter 1',
+            href: 'OEBPS/c1.xhtml',
+            chapterIndex: 0,
+            level: 1,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OutlineItemTile(
+              item: item,
+              isCurrent: false,
+              isExpanded: true,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(LucideIcons.chevronRight), findsOneWidget);
+
+      final expandedFlags = tester
+          .getSemantics(find.byType(OutlineItemTile))
+          .getSemanticsData()
+          .flagsCollection;
+      expect(expandedFlags.isToggled, Tristate.isTrue);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OutlineItemTile(
+              item: item,
+              isCurrent: false,
+              isExpanded: false,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      final collapsedFlags = tester
+          .getSemantics(find.byType(OutlineItemTile))
+          .getSemanticsData()
+          .flagsCollection;
+      expect(collapsedFlags.isToggled, Tristate.isFalse);
     });
   });
 }

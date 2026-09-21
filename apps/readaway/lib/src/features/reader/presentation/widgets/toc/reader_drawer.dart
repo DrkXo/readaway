@@ -15,6 +15,7 @@ class ReaderDrawer extends StatelessWidget {
     final appColors = context.appColors;
 
     return Drawer(
+      width: 336,
       backgroundColor: appColors.sidebarBackground,
       elevation: 0,
       shape: const RoundedRectangleBorder(

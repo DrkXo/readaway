@@ -86,3 +86,11 @@ flutter:
   uses-material-design: true
   assets:
     - assets/google_fonts/
+  fonts:
+    - family: Noto Serif
+      fonts:
+        - asset: assets/google_fonts/NotoSerif-Regular.ttf
+        - asset: assets/google_fonts/NotoSerif-Bold.ttf
+          weight: 700
+        - asset: assets/google_fonts/NotoSerif-Italic.ttf
+          style: italic
