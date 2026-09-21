@@ -39,35 +39,16 @@
 			<string>Alternate</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
-				<string>pdf</string>
 				<string>epub</string>
-				<string>mobi</string>
-				<string>prc</string>
-				<string>fb2</string>
-				<string>xps</string>
-				<string>oxps</string>
 				<string>cbz</string>
-				<string>cbr</string>
-				<string>cbt</string>
 				<string>txt</string>
 				<string>text</string>
 				<string>log</string>
 				<string>md</string>
+				<string>markdown</string>
 				<string>html</string>
 				<string>htm</string>
 				<string>xhtml</string>
-				<string>docx</string>
-				<string>pptx</string>
-				<string>xlsx</string>
-				<string>svg</string>
-				<string>png</string>
-				<string>jpg</string>
-				<string>jpeg</string>
-				<string>webp</string>
-				<string>bmp</string>
-				<string>gif</string>
-				<string>tiff</string>
-				<string>tif</string>
 			</array>
 		</dict>
 	</array>

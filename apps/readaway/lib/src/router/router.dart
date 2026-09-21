@@ -87,25 +87,19 @@ class AppRouter {
   }) : _logger = logger,
        _appRoutes = appRoutes,
        _fileOpenService = fileOpenService {
-    _fileOpenSubscription = _fileOpenService.incomingDocuments.listen((doc) {
-      final route =
-          '${_appRoutes.reader.path}?path=${Uri.encodeComponent(doc.path)}&fileName=${Uri.encodeComponent(doc.fileName)}';
-      _logger.logger.info(
-        '[AppRouter] Pushing runtime opened document: $route',
-      );
-      _router.push(route);
-    });
+    _fileOpenSubscription =
+        _fileOpenService.incomingDocuments.listen(_navigateToDocument);
   }
 
-  String _determineInitialLocation() {
-    final pending = _fileOpenService.consumePendingDocument();
-    if (pending != null) {
-      final route =
-          '${_appRoutes.reader.path}?path=${Uri.encodeComponent(pending.path)}&fileName=${Uri.encodeComponent(pending.fileName)}';
-      _logger.logger.info('[AppRouter] Direct cold-start into reader: $route');
-      return route;
-    }
-    return _appRoutes.library.path;
+  void _navigateToDocument(IncomingDocument doc) {
+    final route =
+        '${_appRoutes.reader.path}?path=${Uri.encodeComponent(doc.path)}&fileName=${Uri.encodeComponent(doc.fileName)}';
+    _logger.logger.info('[AppRouter] Navigating to opened document: $route');
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_router.state.matchedLocation == route) return;
+      _router.push(route);
+    });
   }
 
   @disposeMethod
@@ -115,7 +109,7 @@ class AppRouter {
   }
 
   late final _router = GoRouter(
-    initialLocation: _determineInitialLocation(),
+    initialLocation: _appRoutes.library.path,
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: kDebugMode,
     routes: [

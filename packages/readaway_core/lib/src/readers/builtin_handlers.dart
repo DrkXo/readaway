@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:markdown/markdown.dart' as md;
 import 'package:path/path.dart' as p;
 
 import '../abstracts/document_format_handler.dart';
 import '../abstracts/document_reader.dart';
+import '../errors/document_exception.dart';
 import 'cbz_document_reader.dart';
 import 'epub_document_reader.dart';
 import 'plain_text_document_reader.dart';
@@ -104,4 +107,46 @@ class TextFormatHandler implements DocumentFormatHandler {
   @override
   Future<DocumentReader> open(String filePath) =>
       PlainTextDocumentReader.fromFile(filePath);
+}
+
+/// Built-in handler for Markdown documents.
+class MarkdownFormatHandler implements DocumentFormatHandler {
+  const MarkdownFormatHandler();
+
+  @override
+  String get format => 'md';
+
+  @override
+  bool supports(String filePath, [Uint8List? bytes]) {
+    final ext = p.extension(filePath).toLowerCase();
+    return ext == '.md' || ext == '.markdown';
+  }
+
+  @override
+  Future<DocumentReader> open(String filePath) async {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      throw DocumentOpenException('Markdown file not found: $filePath');
+    }
+    final source = utf8.decode(file.readAsBytesSync(), allowMalformed: true);
+    final body = md.markdownToHtml(source);
+    final html = '<html><body>$body</body></html>';
+    // ponytail: single-section render, no heading-based chapter splitting;
+    // add a TOC/chapter extractor when markdown books need it.
+    return SingleHtmlDocumentReader.fromHtml(
+      html,
+      filePath: filePath,
+      title: _extractTitle(source),
+    );
+  }
+
+  static String? _extractTitle(String source) {
+    final firstNonBlank = source
+        .split('\n')
+        .indexWhere((line) => line.trim().isNotEmpty);
+    if (firstNonBlank < 0) return null;
+    final match = RegExp(r'^\s{0,3}#\s+(.+)$')
+        .firstMatch(source.split('\n')[firstNonBlank]);
+    return match?.group(1)?.trim();
+  }
 }

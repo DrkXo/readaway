@@ -127,7 +127,7 @@ void main() {
       await repository.closeDocument().run();
     });
 
-    test('opens EPUB with readaway_core without MuPDF', () async {
+    test('opens EPUB with readaway_core', () async {
       final file = File(epubPath);
       if (!await file.exists()) return;
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
@@ -24,9 +25,18 @@ class IncomingDocument {
   String toString() => 'IncomingDocument(path: $path, fileName: $fileName)';
 }
 
+/// Captures file/deep-links from the OS ([AppLinks]) and turns them into real
+/// filesystem paths the reader can open. Android `content://` URIs are
+/// materialized into the app cache via a tiny native resolver.
 @singleton
 class FileOpenService {
-  static const MethodChannel _channel = MethodChannel(
+  static const MethodChannel _contentResolver = MethodChannel(
+    'dev.readaway/content_resolver',
+  );
+
+  // macOS only: Finder "Open With"/LaunchServices hands real paths to the
+  // native AppDelegate, which forwards them over this channel.
+  static const MethodChannel _macOsBridge = MethodChannel(
     'dev.readaway/file_opener',
   );
 
@@ -34,27 +44,56 @@ class FileOpenService {
 
   Logger get _log => _loggingService.logger;
 
-  final PublishSubject<IncomingDocument> _incomingDocumentSubject =
-      PublishSubject<IncomingDocument>();
+  // Replays startup-queued documents (CLI args, initial links) to the first
+  // listener: the router subscribes after the first frame, but documents can
+  // be queued before runApp on desktop cold-starts.
+  final ReplaySubject<IncomingDocument> _incomingDocumentSubject =
+      ReplaySubject<IncomingDocument>(maxSize: 1);
 
-  IncomingDocument? _pendingDocument;
+  final AppLinks _appLinks = AppLinks();
+
+  StreamSubscription<Uri>? _linkSubscription;
 
   Stream<IncomingDocument> get incomingDocuments =>
       _incomingDocumentSubject.stream;
-
-  IncomingDocument? get pendingDocument => _pendingDocument;
 
   FileOpenService({
     required LoggingService loggingService,
   }) : _loggingService = loggingService; // ignore: prefer_initializing_formals
 
-  /// Initializes native platform channel handlers (for Android, iOS, macOS).
+  /// Wires up OS file-open forwarding (mobile deep links + macOS Finder).
   @PostConstruct(preResolve: true)
   Future<void> init() async {
-    await initializePlatformChannel();
+    await _listenForAppLinks();
+    await _listenForMacOsFileOpens();
   }
 
-  /// Inspects command-line arguments (from desktop launch) and queues any supported document.
+  static String _sanitizePath(String raw) {
+    var cleaned = raw.trim();
+    if ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+        (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+      if (cleaned.length >= 2) {
+        cleaned = cleaned.substring(1, cleaned.length - 1).trim();
+      }
+    }
+    if (cleaned.startsWith('file://') || cleaned.startsWith('file:')) {
+      final uri = Uri.tryParse(cleaned);
+      if (uri != null) {
+        try {
+          final filePath = uri.toFilePath();
+          if (filePath.isNotEmpty) {
+            cleaned = filePath;
+          }
+        } catch (_) {
+          cleaned = Uri.decodeFull(uri.path);
+        }
+      }
+    }
+    return cleaned;
+  }
+
+  /// Inspects command-line arguments (from desktop launch) and queues any
+  /// supported document.
   void initializeWithArgs(List<String> args) {
     if (args.isEmpty) return;
 
@@ -62,21 +101,25 @@ class FileOpenService {
       // Strip out options / flags like -v, --debug, etc.
       if (rawArg.startsWith('-')) continue;
 
-      var cleaned = rawArg.trim();
-      // Handle file:// URIs passed on some Linux desktop launchers
-      if (cleaned.startsWith('file://')) {
-        final uri = Uri.tryParse(cleaned);
-        if (uri != null && uri.toFilePath().isNotEmpty) {
-          cleaned = uri.toFilePath();
-        }
-      }
+      final cleaned = _sanitizePath(rawArg);
+      if (cleaned.isEmpty) continue;
 
-      // Check if file exists on disk
+      // Check if file exists on disk (try sanitized path and fully decoded path)
       try {
-        final file = File(cleaned);
+        File file = File(cleaned);
+        if (!file.existsSync()) {
+          final decoded = Uri.decodeFull(cleaned);
+          if (decoded != cleaned) {
+            final decodedFile = File(decoded);
+            if (decodedFile.existsSync()) {
+              file = decodedFile;
+            }
+          }
+        }
+
         if (file.existsSync()) {
-          final fileName = p.basename(cleaned);
-          _log.info('[FileOpenService] Detected CLI argument file: $cleaned');
+          final fileName = p.basename(file.path);
+          _log.info('[FileOpenService] Detected CLI argument file: ${file.path}');
           queueDocument(
             IncomingDocument(path: file.absolute.path, fileName: fileName),
           );
@@ -88,68 +131,126 @@ class FileOpenService {
     }
   }
 
-  /// Initializes native platform channel handlers (for Android, iOS, macOS).
-  Future<void> initializePlatformChannel() async {
+  Future<void> _listenForAppLinks() async {
     if (kIsWeb) return;
-
-    _channel.setMethodCallHandler((call) async {
-      switch (call.method) {
-        case 'openFile':
-          final args = call.arguments;
-          if (args is Map) {
-            final path = args['path'] as String?;
-            final fileName =
-                (args['fileName'] as String?) ??
-                (path != null ? p.basename(path) : null);
-            if (path != null && path.isNotEmpty) {
-              _log.info('[FileOpenService] Received runtime openFile: $path');
-              queueDocument(
-                IncomingDocument(
-                  path: path,
-                  fileName: fileName ?? p.basename(path),
-                ),
-              );
-            }
-          }
-          break;
-        default:
-          _log.warning(
-            '[FileOpenService] Unhandled platform call: ${call.method}',
-          );
-      }
-    });
-
     try {
-      final initial = await _channel.invokeMethod<Map>('getInitialFile');
-      if (initial != null) {
-        final path = initial['path'] as String?;
-        final fileName =
-            (initial['fileName'] as String?) ??
-            (path != null ? p.basename(path) : null);
-        if (path != null && path.isNotEmpty) {
-          _log.info(
-            '[FileOpenService] Received initial file from native: $path',
-          );
-          queueDocument(
-            IncomingDocument(
-              path: path,
-              fileName: fileName ?? p.basename(path),
-            ),
-          );
+      _linkSubscription = _appLinks.uriLinkStream.listen(handleUri);
+      // Don't block DI: let the router mount first so the initial push lands.
+      unawaited(() async {
+        final initial = await _appLinks.getInitialLink();
+        if (initial != null) {
+          await handleUri(initial);
         }
-      }
-    } on MissingPluginException {
-      // Platform channels not implemented on this platform or test runner; safe to ignore.
+      }());
     } catch (e) {
-      _log.warning('[FileOpenService] Error fetching initial file: $e');
+      _log.warning('[FileOpenService] app_links unavailable: $e');
     }
   }
 
-  /// Consumes and returns the cold-start pending document, if any.
-  IncomingDocument? consumePendingDocument() {
-    final doc = _pendingDocument;
-    _pendingDocument = null;
-    return doc;
+  Future<void> _listenForMacOsFileOpens() async {
+    if (kIsWeb || !Platform.isMacOS) return;
+    try {
+      _macOsBridge.setMethodCallHandler(
+        (call) async {
+          if (call.method == 'openFile') {
+            final args = call.arguments;
+            if (args is Map) {
+              final path = args['path'] as String?;
+              if (path != null && path.isNotEmpty) {
+                queueDocument(
+                  IncomingDocument(
+                    path: path,
+                    fileName: (args['fileName'] as String?) ??
+                        p.basename(path),
+                  ),
+                );
+              }
+            }
+          }
+        },
+      );
+
+      unawaited(() async {
+        final initial = await _macOsBridge.invokeMethod<Map>(
+          'getInitialFile',
+        );
+        if (initial != null) {
+          final path = initial['path'] as String?;
+          if (path != null && path.isNotEmpty) {
+            queueDocument(
+              IncomingDocument(
+                path: path,
+                fileName: (initial['fileName'] as String?) ??
+                    p.basename(path),
+              ),
+            );
+          }
+        }
+      }());
+    } catch (e) {
+      _log.warning('[FileOpenService] macOS file-open bridge unavailable: $e');
+    }
+  }
+
+  /// Converts an OS-supplied [uri] into a real path and queues it.
+  Future<void> handleUri(Uri uri) async {
+    if (_incomingDocumentSubject.isClosed) return;
+    String path;
+    final String fileName;
+
+    if (uri.scheme == 'content') {
+      // Android scoped-storage content:// URI: ask native to copy it to cache.
+      try {
+        final resolved = await _contentResolver.invokeMethod<Map>(
+          'materialize',
+          uri.toString(),
+        );
+        path = resolved?['path'] as String? ?? '';
+        fileName =
+            (resolved?['fileName'] as String?) ??
+            (path.isNotEmpty ? p.basename(path) : 'document');
+      } on PlatformException catch (e) {
+        _log.warning(
+          '[FileOpenService] Failed to materialize $uri: ${e.message}',
+        );
+        return;
+      }
+    } else if (uri.scheme == 'file') {
+      try {
+        path = uri.toFilePath();
+      } catch (_) {
+        path = Uri.decodeFull(uri.path);
+      }
+      fileName = p.basename(path);
+    } else {
+      // app_links on Linux/Windows forwards raw command-line paths (e.g.
+      // /home/u/doc.epub or C:/docs/a.epub) which parse with an empty or
+      // single-letter scheme. Treat them as files when they actually exist.
+      var candidate =
+          (uri.scheme.length == 1) ? uri.toString() : uri.path;
+      candidate = _sanitizePath(candidate);
+      File file = File(candidate);
+      if (!file.existsSync()) {
+        final decoded = Uri.decodeFull(candidate);
+        if (decoded != candidate) {
+          final decodedFile = File(decoded);
+          if (decodedFile.existsSync()) {
+            file = decodedFile;
+          }
+        }
+      }
+
+      if (candidate.isEmpty || !file.existsSync()) {
+        _log.warning('[FileOpenService] Ignoring non-file link: $uri');
+        return;
+      }
+      path = file.absolute.path;
+      fileName = p.basename(path);
+    }
+
+    if (path.isEmpty) return;
+    _log.info('[FileOpenService] Opening document: $path');
+    queueDocument(IncomingDocument(path: path, fileName: fileName));
   }
 
   /// Queues an incoming document and emits it to [incomingDocuments].
@@ -160,12 +261,12 @@ class FileOpenService {
       );
     }
 
-    _pendingDocument = doc;
     _incomingDocumentSubject.add(doc);
   }
 
   @disposeMethod
   void dispose() {
+    _linkSubscription?.cancel();
     _incomingDocumentSubject.close();
   }
 }

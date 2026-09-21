@@ -47,16 +47,34 @@ class SupportedDocumentFormats {
   static const DocumentFormatInfo html = DocumentFormatInfo(
     name: 'HTML & Web Documents',
     category: DocumentCategory.text,
-    extensions: ['html', 'htm', 'xhtml', 'xml'],
-    mimeTypes: ['text/html', 'application/xhtml+xml', 'application/xml'],
+    extensions: ['html', 'htm', 'xhtml'],
+    mimeTypes: ['text/html', 'application/xhtml+xml'],
     isReflowable: true,
+  );
+
+  static const DocumentFormatInfo markdown = DocumentFormatInfo(
+    name: 'Markdown',
+    category: DocumentCategory.text,
+    extensions: ['md', 'markdown'],
+    mimeTypes: ['text/markdown', 'text/x-markdown'],
+    isReflowable: true,
+  );
+
+  static const DocumentFormatInfo comicBook = DocumentFormatInfo(
+    name: 'Comic Book Archive',
+    category: DocumentCategory.ebook,
+    extensions: ['cbz'],
+    mimeTypes: ['application/vnd.comicbook+zip', 'application/x-cbz'],
+    isReflowable: false,
   );
 
   /// All supported format specifications.
   static const List<DocumentFormatInfo> allFormats = [
     epub,
+    comicBook,
     plainText,
     html,
+    markdown,
   ];
 
   /// Set of all lowercase file extensions supported by the app (without leading dots).
@@ -69,6 +87,7 @@ class SupportedDocumentFormats {
   static const List<String> pickerExtensions = [
     'epub',
     'txt',
+    'md',
     'html',
     'htm',
   ];

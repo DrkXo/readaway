@@ -38,16 +38,27 @@ class SingleHtmlDocumentReader
     }
     final bytes = file.readAsBytesSync();
     final html = utf8.decode(bytes, allowMalformed: true);
-    final title = _extractTitle(html);
+    return fromHtml(html, filePath: filePath);
+  }
+
+  /// Opens a single-section document from pre-rendered [html] (used by the
+  /// Markdown handler).
+  static Future<SingleHtmlDocumentReader> fromHtml(
+    String html, {
+    required String filePath,
+    String? title,
+  }) async {
     final baseName = p.basename(filePath);
+    final safeTitle =
+        title ?? _extractTitle(html) ?? p.basenameWithoutExtension(filePath);
     return SingleHtmlDocumentReader._(
       filePath: filePath,
       baseDir: p.dirname(filePath),
       html: html,
-      title: title,
+      title: safeTitle,
       outline: [
         OutlineItem(
-          title: title ?? p.basenameWithoutExtension(filePath),
+          title: safeTitle,
           href: baseName,
           level: 0,
         ),

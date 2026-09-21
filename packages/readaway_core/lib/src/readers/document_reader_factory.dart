@@ -19,6 +19,7 @@ class DocumentReaderFactory {
     register(const CbzFormatHandler());
     register(const HtmlFormatHandler());
     register(const TextFormatHandler());
+    register(const MarkdownFormatHandler());
   }
 
   /// Registers [handler], replacing any existing handler for the same format.

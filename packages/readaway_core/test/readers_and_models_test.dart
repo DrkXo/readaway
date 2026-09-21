@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -85,18 +86,42 @@ They set out into the wild forest.
     });
   });
 
+  group('MarkdownDocumentReader tests', () {
+    test('converts markdown to HTML and extracts title', () async {
+      final dir = await Directory.systemTemp.createTemp('readaway_md');
+      final file = File('${dir.path}/Notes.md');
+      await file.writeAsString('# My Notes\n\nHello **world**.\n');
+      addTearDown(() => dir.delete(recursive: true));
+
+      final reader = await DocumentReaderFactory().open(file.path) as ReflowableDocumentReader;
+
+      // Markdown renders through the single-section HTML reader, so it
+      // reports the 'html' format; the extension keeps the library badge 'MD'.
+      expect(reader.format, 'html');
+      expect(reader.isReflowable, isTrue);
+      expect(reader.title, 'My Notes');
+      expect(reader.sectionCount, 1);
+      expect(
+        reader.loadSectionHtml(0),
+        contains('<strong>world</strong>'),
+      );
+      reader.dispose();
+    });
+  });
+
   group('DocumentReaderFactory tests', () {
     test('auto-detects formats and handlers', () {
       final factory = DocumentReaderFactory();
-      expect(factory.handlers.length, 4);
+      expect(factory.handlers.length, 5);
 
       final formats = factory.handlers.map((h) => h.format).toList();
-      expect(formats, containsAll(['epub', 'cbz', 'html', 'txt']));
+      expect(formats, containsAll(['epub', 'cbz', 'html', 'txt', 'md']));
 
       expect(factory.handlers.any((h) => h.supports('test.epub')), isTrue);
       expect(factory.handlers.any((h) => h.supports('test.cbz')), isTrue);
       expect(factory.handlers.any((h) => h.supports('test.html')), isTrue);
       expect(factory.handlers.any((h) => h.supports('test.txt')), isTrue);
+      expect(factory.handlers.any((h) => h.supports('test.md')), isTrue);
     });
   });
 

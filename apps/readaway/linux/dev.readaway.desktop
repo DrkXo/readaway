@@ -6,4 +6,4 @@ Icon=readaway
 Terminal=false
 Type=Application
 Categories=Office;Viewer;
-MimeType=application/epub+zip;text/plain;text/html;application/xhtml+xml;
+MimeType=application/epub+zip;application/vnd.comicbook+zip;application/x-cbz;application/vnd.comicbook-rar;application/x-cbr;text/plain;text/html;application/xhtml+xml;text/markdown;text/x-markdown;
