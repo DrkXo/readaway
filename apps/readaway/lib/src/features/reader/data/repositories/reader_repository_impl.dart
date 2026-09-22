@@ -38,6 +38,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, ReaderDocumentInfo> openDocument(
     String path, {
     String? defaultTitle,
+    String? password,
   }) {
     return TaskEither.tryCatch(
       () async {
@@ -57,12 +58,17 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
         final IsolateDocumentSession session;
         try {
-          session = await IsolateDocumentSession.open(path);
+          session = await IsolateDocumentSession.open(
+            path,
+            password: password,
+          );
+        } on DocumentEncryptedException catch (e) {
+          throw DocumentEncryptedFailure(
+            path,
+            isInvalidPassword: e.isInvalidPassword,
+            cause: e,
+          );
         } on UnsupportedFormatException {
-          final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
-          throw UnsupportedDocumentFormatFailure(ext.isEmpty ? 'unknown' : ext);
-        }
-        if (!session.isReflowable) {
           final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
           throw UnsupportedDocumentFormatFailure(ext.isEmpty ? 'unknown' : ext);
         }
@@ -73,13 +79,18 @@ class ReaderRepositoryImpl implements ReaderRepository {
             ? metaTitle
             : (defaultTitle ?? file.uri.pathSegments.last);
         final author = session.metadata?.creator;
+        final count = session.isReflowable
+            ? session.sectionCount
+            : session.pageCount;
 
         return ReaderDocumentInfo(
           path: path,
           title: title,
           author: author,
-          pageCount: session.sectionCount,
+          pageCount: count,
           outline: session.outline,
+          isReflowable: session.isReflowable,
+          format: session.format,
         );
       },
       (error, stack) {
@@ -111,6 +122,54 @@ class ReaderRepositoryImpl implements ReaderRepository {
       },
       (error, stack) => DocumentParseFailure(
         'Failed to load page $pageIndex: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  TaskEither<Failure, Uint8List> loadPageImage(
+    int pageIndex, {
+    double scale = 1.0,
+    int? targetWidth,
+    int? targetHeight,
+  }) {
+    return TaskEither.tryCatch(
+      () async {
+        if (_session != null &&
+            pageIndex >= 0 &&
+            pageIndex < _session!.pageCount) {
+          return await _session!.loadPageImage(
+            pageIndex,
+            scale: scale,
+            targetWidth: targetWidth,
+            targetHeight: targetHeight,
+          );
+        }
+        throw DocumentParseFailure('Invalid page index: $pageIndex');
+      },
+      (error, stack) => DocumentParseFailure(
+        'Failed to load page image $pageIndex: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  TaskEither<Failure, PageSize?> getPageSize(int pageIndex) {
+    return TaskEither.tryCatch(
+      () async {
+        if (_session != null &&
+            pageIndex >= 0 &&
+            pageIndex < _session!.pageCount) {
+          return await _session!.getPageSize(pageIndex);
+        }
+        return null;
+      },
+      (error, stack) => DocumentParseFailure(
+        'Failed to get page size for $pageIndex: $error',
         cause: error,
         stackTrace: stack,
       ),

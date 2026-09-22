@@ -5,7 +5,11 @@ abstract class ReaderEvent with _$ReaderEvent {
   const factory ReaderEvent.openDocument({
     required String path,
     String? fileName,
+    String? password,
   }) = _OpenDocument;
+  const factory ReaderEvent.unlockDocument({
+    required String password,
+  }) = _UnlockDocument;
   const factory ReaderEvent.pageChanged({required int index}) = _PageChanged;
   const factory ReaderEvent.loadPage({required int index}) = _LoadPage;
   const factory ReaderEvent.closeDocument() = _CloseDocument;

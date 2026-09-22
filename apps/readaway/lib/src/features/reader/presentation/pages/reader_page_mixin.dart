@@ -103,7 +103,9 @@ mixin ReaderControllerMixin on State<ReaderPage> {
             ReaderScrollDirection.vertical &&
         !settingsBloc.state.readerPrefs.pageSnap;
 
-    if (!isContinuous && GetIt.I.isRegistered<PaginationCoordinator>()) {
+    if (!isContinuous &&
+        readerBloc.state.isReflowable &&
+        GetIt.I.isRegistered<PaginationCoordinator>()) {
       final coordinator = GetIt.I<PaginationCoordinator>();
       // If 'page' is a chapter index from TOC (< chapterCount), map to its first global page
       final globalPage = (page < coordinator.chapterCount)

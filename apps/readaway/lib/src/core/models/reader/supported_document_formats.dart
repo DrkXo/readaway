@@ -14,6 +14,8 @@ class DocumentFormatInfo {
   final List<String> extensions;
   final List<String> mimeTypes;
   final bool isReflowable;
+  final bool requiresPasswordSupport;
+  final bool supportsTextExtraction;
 
   const DocumentFormatInfo({
     required this.name,
@@ -21,7 +23,11 @@ class DocumentFormatInfo {
     required this.extensions,
     required this.mimeTypes,
     required this.isReflowable,
+    this.requiresPasswordSupport = false,
+    this.supportsTextExtraction = true,
   });
+
+  bool get isFixedLayout => !isReflowable;
 }
 
 /// Central registry of all formats supported by ReadAway.
@@ -34,6 +40,32 @@ class SupportedDocumentFormats {
     extensions: ['epub'],
     mimeTypes: ['application/epub+zip'],
     isReflowable: true,
+    supportsTextExtraction: true,
+  );
+
+  static const DocumentFormatInfo pdf = DocumentFormatInfo(
+    name: 'Portable Document Format',
+    category: DocumentCategory.ebook,
+    extensions: ['pdf'],
+    mimeTypes: ['application/pdf'],
+    isReflowable: false,
+    requiresPasswordSupport: true,
+    supportsTextExtraction: false,
+  );
+
+  static const DocumentFormatInfo comicBook = DocumentFormatInfo(
+    name: 'Comic Book Archive',
+    category: DocumentCategory.ebook,
+    extensions: ['cbz', 'cbr', 'cbt', 'cb7'],
+    mimeTypes: [
+      'application/vnd.comicbook+zip',
+      'application/x-cbz',
+      'application/x-cbr',
+      'application/x-cbt',
+      'application/x-cb7',
+    ],
+    isReflowable: false,
+    supportsTextExtraction: false,
   );
 
   static const DocumentFormatInfo plainText = DocumentFormatInfo(
@@ -42,6 +74,7 @@ class SupportedDocumentFormats {
     extensions: ['txt', 'text', 'log'],
     mimeTypes: ['text/plain'],
     isReflowable: true,
+    supportsTextExtraction: true,
   );
 
   static const DocumentFormatInfo html = DocumentFormatInfo(
@@ -50,6 +83,7 @@ class SupportedDocumentFormats {
     extensions: ['html', 'htm', 'xhtml'],
     mimeTypes: ['text/html', 'application/xhtml+xml'],
     isReflowable: true,
+    supportsTextExtraction: true,
   );
 
   static const DocumentFormatInfo markdown = DocumentFormatInfo(
@@ -58,19 +92,13 @@ class SupportedDocumentFormats {
     extensions: ['md', 'markdown'],
     mimeTypes: ['text/markdown', 'text/x-markdown'],
     isReflowable: true,
-  );
-
-  static const DocumentFormatInfo comicBook = DocumentFormatInfo(
-    name: 'Comic Book Archive',
-    category: DocumentCategory.ebook,
-    extensions: ['cbz'],
-    mimeTypes: ['application/vnd.comicbook+zip', 'application/x-cbz'],
-    isReflowable: false,
+    supportsTextExtraction: true,
   );
 
   /// All supported format specifications.
   static const List<DocumentFormatInfo> allFormats = [
     epub,
+    pdf,
     comicBook,
     plainText,
     html,
@@ -86,6 +114,11 @@ class SupportedDocumentFormats {
   /// Common extensions prioritized for user file pickers.
   static const List<String> pickerExtensions = [
     'epub',
+    'pdf',
+    'cbz',
+    'cbr',
+    'cbt',
+    'cb7',
     'txt',
     'md',
     'html',
@@ -96,6 +129,23 @@ class SupportedDocumentFormats {
   static bool isSupported(String filePath) {
     final ext = p.extension(filePath).replaceFirst('.', '').toLowerCase();
     return allExtensions.contains(ext);
+  }
+
+  /// Whether a document at [filePath] is reflowable text.
+  static bool isReflowable(String filePath) {
+    return findFormat(filePath)?.isReflowable ?? false;
+  }
+
+  /// Whether a document at [filePath] is a comic archive.
+  static bool isComic(String filePath) {
+    final ext = p.extension(filePath).replaceFirst('.', '').toLowerCase();
+    return comicBook.extensions.contains(ext);
+  }
+
+  /// Whether a document at [filePath] is a PDF.
+  static bool isPdf(String filePath) {
+    final ext = p.extension(filePath).replaceFirst('.', '').toLowerCase();
+    return pdf.extensions.contains(ext);
   }
 
   /// Get the category of a document by its file path or extension.

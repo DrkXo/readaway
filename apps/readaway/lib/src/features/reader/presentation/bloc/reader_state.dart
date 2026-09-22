@@ -23,11 +23,15 @@ abstract class ReaderState with _$ReaderState {
     int? virtualPageCount,
     int? currentVirtualPage,
     ReadingAnchor? pendingRestoreAnchor,
+    @Default(true) bool isReflowable,
+    @Default('epub') String format,
+    @Default(false) bool requiresPassword,
+    @Default(false) bool isInvalidPassword,
   }) = _ReaderState;
 
   const ReaderState._();
 
-  bool get hasDocument => pageHtmls != null;
+  bool get hasDocument => documentPath != null && pageCount > 0;
 
   /// Effective page count to display in top bar, bottom scrubber, and page controls.
   int get displayPageCount =>

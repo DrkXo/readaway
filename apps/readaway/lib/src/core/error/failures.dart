@@ -70,6 +70,25 @@ class DocumentCancelledFailure extends DocumentFailure {
   ]);
 }
 
+class DocumentEncryptedFailure extends DocumentFailure {
+  final String path;
+  final bool isInvalidPassword;
+
+  const DocumentEncryptedFailure(
+    this.path, {
+    this.isInvalidPassword = false,
+    super.cause,
+    super.stackTrace,
+  }) : super(
+         isInvalidPassword
+             ? 'Incorrect password for document: $path'
+             : 'Password required for document: $path',
+       );
+
+  @override
+  List<Object?> get props => [path, isInvalidPassword, message, cause];
+}
+
 // ---------------------------------------------------------------------------
 // Storage Failures
 // ---------------------------------------------------------------------------

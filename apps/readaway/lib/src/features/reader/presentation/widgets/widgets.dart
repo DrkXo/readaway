@@ -26,9 +26,10 @@ export 'tts/tts_sentence_queue_list.dart';
 export 'tts/tts_speed_control_panel.dart';
 export 'tts/waveform_scrubber.dart';
 // Viewport
+export 'viewport/fixed_layout/fixed_layout.dart';
 export 'viewport/modes/continuous_reader_view.dart';
 export 'viewport/modes/paged_reader_view.dart';
-export 'viewport/page_content/html/hyper_page_content.dart';
-export 'viewport/page_content/html/widgets/hyper_reflowable_image.dart';
-export 'viewport/page_content/reflowable_reader_page.dart';
 export 'viewport/reader_viewport.dart';
+export 'viewport/reflowable/html/hyper_page_content.dart';
+export 'viewport/reflowable/html/widgets/hyper_reflowable_image.dart';
+export 'viewport/reflowable/reflowable_reader_page.dart';

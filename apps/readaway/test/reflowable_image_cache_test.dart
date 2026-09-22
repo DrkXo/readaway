@@ -4,8 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hyper_render/hyper_render.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/viewport/page_content/html/hyper_page_content.dart';
-import 'package:readaway/src/features/reader/presentation/widgets/viewport/page_content/html/reflowable_image_cache.dart';
+import 'package:readaway/src/features/reader/presentation/widgets/viewport/reflowable/html/hyper_page_content.dart';
+import 'package:readaway/src/features/reader/presentation/widgets/viewport/reflowable/html/reflowable_image_cache.dart';
 
 final Uint8List _png1x1 = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4'

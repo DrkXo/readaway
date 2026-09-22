@@ -12,14 +12,26 @@ export '../entity/reader_page_data.dart';
 
 /// Abstract contract for reading, loading, and parsing documents.
 abstract interface class ReaderRepository {
-  /// Opens a document at [path] and extracts its metadata and outline.
+  /// Opens a document at [path] with optional [password] and extracts its metadata and outline.
   TaskEither<Failure, ReaderDocumentInfo> openDocument(
     String path, {
     String? defaultTitle,
+    String? password,
   });
 
-  /// Loads the structured page content at [pageIndex].
+  /// Loads the structured page content at [pageIndex] for reflowable documents.
   TaskEither<Failure, ReaderPageData> loadPage(int pageIndex);
+
+  /// Loads the rasterized page image at [pageIndex] for fixed-layout documents.
+  TaskEither<Failure, Uint8List> loadPageImage(
+    int pageIndex, {
+    double scale = 1.0,
+    int? targetWidth,
+    int? targetHeight,
+  });
+
+  /// Retrieves dimensions for the page at [pageIndex] in fixed-layout documents.
+  TaskEither<Failure, PageSize?> getPageSize(int pageIndex);
 
   /// Extracts plain text from the page at [pageIndex] (for display and analysis).
   TaskEither<Failure, String> extractPageText(int pageIndex);

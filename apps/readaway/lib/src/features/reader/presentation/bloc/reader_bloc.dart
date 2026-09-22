@@ -41,6 +41,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     required this.ttsRepository,
   }) : super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
+    on<_UnlockDocument>(_onUnlockDocument);
     on<_PageChanged>(_onPageChanged);
     on<_LoadPage>(_onLoadPage, transformer: concurrent());
     on<_CloseDocument>(_onCloseDocument);
@@ -153,12 +154,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         .openDocument(
           event.path,
           defaultTitle: event.fileName,
+          password: event.password,
         )
         .run();
 
     await openResult.fold(
       (failure) async {
         logger.e('[ReaderBloc] Failed to open document: $failure');
+        final isEncrypted = failure is DocumentEncryptedFailure;
         emit(
           state.copyWith(
             loading: false,
@@ -166,11 +169,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
             error: failure.message,
             documentPath: event.path,
             fileName: initialFileName,
+            requiresPassword: isEncrypted,
+            isInvalidPassword: isEncrypted && failure.isInvalidPassword,
           ),
         );
       },
       (info) async {
         final count = info.pageCount;
+        final isReflow = info.isReflowable;
 
         final lastPageResult = await readerRepository
             .getLastReadPage(event.path)
@@ -188,8 +194,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
             documentPath: event.path,
             fileName: initialFileName,
             pageCount: count,
-            pageHtmls: List<String?>.filled(count, null),
-            pageLinks: List<List<ReaderLink>?>.filled(count, null),
+            pageHtmls: isReflow ? List<String?>.filled(count, null) : null,
+            pageLinks: isReflow ? List<List<ReaderLink>?>.filled(count, null) : null,
             currentPage: initialPage,
             currentVirtualPage: null,
             virtualPageCount: null,
@@ -198,14 +204,20 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
             outline: info.outline,
             bookTitle: info.title,
             author: info.author,
+            isReflowable: isReflow,
+            format: info.format,
+            requiresPassword: false,
+            isInvalidPassword: false,
             loading: false,
             failure: null,
             error: null,
           ),
         );
 
-        add(ReaderEvent.loadPage(index: initialPage));
-        _precachePages(initialPage);
+        if (isReflow) {
+          add(ReaderEvent.loadPage(index: initialPage));
+          _precachePages(initialPage);
+        }
 
         await readerRepository.updateWindowTitle(info.title).run();
 
@@ -221,6 +233,21 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     );
   }
 
+  void _onUnlockDocument(
+    _UnlockDocument event,
+    Emitter<ReaderState> emit,
+  ) {
+    if (state.documentPath != null) {
+      add(
+        ReaderEvent.openDocument(
+          path: state.documentPath!,
+          fileName: state.fileName,
+          password: event.password,
+        ),
+      );
+    }
+  }
+
   void _onPageChanged(_PageChanged event, Emitter<ReaderState> emit) {
     emit(
       state.copyWith(
@@ -229,7 +256,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         virtualPageCount: null,
       ),
     );
-    _precachePages(event.index);
+    if (state.isReflowable) {
+      _precachePages(event.index);
+    }
     _scheduleProgressSync(event.index);
   }
 
@@ -306,6 +335,20 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _TtsStart event,
     Emitter<ReaderState> emit,
   ) async {
+    if (!state.isReflowable) {
+      emit(
+        state.copyWith(
+          ttsActive: false,
+          transientFeedback: UiFeedback(
+            failure: const UnexpectedFailure(
+              'Text-to-speech is currently only available for reflowable text documents.',
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
     final permissionResult = await readerRepository
         .requestAudioPermissions()
         .run();

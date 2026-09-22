@@ -146,7 +146,9 @@ class LibraryRepositoryImpl implements LibraryRepository {
       if (metaAuthor != null && metaAuthor.trim().isNotEmpty) {
         author = metaAuthor.trim();
       }
-      pageCount = session.sectionCount;
+      pageCount = session.isReflowable
+          ? session.sectionCount
+          : session.pageCount;
       final coverImgPath = session.coverImagePath;
       if (coverImgPath != null) {
         coverBytes = await session.loadAsset(coverImgPath);

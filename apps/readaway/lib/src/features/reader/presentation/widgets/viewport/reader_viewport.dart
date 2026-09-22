@@ -18,8 +18,8 @@ import '../overlay/reader_footnote_sheet.dart';
 import '../tts/reader_tts_mini_player_bar.dart';
 import 'modes/continuous_reader_view.dart';
 import 'modes/paged_reader_view.dart';
-import 'page_content/reflowable_reader_page.dart';
-import 'page_content/reflowable_virtual_page.dart';
+import 'reflowable/reflowable_reader_page.dart';
+import 'reflowable/reflowable_virtual_page.dart';
 
 /// The main viewport widget that coordinates page viewing, transitions, and loading.
 class ReaderViewport extends StatefulWidget {

@@ -123,12 +123,16 @@ void main() {
       expect(SupportedDocumentFormats.isSupported('a.epub'), isTrue);
       expect(SupportedDocumentFormats.isSupported('a.EPUB'), isTrue);
       expect(SupportedDocumentFormats.isSupported('a.cbz'), isTrue);
+      expect(SupportedDocumentFormats.isSupported('a.cbr'), isTrue);
+      expect(SupportedDocumentFormats.isSupported('a.cbt'), isTrue);
+      expect(SupportedDocumentFormats.isSupported('a.cb7'), isTrue);
       expect(SupportedDocumentFormats.isSupported('a.txt'), isTrue);
       expect(SupportedDocumentFormats.isSupported('a.md'), isTrue);
       expect(SupportedDocumentFormats.isSupported('a.html'), isTrue);
       expect(SupportedDocumentFormats.isSupported('a.htm'), isTrue);
       expect(SupportedDocumentFormats.isSupported('a.xhtml'), isTrue);
-      expect(SupportedDocumentFormats.isSupported('a.pdf'), isFalse);
+      expect(SupportedDocumentFormats.isSupported('a.pdf'), isTrue);
+      expect(SupportedDocumentFormats.isSupported('a.PDF'), isTrue);
       expect(SupportedDocumentFormats.isSupported('a.exe'), isFalse);
     });
   });

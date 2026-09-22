@@ -12,5 +12,7 @@ abstract class ReaderDocumentInfo with _$ReaderDocumentInfo {
     String? author,
     required int pageCount,
     required List<OutlineItem> outline,
+    @Default(true) bool isReflowable,
+    @Default('epub') String format,
   }) = _ReaderDocumentInfo;
 }
