@@ -11,6 +11,7 @@ sealed class DocumentRequest with _$DocumentRequest {
   const factory DocumentRequest.open({
     required int id,
     required String filePath,
+    String? password,
   }) = _OpenDocReq;
 
   const factory DocumentRequest.loadSectionHtml({
@@ -40,6 +41,19 @@ sealed class DocumentRequest with _$DocumentRequest {
     int? sectionIndex,
   }) = _LoadAssetReq;
 
+  const factory DocumentRequest.loadPageImage({
+    required int id,
+    required int pageIndex,
+    @Default(1.0) double scale,
+    int? targetWidth,
+    int? targetHeight,
+  }) = _LoadPageImageReq;
+
+  const factory DocumentRequest.getPageSize({
+    required int id,
+    required int pageIndex,
+  }) = _GetPageSizeReq;
+
   const factory DocumentRequest.resolveSectionIndex({
     required int id,
     required String href,
@@ -65,6 +79,7 @@ sealed class DocumentResponse with _$DocumentResponse {
     required DocumentMetadata? metadata,
     required List<OutlineItem> outline,
     required int sectionCount,
+    required int pageCount,
     required String? coverImagePath,
     required bool isReflowable,
     required String format,
@@ -95,6 +110,16 @@ sealed class DocumentResponse with _$DocumentResponse {
     required TransferableTypedData? assetData,
   }) = _AssetLoadedResp;
 
+  const factory DocumentResponse.pageImageLoaded({
+    required int id,
+    required TransferableTypedData? imageData,
+  }) = _PageImageLoadedResp;
+
+  const factory DocumentResponse.pageSizeLoaded({
+    required int id,
+    required PageSize? pageSize,
+  }) = _PageSizeLoadedResp;
+
   const factory DocumentResponse.sectionIndexResolved({
     required int id,
     required int? sectionIndex,
@@ -108,6 +133,12 @@ sealed class DocumentResponse with _$DocumentResponse {
   const factory DocumentResponse.disposed({
     required int id,
   }) = _DisposedResp;
+
+  const factory DocumentResponse.encryptedError({
+    required int id,
+    required String message,
+    required bool isInvalidPassword,
+  }) = _EncryptedErrorResp;
 
   const factory DocumentResponse.error({
     required int id,

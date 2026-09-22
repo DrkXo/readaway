@@ -10,6 +10,7 @@ import '../abstracts/document_reader.dart';
 import '../errors/document_exception.dart';
 import 'cbz_document_reader.dart';
 import 'epub_document_reader.dart';
+import 'pdf/pdf_document_reader.dart';
 import 'plain_text_document_reader.dart';
 import 'single_html_document_reader.dart';
 
@@ -35,8 +36,32 @@ class EpubFormatHandler implements DocumentFormatHandler {
   }
 
   @override
-  Future<DocumentReader> open(String filePath) =>
+  Future<DocumentReader> open(String filePath, {String? password}) =>
       EpubDocumentReader.open(filePath);
+}
+
+/// Built-in handler for PDF documents.
+class PdfFormatHandler implements DocumentFormatHandler {
+  const PdfFormatHandler();
+
+  @override
+  String get format => 'pdf';
+
+  @override
+  bool supports(String filePath, [Uint8List? bytes]) {
+    if (p.extension(filePath).toLowerCase() == '.pdf') return true;
+    if (bytes != null && bytes.length >= 4) {
+      return bytes[0] == 0x25 && // %
+          bytes[1] == 0x50 && // P
+          bytes[2] == 0x44 && // D
+          bytes[3] == 0x46; // F
+    }
+    return false;
+  }
+
+  @override
+  Future<DocumentReader> open(String filePath, {String? password}) =>
+      PdfDocumentReader.open(filePath, password: password);
 }
 
 /// Built-in handler for CBZ (Comic Book ZIP) documents.
@@ -61,8 +86,94 @@ class CbzFormatHandler implements DocumentFormatHandler {
   }
 
   @override
-  Future<DocumentReader> open(String filePath) =>
-      CbzDocumentReader.open(filePath);
+  Future<DocumentReader> open(String filePath, {String? password}) =>
+      ComicBookDocumentReader.open(filePath, password: password);
+}
+
+/// Built-in handler for CBT (Comic Book TAR) documents.
+class CbtFormatHandler implements DocumentFormatHandler {
+  const CbtFormatHandler();
+
+  @override
+  String get format => 'cbt';
+
+  @override
+  bool supports(String filePath, [Uint8List? bytes]) {
+    final ext = p.extension(filePath).toLowerCase();
+    if (ext == '.cbt' || ext == '.tar') return true;
+    if (bytes != null && bytes.length >= 262) {
+      // Check for POSIX ustar magic at offset 257
+      if (bytes[257] == 0x75 && // u
+          bytes[258] == 0x73 && // s
+          bytes[259] == 0x74 && // t
+          bytes[260] == 0x61 && // a
+          bytes[261] == 0x72) { // r
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @override
+  Future<DocumentReader> open(String filePath, {String? password}) =>
+      ComicBookDocumentReader.open(filePath, password: password);
+}
+
+/// Built-in handler for CBR (Comic Book RAR) documents.
+class CbrFormatHandler implements DocumentFormatHandler {
+  const CbrFormatHandler();
+
+  @override
+  String get format => 'cbr';
+
+  @override
+  bool supports(String filePath, [Uint8List? bytes]) {
+    final ext = p.extension(filePath).toLowerCase();
+    if (ext == '.cbr' || ext == '.rar') return true;
+    if (bytes != null && bytes.length >= 7) {
+      // RAR4: 52 61 72 21 1A 07 00
+      // RAR5: 52 61 72 21 1A 07 01 00
+      return bytes[0] == 0x52 &&
+          bytes[1] == 0x61 &&
+          bytes[2] == 0x72 &&
+          bytes[3] == 0x21 &&
+          bytes[4] == 0x1A &&
+          bytes[5] == 0x07;
+    }
+    return false;
+  }
+
+  @override
+  Future<DocumentReader> open(String filePath, {String? password}) =>
+      ComicBookDocumentReader.open(filePath, password: password);
+}
+
+/// Built-in handler for CB7 (Comic Book 7z) documents.
+class Cb7FormatHandler implements DocumentFormatHandler {
+  const Cb7FormatHandler();
+
+  @override
+  String get format => 'cb7';
+
+  @override
+  bool supports(String filePath, [Uint8List? bytes]) {
+    final ext = p.extension(filePath).toLowerCase();
+    if (ext == '.cb7' || ext == '.7z') return true;
+    if (bytes != null && bytes.length >= 6) {
+      // 7z signature: 37 7A BC AF 27 1C
+      return bytes[0] == 0x37 &&
+          bytes[1] == 0x7A &&
+          bytes[2] == 0xBC &&
+          bytes[3] == 0xAF &&
+          bytes[4] == 0x27 &&
+          bytes[5] == 0x1C;
+    }
+    return false;
+  }
+
+  @override
+  Future<DocumentReader> open(String filePath, {String? password}) =>
+      ComicBookDocumentReader.open(filePath, password: password);
 }
 
 /// Helper that checks if ZIP bytes contain an EPUB mimetype entry.
@@ -87,7 +198,7 @@ class HtmlFormatHandler implements DocumentFormatHandler {
   }
 
   @override
-  Future<DocumentReader> open(String filePath) =>
+  Future<DocumentReader> open(String filePath, {String? password}) =>
       SingleHtmlDocumentReader.fromFile(filePath);
 }
 
@@ -105,7 +216,7 @@ class TextFormatHandler implements DocumentFormatHandler {
   }
 
   @override
-  Future<DocumentReader> open(String filePath) =>
+  Future<DocumentReader> open(String filePath, {String? password}) =>
       PlainTextDocumentReader.fromFile(filePath);
 }
 
@@ -123,7 +234,7 @@ class MarkdownFormatHandler implements DocumentFormatHandler {
   }
 
   @override
-  Future<DocumentReader> open(String filePath) async {
+  Future<DocumentReader> open(String filePath, {String? password}) async {
     final file = File(filePath);
     if (!file.existsSync()) {
       throw DocumentOpenException('Markdown file not found: $filePath');
@@ -131,8 +242,6 @@ class MarkdownFormatHandler implements DocumentFormatHandler {
     final source = utf8.decode(file.readAsBytesSync(), allowMalformed: true);
     final body = md.markdownToHtml(source);
     final html = '<html><body>$body</body></html>';
-    // ponytail: single-section render, no heading-based chapter splitting;
-    // add a TOC/chapter extractor when markdown books need it.
     return SingleHtmlDocumentReader.fromHtml(
       html,
       filePath: filePath,

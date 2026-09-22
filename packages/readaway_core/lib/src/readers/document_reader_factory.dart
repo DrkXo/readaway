@@ -8,15 +8,19 @@ import 'builtin_handlers.dart';
 
 /// Registry-based factory that opens documents by auto-detecting their format.
 ///
-/// Pre-registers handlers for EPUB, CBZ, HTML, and plain text.
+/// Pre-registers handlers for EPUB, PDF, CBZ, CBT, CBR, CB7, HTML, and plain text.
 class DocumentReaderFactory {
   final List<DocumentFormatHandler> _handlers = [];
   final Map<String, DocumentFormatHandler> _byFormat = {};
 
-  /// Creates a factory pre-registered with the built-in handlers.
+  /// Creates a factory pre-registered with all built-in handlers.
   DocumentReaderFactory() {
     register(const EpubFormatHandler());
+    register(const PdfFormatHandler());
     register(const CbzFormatHandler());
+    register(const CbtFormatHandler());
+    register(const CbrFormatHandler());
+    register(const Cb7FormatHandler());
     register(const HtmlFormatHandler());
     register(const TextFormatHandler());
     register(const MarkdownFormatHandler());
@@ -45,13 +49,18 @@ class DocumentReaderFactory {
 
   /// Opens the document at [filePath], auto-detecting its format.
   ///
+  /// [password] may be provided for password-protected/encrypted documents.
   /// [bytes] may be provided to sniff magic bytes without reading the file.
   /// Throws [UnsupportedFormatException] when no handler supports the file.
-  Future<DocumentReader> open(String filePath, {Uint8List? bytes}) async {
+  Future<DocumentReader> open(
+    String filePath, {
+    Uint8List? bytes,
+    String? password,
+  }) async {
     var sniffBytes = bytes;
     for (final handler in _handlers) {
       if (handler.supports(filePath, sniffBytes)) {
-        return handler.open(filePath);
+        return handler.open(filePath, password: password);
       }
     }
     // No handler matched by extension; try sniffing magic bytes from disk.
@@ -62,7 +71,7 @@ class DocumentReaderFactory {
           sniffBytes = file.readAsBytesSync();
           for (final handler in _handlers) {
             if (handler.supports(filePath, sniffBytes)) {
-              return await handler.open(filePath);
+              return await handler.open(filePath, password: password);
             }
           }
         } catch (_) {

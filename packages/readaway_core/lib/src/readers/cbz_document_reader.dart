@@ -1,105 +1,148 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
-import '../abstracts/document_reader.dart';
+import '../abstracts/page_document_reader.dart';
 import '../errors/document_exception.dart';
 import '../lifecycle/disposable.dart';
 import '../models/models.dart';
+import 'comic/comic_archive_adapter.dart';
+import 'comic/comic_info_parser.dart';
+import 'comic/image_header_parser.dart';
 
-/// High-performance pure Dart CBZ comic document reader with natural sorting.
-class CbzDocumentReader with DisposableMixin implements DocumentReader {
+/// High-performance comic document reader supporting CBZ, CBT, CBR, and CB7 containers.
+class ComicBookDocumentReader with DisposableMixin implements PageDocumentReader {
   final String filePath;
+  final String _format;
+  final ComicArchiveAdapter _adapter;
   final List<String> _pagePaths;
   final String? _title;
-  final Map<String, ArchiveFile> _entriesByName;
-  final InputFileStream? _inputStream;
+  final DocumentMetadata? _metadata;
+  final List<OutlineItem> _outline;
+
   final Map<int, Uint8List> _imageCache = {};
   final Map<String, Uint8List> _assetCache = {};
+  final Map<int, PageSize> _pageSizeCache = {};
 
-  CbzDocumentReader._({
+  ComicBookDocumentReader._({
     required this.filePath,
+    required this._format,
+    required this._adapter,
     required List<String> pagePaths,
-    required this._entriesByName,
     this._title,
-    this._inputStream,
-  }) : _pagePaths = List.unmodifiable(pagePaths);
+    this._metadata,
+    List<OutlineItem> outline = const [],
+  })  : _pagePaths = List.unmodifiable(pagePaths),
+        _outline = List.unmodifiable(outline);
 
-  /// Opens a CBZ comic archive from [filePath].
-  static Future<CbzDocumentReader> open(String filePath) async {
+  /// Opens a comic document archive from [filePath].
+  static Future<ComicBookDocumentReader> open(
+    String filePath, {
+    String? password,
+  }) async {
     final file = File(filePath);
     if (!file.existsSync()) {
-      throw DocumentOpenException('CBZ file not found: $filePath');
+      throw DocumentOpenException('Comic archive not found: $filePath');
     }
-    final stream = InputFileStream(filePath);
-    final Archive archive;
-    try {
-      archive = ZipDecoder().decodeStream(stream, verify: false);
-    } catch (e) {
-      await stream.close();
-      throw DocumentParseException('Failed to parse CBZ zip archive: $e');
+
+    final ext = p.extension(filePath).toLowerCase();
+    final ComicArchiveAdapter adapter;
+    final String format;
+
+    if (ext == '.cbt' || ext == '.tar') {
+      format = 'cbt';
+      adapter = await TarComicArchiveAdapter.fromFile(filePath);
+    } else if (ext == '.cbr' || ext == '.rar') {
+      format = 'cbr';
+      adapter = RarComicArchiveAdapter(filePath);
+    } else if (ext == '.cb7' || ext == '.7z') {
+      format = 'cb7';
+      adapter = SevenZipComicArchiveAdapter(filePath);
+    } else {
+      // Default to CBZ / ZIP
+      format = 'cbz';
+      adapter = await ZipComicArchiveAdapter.fromFile(filePath, password: password);
     }
-    return _fromArchive(
-      archive,
-      filePath: filePath,
-      inputStream: stream,
-    );
+
+    return _build(filePath: filePath, format: format, adapter: adapter);
   }
 
-  /// Opens a CBZ comic archive from in-memory [bytes].
-  static Future<CbzDocumentReader> fromBytes(
+  /// Opens a comic document from in-memory [bytes].
+  static Future<ComicBookDocumentReader> fromBytes(
     Uint8List bytes, {
     String filePath = 'comic.cbz',
+    String? password,
   }) async {
-    final Archive archive;
-    try {
-      archive = ZipDecoder().decodeBytes(bytes, verify: false);
-    } catch (e) {
-      throw DocumentParseException('Failed to parse CBZ zip archive: $e');
+    final ext = p.extension(filePath).toLowerCase();
+    final ComicArchiveAdapter adapter;
+    final String format;
+
+    if (ext == '.cbt' || ext == '.tar') {
+      format = 'cbt';
+      adapter = await TarComicArchiveAdapter.fromBytes(bytes);
+    } else {
+      format = 'cbz';
+      adapter = await ZipComicArchiveAdapter.fromBytes(bytes, password: password);
     }
-    return _fromArchive(archive, filePath: filePath);
+
+    return _build(filePath: filePath, format: format, adapter: adapter);
   }
 
-  static Future<CbzDocumentReader> _fromArchive(
-    Archive archive, {
+  static ComicBookDocumentReader _build({
     required String filePath,
-    InputFileStream? inputStream,
-  }) async {
-    final entriesByName = <String, ArchiveFile>{};
-    final imagePaths = <String>[];
+    required String format,
+    required ComicArchiveAdapter adapter,
+  }) {
+    final imagePaths = adapter.listImageEntries();
+    if (imagePaths.isEmpty) {
+      adapter.dispose();
+      throw const DocumentParseException('No image pages found in comic archive');
+    }
 
-    for (final entry in archive) {
-      if (entry.isFile) {
-        entriesByName[entry.name] = entry;
-        final norm = _normalizePath(entry.name);
-        entriesByName[norm] = entry;
+    String? title = p.basenameWithoutExtension(filePath);
+    DocumentMetadata? metadata;
+    final outline = <OutlineItem>[];
 
-        if (_isImageFile(entry.name)) {
-          imagePaths.add(norm);
+    final xmlContent = adapter.loadComicInfoXml();
+    if (xmlContent != null && xmlContent.isNotEmpty) {
+      final comicInfo = ComicInfoParser.parse(xmlContent);
+      if (comicInfo != null) {
+        metadata = comicInfo.toDocumentMetadata();
+        if (comicInfo.title != null && comicInfo.title!.isNotEmpty) {
+          title = comicInfo.title;
+        } else if (comicInfo.series != null) {
+          title = '${comicInfo.series} ${comicInfo.number ?? ''}'.trim();
+        }
+
+        for (final page in comicInfo.pages) {
+          if (page.bookmark != null &&
+              page.bookmark!.isNotEmpty &&
+              page.imageIndex >= 0 &&
+              page.imageIndex < imagePaths.length) {
+            outline.add(OutlineItem(
+              title: page.bookmark!,
+              href: 'page:${page.imageIndex}',
+              chapterIndex: page.imageIndex,
+            ));
+          }
         }
       }
     }
 
-    if (imagePaths.isEmpty) {
-      throw const DocumentParseException('No image pages found in CBZ');
-    }
-
-    // Natural alphanumeric sort
-    imagePaths.sort(_compareAlphanumeric);
-
-    return CbzDocumentReader._(
+    return ComicBookDocumentReader._(
       filePath: filePath,
+      format: format,
+      adapter: adapter,
       pagePaths: imagePaths,
-      entriesByName: entriesByName,
-      title: p.basenameWithoutExtension(filePath),
-      inputStream: inputStream,
+      title: title,
+      metadata: metadata,
+      outline: outline,
     );
   }
 
   @override
-  String get format => 'cbz';
+  String get format => _format;
 
   @override
   bool get isReflowable => false;
@@ -108,19 +151,37 @@ class CbzDocumentReader with DisposableMixin implements DocumentReader {
   String? get title => _title;
 
   @override
-  DocumentMetadata? get metadata => null;
+  DocumentMetadata? get metadata => _metadata;
 
   @override
-  List<OutlineItem> get outline => const [];
+  List<OutlineItem> get outline => _outline;
 
   @override
   String? get coverImagePath => _pagePaths.isNotEmpty ? _pagePaths.first : null;
 
-  /// Total number of pages in the comic.
+  @override
   int get pageCount => _pagePaths.length;
 
-  /// List of image asset paths in page order.
+  /// Ordered list of image asset paths in the archive.
   List<String> get pagePaths => _pagePaths;
+
+  @override
+  PageSize? getPageSize(int pageIndex) {
+    checkNotDisposed('getPageSize');
+    if (pageIndex < 0 || pageIndex >= _pagePaths.length) return null;
+    final cached = _pageSizeCache[pageIndex];
+    if (cached != null) return cached;
+
+    final bytes = loadAsset(_pagePaths[pageIndex]);
+    if (bytes != null && bytes.isNotEmpty) {
+      final size = ImageHeaderParser.parseDimensions(bytes);
+      if (size != null) {
+        _pageSizeCache[pageIndex] = size;
+        return size;
+      }
+    }
+    return null;
+  }
 
   @override
   Uint8List? loadAsset(String assetPath) {
@@ -128,13 +189,10 @@ class CbzDocumentReader with DisposableMixin implements DocumentReader {
     final cached = _assetCache[assetPath];
     if (cached != null) return cached;
 
-    final norm = _normalizePath(assetPath);
-    final file = _entriesByName[norm] ?? _entriesByName[assetPath];
-    if (file == null) return null;
-
-    final bytes = _extractBytes(file);
-    _assetCache[assetPath] = bytes;
-    _assetCache[norm] = bytes;
+    final bytes = _adapter.loadEntryBytes(assetPath);
+    if (bytes != null) {
+      _assetCache[assetPath] = bytes;
+    }
     return bytes;
   }
 
@@ -162,69 +220,27 @@ class CbzDocumentReader with DisposableMixin implements DocumentReader {
   Future<Uint8List> loadPage(int pageIndex) async => loadPageSync(pageIndex);
 
   @override
+  Future<Uint8List> loadPageImage(
+    int pageIndex, {
+    double scale = 1.0,
+    int? targetWidth,
+    int? targetHeight,
+  }) async {
+    return loadPageSync(pageIndex);
+  }
+
+  @override
+  Uint8List? getCachedPageImage(int pageIndex) => _imageCache[pageIndex];
+
+  @override
   void dispose() {
     super.dispose();
     _imageCache.clear();
     _assetCache.clear();
-    _entriesByName.clear();
-    _inputStream?.close();
-  }
-
-  static Uint8List _extractBytes(ArchiveFile file) {
-    return file.readBytes() ?? Uint8List(0);
-  }
-
-  static bool _isImageFile(String name) {
-    final lower = name.toLowerCase();
-    return (lower.endsWith('.jpg') ||
-            lower.endsWith('.jpeg') ||
-            lower.endsWith('.png') ||
-            lower.endsWith('.webp') ||
-            lower.endsWith('.gif')) &&
-        !lower.contains('__macosx') &&
-        !p.basename(lower).startsWith('.');
-  }
-
-  static String _normalizePath(String path) {
-    var pStr = path.replaceAll(r'\', '/').trim();
-    while (pStr.startsWith('/')) {
-      pStr = pStr.substring(1);
-    }
-    return p.posix.normalize(pStr);
-  }
-
-  static int _compareAlphanumeric(String a, String b) {
-    final aTokens = _tokenize(a);
-    final bTokens = _tokenize(b);
-    final minLen = aTokens.length < bTokens.length
-        ? aTokens.length
-        : bTokens.length;
-
-    for (var i = 0; i < minLen; i++) {
-      final tokenA = aTokens[i];
-      final tokenB = bTokens[i];
-
-      final numA = int.tryParse(tokenA);
-      final numB = int.tryParse(tokenB);
-
-      if (numA != null && numB != null) {
-        final cmp = numA.compareTo(numB);
-        if (cmp != 0) return cmp;
-      } else {
-        final cmp = tokenA.toLowerCase().compareTo(tokenB.toLowerCase());
-        if (cmp != 0) return cmp;
-      }
-    }
-    return aTokens.length.compareTo(bTokens.length);
-  }
-
-  static List<String> _tokenize(String str) {
-    final tokens = <String>[];
-    final regex = RegExp(r'(\d+|\D+)');
-    for (final match in regex.allMatches(str)) {
-      final s = match.group(0);
-      if (s != null && s.isNotEmpty) tokens.add(s);
-    }
-    return tokens;
+    _pageSizeCache.clear();
+    _adapter.dispose();
   }
 }
+
+/// Backwards compatibility alias for [ComicBookDocumentReader].
+typedef CbzDocumentReader = ComicBookDocumentReader;

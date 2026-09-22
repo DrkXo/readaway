@@ -3,7 +3,9 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import '../abstracts/document_reader.dart';
+import '../abstracts/page_document_reader.dart';
 import '../abstracts/reflowable_document_reader.dart';
+import '../errors/document_exception.dart';
 import '../readers/document_reader_factory.dart';
 import '../readers/html_text_extractor.dart';
 import '../transformers/footnote_transformer.dart';
@@ -49,12 +51,14 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
   final textCache = _IsolateLruCache<int, String>(maximumSize: 40);
   final speechTextCache = _IsolateLruCache<int, String>(maximumSize: 40);
   final assetCache = _IsolateLruCache<String, Uint8List>(maximumSize: 60);
+  final pageImageCache = _IsolateLruCache<String, Uint8List>(maximumSize: 30);
 
   void clearCaches() {
     htmlCache.clear();
     textCache.clear();
     speechTextCache.clear();
     assetCache.clear();
+    pageImageCache.clear();
   }
 
   void schedulePrefetch(int currentIndex, int sectionCount) {
@@ -86,35 +90,52 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
 
     try {
       await message.when(
-        open: (id, filePath) async {
+        open: (id, filePath, password) async {
           reader?.dispose();
           clearCaches();
-          final opened = await DocumentReaderFactory().open(filePath);
-          reader = opened;
 
-          final sectionCount =
-              opened is ReflowableDocumentReader ? opened.sectionCount : 0;
+          try {
+            final opened = await DocumentReaderFactory().open(
+              filePath,
+              password: password,
+            );
+            reader = opened;
 
-          // Warm up section 0 if available
-          if (sectionCount > 0 && opened is ReflowableDocumentReader) {
-            try {
-              final html = opened.loadSectionHtml(0);
-              htmlCache.put(0, html);
-            } catch (_) {}
+            final sectionCount =
+                opened is ReflowableDocumentReader ? opened.sectionCount : 0;
+            final pageCount =
+                opened is PageDocumentReader ? opened.pageCount : 0;
+
+            // Warm up section 0 if reflowable
+            if (sectionCount > 0 && opened is ReflowableDocumentReader) {
+              try {
+                final html = opened.loadSectionHtml(0);
+                htmlCache.put(0, html);
+              } catch (_) {}
+            }
+
+            hostSendPort.send(
+              DocumentResponse.opened(
+                id: id,
+                title: opened.title,
+                metadata: opened.metadata,
+                outline: opened.outline,
+                sectionCount: sectionCount,
+                pageCount: pageCount,
+                coverImagePath: opened.coverImagePath,
+                isReflowable: opened.isReflowable,
+                format: opened.format,
+              ),
+            );
+          } on DocumentEncryptedException catch (e) {
+            hostSendPort.send(
+              DocumentResponse.encryptedError(
+                id: id,
+                message: e.message,
+                isInvalidPassword: e.isInvalidPassword,
+              ),
+            );
           }
-
-          hostSendPort.send(
-            DocumentResponse.opened(
-              id: id,
-              title: opened.title,
-              metadata: opened.metadata,
-              outline: opened.outline,
-              sectionCount: sectionCount,
-              coverImagePath: opened.coverImagePath,
-              isReflowable: opened.isReflowable,
-              format: opened.format,
-            ),
-          );
         },
         loadSectionHtml: (id, sectionIndex) {
           if (reader is! ReflowableDocumentReader) {
@@ -247,6 +268,44 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
             DocumentResponse.assetLoaded(id: id, assetData: transferable),
           );
         },
+        loadPageImage: (id, pageIndex, scale, targetWidth, targetHeight) async {
+          if (reader is! PageDocumentReader) {
+            throw StateError('Current document is not a fixed-layout document');
+          }
+          final pageReader = reader as PageDocumentReader;
+          final cacheKey = '$pageIndex:$scale:$targetWidth:$targetHeight';
+
+          Uint8List? bytes = pageImageCache.get(cacheKey);
+          if (bytes == null) {
+            bytes = await pageReader.loadPageImage(
+              pageIndex,
+              scale: scale,
+              targetWidth: targetWidth,
+              targetHeight: targetHeight,
+            );
+            if (bytes.isNotEmpty) {
+              pageImageCache.put(cacheKey, bytes);
+            }
+          }
+
+          final transferable = bytes.isNotEmpty
+              ? TransferableTypedData.fromList([bytes])
+              : null;
+
+          hostSendPort.send(
+            DocumentResponse.pageImageLoaded(id: id, imageData: transferable),
+          );
+        },
+        getPageSize: (id, pageIndex) {
+          if (reader is! PageDocumentReader) {
+            throw StateError('Current document is not a fixed-layout document');
+          }
+          final pageReader = reader as PageDocumentReader;
+          final pageSize = pageReader.getPageSize(pageIndex);
+          hostSendPort.send(
+            DocumentResponse.pageSizeLoaded(id: id, pageSize: pageSize),
+          );
+        },
         resolveSectionIndex: (id, href) {
           if (reader is! ReflowableDocumentReader) {
             throw StateError('Current document is not reflowable');
@@ -292,4 +351,3 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
     }
   });
 }
-

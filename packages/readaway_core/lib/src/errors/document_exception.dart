@@ -35,3 +35,17 @@ class UnsupportedFormatException extends DocumentException {
 class DocumentDisposedException extends DocumentException {
   const DocumentDisposedException(super.message, {super.cause});
 }
+
+/// Thrown when a document requires a password or when the supplied password is incorrect.
+class DocumentEncryptedException extends DocumentException {
+  /// True if a password was supplied but was incorrect;
+  /// False if no password was supplied and the document is locked.
+  final bool isInvalidPassword;
+
+  const DocumentEncryptedException(
+    super.message, {
+    this.isInvalidPassword = false,
+    super.cause,
+  });
+}
+

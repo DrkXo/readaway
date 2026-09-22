@@ -1,9 +1,10 @@
-/// High-performance pure Dart document reading, formatting, and TTS engine for ReadAway.
+/// High-performance document reading, formatting, and TTS engine for ReadAway.
 library;
 
 // Abstracts
 export 'src/abstracts/document_format_handler.dart';
 export 'src/abstracts/document_reader.dart';
+export 'src/abstracts/page_document_reader.dart';
 export 'src/abstracts/reflowable_document_reader.dart';
 
 // Audio & PCM
@@ -36,9 +37,14 @@ export 'src/pagination/pagination_coordinator.dart';
 // Readers & Factory
 export 'src/readers/builtin_handlers.dart';
 export 'src/readers/cbz_document_reader.dart';
+export 'src/readers/comic/comic_archive_adapter.dart';
+export 'src/readers/comic/comic_info_parser.dart';
+export 'src/readers/comic/image_header_parser.dart';
 export 'src/readers/document_reader_factory.dart';
 export 'src/readers/epub_document_reader.dart';
 export 'src/readers/html_text_extractor.dart';
+export 'src/readers/pdf/pdf_document_reader.dart';
+export 'src/readers/pdf/pdf_engine_manager.dart';
 export 'src/readers/plain_text_document_reader.dart';
 export 'src/readers/single_html_document_reader.dart';
 

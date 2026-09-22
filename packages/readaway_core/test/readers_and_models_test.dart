@@ -112,13 +112,17 @@ They set out into the wild forest.
   group('DocumentReaderFactory tests', () {
     test('auto-detects formats and handlers', () {
       final factory = DocumentReaderFactory();
-      expect(factory.handlers.length, 5);
+      expect(factory.handlers.length, 9);
 
       final formats = factory.handlers.map((h) => h.format).toList();
-      expect(formats, containsAll(['epub', 'cbz', 'html', 'txt', 'md']));
+      expect(formats, containsAll(['epub', 'pdf', 'cbz', 'cbt', 'cbr', 'cb7', 'html', 'txt', 'md']));
 
       expect(factory.handlers.any((h) => h.supports('test.epub')), isTrue);
+      expect(factory.handlers.any((h) => h.supports('test.pdf')), isTrue);
       expect(factory.handlers.any((h) => h.supports('test.cbz')), isTrue);
+      expect(factory.handlers.any((h) => h.supports('test.cbt')), isTrue);
+      expect(factory.handlers.any((h) => h.supports('test.cbr')), isTrue);
+      expect(factory.handlers.any((h) => h.supports('test.cb7')), isTrue);
       expect(factory.handlers.any((h) => h.supports('test.html')), isTrue);
       expect(factory.handlers.any((h) => h.supports('test.txt')), isTrue);
       expect(factory.handlers.any((h) => h.supports('test.md')), isTrue);

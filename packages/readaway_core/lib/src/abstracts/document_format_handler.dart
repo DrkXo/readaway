@@ -9,6 +9,6 @@ abstract class DocumentFormatHandler {
   /// Returns true if this handler can open the file at [filePath].
   bool supports(String filePath, [Uint8List? bytes]);
 
-  /// Opens the document at [filePath].
-  Future<DocumentReader> open(String filePath);
+  /// Opens the document at [filePath], optionally using [password] for decryption.
+  Future<DocumentReader> open(String filePath, {String? password});
 }

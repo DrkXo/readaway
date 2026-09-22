@@ -22,6 +22,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   final DocumentMetadata? metadata;
   final List<OutlineItem> outline;
   final int sectionCount;
+  final int pageCount;
   final String? coverImagePath;
   final bool isReflowable;
   final String format;
@@ -38,13 +39,19 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
     required this.metadata,
     required this.outline,
     required this.sectionCount,
+    required this.pageCount,
     required this.coverImagePath,
     required this.isReflowable,
     required this.format,
   });
 
   /// Spawns a dedicated background isolate and opens the document at [filePath].
-  static Future<IsolateDocumentSession> open(String filePath) async {
+  ///
+  /// [password] may be supplied for password-protected / encrypted documents.
+  static Future<IsolateDocumentSession> open(
+    String filePath, {
+    String? password,
+  }) async {
     final hostReceivePort = ReceivePort();
     final isolate = await Isolate.spawn(
       documentIsolateEntryPoint,
@@ -67,17 +74,27 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
         if (completer != null && !completer.isCompleted) {
           message.when(
             error: (id, msg, stack) {
+              final ex = (msg.contains('DocumentOpenException') || msg.contains('not found') || msg.contains('No handler supports'))
+                  ? DocumentOpenException(msg)
+                  : DocumentParseException(msg);
               completer.completeError(
-                DocumentParseException(msg),
+                ex,
                 stack != null ? StackTrace.fromString(stack) : null,
               );
             },
-            opened: (_, _, _, _, _, _, _, _) => completer.complete(message),
+            encryptedError: (id, msg, isInvalid) {
+              completer.completeError(
+                DocumentEncryptedException(msg, isInvalidPassword: isInvalid),
+              );
+            },
+            opened: (_, _, _, _, _, _, _, _, _) => completer.complete(message),
             sectionHtml: (_, _) => completer.complete(message),
             sectionText: (_, _) => completer.complete(message),
             sectionSpeechText: (_, _) => completer.complete(message),
             footnoteResolved: (_, _) => completer.complete(message),
             assetLoaded: (_, _) => completer.complete(message),
+            pageImageLoaded: (_, _) => completer.complete(message),
+            pageSizeLoaded: (_, _) => completer.complete(message),
             sectionIndexResolved: (_, _) => completer.complete(message),
             assetPathResolved: (_, _) => completer.complete(message),
             disposed: (_) => completer.complete(message),
@@ -102,7 +119,12 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
     final openId = nextId++;
     pending[openId] = openCompleter;
 
-    workerSendPort.send(DocumentRequest.open(id: openId, filePath: filePath));
+    workerSendPort.send(DocumentRequest.open(
+      id: openId,
+      filePath: filePath,
+      password: password,
+    ));
+
     final DocumentResponse openResponse;
     try {
       openResponse = await openCompleter.future;
@@ -110,38 +132,49 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
       await subscription.cancel();
       hostReceivePort.close();
       isolate.kill(priority: Isolate.immediate);
+      if (e is DocumentException) rethrow;
       throw DocumentOpenException('Failed to open document in isolate: $e');
     }
 
     return openResponse.when(
-      opened:
-          (
-            id,
-            title,
-            metadata,
-            outline,
-            sectionCount,
-            coverImagePath,
-            isReflowable,
-            format,
-          ) {
-            return IsolateDocumentSession._(
-              isolate: isolate,
-              workerSendPort: workerSendPort,
-              hostReceivePort: hostReceivePort,
-              subscription: subscription,
-              pending: pending,
-              nextRequestId: nextId,
-              filePath: filePath,
-              title: title,
-              metadata: metadata,
-              outline: outline,
-              sectionCount: sectionCount,
-              coverImagePath: coverImagePath,
-              isReflowable: isReflowable,
-              format: format,
-            );
-          },
+      opened: (
+        id,
+        title,
+        metadata,
+        outline,
+        sectionCount,
+        pageCount,
+        coverImagePath,
+        isReflowable,
+        format,
+      ) {
+        return IsolateDocumentSession._(
+          isolate: isolate,
+          workerSendPort: workerSendPort,
+          hostReceivePort: hostReceivePort,
+          subscription: subscription,
+          pending: pending,
+          nextRequestId: nextId,
+          filePath: filePath,
+          title: title,
+          metadata: metadata,
+          outline: outline,
+          sectionCount: sectionCount,
+          pageCount: pageCount,
+          coverImagePath: coverImagePath,
+          isReflowable: isReflowable,
+          format: format,
+        );
+      },
+      encryptedError: (id, message, isInvalidPassword) {
+        subscription.cancel();
+        hostReceivePort.close();
+        isolate.kill(priority: Isolate.immediate);
+        throw DocumentEncryptedException(
+          message,
+          isInvalidPassword: isInvalidPassword,
+        );
+      },
       error: (id, message, stackTrace) {
         subscription.cancel();
         hostReceivePort.close();
@@ -155,6 +188,8 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
       sectionSpeechText: (_, _) => throw StateError('Unexpected response'),
       footnoteResolved: (_, _) => throw StateError('Unexpected response'),
       assetLoaded: (_, _) => throw StateError('Unexpected response'),
+      pageImageLoaded: (_, _) => throw StateError('Unexpected response'),
+      pageSizeLoaded: (_, _) => throw StateError('Unexpected response'),
       sectionIndexResolved: (_, _) => throw StateError('Unexpected response'),
       assetPathResolved: (_, _) => throw StateError('Unexpected response'),
       disposed: (_) => throw StateError('Unexpected response'),
@@ -247,6 +282,45 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
     );
     return res.maybeWhen(
       assetLoaded: (_, assetData) => assetData?.materialize().asUint8List(),
+      orElse: () => null,
+    );
+  }
+
+  /// Loads a page image for fixed-layout documents (PDF, CBZ, CBT) with zero-copy [TransferableTypedData].
+  Future<Uint8List> loadPageImage(
+    int pageIndex, {
+    double scale = 1.0,
+    int? targetWidth,
+    int? targetHeight,
+  }) async {
+    final res = await _send(
+      (id) => DocumentRequest.loadPageImage(
+        id: id,
+        pageIndex: pageIndex,
+        scale: scale,
+        targetWidth: targetWidth,
+        targetHeight: targetHeight,
+      ),
+    );
+    return res.maybeWhen(
+      pageImageLoaded: (_, imgData) {
+        final bytes = imgData?.materialize().asUint8List();
+        if (bytes == null) {
+          throw DocumentParseException('Failed to load page image $pageIndex');
+        }
+        return bytes;
+      },
+      orElse: () => throw DocumentParseException('Failed to load page image $pageIndex'),
+    );
+  }
+
+  /// Queries the dimensions of [pageIndex] for fixed-layout documents.
+  Future<PageSize?> getPageSize(int pageIndex) async {
+    final res = await _send(
+      (id) => DocumentRequest.getPageSize(id: id, pageIndex: pageIndex),
+    );
+    return res.maybeWhen(
+      pageSizeLoaded: (_, pageSize) => pageSize,
       orElse: () => null,
     );
   }

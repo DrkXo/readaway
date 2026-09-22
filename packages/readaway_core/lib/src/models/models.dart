@@ -9,6 +9,7 @@ part 'models.freezed.dart';
 part 'models.g.dart';
 part 'outline_item.dart';
 part 'page_coordinate.dart';
+part 'page_size.dart';
 part 'pagination_state.dart';
 part 'reading_anchor.dart';
 part 'transform_context.dart';
