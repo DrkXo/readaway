@@ -65,10 +65,17 @@
                 <data android:scheme="file" />
                 <data android:scheme="content" />
                 <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/x-pdf" />
                 <data android:mimeType="application/vnd.comicbook+zip" />
                 <data android:mimeType="application/x-cbz" />
+                <data android:mimeType="application/vnd.comicbook-rar" />
+                <data android:mimeType="application/x-cbr" />
+                <data android:mimeType="application/x-cbt" />
+                <data android:mimeType="application/x-cb7" />
                 <data android:mimeType="text/plain" />
                 <data android:mimeType="text/markdown" />
+                <data android:mimeType="text/x-markdown" />
                 <data android:mimeType="text/html" />
                 <data android:mimeType="application/xhtml+xml" />
             </intent-filter>
@@ -81,7 +88,11 @@
                 <data android:scheme="content" />
                 <data android:host="*" />
                 <data android:pathPattern=".*\\.epub" />
+                <data android:pathPattern=".*\\.pdf" />
                 <data android:pathPattern=".*\\.cbz" />
+                <data android:pathPattern=".*\\.cbr" />
+                <data android:pathPattern=".*\\.cbt" />
+                <data android:pathPattern=".*\\.cb7" />
                 <data android:pathPattern=".*\\.txt" />
                 <data android:pathPattern=".*\\.text" />
                 <data android:pathPattern=".*\\.log" />
