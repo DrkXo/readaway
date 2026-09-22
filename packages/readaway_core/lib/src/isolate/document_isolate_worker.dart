@@ -91,7 +91,8 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
     try {
       await message.when(
         open: (id, filePath, password) async {
-          reader?.dispose();
+          await reader?.dispose();
+          reader = null;
           clearCaches();
 
           try {
@@ -332,9 +333,9 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
             ),
           );
         },
-        dispose: (id) {
+        dispose: (id) async {
           clearCaches();
-          reader?.dispose();
+          await reader?.dispose();
           reader = null;
           hostSendPort.send(DocumentResponse.disposed(id: id));
           receivePort.close();

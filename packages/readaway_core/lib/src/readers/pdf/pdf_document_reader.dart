@@ -8,6 +8,7 @@ import '../../abstracts/page_document_reader.dart';
 import '../../errors/document_exception.dart';
 import '../../lifecycle/disposable.dart';
 import '../../models/models.dart';
+import 'bmp_encoder.dart';
 import 'pdf_engine_manager.dart';
 
 /// High-performance PDF reader backed by pdfrx / PDFium.
@@ -57,14 +58,14 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       );
       return await _fromPdfDocument(pdfDoc, filePath: filePath);
     } on PdfPasswordException catch (e) {
-      PdfEngineManager.release();
+      await PdfEngineManager.release();
       throw DocumentEncryptedException(
         'Password required or incorrect for PDF: $filePath',
         isInvalidPassword: password != null,
         cause: e,
       );
     } catch (e) {
-      PdfEngineManager.release();
+      await PdfEngineManager.release();
       if (e is DocumentException) rethrow;
       throw DocumentParseException('Failed to open PDF document: $e', cause: e);
     }
@@ -93,14 +94,14 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       );
       return await _fromPdfDocument(pdfDoc, filePath: filePath);
     } on PdfPasswordException catch (e) {
-      PdfEngineManager.release();
+      await PdfEngineManager.release();
       throw DocumentEncryptedException(
         'Password required or incorrect for PDF: $filePath',
         isInvalidPassword: password != null,
         cause: e,
       );
     } catch (e) {
-      PdfEngineManager.release();
+      await PdfEngineManager.release();
       if (e is DocumentException) rethrow;
       throw DocumentParseException('Failed to open PDF document: $e', cause: e);
     }
@@ -233,7 +234,11 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       throw DocumentParseException('Failed to render PDF page $pageIndex');
     }
 
-    final bytes = Uint8List.fromList(pdfImage.pixels);
+    final bytes = encodeBgraToBmp(
+      pdfImage.pixels,
+      width: pdfImage.width,
+      height: pdfImage.height,
+    );
     pdfImage.dispose();
 
     if (scale == 1.0 && targetWidth == null && targetHeight == null) {
@@ -249,13 +254,13 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
   Uint8List? getCachedPageImage(int pageIndex) => _imageCache[pageIndex];
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     if (isDisposed) return;
     super.dispose();
     _imageCache.clear();
     _pageSizeCache.clear();
     _coverBytes = null;
-    _pdfDoc.dispose();
-    PdfEngineManager.release();
+    await _pdfDoc.dispose();
+    await PdfEngineManager.release();
   }
 }

@@ -16,13 +16,13 @@ void main() {
       await PdfEngineManager.acquire();
       expect(PdfEngineManager.activeCount, 2);
 
-      PdfEngineManager.release();
+      await PdfEngineManager.release();
       expect(PdfEngineManager.activeCount, 1);
       expect(PdfEngineManager.isInitialized, isTrue);
 
-      PdfEngineManager.release();
+      await PdfEngineManager.release();
       expect(PdfEngineManager.activeCount, 0);
-      expect(PdfEngineManager.isInitialized, isTrue);
+      expect(PdfEngineManager.isInitialized, isFalse);
     });
 
     test('PdfFormatHandler supports extension and magic bytes', () {

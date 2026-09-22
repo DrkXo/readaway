@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:meta/meta.dart';
 import '../errors/document_exception.dart';
 
@@ -7,7 +8,7 @@ abstract interface class Disposable {
   bool get isDisposed;
 
   /// Releases all resources, caches, and listeners held by this object.
-  void dispose();
+  FutureOr<void> dispose();
 }
 
 /// A mixin that provides standard disposal lifecycle tracking and guards.
@@ -28,7 +29,7 @@ mixin DisposableMixin implements Disposable {
 
   @override
   @mustCallSuper
-  void dispose() {
+  FutureOr<void> dispose() {
     _isDisposed = true;
   }
 }

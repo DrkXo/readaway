@@ -7,6 +7,8 @@ export 'common/reader_auto_scroll_hud.dart';
 export 'common/reader_brightness_overlay.dart';
 export 'common/reader_contrast_overlay.dart';
 export 'common/reader_error_view.dart';
+// Dialogs
+export 'dialogs/reader_password_dialog.dart';
 // Navigation
 export 'navigation/navigation.dart';
 // Table of Contents

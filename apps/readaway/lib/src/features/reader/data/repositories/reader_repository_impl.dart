@@ -52,9 +52,12 @@ class ReaderRepositoryImpl implements ReaderRepository {
           throw UnsupportedDocumentFormatFailure(ext.isEmpty ? 'unknown' : ext);
         }
 
-        _session?.dispose();
+        final oldSession = _session;
         _session = null;
         _assetCache.clear();
+        if (oldSession != null) {
+          await oldSession.dispose();
+        }
 
         final IsolateDocumentSession session;
         try {
@@ -516,9 +519,12 @@ class ReaderRepositoryImpl implements ReaderRepository {
   TaskEither<Failure, Unit> closeDocument() {
     return TaskEither.tryCatch(
       () async {
-        _session?.dispose();
+        final session = _session;
         _session = null;
         _assetCache.clear();
+        if (session != null) {
+          await session.dispose();
+        }
         return unit;
       },
       (error, stack) => UnexpectedFailure(

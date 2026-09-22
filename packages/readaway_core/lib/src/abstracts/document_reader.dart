@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import '../lifecycle/disposable.dart';
 import '../models/models.dart';
@@ -27,5 +28,5 @@ abstract class DocumentReader implements Disposable {
 
   /// Releases any resources or caches held by this reader.
   @override
-  void dispose();
+  FutureOr<void> dispose();
 }

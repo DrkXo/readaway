@@ -352,7 +352,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     if (isDisposed) return;
     super.dispose();
 
@@ -375,12 +375,12 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
       _workerSendPort.send(DocumentRequest.dispose(id: disposeId));
     } catch (_) {}
 
-    disposeCompleter.future
-        .timeout(const Duration(seconds: 2))
-        .whenComplete(() {
-      _subscription.cancel();
-      _hostReceivePort.close();
-      _isolate.kill(priority: Isolate.beforeNextEvent);
-    }).ignore();
+    try {
+      await disposeCompleter.future.timeout(const Duration(seconds: 2));
+    } catch (_) {}
+
+    await _subscription.cancel();
+    _hostReceivePort.close();
+    _isolate.kill(priority: Isolate.immediate);
   }
 }

@@ -72,7 +72,8 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
     return BlocBuilder<ReaderBloc, ReaderState>(
       buildWhen: (prev, curr) =>
           prev.hasDocument != curr.hasDocument ||
-          prev.ttsActive != curr.ttsActive,
+          prev.ttsActive != curr.ttsActive ||
+          prev.isReflowable != curr.isReflowable,
       builder: (context, readerState) {
         if (!readerState.hasDocument) return const SizedBox.shrink();
 
@@ -127,27 +128,29 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
                       togglePanel(ReaderBottomPanel.pageNavigation),
                 ),
 
-                // 4. Font Resizing
-                AppIconButton(
-                  icon: LucideIcons.type,
-                  tooltip: 'Font size',
-                  size: AppIconButtonSize.medium,
-                  selected: activePanel == ReaderBottomPanel.fontSize,
-                  semanticLabel: 'Font size adjustment',
-                  onPressed: () => togglePanel(ReaderBottomPanel.fontSize),
-                ),
+                // 4. Font Resizing (Reflowable only)
+                if (readerState.isReflowable)
+                  AppIconButton(
+                    icon: LucideIcons.type,
+                    tooltip: 'Font size',
+                    size: AppIconButtonSize.medium,
+                    selected: activePanel == ReaderBottomPanel.fontSize,
+                    semanticLabel: 'Font size adjustment',
+                    onPressed: () => togglePanel(ReaderBottomPanel.fontSize),
+                  ),
 
-                // 5. TTS (Text to Speech)
-                AppIconButton(
-                  icon: LucideIcons.audioLines,
-                  tooltip: readerState.ttsActive
-                      ? 'Close TTS player'
-                      : 'Listen (TTS player)',
-                  size: AppIconButtonSize.medium,
-                  selected: readerState.ttsActive,
-                  semanticLabel: 'Text to speech player toggle',
-                  onPressed: () => handleTtsTap(readerState),
-                ),
+                // 5. TTS (Text to Speech) (Reflowable only)
+                if (readerState.isReflowable)
+                  AppIconButton(
+                    icon: LucideIcons.audioLines,
+                    tooltip: readerState.ttsActive
+                        ? 'Close TTS player'
+                        : 'Listen (TTS player)',
+                    size: AppIconButtonSize.medium,
+                    selected: readerState.ttsActive,
+                    semanticLabel: 'Text to speech player toggle',
+                    onPressed: () => handleTtsTap(readerState),
+                  ),
               ],
             ),
           ),

@@ -153,7 +153,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
       if (coverImgPath != null) {
         coverBytes = await session.loadAsset(coverImgPath);
       }
-      session.dispose();
+      await session.dispose();
     } catch (_) {
       // Non-critical if metadata extraction fails for picked file
     }
@@ -230,11 +230,11 @@ class LibraryRepositoryImpl implements LibraryRepository {
               await coverFile.writeAsBytes(bytes, flush: true);
               final updatedDoc = document.copyWith(coverPath: coverFile.path);
               await _localDataSource.saveRecentDocument(updatedDoc);
-              session.dispose();
+              await session.dispose();
               return some(coverFile.path);
             }
           }
-          session.dispose();
+          await session.dispose();
         } catch (_) {}
 
         return none();

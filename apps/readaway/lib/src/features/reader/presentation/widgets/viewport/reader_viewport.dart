@@ -18,6 +18,7 @@ import '../overlay/reader_footnote_sheet.dart';
 import '../tts/reader_tts_mini_player_bar.dart';
 import 'modes/continuous_reader_view.dart';
 import 'modes/paged_reader_view.dart';
+import 'fixed_layout/fixed_layout.dart';
 import 'reflowable/reflowable_reader_page.dart';
 import 'reflowable/reflowable_virtual_page.dart';
 
@@ -66,12 +67,14 @@ class _ReaderViewportState extends State<ReaderViewport> {
 
   void _onPaginationUpdated() {
     if (!mounted) return;
+    if (!context.read<ReaderBloc>().state.isReflowable) return;
     if (_isPaginationUpdateScheduled) return;
     _isPaginationUpdateScheduled = true;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _isPaginationUpdateScheduled = false;
       if (!mounted) return;
+      if (!context.read<ReaderBloc>().state.isReflowable) return;
 
       final isContinuous =
           widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
@@ -110,6 +113,7 @@ class _ReaderViewportState extends State<ReaderViewport> {
   @override
   void didUpdateWidget(ReaderViewport oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final isReflowable = context.read<ReaderBloc>().state.isReflowable;
     final wasContinuous =
         oldWidget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
         !oldWidget.prefs.pageSnap;
@@ -117,7 +121,7 @@ class _ReaderViewportState extends State<ReaderViewport> {
         widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
         !widget.prefs.pageSnap;
 
-    if (oldWidget.prefs != widget.prefs) {
+    if (isReflowable && oldWidget.prefs != widget.prefs) {
       // Font/layout metrics changed: cached page offsets no longer match the
       // new text dimensions. Existing chapter heights stay for continuity;
       // each mounted page re-measures and re-registers in the next frame.
@@ -127,7 +131,10 @@ class _ReaderViewportState extends State<ReaderViewport> {
     if (wasContinuous != nowContinuous) {
       final bloc = context.read<ReaderBloc>();
       final state = bloc.state;
-      if (nowContinuous) {
+      if (!isReflowable) {
+        widget.viewportController.updatePageCount(state.pageCount);
+        widget.viewportController.setCurrentPage(state.currentPage);
+      } else if (nowContinuous) {
         // Switched from paged to continuous mode.
         widget.viewportController.updatePageCount(state.pageCount);
         widget.viewportController.setCurrentPage(state.currentPage);
@@ -170,11 +177,18 @@ class _ReaderViewportState extends State<ReaderViewport> {
           prev.currentPage != curr.currentPage ||
           prev.pageCount != curr.pageCount ||
           prev.currentVirtualPage != curr.currentVirtualPage ||
-          prev.virtualPageCount != curr.virtualPageCount,
+          prev.virtualPageCount != curr.virtualPageCount ||
+          prev.isReflowable != curr.isReflowable,
       listener: (context, state) {
         final isContinuous =
             widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
             !widget.prefs.pageSnap;
+
+        if (!state.isReflowable) {
+          widget.viewportController.updatePageCount(state.pageCount);
+          widget.viewportController.setCurrentPage(state.currentPage);
+          return;
+        }
 
         if (!isContinuous) {
           final targetPage = state.currentVirtualPage ?? _currentGlobalPage;
@@ -234,53 +248,55 @@ class _ReaderViewportState extends State<ReaderViewport> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            // Update pagination coordinator with latest viewport geometry.
-            final availableHeight = math.max(
-              100.0,
-              constraints.maxHeight -
-                  (widget.prefs.marginTop + widget.prefs.marginBottom),
-            );
-
-            if (_lastInitializedChapterCount != state.pageCount) {
-              _lastInitializedChapterCount = state.pageCount;
-              _lastViewportHeight = availableHeight;
-              _paginationCoordinator.initialize(
-                chapterCount: state.pageCount,
-                viewportHeight: availableHeight,
-                contentHeight: 0,
+            // Only coordinate HTML pagination if reflowable.
+            if (state.isReflowable) {
+              final availableHeight = math.max(
+                100.0,
+                constraints.maxHeight -
+                    (widget.prefs.marginTop + widget.prefs.marginBottom),
               );
-            } else if (_lastViewportHeight == null ||
-                (_lastViewportHeight! - availableHeight).abs() > 1.0) {
-              _lastViewportHeight = availableHeight;
-              _paginationCoordinator.updateViewport(
-                viewportHeight: availableHeight,
-                contentHeight:
-                    _paginationCoordinator.currentState.chapterHeights[0] ?? 0,
-              );
-            }
 
-            // Restore the saved reading position once pagination is ready
-            // (paged mode only; continuous mode restores via scroll offset).
-            if (!isContinuous && state.pendingRestoreAnchor != null) {
-              final bloc = context.read<ReaderBloc>();
-              final totalPages = _paginationCoordinator.currentState.totalPages;
-              if (totalPages > 0) {
-                final anchor = state.pendingRestoreAnchor!;
-                _paginationCoordinator.setCurrentAnchor(anchor);
-                _currentGlobalPage =
-                    _paginationCoordinator.currentState.globalPage;
-                final coord = _paginationCoordinator.coordinateFromGlobalPage(
-                  _currentGlobalPage,
+              if (_lastInitializedChapterCount != state.pageCount) {
+                _lastInitializedChapterCount = state.pageCount;
+                _lastViewportHeight = availableHeight;
+                _paginationCoordinator.initialize(
+                  chapterCount: state.pageCount,
+                  viewportHeight: availableHeight,
+                  contentHeight: 0,
                 );
-                bloc.add(
-                  ReaderEvent.virtualPageChanged(
-                    globalPage: _currentGlobalPage,
-                    totalPages: totalPages,
-                    chapterIndex: coord.chapterIndex,
-                  ),
+              } else if (_lastViewportHeight == null ||
+                  (_lastViewportHeight! - availableHeight).abs() > 1.0) {
+                _lastViewportHeight = availableHeight;
+                _paginationCoordinator.updateViewport(
+                  viewportHeight: availableHeight,
+                  contentHeight:
+                      _paginationCoordinator.currentState.chapterHeights[0] ?? 0,
                 );
               }
-              bloc.add(ReaderEvent.clearPendingRestore());
+
+              // Restore the saved reading position once pagination is ready
+              // (paged mode only; continuous mode restores via scroll offset).
+              if (!isContinuous && state.pendingRestoreAnchor != null) {
+                final bloc = context.read<ReaderBloc>();
+                final totalPages = _paginationCoordinator.currentState.totalPages;
+                if (totalPages > 0) {
+                  final anchor = state.pendingRestoreAnchor!;
+                  _paginationCoordinator.setCurrentAnchor(anchor);
+                  _currentGlobalPage =
+                      _paginationCoordinator.currentState.globalPage;
+                  final coord = _paginationCoordinator.coordinateFromGlobalPage(
+                    _currentGlobalPage,
+                  );
+                  bloc.add(
+                    ReaderEvent.virtualPageChanged(
+                      globalPage: _currentGlobalPage,
+                      totalPages: totalPages,
+                      chapterIndex: coord.chapterIndex,
+                    ),
+                  );
+                }
+                bloc.add(ReaderEvent.clearPendingRestore());
+              }
             }
 
             final Widget view;
@@ -291,8 +307,9 @@ class _ReaderViewportState extends State<ReaderViewport> {
                 controller: widget.viewportController,
                 bottomPadding: miniPlayerPadding,
                 restoreAnchor: state.pendingRestoreAnchor,
-                onAnchorChanged: (anchor) =>
-                    _paginationCoordinator.setCurrentAnchor(anchor),
+                onAnchorChanged: state.isReflowable
+                    ? (anchor) => _paginationCoordinator.setCurrentAnchor(anchor)
+                    : null,
                 onRestoreComplete: () => context.read<ReaderBloc>().add(
                   ReaderEvent.clearPendingRestore(),
                 ),
@@ -302,15 +319,17 @@ class _ReaderViewportState extends State<ReaderViewport> {
                     _onPageCommitted(context, state, idx, isContinuous: true),
               );
             } else {
-              final effectivePageCount = math.max(
-                1,
-                _paginationCoordinator.currentState.totalPages,
-              );
+              final effectivePageCount = state.isReflowable
+                  ? math.max(
+                      1,
+                      _paginationCoordinator.currentState.totalPages,
+                    )
+                  : math.max(1, state.pageCount);
 
-              final effectiveCurrentPage = _currentGlobalPage.clamp(
-                0,
-                effectivePageCount - 1,
-              );
+              final effectiveCurrentPage = (state.isReflowable
+                      ? _currentGlobalPage
+                      : state.currentPage)
+                  .clamp(0, effectivePageCount - 1);
 
               view = PagedReaderView(
                 currentPage: effectiveCurrentPage,
@@ -351,6 +370,17 @@ class _ReaderViewportState extends State<ReaderViewport> {
     void Function({required bool atTop, required bool atBottom})?
     onScrollBoundaryChanged,
   }) {
+    if (!state.isReflowable) {
+      return FixedLayoutReaderPage(
+        key: ValueKey('fixed_layout_${state.documentPath}_$index'),
+        index: index,
+        state: state,
+        prefs: widget.prefs,
+        isContinuous: isContinuous,
+        onPageChangeRequested: (idx) =>
+            _onNavigateRequested(context, state, idx, isContinuous: isContinuous),
+      );
+    }
     if (isContinuous) {
       return ReflowableReaderPage(
         key: ValueKey('reflow_continuous_$index'),
@@ -479,6 +509,18 @@ class _ReaderViewportState extends State<ReaderViewport> {
     required bool isContinuous,
   }) {
     final bloc = context.read<ReaderBloc>();
+    if (!state.isReflowable) {
+      if (state.pageCount <= 0) return;
+      final clamped = index.clamp(0, state.pageCount - 1);
+      if (clamped == state.currentPage) return;
+      bloc.add(ReaderEvent.pageChanged(index: clamped));
+      if ((clamped - state.currentPage).abs() > 1) {
+        widget.viewportController.jumpToPage(clamped);
+      } else {
+        widget.viewportController.goToPage(clamped);
+      }
+      return;
+    }
     if (!isContinuous) {
       final total = _paginationCoordinator.currentState.totalPages;
       if (total <= 0) return;
@@ -523,6 +565,15 @@ class _ReaderViewportState extends State<ReaderViewport> {
     required bool isContinuous,
   }) {
     final bloc = context.read<ReaderBloc>();
+    if (!state.isReflowable) {
+      if (state.pageCount <= 0) return;
+      final clamped = index.clamp(0, state.pageCount - 1);
+      if (clamped != state.currentPage) {
+        bloc.add(ReaderEvent.pageChanged(index: clamped));
+      }
+      widget.viewportController.setCurrentPage(clamped);
+      return;
+    }
     if (!isContinuous) {
       final total = _paginationCoordinator.currentState.totalPages;
       if (total <= 0) return;

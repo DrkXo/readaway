@@ -32,9 +32,17 @@ class PdfEngineManager {
   }
 
   /// Releases a reference to the PDF engine, cleaning up reference count.
-  static void release() {
+  /// When no PDF documents are active, stops the background pdfrx worker isolate.
+  static Future<void> release() async {
     if (_activeDocumentCount > 0) {
       _activeDocumentCount--;
+    }
+    if (_activeDocumentCount == 0 && _isInitialized) {
+      _isInitialized = false;
+      _initFuture = null;
+      try {
+        await PdfrxEntryFunctions.instance.stopBackgroundWorker();
+      } catch (_) {}
     }
   }
 

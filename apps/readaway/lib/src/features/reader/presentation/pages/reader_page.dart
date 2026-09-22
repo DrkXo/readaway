@@ -123,8 +123,39 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
       ],
       child: BlocBuilder<ReaderBloc, ReaderState>(
         buildWhen: (prev, curr) =>
-            prev.failure != curr.failure || prev.fileName != curr.fileName,
+            prev.failure != curr.failure ||
+            prev.fileName != curr.fileName ||
+            prev.requiresPassword != curr.requiresPassword ||
+            prev.isInvalidPassword != curr.isInvalidPassword,
         builder: (context, readerState) {
+          if (readerState.requiresPassword) {
+            return Scaffold(
+              backgroundColor: context.appColors.readerBackground,
+              appBar: AppTopBar(
+                titleText: readerState.fileName ?? 'Protected Document',
+                leading: IconButton(
+                  icon: const Icon(LucideIcons.arrowLeft),
+                  tooltip: 'Return to Library',
+                  onPressed: closeReader,
+                ),
+              ),
+              body: SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: ReaderPasswordDialog(
+                      fileName: readerState.fileName ?? 'Protected Document',
+                      isInvalidPassword: readerState.isInvalidPassword,
+                      onUnlock: (pwd) => context.read<ReaderBloc>().add(
+                            ReaderEvent.unlockDocument(password: pwd),
+                          ),
+                      onCancel: closeReader,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+
           if (readerState.failure != null) {
             return Scaffold(
               backgroundColor: context.appColors.readerBackground,
