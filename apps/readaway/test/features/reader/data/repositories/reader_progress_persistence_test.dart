@@ -1,42 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/error/failures.dart';
-import 'package:readaway/src/core/services/notification_service.dart';
-import 'package:readaway/src/core/services/path_service.dart';
-import 'package:readaway/src/core/services/window_service.dart';
 import 'package:readaway/src/features/library/domain/entity/reading_status.dart';
 import 'package:readaway/src/features/library/domain/entity/recent_document.dart';
-import 'package:readaway/src/features/library/domain/repositories/library_repository.dart';
 import 'package:readaway/src/features/reader/data/repositories/reader_repository_impl.dart';
 import 'package:readaway_core/readaway_core.dart';
 
-class MockWindowService extends Mock implements WindowService {}
-
-class MockNotificationService extends Mock implements NotificationService {}
-
-class MockAppPathService extends Mock implements AppPathService {}
-
-class MockLibraryRepository extends Mock implements LibraryRepository {}
+import '../../../../helpers/test_mocks.dart';
 
 void main() {
+  setUpAll(registerMockitoDummies);
   late MockLibraryRepository libRepo;
   late ReaderRepositoryImpl repository;
   late RecentDocument storedDoc;
-
-  setUpAll(() {
-    registerFallbackValue(
-      RecentDocument(
-        path: '',
-        fileName: '',
-        title: '',
-        dateAdded: DateTime(2024),
-        lastOpened: DateTime(2024),
-        fileSize: 0,
-        format: 'epub',
-      ),
-    );
-  });
 
   setUp(() {
     libRepo = MockLibraryRepository();
@@ -52,10 +29,10 @@ void main() {
       pageCount: 10,
     );
 
-    when(() => libRepo.getRecentDocuments()).thenAnswer(
+    when(libRepo.getRecentDocuments()).thenAnswer(
       (_) => TaskEither<Failure, List<RecentDocument>>.of([storedDoc]),
     );
-    when(() => libRepo.saveRecentDocument(any())).thenAnswer(
+    when(libRepo.saveRecentDocument(any)).thenAnswer(
       (invocation) {
         storedDoc = invocation.positionalArguments.first as RecentDocument;
         return TaskEither<Failure, Unit>.of(unit);

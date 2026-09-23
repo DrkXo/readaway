@@ -1,9 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/models/models.dart';
-import 'package:readaway/src/core/services/path_service.dart';
 import 'package:readaway/src/core/services/settings_service.dart';
 import 'package:readaway/src/core/services/storage/hive/app_storage_service.dart';
 import 'package:readaway/src/core/services/storage/hive/hive_boxes.dart';
@@ -15,10 +14,11 @@ import 'package:readaway/src/features/library/domain/entity/recent_document.dart
 import 'package:readaway/src/features/reader/data/repositories/reader_preferences_repository_impl.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 
-class MockAppPathService extends Mock implements AppPathService {}
+import '../../../../helpers/test_mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(registerMockitoDummies);
 
   late Directory tempDir;
   late MockAppPathService pathService;
@@ -28,7 +28,7 @@ void main() {
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('hive_test_');
     pathService = MockAppPathService();
-    when(() => pathService.getHiveDirectory()).thenAnswer((_) async => tempDir);
+    when(pathService.getHiveDirectory()).thenAnswer((_) async => tempDir);
 
     configService = HiveConfigService(pathService);
     storageService = AppStorageService(config: configService);

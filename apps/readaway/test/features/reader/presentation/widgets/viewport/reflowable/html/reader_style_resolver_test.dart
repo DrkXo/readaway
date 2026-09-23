@@ -8,6 +8,23 @@ import 'package:readaway/src/features/reader/presentation/widgets/viewport/reflo
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 import 'package:readaway_core/readaway_core.dart';
 
+String? _resolveTestDocPath(String primaryKey, [String? fallbackKey]) {
+  final envVal =
+      Platform.environment[primaryKey] ??
+      (fallbackKey != null ? Platform.environment[fallbackKey] : null);
+  if (envVal != null && envVal.isNotEmpty) return envVal;
+
+  final defineVal = String.fromEnvironment(primaryKey);
+  if (defineVal.isNotEmpty) return defineVal;
+
+  if (fallbackKey != null) {
+    final fallbackDefine = String.fromEnvironment(fallbackKey);
+    if (fallbackDefine.isNotEmpty) return fallbackDefine;
+  }
+
+  return null;
+}
+
 void main() {
   test('StyleResolver correctly resolves customCss from ReaderPreferences', () {
     const prefs = ReaderPreferences(
@@ -393,7 +410,8 @@ void main() {
   test(
     'text nodes inherit the block font-size set by applyReaderPreferences',
     () {
-      const html = '<p>Plain <b>bold</b> text.</p>'
+      const html =
+          '<p>Plain <b>bold</b> text.</p>'
           '<p style="font-size: 20px;">Authored sized.</p>';
       const prefs = ReaderPreferences(fontSize: 28.0, overrideLayout: true);
 
@@ -469,59 +487,70 @@ void main() {
     },
   );
 
-  test('StyleResolver on Reverend Insanity chapter XHTML', () async {
-    final file = File(
-      '/home/drkxo/Documents/Ebooks/Reverend Insanity/Reverend Insanity [c1-500].epub',
-    );
-    if (!await file.exists()) return;
+  test(
+    'StyleResolver on real EPUB chapter XHTML',
+    () async {
+      final epubPath = _resolveTestDocPath('TEST_EPUB_PATH', 'EPUB_PATH')!;
+      final file = File(epubPath);
 
-    final reader = await DocumentReaderFactory().open(file.path);
-    if (reader is! ReflowableDocumentReader) return;
-    final chHtml = reader.loadSectionHtml(1);
+      final reader = await DocumentReaderFactory().open(file.path);
+      if (reader is! ReflowableDocumentReader) return;
+      final chHtml = reader.loadSectionHtml(reader.sectionCount > 1 ? 1 : 0);
 
-    const prefs = ReaderPreferences(
-      paragraphMargin: 1.5,
-      textIndent: 2.0,
-      textAlign: ReaderTextAlign.justify,
-      fontSize: 18.0,
-      lineHeight: 1.8,
-      overrideLayout: true,
-    );
+      const prefs = ReaderPreferences(
+        paragraphMargin: 1.5,
+        textIndent: 2.0,
+        textAlign: ReaderTextAlign.justify,
+        fontSize: 18.0,
+        lineHeight: 1.8,
+        overrideLayout: true,
+      );
 
-    const styleResolver = ReaderStyleResolver();
-    final customCss = styleResolver.buildCustomCss(
-      prefs: prefs,
-      textColor: Colors.black,
-      backgroundColor: Colors.white,
-      linkColor: Colors.blue,
-    );
+      const styleResolver = ReaderStyleResolver();
+      final customCss = styleResolver.buildCustomCss(
+        prefs: prefs,
+        textColor: Colors.black,
+        backgroundColor: Colors.white,
+        linkColor: Colors.blue,
+      );
 
-    final adapter = HtmlAdapter();
-    final docNode = adapter.parse(chHtml);
-    final docCss = adapter.extractCss(chHtml);
+      final adapter = HtmlAdapter();
+      final docNode = adapter.parse(chHtml);
+      final docCss = adapter.extractCss(chHtml);
 
-    final combinedCss = '$docCss\n$customCss';
-    final resolver = StyleResolver()..parseCss(combinedCss);
-    resolver.resolveStyles(docNode);
+      final combinedCss = '$docCss\n$customCss';
+      final resolver = StyleResolver()..parseCss(combinedCss);
+      resolver.resolveStyles(docNode);
 
-    docNode.applyReaderPreferences(
-      prefs: prefs,
-      textColor: Colors.black,
-      linkColor: Colors.blue,
-    );
+      docNode.applyReaderPreferences(
+        prefs: prefs,
+        textColor: Colors.black,
+        linkColor: Colors.blue,
+      );
 
-    final paragraphs = <BlockNode>[];
-    docNode.traverse((node) {
-      if (node is BlockNode && node.tagName == 'p') paragraphs.add(node);
-    });
+      final paragraphs = <BlockNode>[];
+      docNode.traverse((node) {
+        if (node is BlockNode && node.tagName == 'p') paragraphs.add(node);
+      });
 
-    expect(paragraphs.length, greaterThan(0));
-    for (int i = 0; i < (paragraphs.length < 3 ? paragraphs.length : 3); i++) {
-      final p = paragraphs[i];
-      expect(p.style.textAlign, equals(HyperTextAlign.justify));
-      expect(p.style.textIndent, equals(36.0)); // 2.0 * 18.0px
-      expect(p.style.margin.top, equals(27.0)); // 1.5 * 18.0px
-      expect(p.style.margin.bottom, equals(27.0));
-    }
-  });
+      expect(paragraphs.length, greaterThan(0));
+      for (
+        int i = 0;
+        i < (paragraphs.length < 3 ? paragraphs.length : 3);
+        i++
+      ) {
+        final p = paragraphs[i];
+        expect(p.style.textAlign, equals(HyperTextAlign.justify));
+        expect(p.style.textIndent, equals(36.0)); // 2.0 * 18.0px
+        expect(p.style.margin.top, equals(27.0)); // 1.5 * 18.0px
+        expect(p.style.margin.bottom, equals(27.0));
+      }
+    },
+    skip:
+        (_resolveTestDocPath('TEST_EPUB_PATH', 'EPUB_PATH') == null ||
+            !File(_resolveTestDocPath('TEST_EPUB_PATH', 'EPUB_PATH')!)
+                .existsSync())
+        ? 'EPUB file not provided or not found (set TEST_EPUB_PATH or EPUB_PATH)'
+        : null,
+  );
 }

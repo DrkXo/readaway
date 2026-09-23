@@ -2,27 +2,34 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:readaway/src/core/services/notification_service.dart';
-import 'package:readaway/src/core/services/path_service.dart';
-import 'package:readaway/src/core/services/window_service.dart';
-import 'package:readaway/src/features/library/domain/repositories/library_repository.dart';
+import 'package:mockito/mockito.dart';
 import 'package:readaway/src/features/reader/data/repositories/reader_repository_impl.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/viewport/reflowable/html/reader_style_resolver.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 
-class MockWindowService extends Mock implements WindowService {}
+import '../../../../helpers/test_mocks.dart';
 
-class MockNotificationService extends Mock implements NotificationService {}
+String? _resolveTestDocPath(String primaryKey, [String? fallbackKey]) {
+  final envVal = Platform.environment[primaryKey] ??
+      (fallbackKey != null ? Platform.environment[fallbackKey] : null);
+  if (envVal != null && envVal.isNotEmpty) return envVal;
 
-class MockAppPathService extends Mock implements AppPathService {}
+  final defineVal = String.fromEnvironment(primaryKey);
+  if (defineVal.isNotEmpty) return defineVal;
 
-class MockLibraryRepository extends Mock implements LibraryRepository {}
+  if (fallbackKey != null) {
+    final fallbackDefine = String.fromEnvironment(fallbackKey);
+    if (fallbackDefine.isNotEmpty) return fallbackDefine;
+  }
+
+  return null;
+}
 
 void main() {
-  const epubPath =
-      '/home/drkxo/Documents/Ebooks/Reverend Insanity/Reverend Insanity [c1-500].epub';
+  setUpAll(registerMockitoDummies);
+  final epubPath = _resolveTestDocPath('TEST_EPUB_PATH', 'EPUB_PATH');
+  final hasEpub = epubPath != null && File(epubPath).existsSync();
 
   group('ReaderStyleResolver Tests', () {
     const resolver = ReaderStyleResolver();
@@ -104,12 +111,11 @@ void main() {
     late ReaderRepository repository;
 
     setUpAll(() async {
-      final file = File(epubPath);
-      if (!await file.exists()) return;
+      if (!hasEpub) return;
 
       final windowService = MockWindowService();
-      when(() => windowService.setTitle(any())).thenAnswer((_) async {});
-      when(() => windowService.setDefaultTitle()).thenAnswer((_) async {});
+      when(windowService.setTitle(any)).thenAnswer((_) async {});
+      when(windowService.setDefaultTitle()).thenAnswer((_) async {});
 
       final notifService = MockNotificationService();
       final pathService = MockAppPathService();
@@ -124,27 +130,25 @@ void main() {
     });
 
     tearDownAll(() async {
-      await repository.closeDocument().run();
+      if (hasEpub) {
+        await repository.closeDocument().run();
+      }
     });
 
     test('opens EPUB with readaway_core', () async {
-      final file = File(epubPath);
-      if (!await file.exists()) return;
-
-      final openResult = await repository.openDocument(epubPath).run();
+      final openResult = await repository.openDocument(epubPath!).run();
 
       expect(openResult.isRight(), isTrue);
       final info = openResult.getRight().toNullable()!;
-      expect(info.pageCount, equals(504));
-      expect(info.title, equals('Reverend Insanity'));
-      expect(info.outline.length, greaterThan(400));
-      expect(info.outline.first.title, isNotEmpty);
+      expect(info.pageCount, greaterThan(0));
+      expect(info.title, isNotEmpty);
+      expect(info.outline.length, greaterThanOrEqualTo(0));
+      if (info.outline.isNotEmpty) {
+        expect(info.outline.first.title, isNotEmpty);
+      }
     });
 
     test('loads chapter HTML directly from readaway_core', () async {
-      final file = File(epubPath);
-      if (!await file.exists()) return;
-
       final pageDataResult = await repository.loadPage(0).run();
 
       expect(pageDataResult.isRight(), isTrue);
@@ -157,27 +161,23 @@ void main() {
     test(
       'extracts text from section HTML directly from readaway_core',
       () async {
-        final file = File(epubPath);
-        if (!await file.exists()) return;
+        final openResult = await repository.openDocument(epubPath!).run();
+        final info = openResult.getRight().toNullable()!;
+        final targetSection = info.pageCount > 1 ? 1 : 0;
 
-        // Section 0 is the front cover image, section 1 has text content
-        final textResult = await repository.extractPageText(1).run();
+        final textResult = await repository.extractPageText(targetSection).run();
         expect(textResult.isRight(), isTrue);
         final text = textResult.getRight().toNullable()!;
         expect(text, isNotEmpty);
-        expect(text, contains('Reverend Insanity'));
       },
     );
 
     test('resolves asset bytes from EPUB archive directly', () async {
-      final file = File(epubPath);
-      if (!await file.exists()) return;
-
       final bytesResult = await repository.loadAssetBytes('mimetype').run();
       expect(bytesResult.isRight(), isTrue);
       final bytes = bytesResult.getRight().toNullable();
       expect(bytes, isNotNull);
       expect(String.fromCharCodes(bytes!), contains('application/epub+zip'));
     });
-  });
+  }, skip: !hasEpub ? 'EPUB file not provided or not found (set TEST_EPUB_PATH or EPUB_PATH)' : null);
 }

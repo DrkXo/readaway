@@ -6,21 +6,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/dialogs/reader_password_dialog.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/navigation/reader_bottom_bar.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/viewport/fixed_layout/fixed_layout_image_cache.dart';
 import 'package:readaway_core/readaway_core.dart';
 
-class MockReaderRepository extends Mock implements ReaderRepository {}
+import '../../../../../../helpers/test_mocks.dart';
+
 class MockReaderBloc extends MockBloc<ReaderEvent, ReaderState>
     implements ReaderBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(registerMockitoDummies);
 
   group('FixedLayoutImageCache Tests', () {
     late MockReaderRepository repo;
@@ -33,9 +34,9 @@ void main() {
 
     test('caches and returns page image bytes and dimensions', () async {
       final dummyBytes = Uint8List.fromList([1, 2, 3, 4]);
-      when(() => repo.loadPageImage(0, scale: any(named: 'scale')))
+      when(repo.loadPageImage(0, scale: anyNamed('scale')))
           .thenAnswer((_) => TaskEither.right(dummyBytes));
-      when(() => repo.getPageSize(0))
+      when(repo.getPageSize(0))
           .thenAnswer((_) => TaskEither.right(const PageSize(width: 800.0, height: 1200.0)));
 
       final bytes1 = await cache.getOrLoadImage(repo, '/test.pdf', 0);
@@ -47,11 +48,11 @@ void main() {
       // Second fetch should return cached data without repository invocation
       final bytes2 = await cache.getOrLoadImage(repo, '/test.pdf', 0);
       expect(bytes2, equals(dummyBytes));
-      verify(() => repo.loadPageImage(0, scale: any(named: 'scale'))).called(1);
+      verify(repo.loadPageImage(0, scale: anyNamed('scale'))).called(1);
     });
 
     test('evicts oldest entry when exceeding maxEntries', () async {
-      when(() => repo.loadPageImage(any(), scale: any(named: 'scale')))
+      when(repo.loadPageImage(any, scale: anyNamed('scale')))
           .thenAnswer((i) => TaskEither.right(Uint8List.fromList([i.positionalArguments[0] as int])));
 
       await cache.getOrLoadImage(repo, '/test.pdf', 0);
@@ -61,11 +62,11 @@ void main() {
 
       // Requesting page 0 again should hit repository a second time
       await cache.getOrLoadImage(repo, '/test.pdf', 0);
-      verify(() => repo.loadPageImage(0, scale: any(named: 'scale'))).called(2);
+      verify(repo.loadPageImage(0, scale: anyNamed('scale'))).called(2);
     });
 
     test('clears document cache cleanly', () async {
-      when(() => repo.loadPageImage(any(), scale: any(named: 'scale')))
+      when(repo.loadPageImage(any, scale: anyNamed('scale')))
           .thenAnswer((_) => TaskEither.right(Uint8List.fromList([1, 2])));
 
       await cache.getOrLoadImage(repo, '/doc1.cbz', 0); // Call 1
@@ -76,7 +77,7 @@ void main() {
       await cache.getOrLoadImage(repo, '/doc1.cbz', 0); // Call 3 (re-fetched)
       await cache.getOrLoadImage(repo, '/doc2.cbz', 0); // Reused from cache (no extra call)
 
-      verify(() => repo.loadPageImage(any(), scale: any(named: 'scale'))).called(3);
+      verify(repo.loadPageImage(any, scale: anyNamed('scale'))).called(3);
     });
   });
 
@@ -144,8 +145,10 @@ void main() {
   group('ReaderBottomBar Format Adaptation Tests', () {
     testWidgets('shows all 5 action buttons for reflowable documents', (tester) async {
       final mockBloc = MockReaderBloc();
-      when(() => mockBloc.state).thenReturn(
-        const ReaderState(
+      whenListen(
+        mockBloc,
+        const Stream<ReaderState>.empty(),
+        initialState: const ReaderState(
           documentPath: '/book.epub',
           isReflowable: true,
           pageCount: 10,
@@ -184,8 +187,10 @@ void main() {
 
     testWidgets('hides font size and TTS buttons for non-reflowable documents', (tester) async {
       final mockBloc = MockReaderBloc();
-      when(() => mockBloc.state).thenReturn(
-        const ReaderState(
+      whenListen(
+        mockBloc,
+        const Stream<ReaderState>.empty(),
+        initialState: const ReaderState(
           documentPath: '/comic.cbz',
           isReflowable: false,
           format: 'cbz',
