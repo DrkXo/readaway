@@ -27,6 +27,7 @@ class EpubDocumentReader
 
   final Map<int, String> _sectionHtmlCache = {};
   final Map<String, Uint8List?> _assetCache = {};
+  final Map<String, String> _cssCache = {};
 
   EpubDocumentReader._({
     required this.filePath,
@@ -355,12 +356,88 @@ class EpubDocumentReader
     }
 
     try {
-      final html = utf8.decode(_extractBytes(file), allowMalformed: true);
+      final rawHtml = utf8.decode(_extractBytes(file), allowMalformed: true);
+      final html = _inlineStylesheets(rawHtml, href);
       _sectionHtmlCache[index] = html;
       return html;
     } catch (e) {
       throw DocumentParseException('Failed to read section $index: $e');
     }
+  }
+
+  /// Inlines external stylesheets referenced via `<link>` tags directly into
+  /// `<style>` blocks so downstream renderers receive fully-styled documents.
+  String _inlineStylesheets(String html, String sectionHref) {
+    if (!html.contains('<link')) return html;
+
+    final sectionDir = p.posix.dirname(sectionHref);
+    final linkRegex = RegExp(
+      r'<link\b([^>]*?)(?:\/?>|\/>)',
+      caseSensitive: false,
+    );
+
+    return html.replaceAllMapped(linkRegex, (match) {
+      final attrs = match.group(1) ?? '';
+      final isStylesheet = attrs.contains(
+            RegExp(r'rel\s*=\s*["\x27]?stylesheet["\x27]?', caseSensitive: false),
+          ) ||
+          attrs.contains(
+            RegExp(r'type\s*=\s*["\x27]?text/css["\x27]?', caseSensitive: false),
+          );
+
+      if (!isStylesheet) return match.group(0)!;
+
+      final hrefMatch = RegExp(
+        r'href\s*=\s*["\x27]([^"\x27]+)["\x27]',
+        caseSensitive: false,
+      ).firstMatch(attrs);
+      if (hrefMatch == null) return match.group(0)!;
+
+      final rawHref = hrefMatch.group(1)!.trim();
+      final href = Uri.decodeComponent(rawHref);
+      if (href.isEmpty) return match.group(0)!;
+
+      final resolvedPath = _resolveRelative(sectionDir, href);
+      final cssContent = _loadCssContent(resolvedPath);
+      if (cssContent == null || cssContent.trim().isEmpty) {
+        return match.group(0)!;
+      }
+
+      return '<style type="text/css" data-href="$href">\n$cssContent\n</style>';
+    });
+  }
+
+  /// Loads and caches CSS content by resolved path, expanding any `@import` rules.
+  String? _loadCssContent(String cssPath) {
+    final cached = _cssCache[cssPath];
+    if (cached != null) return cached;
+
+    final file = _findFile(cssPath);
+    if (file == null) return null;
+
+    var content = utf8.decode(_extractBytes(file), allowMalformed: true);
+    content = _resolveCssImports(content, p.posix.dirname(cssPath));
+    _cssCache[cssPath] = content;
+    return content;
+  }
+
+  /// Recursively inlines `@import` rules inside CSS content.
+  String _resolveCssImports(String css, String cssDir) {
+    final importRegex = RegExp(
+      r'''@import\s+(?:url\(['"\x27]?([^'")\x27]+)['"\x27]?\)|['"\x27]([^'"\x27]+)['"\x27]);?''',
+      caseSensitive: false,
+    );
+
+    return css.replaceAllMapped(importRegex, (match) {
+      final importHref = match.group(1) ?? match.group(2);
+      if (importHref == null || importHref.trim().isEmpty) return match.group(0)!;
+
+      final cleanHref = Uri.decodeComponent(importHref.trim());
+      final resolvedImportPath = _resolveRelative(cssDir, cleanHref);
+      final importedContent = _loadCssContent(resolvedImportPath);
+      if (importedContent == null) return '';
+      return importedContent;
+    });
   }
 
   /// Preloads a section's HTML content asynchronously.
@@ -428,6 +505,7 @@ class EpubDocumentReader
     super.dispose();
     _sectionHtmlCache.clear();
     _assetCache.clear();
+    _cssCache.clear();
     _entriesByName.clear();
     _inputStream?.close();
   }

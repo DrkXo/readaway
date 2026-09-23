@@ -122,6 +122,69 @@ void main() {
       expect(() => reader.loadSectionHtml(0), throwsA(isA<DocumentDisposedException>()));
     });
 
+    test('EpubDocumentReader automatically inlines external linked stylesheets and handles @import', () async {
+      final archive = Archive();
+
+      archive.addFile(ArchiveFile('mimetype', 20, utf8.encode('application/epub+zip')));
+      const containerXml = '''<?xml version="1.0"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>''';
+      archive.addFile(ArchiveFile('META-INF/container.xml', containerXml.length, utf8.encode(containerXml)));
+
+      const opfXml = '''<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="pub-id">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Styled Book</dc:title>
+    <dc:identifier id="pub-id">style-123</dc:identifier>
+  </metadata>
+  <manifest>
+    <item id="ch1" href="text/chapter1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="css-main" href="styles/main.css" media-type="text/css"/>
+    <item id="css-headings" href="styles/headings.css" media-type="text/css"/>
+  </manifest>
+  <spine>
+    <itemref idref="ch1"/>
+  </spine>
+</package>''';
+      archive.addFile(ArchiveFile('OEBPS/content.opf', opfXml.length, utf8.encode(opfXml)));
+
+      const headingsCss = 'h1 { text-align: center; font-style: italic; }';
+      const mainCss = '''@import url("headings.css");
+p { text-indent: 2em; line-height: 1.6; }''';
+
+      archive.addFile(ArchiveFile('OEBPS/styles/headings.css', headingsCss.length, utf8.encode(headingsCss)));
+      archive.addFile(ArchiveFile('OEBPS/styles/main.css', mainCss.length, utf8.encode(mainCss)));
+
+      const ch1Xhtml = '''<?xml version="1.0" encoding="utf-8"?>
+<html>
+  <head>
+    <title>Chapter 1</title>
+    <link href="../styles/main.css" rel="stylesheet" type="text/css"/>
+  </head>
+  <body>
+    <h1>Chapter 1</h1>
+    <p>Body paragraph with indent.</p>
+  </body>
+</html>''';
+      archive.addFile(ArchiveFile('OEBPS/text/chapter1.xhtml', ch1Xhtml.length, utf8.encode(ch1Xhtml)));
+
+      final zipBytes = ZipEncoder().encode(archive);
+      final reader = await EpubDocumentReader.fromBytes(Uint8List.fromList(zipBytes));
+
+      final loadedHtml = reader.loadSectionHtml(0);
+
+      // Verify that <link> was replaced by inlined <style> containing resolved CSS & @import content
+      expect(loadedHtml, isNot(contains('<link href="../styles/main.css"')));
+      expect(loadedHtml, contains('<style type="text/css" data-href="../styles/main.css">'));
+      expect(loadedHtml, contains('h1 { text-align: center; font-style: italic; }'));
+      expect(loadedHtml, contains('p { text-indent: 2em; line-height: 1.6; }'));
+
+      reader.dispose();
+    });
+
     test('CbzDocumentReader opens in-memory CBZ with natural sort', () async {
       final archive = Archive();
       final dummyImg = [0x89, 0x50, 0x4E, 0x47];

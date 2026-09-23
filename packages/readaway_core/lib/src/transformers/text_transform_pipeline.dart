@@ -1,6 +1,7 @@
 import '../models/models.dart';
 import 'bidi_sanitizer_transformer.dart';
 import 'footnote_transformer.dart';
+import 'html_cleanup_transformer.dart';
 import 'nbsp_transformer.dart';
 import 'punctuation_transformer.dart';
 import 'text_transformer.dart';
@@ -24,9 +25,10 @@ class TextTransformPipeline {
   });
 
   /// Standard natural reading pipeline including BiDi repair, whitespace collapse,
-  /// quotation rotation, footnote tagging, and hanging preposition glue.
+  /// quotation rotation, footnote tagging, hanging preposition glue, and HTML cleanup.
   static const TextTransformPipeline defaultPipeline = TextTransformPipeline(
     transformers: [
+      HtmlCleanupTransformer(),
       BidiSanitizerTransformer(),
       WhitespaceTransformer(),
       PunctuationTransformer(),

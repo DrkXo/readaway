@@ -1,5 +1,6 @@
 export 'bidi_sanitizer_transformer.dart';
 export 'footnote_transformer.dart';
+export 'html_cleanup_transformer.dart';
 export 'nbsp_transformer.dart';
 export 'punctuation_transformer.dart';
 export 'text_chunker.dart';
