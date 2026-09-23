@@ -33,8 +33,6 @@ class AppRoutes {
   Routes get reader => Routes(path: '/reader', name: 'Reader');
   Routes get settings => Routes(path: '/settings', name: 'Settings');
   Routes get customFonts => Routes(path: 'custom-fonts', name: 'CustomFonts');
-  Routes get readerLookup =>
-      Routes(path: '/reader/lookup', name: 'ReaderLookup');
   Routes get ttsPlayer => Routes(path: '/tts-player', name: 'TtsPlayer');
 }
 

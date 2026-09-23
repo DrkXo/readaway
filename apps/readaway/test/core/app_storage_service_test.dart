@@ -63,12 +63,12 @@ void main() {
       final service = SettingsService(storage: storageService);
       await service.init();
 
-      const newSettings = Settings(alwaysOnTop: true);
+      const newSettings = Settings(screenWakeLock: true);
       await service.save(newSettings);
 
-      expect(service.settings.alwaysOnTop, isTrue);
+      expect(service.settings.screenWakeLock, isTrue);
       expect(storageService.settingsBox.containsKey('app_settings'), isTrue);
-      expect(storageService.settingsBox.get('app_settings')?.alwaysOnTop, isTrue);
+      expect(storageService.settingsBox.get('app_settings')?.screenWakeLock, isTrue);
     });
 
     test('library data source persists in libraryBox directly by path', () async {

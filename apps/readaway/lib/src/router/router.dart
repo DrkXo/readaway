@@ -11,9 +11,7 @@ import 'package:injectable/injectable.dart';
 import '../core/routes/routes.dart';
 import '../core/services/services.dart';
 import '../features/library/presentation/pages/library_page.dart';
-import '../features/reader/domain/entity/reader_lookup.dart';
 import '../features/reader/presentation/bloc/reader_bloc.dart';
-import '../features/reader/presentation/pages/reader_lookup_sheet.dart';
 import '../features/reader/presentation/pages/reader_page.dart';
 import '../features/settings/presentation/pages/settings_custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
@@ -170,22 +168,6 @@ class AppRouter {
             },
           ),
         ],
-      ),
-
-      // Reader Dictionary Lookup Sheet
-      GoRoute(
-        name: _appRoutes.readerLookup.name,
-        path: _appRoutes.readerLookup.path,
-        pageBuilder: (context, state) {
-          return ModalPage(
-            key: state.pageKey,
-            enableDrag: true,
-            showDragHandle: false,
-            builder: (context) => ReaderLookupSheet(
-              request: state.extra! as ReaderLookupRequest,
-            ),
-          );
-        },
       ),
     ],
   );

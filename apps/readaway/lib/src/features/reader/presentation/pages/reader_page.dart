@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -235,10 +234,6 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                           ReaderScrollDirection.vertical &&
                                       prefs.pageSnap,
                                   isAtScrollBoundary: isAtScrollBoundary,
-                                  currentSpeed: autoScrollController.speed,
-                                  autoScrollActive:
-                                      autoScrollController.isActive,
-                                  onSpeedChange: onSpeedGestureChange,
                                   onPageDragStart:
                                       viewportController.handleDragStart,
                                   onPageDragUpdate:
@@ -301,27 +296,6 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                       );
                                     },
                                   ),
-                                ),
-
-                                // 3. Floating Auto-Scroll Speed HUD Capsule
-                                ValueListenableBuilder<bool>(
-                                  valueListenable: speedHudVisibleNotifier,
-                                  builder: (context, visible, _) {
-                                    return ValueListenableBuilder<double>(
-                                      valueListenable: speedLevelNotifier,
-                                      builder: (context, speed, _) {
-                                        return Positioned(
-                                          top: 80,
-                                          left: 0,
-                                          right: 0,
-                                          child: ReaderAutoScrollHud(
-                                            speed: speed,
-                                            visible: visible,
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
                                 ),
 
                                 // 3b. Floating Back-to-TTS Jump Pill

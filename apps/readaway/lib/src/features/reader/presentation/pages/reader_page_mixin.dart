@@ -3,16 +3,11 @@ part of "../pages/reader_page.dart";
 /// Handles lifecycle logic, controller setups, gesture coordination, and BLoC synchronization
 mixin ReaderControllerMixin on State<ReaderPage> {
   late final ReaderViewportController viewportController;
-  late final ReaderAutoScrollController autoScrollController;
   late final ScrollController scrollController;
   late final ValueNotifier<bool> isScrollingNotifier;
 
-  // Immersive UI & Gesture HUD notifiers
+  // Immersive UI notifiers
   late final ValueNotifier<bool> isChromeVisibleNotifier;
-  late final ValueNotifier<bool> speedHudVisibleNotifier;
-  late final ValueNotifier<double> speedLevelNotifier;
-
-  Timer? _speedHudTimer;
 
   late final ReaderBloc readerBloc;
   late final SettingsBloc settingsBloc;
@@ -42,11 +37,8 @@ mixin ReaderControllerMixin on State<ReaderPage> {
     scrollController.addListener(_onScrollChanged);
 
     viewportController = ReaderViewportController();
-    autoScrollController = ReaderAutoScrollController();
 
     isChromeVisibleNotifier = ValueNotifier<bool>(true);
-    speedHudVisibleNotifier = ValueNotifier<bool>(false);
-    speedLevelNotifier = ValueNotifier<double>(40.0);
 
     viewportController.onNavigate = (index) {
       final count = readerBloc.state.pageCount;
@@ -148,19 +140,6 @@ mixin ReaderControllerMixin on State<ReaderPage> {
     }
   }
 
-  void onSpeedGestureChange(double newSpeed) {
-    speedLevelNotifier.value = newSpeed;
-    speedHudVisibleNotifier.value = true;
-    autoScrollController.setSpeed(newSpeed);
-    _speedHudTimer?.cancel();
-    _speedHudTimer = Timer(
-      gestureConstants.hudOverlayAutoDismissDuration,
-      () {
-        speedHudVisibleNotifier.value = false;
-      },
-    );
-  }
-
   void closeReader() {
     if (!readerBloc.isClosed) {
       readerBloc.add(const ReaderEvent.closeDocument());
@@ -169,14 +148,10 @@ mixin ReaderControllerMixin on State<ReaderPage> {
   }
 
   void disposeReaderState() {
-    _speedHudTimer?.cancel();
     scrollController.removeListener(_onScrollChanged);
     scrollController.dispose();
     isScrollingNotifier.dispose();
-    autoScrollController.dispose();
     isChromeVisibleNotifier.dispose();
-    speedHudVisibleNotifier.dispose();
-    speedLevelNotifier.dispose();
     wakelockService.disable();
     if (!readerBloc.isClosed) {
       readerBloc.add(const ReaderEvent.closeDocument());

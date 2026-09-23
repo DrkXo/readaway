@@ -7,7 +7,6 @@ import '../../domain/gestures/reader_gestures.dart';
 
 enum _ClaimedGesture {
   none,
-  autoScrollSpeed,
   pageDrag,
 }
 
@@ -16,9 +15,8 @@ enum _ClaimedGesture {
 ///
 /// Priority Order:
 /// 1. Multi-touch (pinch-to-zoom) -> immediately yields and cancels single-touch gestures.
-/// 2. Right-edge vertical swipe -> Auto-scroll speed HUD (when enabled).
-/// 3. Horizontal/Vertical page drag -> Interactive 1:1 page turning.
-/// 4. Tap -> 3-zone tap actions (Prev, Chrome toggle, Next).
+/// 2. Horizontal/Vertical page drag -> Interactive 1:1 page turning.
+/// 3. Tap -> 3-zone tap actions (Prev, Chrome toggle, Next).
 class ReaderGestureArena extends StatefulWidget {
   /// Timestamp of the last tap handled by an inner widget (e.g. link).
   static DateTime _lastSuppressedTapTime = DateTime.fromMillisecondsSinceEpoch(
@@ -39,9 +37,6 @@ class ReaderGestureArena extends StatefulWidget {
     super.key,
     required this.child,
     required this.onTapAction,
-    this.onSpeedChange,
-    this.currentSpeed = 50.0,
-    this.autoScrollActive = false,
     this.onPageDragStart,
     this.onPageDragUpdate,
     this.onPageDragEnd,
@@ -52,18 +47,12 @@ class ReaderGestureArena extends StatefulWidget {
     this.enabled = true,
     this.isAtScrollBoundary,
     ReaderGestureConstants? constants,
-    EdgeSwipePolicy? edgeSwipePolicy,
     TapZonePolicy? tapZonePolicy,
   }) : constants =
            constants ??
            (GetIt.I.isRegistered<ReaderGestureConstants>()
                ? GetIt.I<ReaderGestureConstants>()
                : const ReaderGestureConstants()),
-       edgeSwipePolicy =
-           edgeSwipePolicy ??
-           (GetIt.I.isRegistered<EdgeSwipePolicy>()
-               ? GetIt.I<EdgeSwipePolicy>()
-               : const EdgeSwipePolicy()),
        tapZonePolicy =
            tapZonePolicy ??
            (GetIt.I.isRegistered<TapZonePolicy>()
@@ -74,11 +63,6 @@ class ReaderGestureArena extends StatefulWidget {
 
   /// Triggered on single tap with the resolved [ReaderTapAction].
   final ValueChanged<ReaderTapAction> onTapAction;
-
-  /// Auto-scroll speed callbacks.
-  final ValueChanged<double>? onSpeedChange;
-  final double currentSpeed;
-  final bool autoScrollActive;
 
   /// Page drag callbacks for interactive transitions.
   final VoidCallback? onPageDragStart;
@@ -105,7 +89,6 @@ class ReaderGestureArena extends StatefulWidget {
 
   /// Injected gesture policies.
   final ReaderGestureConstants constants;
-  final EdgeSwipePolicy edgeSwipePolicy;
   final TapZonePolicy tapZonePolicy;
 
   @override
@@ -121,13 +104,9 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
   int? _trackingPointerId;
   Offset _startPosition = Offset.zero;
   DateTime _startTime = DateTime.now();
-  double _startSpeed = 50.0;
-  double _lastSpeed = 50.0;
   double _lastPrimaryPos = 0.0;
   DateTime _lastMoveTime = DateTime.now();
   double _lastVelocity = 0.0;
-
-  bool _armedRightEdge = false;
 
   void _onPointerDown(PointerDownEvent event) {
     if (!widget.enabled) return;
@@ -149,22 +128,7 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
     _startTime = DateTime.now();
     _lastMoveTime = _startTime;
     _lastVelocity = 0.0;
-
-    _startSpeed = widget.currentSpeed;
-    _lastSpeed = widget.currentSpeed;
     _claimed = _ClaimedGesture.none;
-
-    final renderBox = context.findRenderObject() as RenderBox?;
-    final size = renderBox?.size ?? Size.zero;
-    if (size.width <= 0 || size.height <= 0) return;
-
-    // Check right edge arming for auto-scroll speed
-    _armedRightEdge =
-        widget.autoScrollActive &&
-        widget.edgeSwipePolicy.isInRightEdge(
-          event.localPosition.dx,
-          size.width,
-        );
   }
 
   void _onPointerMove(PointerMoveEvent event) {
@@ -192,19 +156,7 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
     }
     _lastMoveTime = now;
 
-    // 1. If Auto-scroll Speed is claimed
-    if (_claimed == _ClaimedGesture.autoScrollSpeed) {
-      final s = widget.edgeSwipePolicy.computeAutoScrollSpeed(
-        _startSpeed,
-        deltaY,
-        size.height,
-      );
-      _lastSpeed = s;
-      widget.onSpeedChange?.call(s);
-      return;
-    }
-
-    // 2. If Page Drag is claimed
+    // If Page Drag is claimed
     if (_claimed == _ClaimedGesture.pageDrag) {
       final dimension = widget.isVerticalPaging ? size.height : size.width;
       final normalizedDelta = -primaryStep / (dimension > 0 ? dimension : 1.0);
@@ -213,22 +165,6 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
     }
 
     // --- ARBITRATION (No gesture claimed yet) ---
-
-    // A. Check Right Edge Speed activation
-    if (_armedRightEdge &&
-        widget.edgeSwipePolicy.shouldActivateEdgeGesture(deltaX, deltaY)) {
-      _claimed = _ClaimedGesture.autoScrollSpeed;
-      final s = widget.edgeSwipePolicy.computeAutoScrollSpeed(
-        _startSpeed,
-        deltaY,
-        size.height,
-      );
-      _lastSpeed = s;
-      widget.onSpeedChange?.call(s);
-      return;
-    }
-
-    // B. Check Page Drag activation
     final primaryDelta = widget.isVerticalPaging ? deltaY : deltaX;
     final crossDelta = widget.isVerticalPaging ? deltaX : deltaY;
 
@@ -264,14 +200,11 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
     final size = renderBox?.size ?? Size.zero;
 
     switch (_claimed) {
-      case _ClaimedGesture.autoScrollSpeed:
-        widget.onSpeedChange?.call(_lastSpeed);
-        break;
       case _ClaimedGesture.pageDrag:
         widget.onPageDragEnd?.call(_lastVelocity);
         break;
       case _ClaimedGesture.none:
-        // No drag or edge gesture claimed -> evaluate tap
+        // No drag claimed -> evaluate tap
         final deltaX = (event.localPosition.dx - _startPosition.dx).abs();
         final deltaY = (event.localPosition.dy - _startPosition.dy).abs();
         final elapsed = DateTime.now().difference(_startTime).inMilliseconds;
@@ -321,7 +254,6 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
   void _resetGesture() {
     _trackingPointerId = null;
     _claimed = _ClaimedGesture.none;
-    _armedRightEdge = false;
   }
 
   @override

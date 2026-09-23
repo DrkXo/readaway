@@ -197,16 +197,3 @@ class NetworkException extends Equatable implements Exception {
   @override
   bool get stringify => true;
 }
-
-class LookupException implements Exception {
-  LookupException(this.message);
-
-  final String message;
-
-  @override
-  String toString() => message;
-}
-
-class LookupNotFound extends LookupException {
-  LookupNotFound(super.message);
-}

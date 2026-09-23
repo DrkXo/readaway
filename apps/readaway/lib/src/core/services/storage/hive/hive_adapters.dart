@@ -24,20 +24,8 @@ part 'hive_adapters.g.dart';
 
   // App Settings & Sub-configs
   AdapterSpec<Settings>(),
-  AdapterSpec<AiSettings>(),
-  AdapterSpec<DictionarySettings>(),
   AdapterSpec<CustomFont>(),
-  AdapterSpec<CustomDictionary>(),
-  AdapterSpec<OpdsCatalog>(),
-  AdapterSpec<AbsServer>(),
-  AdapterSpec<ProofreadRule>(),
-  AdapterSpec<GlobalReadSettings>(),
-  AdapterSpec<CustomTtsHighlightColors>(),
-  AdapterSpec<HighlightStyles>(),
-  AdapterSpec<Background>(),
   AdapterSpec<GlobalViewSettings>(),
-  AdapterSpec<ParagraphMode>(),
-  AdapterSpec<HardwarePageTurner>(),
 
   // TTS Catalog
   AdapterSpec<SherpaTtsModelInfo>(),

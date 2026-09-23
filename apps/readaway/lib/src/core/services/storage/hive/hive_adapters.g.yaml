@@ -99,8 +99,6 @@ types:
         index: 16
       paragraphMargin:
         index: 17
-      fullJustification:
-        index: 18
       textAlign:
         index: 19
       keepTextAlignment:
@@ -121,10 +119,6 @@ types:
         index: 27
       contrastOverlay:
         index: 28
-      autoScrollSpeed:
-        index: 29
-      keepScreenOn:
-        index: 30
       showStatusBar:
         index: 31
   Settings:
@@ -137,140 +131,12 @@ types:
         index: 1
       migrationVersion:
         index: 2
-      localBooksDir:
-        index: 3
-      customRootDir:
-        index: 4
-      externalLibraryFolders:
-        index: 5
-      autoImportFolders:
-        index: 6
-      autoImportFlattenFolders:
-        index: 7
-      keepLogin:
-        index: 8
-      alwaysOnTop:
-        index: 9
-      openBookInNewWindow:
-        index: 10
-      autoCheckUpdates:
-        index: 11
-      updateChannel:
-        index: 12
       screenWakeLock:
         index: 13
-      autohideCursor:
-        index: 14
-      screenBrightness:
-        index: 15
-      autoScreenBrightness:
-        index: 16
-      swipeBrightnessGesture:
-        index: 17
-      hardwarePageTurner:
-        index: 18
-      alwaysShowStatusBar:
-        index: 19
-      openLastBooks:
-        index: 20
-      lastOpenBooks:
-        index: 21
-      autoImportBooksOnOpen:
-        index: 22
-      savedBookCoverForLockScreen:
-        index: 23
-      savedBookCoverForLockScreenPath:
-        index: 24
-      telemetryEnabled:
-        index: 25
-      discordRichPresenceEnabled:
-        index: 26
-      libraryViewMode:
-        index: 27
-      librarySortBy:
-        index: 28
-      librarySortAscending:
-        index: 29
-      librarySortByAuto:
-        index: 30
-      libraryThenSortBy:
-        index: 31
-      libraryThenSortAscending:
-        index: 32
-      libraryGroupBy:
-        index: 33
-      libraryCoverFit:
-        index: 34
-      libraryAutoColumns:
-        index: 35
-      libraryColumns:
-        index: 36
-      librarySkeuomorphicCovers:
-        index: 37
-      libraryHideCovers:
-        index: 38
-      libraryRecentShelfEnabled:
-        index: 39
-      libraryBackgroundTextureId:
-        index: 40
-      libraryBackgroundOpacity:
-        index: 41
-      libraryBackgroundSize:
-        index: 42
       customFonts:
         index: 43
-      customDictionaries:
-        index: 44
-      dictionarySettings:
-        index: 45
-      opdsCatalogs:
-        index: 46
-      absServers:
-        index: 47
-      metadataSeriesCollapsed:
-        index: 48
-      metadataOthersCollapsed:
-        index: 49
-      metadataDescriptionCollapsed:
-        index: 50
-      pinCodeEnabled:
-        index: 51
-      pinCodeHash:
-        index: 52
-      pinCodeSalt:
-        index: 53
-      biometricUnlockEnabled:
-        index: 54
-      aiSettings:
-        index: 55
-      globalReadSettings:
-        index: 56
       globalViewSettings:
         index: 57
-  AiSettings:
-    typeId: 5
-    nextIndex: 6
-    fields:
-      enabled:
-        index: 0
-      provider:
-        index: 1
-      apiKey:
-        index: 2
-      model:
-        index: 3
-      maxTokens:
-        index: 4
-      temperature:
-        index: 5
-  DictionarySettings:
-    typeId: 6
-    nextIndex: 2
-    fields:
-      defaultDictionary:
-        index: 0
-      onlineDictionaries:
-        index: 1
   CustomFont:
     typeId: 7
     nextIndex: 3
@@ -281,320 +147,32 @@ types:
         index: 1
       path:
         index: 2
-  CustomDictionary:
-    typeId: 8
-    nextIndex: 3
-    fields:
-      id:
-        index: 0
-      name:
-        index: 1
-      url:
-        index: 2
-  OpdsCatalog:
-    typeId: 9
-    nextIndex: 3
-    fields:
-      id:
-        index: 0
-      title:
-        index: 1
-      url:
-        index: 2
-  AbsServer:
-    typeId: 10
-    nextIndex: 3
-    fields:
-      serverUrl:
-        index: 0
-      username:
-        index: 1
-      password:
-        index: 2
-  ProofreadRule:
-    typeId: 11
-    nextIndex: 3
-    fields:
-      pattern:
-        index: 0
-      replacement:
-        index: 1
-      caseSensitive:
-        index: 2
-  GlobalReadSettings:
-    typeId: 12
-    nextIndex: 12
-    fields:
-      sidebarWidth:
-        index: 0
-      notebookWidth:
-        index: 1
-      translationProvider:
-        index: 2
-      translateTargetLang:
-        index: 3
-      wordLensAutoDownload:
-        index: 4
-      highlightStyle:
-        index: 5
-      highlightStyles:
-        index: 6
-      customHighlightColors:
-        index: 7
-      userHighlightColors:
-        index: 8
-      defaultHighlightLabels:
-        index: 9
-      customTtsHighlightColors:
-        index: 10
-      customThemes:
-        index: 11
-  CustomTtsHighlightColors:
-    typeId: 13
-    nextIndex: 2
-    fields:
-      sentence:
-        index: 0
-      paragraph:
-        index: 1
-  HighlightStyles:
-    typeId: 14
-    nextIndex: 3
-    fields:
-      underline:
-        index: 0
-      background:
-        index: 1
-      outline:
-        index: 2
-  Background:
-    typeId: 15
-    nextIndex: 2
-    fields:
-      color:
-        index: 0
-      backgroundColor:
-        index: 1
   GlobalViewSettings:
     typeId: 16
-    nextIndex: 115
+    nextIndex: 116
     fields:
-      marginTopPx:
-        index: 0
-      marginBottomPx:
-        index: 1
-      marginLeftPx:
-        index: 2
-      marginRightPx:
-        index: 3
-      compactMarginTopPx:
-        index: 4
-      compactMarginBottomPx:
-        index: 5
-      compactMarginLeftPx:
-        index: 6
-      compactMarginRightPx:
-        index: 7
-      gapPercent:
-        index: 8
-      scrolled:
-        index: 9
-      scrolledDirection:
-        index: 10
-      webtoonMode:
-        index: 11
-      noContinuousScroll:
-        index: 12
-      disableClick:
-        index: 13
-      disableSwipe:
-        index: 14
-      disableDoubleClick:
-        index: 15
-      fullscreenClickArea:
-        index: 16
-      swapClickArea:
-        index: 17
       volumeKeysToFlip:
         index: 18
-      maxColumnCount:
-        index: 19
-      maxInlineSize:
-        index: 20
-      maxBlockSize:
-        index: 21
-      writingMode:
-        index: 22
-      vertical:
-        index: 23
-      rtl:
-        index: 24
-      scrollingOverlap:
-        index: 25
-      allowScript:
-        index: 26
-      hideScrollbar:
-        index: 27
-      autoScrollSpeed:
-        index: 28
-      autoScrollRunning:
-        index: 29
-      zoomLevel:
-        index: 30
       theme:
         index: 31
       selectedScheme:
         index: 32
-      backgroundTextureId:
-        index: 33
-      backgroundOpacity:
-        index: 34
-      backgroundSize:
-        index: 35
       highlightOpacity:
         index: 36
-      codeHighlighting:
-        index: 37
-      codeLanguage:
-        index: 38
-      userStylesheet:
-        index: 39
-      overrideLayout:
-        index: 40
-      overrideColor:
-        index: 41
-      useBookLayout:
-        index: 42
-      zoomMode:
-        index: 43
-      spreadMode:
-        index: 44
-      keepCoverSpread:
-        index: 45
       invertImgColorInDark:
         index: 46
       applyThemeToPdf:
         index: 47
-      contrast:
-        index: 48
-      defaultFont:
-        index: 49
-      defaultCjkFont:
-        index: 50
-      replaceQuotationMarks:
-        index: 51
-      convertChineseVariant:
-        index: 52
-      sideBarTab:
-        index: 53
-      uiLanguage:
-        index: 54
-      sortedToc:
-        index: 55
-      doubleBorder:
-        index: 56
-      borderColor:
-        index: 57
-      showHeader:
-        index: 58
-      showFooter:
-        index: 59
-      showRemainingTime:
-        index: 60
-      showRemainingPages:
-        index: 61
-      showProgressInfo:
-        index: 62
-      showStickyProgressBar:
-        index: 63
-      showCurrentTime:
-        index: 64
-      showCurrentBatteryStatus:
-        index: 65
-      showBatteryPercentage:
-        index: 66
-      showPaginationButtons:
-        index: 67
-      progressStyle:
-        index: 68
-      referencePageCount:
-        index: 69
-      animated:
-        index: 70
       pageTurnStyle:
         index: 71
-      isEink:
-        index: 72
-      isColorEink:
-        index: 73
-      paragraphMode:
-        index: 74
-      readingRulerEnabled:
-        index: 75
-      readingRulerLines:
-        index: 76
-      readingRulerPosition:
-        index: 77
-      readingRulerOpacity:
-        index: 78
-      readingRulerColor:
-        index: 79
       ttsRate:
         index: 80
-      ttsPitch:
-        index: 81
       ttsSentenceGap:
         index: 82
       ttsParagraphGap:
         index: 83
       ttsVoice:
         index: 84
-      ttsUseNarration:
-        index: 85
-      ttsLocation:
-        index: 86
-      ttsHighlightOptions:
-        index: 87
-      ttsHighlightGranularity:
-        index: 88
-      ttsMediaMetadata:
-        index: 89
-      ttsPlayerStyle:
-        index: 90
-      translationEnabled:
-        index: 91
-      translationProvider:
-        index: 92
-      translateTargetLang:
-        index: 93
-      showTranslateSource:
-        index: 94
-      ttsReadAloudText:
-        index: 95
-      screenOrientation:
-        index: 96
-      proofreadRules:
-        index: 97
-      enableAnnotationQuickActions:
-        index: 98
-      annotationQuickAction:
-        index: 99
-      annotationToolbarItems:
-        index: 100
-      copyToNotebook:
-        index: 101
-      wordLensEnabled:
-        index: 102
-      wordLensLevel:
-        index: 103
-      wordLensHintLang:
-        index: 104
-      wordLensGlossFontSize:
-        index: 105
-      wordLensGlossColor:
-        index: 106
-      isGlobal:
-        index: 107
       ttsSleepTimerMinutes:
         index: 108
       ttsSilenceScale:
@@ -609,24 +187,8 @@ types:
         index: 113
       ttsNarrationStyle:
         index: 114
-  ParagraphMode:
-    typeId: 17
-    nextIndex: 3
-    fields:
-      enabled:
-        index: 0
-      indentSize:
-        index: 1
-      maxLines:
-        index: 2
-  HardwarePageTurner:
-    typeId: 18
-    nextIndex: 2
-    fields:
-      enabled:
-        index: 0
-      pageTurnKeys:
-        index: 1
+      ttsPitch:
+        index: 115
   SherpaTtsModelInfo:
     typeId: 19
     nextIndex: 15

@@ -56,9 +56,6 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     @Default(0.0) double wordSpacing,
     @Default(0.0) double textIndent,
     @Default(0.5) double paragraphMargin,
-    @Deprecated('Use [textAlign] instead. Kept for JSON back-compat.')
-    @Default(true)
-    bool fullJustification,
     @Default(ReaderTextAlign.justify)
     @JsonKey(unknownEnumValue: ReaderTextAlign.justify)
     ReaderTextAlign textAlign,
@@ -74,31 +71,12 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     ReaderPageTransition pageTransition,
     @Default(0.0) double brightnessOverlay,
     @Default(0.0) double contrastOverlay,
-    double? autoScrollSpeed,
-    @Default(true) bool keepScreenOn,
     @Default(true) bool showStatusBar,
   }) = _ReaderPreferences;
 
   factory ReaderPreferences.fromJson(Map<String, dynamic> json) =>
       _$ReaderPreferencesFromJson(json);
 
-  /// Deserializes persisted preferences, migrating the legacy
-  /// `fullJustification` bool onto the new 4-way [textAlign] when the newer
-  /// field is absent from the stored JSON.
-  ///
-  /// Kept as a separate static helper (rather than a custom `fromJson`
-  /// factory) because a custom factory on a freezed class breaks
-  /// json_serializable's `toJson` generation for fields of this type.
-  static ReaderPreferences fromStoredJson(Map<String, dynamic> json) {
-    final prefs = _$ReaderPreferencesFromJson(json);
-    if (!json.containsKey('textAlign') &&
-        json.containsKey('fullJustification')) {
-      return prefs.copyWith(
-        textAlign: json['fullJustification'] == true
-            ? ReaderTextAlign.justify
-            : ReaderTextAlign.left,
-      );
-    }
-    return prefs;
-  }
+  static ReaderPreferences fromStoredJson(Map<String, dynamic> json) =>
+      _$ReaderPreferencesFromJson(json);
 }
