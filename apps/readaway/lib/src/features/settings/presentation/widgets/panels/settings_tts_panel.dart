@@ -181,6 +181,16 @@ class _TtsView extends StatelessWidget {
             const SizedBox(height: 24),
             SettingsSection(
               title: 'Available voices',
+              trailing: IconButton(
+                tooltip: 'Refresh voice catalog',
+                icon: const Icon(LucideIcons.refreshCw, size: 16),
+                visualDensity: VisualDensity.compact,
+                onPressed: () {
+                  context.read<SettingsBloc>().add(
+                        const SettingsEvent.refreshTts(force: true),
+                      );
+                },
+              ),
               rows: [
                 for (final entry in _groupedByLanguage(
                   state.ttsAvailableModels,

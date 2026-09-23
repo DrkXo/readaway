@@ -27,6 +27,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final _ttsDownloadSubs =
       <String, StreamSubscription<ModelDownloadProgress>>{};
   StreamSubscription<Settings>? _settingsSub;
+  StreamSubscription<List<SherpaTtsModelInfo>>? _catalogSub;
+  StreamSubscription<Set<String>>? _downloadedIdsSub;
 
   SettingsBloc({
     required this.preferencesRepository,
@@ -65,9 +67,15 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_PreviewTts>(_onPreviewTts, transformer: droppable());
     on<_TtsDownloadProgress>(_onTtsDownloadProgress);
     on<_TtsDownloadFailed>(_onTtsDownloadFailed);
+    on<_TtsCatalogUpdated>((event, emit) {
+      emit(state.copyWith(ttsAvailableModels: event.models));
+    });
+    on<_TtsDownloadedIdsUpdated>((event, emit) {
+      emit(state.copyWith(ttsDownloadedIds: event.ids));
+    });
 
     add(const SettingsEvent.loadPrefs());
-    add(const _RefreshTts());
+    add(const SettingsEvent.refreshTts());
 
     _settingsSub = settingsRepository.watchSettings().listen((settings) {
       final voice = settings.globalViewSettings.ttsVoice;
@@ -75,7 +83,19 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
           ? voice.split('@').first
           : voice;
       if (modelId != state.ttsActiveModelId && !isClosed) {
-        add(const _RefreshTts());
+        add(const SettingsEvent.refreshTts());
+      }
+    });
+
+    _catalogSub = ttsModelRepository.watchCatalog().listen((catalog) {
+      if (!isClosed && catalog.isNotEmpty) {
+        add(SettingsEvent.ttsCatalogUpdated(catalog));
+      }
+    });
+
+    _downloadedIdsSub = ttsModelRepository.watchDownloadedModelIds().listen((ids) {
+      if (!isClosed) {
+        add(SettingsEvent.ttsDownloadedIdsUpdated(ids));
       }
     });
   }
@@ -232,15 +252,21 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   }
 
   void _onRefreshTts(_RefreshTts event, Emitter<SettingsState> emit) async {
-    final downloadedResult = await ttsModelRepository
-        .getDownloadedModelIds()
+    final catalogResult = await ttsModelRepository
+        .getCatalog(forceRefresh: event.force)
         .run();
 
-    await downloadedResult.fold(
+    await catalogResult.fold(
       (failure) async {
-        emit(state.copyWith(ttsError: 'Failed to load voice catalog'));
+        if (state.ttsAvailableModels.isEmpty) {
+          emit(state.copyWith(ttsError: 'Failed to load voice catalog'));
+        }
       },
-      (downloadedIds) async {
+      (catalog) async {
+        final downloadedResult =
+            await ttsModelRepository.getDownloadedModelIds().run();
+        final downloadedIds = downloadedResult.getOrElse((_) => <String>{});
+
         var activeModelId = ttsModelRepository.activeModelId;
         if (activeModelId == null) {
           final settingsResult = await settingsRepository.getSettings().run();
@@ -264,9 +290,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
         emit(
           state.copyWith(
-            ttsAvailableModels: ttsModelRepository.availableModels,
+            ttsAvailableModels: catalog,
             ttsDownloadedIds: downloadedIds,
             ttsActiveModelId: activeModelId,
+            ttsError: null,
           ),
         );
       },
@@ -536,6 +563,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   @override
   Future<void> close() {
     _settingsSub?.cancel();
+    _catalogSub?.cancel();
+    _downloadedIdsSub?.cancel();
     for (final sub in _ttsDownloadSubs.values) {
       sub.cancel();
     }

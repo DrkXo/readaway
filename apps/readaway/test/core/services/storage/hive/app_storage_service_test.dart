@@ -144,12 +144,11 @@ void main() {
       );
 
       await ttsStore.saveCatalog([model]);
-      expect(ttsStore.isCatalogFresh(), isTrue);
 
       final catalog = ttsStore.loadCatalog();
-      expect(catalog?.length, 1);
-      expect(catalog?.first.id, 'test-model-1');
-      expect(catalog?.first.type, SherpaTtsModelType.vits);
+      expect(catalog.length, 1);
+      expect(catalog.first.id, 'test-model-1');
+      expect(catalog.first.type, SherpaTtsModelType.vits);
 
       await ttsStore.markDownloaded('test-model-1');
       expect(ttsStore.loadDownloadedIds().contains('test-model-1'), isTrue);

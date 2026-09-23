@@ -13,19 +13,16 @@ import '../../logging_service.dart';
 import '../../path_service.dart';
 import '../tts_model_store.dart';
 import '../tts_models.dart';
-import 'sherpa_model_catalog.dart';
 
 @singleton
 class SherpaTtsModelDownloaderService {
   SherpaTtsModelDownloaderService({
     required this._backgroundDownloader,
-    required this._catalog,
     required this._pathService,
     required this._store,
   });
 
   final BackGroundDownloaderService _backgroundDownloader;
-  final SherpaTtsModelCatalogService _catalog;
   final AppPathService _pathService;
   final TtsModelStore _store;
 
@@ -224,7 +221,7 @@ class SherpaTtsModelDownloaderService {
   }
 
   Future<void> _verifyChecksum(File file, String fileName) async {
-    final expected = _catalog.checksumFor(fileName);
+    final expected = _store.checksumFor(fileName);
     if (expected == null) return;
     final actual = await _sha256Of(file);
     if (actual != expected) {
@@ -285,7 +282,7 @@ class SherpaTtsModelDownloaderService {
 
     if (needDownload) {
       final transfer = await _backgroundDownloader.download(
-        url: _catalog.espeakDataUrl,
+        url: SherpaTtsUrls.espeakDataUrl,
         filename: 'espeak-ng-data.tar.bz2',
         saveDirectory: tmpDir,
         userInitiated: true,

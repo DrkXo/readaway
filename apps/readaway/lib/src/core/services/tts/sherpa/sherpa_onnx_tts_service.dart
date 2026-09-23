@@ -15,27 +15,23 @@ import '../../settings_service.dart';
 import '../tts_model_store.dart';
 import '../tts_models.dart';
 import 'sherpa_isolate_worker_service.dart';
-import 'sherpa_model_catalog.dart';
 import 'sherpa_tts_model_downloader.dart';
 
 @lazySingleton
 class SherpaOnnxTtsService {
   SherpaOnnxTtsService({
     required SherpaTtsModelDownloaderService downloader,
-    required SherpaTtsModelCatalogService sherpaTtsModelCatalog,
     required IsolateService isolateService,
     required AppPathService pathService,
     required TtsModelStore store,
     required SettingsService settingsService,
   }) : _downloader = downloader,
-       _sherpaTtsModelCatalog = sherpaTtsModelCatalog,
        _isolateService = isolateService,
        _pathService = pathService,
        _store = store,
        _settingsService = settingsService;
 
   final SherpaTtsModelDownloaderService _downloader;
-  final SherpaTtsModelCatalogService _sherpaTtsModelCatalog;
   final IsolateService _isolateService;
   final AppPathService _pathService;
   final TtsModelStore _store;
@@ -72,9 +68,6 @@ class SherpaOnnxTtsService {
       _bindingsInitialized = true;
     }
     _modelsRootDir ??= await _resolveModelsRootDir();
-    if (_sherpaTtsModelCatalog.models.isEmpty) {
-      await _sherpaTtsModelCatalog.load();
-    }
     if (!_isolateService.isSpawned(sherpaTtsIsolateName)) {
       await _isolateService.spawn(
         name: sherpaTtsIsolateName,
@@ -113,8 +106,6 @@ class SherpaOnnxTtsService {
     await releaseIsolate();
   }
 
-  List<SherpaTtsModelInfo> get availableModels => _sherpaTtsModelCatalog.models;
-
   Future<Directory> _modelDir(String modelId) async {
     final root = _modelsRootDir ?? await _resolveModelsRootDir();
     _modelsRootDir = root;
@@ -123,82 +114,22 @@ class SherpaOnnxTtsService {
 
   Future<bool> isModelDownloaded(String modelId) async {
     final dir = await _modelDir(modelId);
-    if (!await dir.exists()) return false;
-
-    final model = _sherpaTtsModelCatalog.byId(modelId);
+    final model = _store.byId(modelId);
     if (model == null) return false;
-
-    try {
-      final files = await _indexModelFiles(dir);
-
-      final bool structurallyComplete;
-      switch (model.type) {
-        case SherpaTtsModelType.vits:
-          structurallyComplete = files.onnxPrimary != null;
-          break;
-        case SherpaTtsModelType.kokoro:
-          structurallyComplete =
-              files.onnxPrimary != null && files.voicesBin != null;
-          break;
-        case SherpaTtsModelType.matcha:
-          structurallyComplete =
-              files.onnxPrimary != null && files.onnxSecondary != null;
-          break;
-      }
-      if (!structurallyComplete) return false;
-
-      if (model.needsEspeakData && files.espeakDataDir == null) return false;
-
-      return true;
-    } on SherpaTtsException {
-      return false;
-    }
+    final root = _modelsRootDir ?? await _resolveModelsRootDir();
+    return model.isStructurallyComplete(dir, sharedEspeakDir: root);
   }
 
   Future<List<SherpaTtsModelInfo>> getDownloadedModels() async {
-    if (_sherpaTtsModelCatalog.models.isEmpty) {
-      await _sherpaTtsModelCatalog.load();
-    }
     await reconcilePendingDownloads();
-
-    // Fast path: only structurally-check models the store says are
-    // downloaded, instead of scanning every model directory.
     final downloadedIds = _store.loadDownloadedIds();
-    final result = <SherpaTtsModelInfo>[];
-    final stale = <String>[];
-    for (final m in availableModels) {
-      if (!downloadedIds.contains(m.id)) continue;
-      if (await isModelDownloaded(m.id)) {
-        result.add(m);
-      } else {
-        stale.add(m.id);
-      }
-    }
-
-    // One-time migration: if the store has no entries but models exist on
-    // disk (installs predating the store), discover and persist them.
-    if (downloadedIds.isEmpty) {
-      for (final m in availableModels) {
-        if (await isModelDownloaded(m.id)) {
-          result.add(m);
-          await _store.markDownloaded(m.id);
-        }
-      }
-    }
-
-    // Drop stale entries so the store stays accurate.
-    for (final id in stale) {
-      await _store.unmarkDownloaded(id);
-    }
-    return result;
+    final catalog = _store.loadCatalog();
+    return catalog.where((m) => downloadedIds.contains(m.id)).toList();
   }
 
   /// Finishes any model downloads that were interrupted after the archive
   /// transfer completed but before extraction ran (e.g. the app was killed
-  /// mid-download). Scans each model directory for `.done` markers written
-  /// by [SherpaTtsModelDownloaderService.ttsModelTaskFinished], then runs
-  /// the checksum/extract/vocoder/espeak pipeline. Idempotent — markers are
-  /// consumed once.
+  /// mid-download).
   Future<void> reconcilePendingDownloads() async {
     final root = _modelsRootDir ?? await _resolveModelsRootDir();
     _modelsRootDir = root;
@@ -207,7 +138,7 @@ class SherpaOnnxTtsService {
     await for (final entity in root.list()) {
       if (entity is! Directory) continue;
       final modelId = p.basename(entity.path);
-      final model = _sherpaTtsModelCatalog.byId(modelId);
+      final model = _store.byId(modelId);
       if (model == null) continue;
 
       final markers = <File>[];
@@ -239,7 +170,11 @@ class SherpaOnnxTtsService {
       _speakerCount = null;
     }
     final dir = await _modelDir(modelId);
-    if (await dir.exists()) {
+    final model = _store.byId(modelId);
+    final cacheDir = await _pathService.getTtsAudioCacheDirectory();
+    if (model != null) {
+      await model.deleteFiles(dir, audioCacheDir: cacheDir);
+    } else if (await dir.exists()) {
       await dir.delete(recursive: true);
     }
     await _store.unmarkDownloaded(modelId);
@@ -272,7 +207,7 @@ class SherpaOnnxTtsService {
     double? silenceScale,
   }) async {
     await ensureInitialized();
-    final model = _sherpaTtsModelCatalog.byId(modelId);
+    final model = _store.byId(modelId);
     if (model == null) {
       throw SherpaTtsException('Unknown model id: $modelId');
     }
@@ -281,11 +216,11 @@ class SherpaOnnxTtsService {
       throw SherpaTtsException('Model $modelId is not downloaded yet.');
     }
 
-    var files = await _indexModelFiles(dir);
+    final rootDir = _modelsRootDir ?? await _resolveModelsRootDir();
+    var files = await model.indexFiles(dir, sharedEspeakDir: rootDir);
     if (model.needsEspeakData && files.espeakDataDir == null) {
-      final rootDir = _modelsRootDir ?? await _resolveModelsRootDir();
       await _downloader.ensureSharedEspeakData(rootDir);
-      files = await _indexModelFiles(dir);
+      files = await model.indexFiles(dir, sharedEspeakDir: rootDir);
     }
 
     final gvs = _settingsService.settings.globalViewSettings;
@@ -338,72 +273,9 @@ class SherpaOnnxTtsService {
     _speakerCount = result['speakerCount'] as int;
   }
 
-  Future<_ModelFiles> _indexModelFiles(Directory dir) async {
-    final onnxFiles = <String>[];
-    String? tokens, voicesBin, dataDir, dictDir;
-
-    final lexiconFiles = <String>[];
-    final ruleFstFiles = <String>[];
-    final ruleFarFiles = <String>[];
-    final entries = await dir.list(recursive: true).toList();
-
-    for (final e in entries) {
-      final name = p.basename(e.path);
-      if (e is File && name.endsWith('.onnx')) {
-        onnxFiles.add(e.path);
-      } else if (e is File && name == 'tokens.txt') {
-        tokens = e.path;
-      } else if (e is File &&
-          name.startsWith('lexicon') &&
-          name.endsWith('.txt')) {
-        lexiconFiles.add(e.path);
-      } else if (e is File && name.endsWith('.fst')) {
-        ruleFstFiles.add(e.path);
-      } else if (e is File && name.endsWith('.far')) {
-        ruleFarFiles.add(e.path);
-      } else if (e is File &&
-          (name.endsWith('.bin') && name.contains('voices'))) {
-        voicesBin = e.path;
-      } else if (e is Directory && name.contains('espeak-ng-data')) {
-        dataDir = e.path;
-      } else if (e is Directory && name.contains('dict')) {
-        dictDir = e.path;
-      }
-    }
-
-    if (dataDir == null && _modelsRootDir != null) {
-      final shared = Directory(p.join(_modelsRootDir!.path, 'espeak-ng-data'));
-      if (await shared.exists()) {
-        dataDir = shared.path;
-      }
-    }
-
-    if (tokens == null) {
-      throw SherpaTtsException(
-        'tokens.txt not found in ${dir.path} — is this a valid sherpa-onnx TTS model?',
-      );
-    }
-
-    lexiconFiles.sort();
-    ruleFstFiles.sort();
-    ruleFarFiles.sort();
-    onnxFiles.sort();
-
-    return _ModelFiles(
-      onnxFiles: onnxFiles,
-      tokens: tokens,
-      lexicon: lexiconFiles.isEmpty ? null : lexiconFiles.join(','),
-      ruleFsts: ruleFstFiles.isEmpty ? null : ruleFstFiles.join(','),
-      ruleFars: ruleFarFiles.isEmpty ? null : ruleFarFiles.join(','),
-      voicesBin: voicesBin,
-      espeakDataDir: dataDir,
-      dictDir: dictDir,
-    );
-  }
-
   Map<String, dynamic> _buildLoadModelMessage(
     SherpaTtsModelInfo model,
-    _ModelFiles files, {
+    ModelFilesInfo files, {
     required int numThreads,
     required bool debug,
     double noiseScale = 0.667,
@@ -713,29 +585,4 @@ class SherpaOnnxTtsService {
     }
     return File(outputPath);
   }
-}
-
-class _ModelFiles {
-  _ModelFiles({
-    required this.onnxFiles,
-    required this.tokens,
-    this.lexicon,
-    this.ruleFsts,
-    this.ruleFars,
-    this.voicesBin,
-    this.espeakDataDir,
-    this.dictDir,
-  });
-
-  final List<String> onnxFiles;
-  final String tokens;
-  final String? lexicon;
-  final String? ruleFsts;
-  final String? ruleFars;
-  final String? voicesBin;
-  final String? espeakDataDir;
-  final String? dictDir;
-
-  String? get onnxPrimary => onnxFiles.isNotEmpty ? onnxFiles.first : null;
-  String? get onnxSecondary => onnxFiles.length > 1 ? onnxFiles[1] : null;
 }

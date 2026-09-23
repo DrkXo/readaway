@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:path/path.dart' as p;
 
 import '../../error/exceptions/tts_exceptions.dart';
 
@@ -452,4 +454,177 @@ extension SherpaTtsModelTypeX on SherpaTtsModelType {
 extension StringTitleCaseX on String {
   String get titleCase =>
       isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
+}
+
+abstract final class SherpaTtsUrls {
+  static const String releaseBaseUrl =
+      'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models';
+  static const String manifestApiUrl =
+      'https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/tts-models';
+  static const String checksumUrl =
+      '$releaseBaseUrl/checksum.txt';
+  static const String espeakDataUrl =
+      '$releaseBaseUrl/espeak-ng-data.tar.bz2';
+  static const String hifiganUrl =
+      '$releaseBaseUrl/hifigan_v2.onnx';
+}
+
+class ModelFilesInfo {
+  const ModelFilesInfo({
+    required this.onnxFiles,
+    required this.tokens,
+    this.lexicon,
+    this.ruleFsts,
+    this.ruleFars,
+    this.voicesBin,
+    this.espeakDataDir,
+    this.dictDir,
+  });
+
+  final List<String> onnxFiles;
+  final String tokens;
+  final String? lexicon;
+  final String? ruleFsts;
+  final String? ruleFars;
+  final String? voicesBin;
+  final String? espeakDataDir;
+  final String? dictDir;
+
+  String? get onnxPrimary => onnxFiles.isNotEmpty ? onnxFiles.first : null;
+  String? get onnxSecondary => onnxFiles.length > 1 ? onnxFiles[1] : null;
+}
+
+extension SherpaTtsModelInfoX on SherpaTtsModelInfo {
+  /// Resolves and classifies all internal files for this model within [dir].
+  Future<ModelFilesInfo> indexFiles(
+    Directory dir, {
+    Directory? sharedEspeakDir,
+  }) async {
+    final onnxFiles = <String>[];
+    String? tokens, voicesBin, dataDir, dictDir;
+
+    final lexiconFiles = <String>[];
+    final ruleFstFiles = <String>[];
+    final ruleFarFiles = <String>[];
+
+    if (await dir.exists()) {
+      final entries = await dir.list(recursive: true).toList();
+      for (final e in entries) {
+        final name = p.basename(e.path);
+        if (e is File && name.endsWith('.onnx')) {
+          onnxFiles.add(e.path);
+        } else if (e is File && name == 'tokens.txt') {
+          tokens = e.path;
+        } else if (e is File &&
+            name.startsWith('lexicon') &&
+            name.endsWith('.txt')) {
+          lexiconFiles.add(e.path);
+        } else if (e is File && name.endsWith('.fst')) {
+          ruleFstFiles.add(e.path);
+        } else if (e is File && name.endsWith('.far')) {
+          ruleFarFiles.add(e.path);
+        } else if (e is File &&
+            (name.endsWith('.bin') && name.contains('voices'))) {
+          voicesBin = e.path;
+        } else if (e is Directory && name.contains('espeak-ng-data')) {
+          dataDir = e.path;
+        } else if (e is Directory && name.contains('dict')) {
+          dictDir = e.path;
+        }
+      }
+    }
+
+    if (dataDir == null && sharedEspeakDir != null) {
+      final shared = Directory(p.join(sharedEspeakDir.path, 'espeak-ng-data'));
+      if (await shared.exists()) {
+        dataDir = shared.path;
+      }
+    }
+
+    if (tokens == null) {
+      throw SherpaTtsException(
+        'tokens.txt not found in ${dir.path} — is this a valid sherpa-onnx TTS model?',
+      );
+    }
+
+    lexiconFiles.sort();
+    ruleFstFiles.sort();
+    ruleFarFiles.sort();
+    onnxFiles.sort();
+
+    return ModelFilesInfo(
+      onnxFiles: onnxFiles,
+      tokens: tokens,
+      lexicon: lexiconFiles.isEmpty ? null : lexiconFiles.join(','),
+      ruleFsts: ruleFstFiles.isEmpty ? null : ruleFstFiles.join(','),
+      ruleFars: ruleFarFiles.isEmpty ? null : ruleFarFiles.join(','),
+      voicesBin: voicesBin,
+      espeakDataDir: dataDir,
+      dictDir: dictDir,
+    );
+  }
+
+  /// Validates whether this model is structurally complete on disk.
+  Future<bool> isStructurallyComplete(
+    Directory dir, {
+    Directory? sharedEspeakDir,
+  }) async {
+    try {
+      if (!await dir.exists()) return false;
+      final files = await indexFiles(dir, sharedEspeakDir: sharedEspeakDir);
+
+      final bool structurallyComplete = switch (type) {
+        SherpaTtsModelType.vits => files.onnxPrimary != null,
+        SherpaTtsModelType.kokoro =>
+          files.onnxPrimary != null && files.voicesBin != null,
+        SherpaTtsModelType.matcha =>
+          files.onnxPrimary != null && files.onnxSecondary != null,
+      };
+      if (!structurallyComplete) return false;
+      if (needsEspeakData && files.espeakDataDir == null) return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Maps this model to one or more user-selectable [TtsVoiceOption]s.
+  List<TtsVoiceOption> toVoiceOptions() {
+    if (speakerCount > 1) {
+      return List.generate(
+        speakerCount,
+        (spk) => TtsVoiceOption(
+          engine: TtsEngineKind.sherpaOnnx,
+          id: id,
+          label: '$displayName (Voice $spk)',
+          languageCode: languageCode,
+          sherpaSpeakerId: spk,
+          previewAudioUrl: previewAudioUrl,
+        ),
+      );
+    }
+    return [
+      TtsVoiceOption(
+        engine: TtsEngineKind.sherpaOnnx,
+        id: id,
+        label: displayName,
+        languageCode: languageCode,
+        sherpaSpeakerId: speakerCount > 0 ? 0 : null,
+        previewAudioUrl: previewAudioUrl,
+      ),
+    ];
+  }
+
+  /// Deletes this model's directory and associated preview audio cache.
+  Future<void> deleteFiles(Directory modelDir, {Directory? audioCacheDir}) async {
+    if (await modelDir.exists()) {
+      await modelDir.delete(recursive: true);
+    }
+    if (audioCacheDir != null && await audioCacheDir.exists()) {
+      final mp3 = File(p.join(audioCacheDir.path, 'preview_$id.mp3'));
+      if (await mp3.exists()) await mp3.delete();
+      final wav = File(p.join(audioCacheDir.path, 'preview_$id.wav'));
+      if (await wav.exists()) await wav.delete();
+    }
+  }
 }

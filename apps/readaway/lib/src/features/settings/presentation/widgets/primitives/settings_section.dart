@@ -11,11 +11,13 @@ class SettingsSection extends StatelessWidget {
     this.title,
     this.scope,
     this.onReset,
+    this.trailing,
     required this.rows,
   });
 
   final String? title;
   final SettingsScope? scope;
+  final Widget? trailing;
 
   /// When set, a reset icon is shown in the title row that restores this
   /// section's settings to their defaults.
@@ -70,6 +72,7 @@ class SettingsSection extends StatelessWidget {
                     ],
                   ),
                 ),
+                ?trailing,
                 if (onReset != null) _ResetButton(onPressed: onReset!),
               ],
             ),

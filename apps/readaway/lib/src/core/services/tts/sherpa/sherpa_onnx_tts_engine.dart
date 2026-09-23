@@ -29,35 +29,7 @@ class SherpaOnnxTtsEngine implements TtsEngine {
   @override
   Future<List<TtsVoiceOption>> getAvailableVoices() async {
     final downloaded = await _sherpaService.getDownloadedModels();
-    final result = <TtsVoiceOption>[];
-    for (final m in downloaded) {
-      if (m.speakerCount > 1) {
-        for (var spk = 0; spk < m.speakerCount; spk++) {
-          result.add(
-            TtsVoiceOption(
-              engine: TtsEngineKind.sherpaOnnx,
-              id: m.id,
-              label: '${m.displayName} (Voice $spk)',
-              languageCode: m.languageCode,
-              sherpaSpeakerId: spk,
-              previewAudioUrl: m.previewAudioUrl,
-            ),
-          );
-        }
-      } else {
-        result.add(
-          TtsVoiceOption(
-            engine: TtsEngineKind.sherpaOnnx,
-            id: m.id,
-            label: m.displayName,
-            languageCode: m.languageCode,
-            sherpaSpeakerId: m.speakerCount > 0 ? 0 : null,
-            previewAudioUrl: m.previewAudioUrl,
-          ),
-        );
-      }
-    }
-    return result;
+    return downloaded.expand((m) => m.toVoiceOptions()).toList();
   }
 
   @override

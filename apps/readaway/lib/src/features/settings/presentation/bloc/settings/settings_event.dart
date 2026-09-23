@@ -20,7 +20,8 @@ abstract class SettingsEvent with _$SettingsEvent {
   const factory SettingsEvent.updateAppSettings(Settings settings) =
       _UpdateAppSettings;
 
-  const factory SettingsEvent.refreshTts() = _RefreshTts;
+  const factory SettingsEvent.refreshTts({@Default(false) bool force}) =
+      _RefreshTts;
   const factory SettingsEvent.startTtsDownload(SherpaTtsModelInfo model) =
       _StartTtsDownload;
   const factory SettingsEvent.cancelTtsDownload(String modelId) =
@@ -43,4 +44,9 @@ abstract class SettingsEvent with _$SettingsEvent {
   }) = _TtsDownloadProgress;
   const factory SettingsEvent.ttsDownloadFailed(String modelId, String error) =
       _TtsDownloadFailed;
+  const factory SettingsEvent.ttsCatalogUpdated(
+    List<SherpaTtsModelInfo> models,
+  ) = _TtsCatalogUpdated;
+  const factory SettingsEvent.ttsDownloadedIdsUpdated(Set<String> ids) =
+      _TtsDownloadedIdsUpdated;
 }
