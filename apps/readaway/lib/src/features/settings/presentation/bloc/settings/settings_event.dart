@@ -22,6 +22,7 @@ abstract class SettingsEvent with _$SettingsEvent {
 
   const factory SettingsEvent.refreshTts({@Default(false) bool force}) =
       _RefreshTts;
+  const factory SettingsEvent.checkForTtsUpdates() = _CheckForTtsUpdates;
   const factory SettingsEvent.startTtsDownload(SherpaTtsModelInfo model) =
       _StartTtsDownload;
   const factory SettingsEvent.cancelTtsDownload(String modelId) =
@@ -34,6 +35,15 @@ abstract class SettingsEvent with _$SettingsEvent {
       _DeleteTtsModel;
   const factory SettingsEvent.activateTts(String modelId) = _ActivateTts;
   const factory SettingsEvent.previewTts(String modelId) = _PreviewTts;
+  const factory SettingsEvent.importCustomTtsModel({
+    required CustomModelInspectionResult inspection,
+    required String displayName,
+    required String languageCode,
+    required String languageLabel,
+    SherpaTtsModelType? typeOverride,
+    @Default(0) int speakerCount,
+    @Default(22050) int sampleRate,
+  }) = _ImportCustomTtsModel;
 
   const factory SettingsEvent.ttsDownloadProgress(
     String modelId,
@@ -47,6 +57,9 @@ abstract class SettingsEvent with _$SettingsEvent {
   const factory SettingsEvent.ttsCatalogUpdated(
     List<SherpaTtsModelInfo> models,
   ) = _TtsCatalogUpdated;
+  const factory SettingsEvent.ttsInstalledModelsUpdated(
+    List<SherpaTtsModelInfo> models,
+  ) = _TtsInstalledModelsUpdated;
   const factory SettingsEvent.ttsDownloadedIdsUpdated(Set<String> ids) =
       _TtsDownloadedIdsUpdated;
 }

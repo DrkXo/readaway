@@ -191,7 +191,7 @@ types:
         index: 115
   SherpaTtsModelInfo:
     typeId: 19
-    nextIndex: 15
+    nextIndex: 21
     fields:
       id:
         index: 0
@@ -223,6 +223,18 @@ types:
         index: 13
       family:
         index: 14
+      isCustom:
+        index: 15
+      customModelPath:
+        index: 16
+      installedChecksum:
+        index: 17
+      installedSizeBytes:
+        index: 18
+      installedAt:
+        index: 19
+      extraMetadata:
+        index: 20
   SherpaTtsModelType:
     typeId: 20
     nextIndex: 3

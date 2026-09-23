@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/services/services.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/settings/settings_bloc.dart';
+import '../dialogs/custom_tts_import_dialog.dart';
 import '../widgets.dart';
 
 class SettingsTtsPanel extends StatelessWidget {
@@ -12,17 +13,36 @@ class SettingsTtsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<SettingsBloc, SettingsState>(
-      listenWhen: (prev, curr) =>
-          curr.ttsError != null && prev.ttsError != curr.ttsError,
-      listener: (context, state) {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(
-            content: Text(state.ttsError!),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<SettingsBloc, SettingsState>(
+          listenWhen: (prev, curr) =>
+              curr.ttsError != null && prev.ttsError != curr.ttsError,
+          listener: (context, state) {
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+              SnackBar(
+                content: Text(state.ttsError!),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+        ),
+        BlocListener<SettingsBloc, SettingsState>(
+          listenWhen: (prev, curr) =>
+              curr.ttsUpdateNotification != null &&
+              prev.ttsUpdateNotification != curr.ttsUpdateNotification,
+          listener: (context, state) {
+            if (state.ttsUpdateNotification != null) {
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                SnackBar(
+                  content: Text(state.ttsUpdateNotification!),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+        ),
+      ],
       child: const _TtsView(),
     );
   }
@@ -36,7 +56,8 @@ class _TtsView extends StatelessWidget {
   ) {
     final groups = <String, List<SherpaTtsModelInfo>>{};
     for (final m in models) {
-      groups.putIfAbsent(m.languageLabel, () => []).add(m);
+      final label = m.isCustom ? 'Custom Voices' : m.languageLabel;
+      groups.putIfAbsent(label, () => []).add(m);
     }
     return groups;
   }
@@ -46,8 +67,10 @@ class _TtsView extends StatelessWidget {
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) =>
           prev.ttsAvailableModels != curr.ttsAvailableModels ||
+          prev.ttsInstalledModels != curr.ttsInstalledModels ||
           prev.ttsDownloadedIds != curr.ttsDownloadedIds ||
           prev.ttsActiveModelId != curr.ttsActiveModelId ||
+          prev.isCheckingTtsUpdates != curr.isCheckingTtsUpdates ||
           prev.appSettings.globalViewSettings !=
               curr.appSettings.globalViewSettings,
       builder: (context, state) {
@@ -181,15 +204,37 @@ class _TtsView extends StatelessWidget {
             const SizedBox(height: 24),
             SettingsSection(
               title: 'Available voices',
-              trailing: IconButton(
-                tooltip: 'Refresh voice catalog',
-                icon: const Icon(LucideIcons.refreshCw, size: 16),
-                visualDensity: VisualDensity.compact,
-                onPressed: () {
-                  context.read<SettingsBloc>().add(
-                        const SettingsEvent.refreshTts(force: true),
-                      );
-                },
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Import Custom Voice Model',
+                    icon: const Icon(LucideIcons.filePlus, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => CustomTtsImportDialog.show(context),
+                  ),
+                  const SizedBox(width: 4),
+                  if (state.isCheckingTtsUpdates)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else
+                    IconButton(
+                      tooltip: 'Check for voice updates from GitHub',
+                      icon: const Icon(LucideIcons.refreshCw, size: 16),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        context.read<SettingsBloc>().add(
+                              const SettingsEvent.checkForTtsUpdates(),
+                            );
+                      },
+                    ),
+                ],
               ),
               rows: [
                 for (final entry in _groupedByLanguage(
@@ -198,9 +243,10 @@ class _TtsView extends StatelessWidget {
                   _LanguageGroupTile(
                     language: entry.key,
                     models: entry.value,
-                    initiallyExpanded: entry.value.any(
-                      (m) => m.id == (state.ttsActiveModelId ?? ''),
-                    ),
+                    initiallyExpanded: entry.key == 'Custom Voices' ||
+                        entry.value.any(
+                          (m) => m.id == (state.ttsActiveModelId ?? ''),
+                        ),
                   ),
               ],
             ),
@@ -256,7 +302,11 @@ class _LanguageGroupTileState extends State<_LanguageGroupTile> {
                 Expanded(
                   child: Text(
                     '${widget.language} (${widget.models.length})',
-                    style: theme.textTheme.bodyLarge,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: widget.language == 'Custom Voices'
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
                   ),
                 ),
                 Icon(
@@ -287,7 +337,8 @@ class _VoiceTile extends StatelessWidget {
           prev.ttsDownloadOf(model.id) != curr.ttsDownloadOf(model.id) ||
           prev.isTtsDownloaded(model.id) != curr.isTtsDownloaded(model.id) ||
           prev.isTtsActive(model.id) != curr.isTtsActive(model.id) ||
-          prev.isTtsBusy(model.id) != curr.isTtsBusy(model.id),
+          prev.isTtsBusy(model.id) != curr.isTtsBusy(model.id) ||
+          prev.modelHasUpdate(model.id) != curr.modelHasUpdate(model.id),
       builder: (context, state) {
         final theme = Theme.of(context);
         final scheme = theme.colorScheme;
@@ -295,9 +346,10 @@ class _VoiceTile extends StatelessWidget {
         final isDownloaded = state.isTtsDownloaded(model.id);
         final isActive = state.isTtsActive(model.id);
         final isBusy = state.isTtsBusy(model.id);
+        final hasUpdate = state.modelHasUpdate(model.id);
 
         final subtitle = [
-          model.languageLabel,
+          if (model.isCustom) 'Custom' else model.languageLabel,
           if (model.familyLabel != null) model.familyLabel!,
           '${model.approxSizeMb.round()} MB',
           if (model.speakerCount > 0) '${model.speakerCount} voices',
@@ -330,6 +382,46 @@ class _VoiceTile extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            if (model.isCustom) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: scheme.secondaryContainer,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Custom',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: scheme.onSecondaryContainer,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (hasUpdate) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: scheme.tertiaryContainer,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Update Available',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: scheme.onTertiaryContainer,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            ],
                             if (isBusy) ...[
                               const SizedBox(width: 8),
                               SpinKitPulsingGrid(
@@ -356,6 +448,7 @@ class _VoiceTile extends StatelessWidget {
                     isDownloaded: isDownloaded,
                     isActive: isActive,
                     isBusy: isBusy,
+                    hasUpdate: hasUpdate,
                   ),
                 ],
               ),
@@ -418,6 +511,7 @@ class _VoiceActions extends StatelessWidget {
     required this.isDownloaded,
     required this.isActive,
     required this.isBusy,
+    required this.hasUpdate,
   });
 
   final SherpaTtsModelInfo model;
@@ -425,14 +519,17 @@ class _VoiceActions extends StatelessWidget {
   final bool isDownloaded;
   final bool isActive;
   final bool isBusy;
+  final bool hasUpdate;
 
   Future<void> _confirmDelete(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Delete ${model.displayName}?'),
-        content: const Text(
-          'The downloaded voice files will be removed from this device.',
+        content: Text(
+          model.isCustom
+              ? 'The custom voice model files will be deleted.'
+              : 'The downloaded voice files will be removed from this device.',
         ),
         actions: [
           TextButton(
@@ -485,18 +582,22 @@ class _VoiceActions extends StatelessWidget {
       );
     }
 
+    final showPreview = !model.isCustom &&
+        (isDownloaded || model.previewAudioUrl != null);
+
     if (!isDownloaded) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            tooltip: isBusy ? 'Stop sample' : 'Play sample',
-            icon: Icon(
-              isBusy ? LucideIcons.square : LucideIcons.playCircle,
-              color: scheme.primary,
+          if (showPreview)
+            IconButton(
+              tooltip: isBusy ? 'Stop sample' : 'Play sample',
+              icon: Icon(
+                isBusy ? LucideIcons.square : LucideIcons.playCircle,
+                color: scheme.primary,
+              ),
+              onPressed: () => bloc.add(SettingsEvent.previewTts(model.id)),
             ),
-            onPressed: () => bloc.add(SettingsEvent.previewTts(model.id)),
-          ),
           IconButton(
             tooltip: 'Download',
             icon: const Icon(LucideIcons.download),
@@ -509,14 +610,24 @@ class _VoiceActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          tooltip: isBusy ? 'Stop sample' : 'Play sample',
-          icon: Icon(
-            isBusy ? LucideIcons.square : LucideIcons.playCircle,
-            color: scheme.primary,
+        if (hasUpdate)
+          IconButton(
+            tooltip: 'Update voice model to latest version',
+            icon: Icon(
+              LucideIcons.arrowUpCircle,
+              color: scheme.tertiary,
+            ),
+            onPressed: () => bloc.add(SettingsEvent.startTtsDownload(model)),
           ),
-          onPressed: () => bloc.add(SettingsEvent.previewTts(model.id)),
-        ),
+        if (showPreview)
+          IconButton(
+            tooltip: isBusy ? 'Stop sample' : 'Play sample',
+            icon: Icon(
+              isBusy ? LucideIcons.square : LucideIcons.playCircle,
+              color: scheme.primary,
+            ),
+            onPressed: () => bloc.add(SettingsEvent.previewTts(model.id)),
+          ),
         if (!isActive)
           TextButton(
             onPressed: isBusy

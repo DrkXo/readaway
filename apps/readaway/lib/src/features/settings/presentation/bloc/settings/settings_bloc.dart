@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../../core/services/logging_service.dart';
+import '../../../../../core/services/tts/importer/custom_tts_model_importer_service.dart';
 import '../../../../../core/services/tts/tts_models.dart';
 import '../../../../reader/domain/repositories/reader_preferences_repository.dart';
 import '../../../domain/entity/reader_preferences.dart';
@@ -28,6 +29,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       <String, StreamSubscription<ModelDownloadProgress>>{};
   StreamSubscription<Settings>? _settingsSub;
   StreamSubscription<List<SherpaTtsModelInfo>>? _catalogSub;
+  StreamSubscription<List<SherpaTtsModelInfo>>? _installedModelsSub;
   StreamSubscription<Set<String>>? _downloadedIdsSub;
 
   SettingsBloc({
@@ -58,6 +60,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_UpdateAppSettings>(_onUpdateAppSettings, transformer: droppable());
 
     on<_RefreshTts>(_onRefreshTts, transformer: concurrent());
+    on<_CheckForTtsUpdates>(_onCheckForTtsUpdates, transformer: droppable());
     on<_StartTtsDownload>(_onStartTtsDownload, transformer: concurrent());
     on<_CancelTtsDownload>(_onCancelTtsDownload);
     on<_PauseTtsDownload>(_onPauseTtsDownload);
@@ -65,10 +68,14 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_DeleteTtsModel>(_onDeleteTtsModel);
     on<_ActivateTts>(_onActivateTts, transformer: droppable());
     on<_PreviewTts>(_onPreviewTts, transformer: droppable());
+    on<_ImportCustomTtsModel>(_onImportCustomTtsModel, transformer: droppable());
     on<_TtsDownloadProgress>(_onTtsDownloadProgress);
     on<_TtsDownloadFailed>(_onTtsDownloadFailed);
     on<_TtsCatalogUpdated>((event, emit) {
       emit(state.copyWith(ttsAvailableModels: event.models));
+    });
+    on<_TtsInstalledModelsUpdated>((event, emit) {
+      emit(state.copyWith(ttsInstalledModels: event.models));
     });
     on<_TtsDownloadedIdsUpdated>((event, emit) {
       emit(state.copyWith(ttsDownloadedIds: event.ids));
@@ -89,7 +96,13 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
     _catalogSub = ttsModelRepository.watchCatalog().listen((catalog) {
       if (!isClosed && catalog.isNotEmpty) {
-        add(SettingsEvent.ttsCatalogUpdated(catalog));
+        add(SettingsEvent.ttsCatalogUpdated(ttsModelRepository.availableModels));
+      }
+    });
+
+    _installedModelsSub = ttsModelRepository.watchInstalledModels().listen((installed) {
+      if (!isClosed) {
+        add(SettingsEvent.ttsInstalledModelsUpdated(installed));
       }
     });
 
@@ -140,8 +153,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         final map = Map<String, ReaderPreferences>.of(
           state.documentReaderPrefs,
         );
-        // Only keep an entry when a real override exists; otherwise remove it
-        // so the effective prefs fall back to the LIVE global prefs.
         if (loaded == null) {
           map.remove(event.path);
         } else {
@@ -195,15 +206,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     );
   }
 
-  void _onUpdateAppSettings(
-    _UpdateAppSettings event,
-    Emitter<SettingsState> emit,
-  ) async {
-    await settingsRepository.saveSettings(event.settings);
-    emit(state.copyWith(appSettings: event.settings));
-    logger.d('App settings updated');
-  }
-
   void _onImportReaderPrefs(
     _ImportReaderPrefs event,
     Emitter<SettingsState> emit,
@@ -219,6 +221,15 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     );
   }
 
+  void _onUpdateAppSettings(
+    _UpdateAppSettings event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await settingsRepository.saveSettings(event.settings);
+    emit(state.copyWith(appSettings: event.settings));
+    logger.d('App settings updated');
+  }
+
   void _onLoadPrefs(
     _LoadPrefs event,
     Emitter<SettingsState> emit,
@@ -231,16 +242,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
     emit(state.copyWith(globalReaderPrefs: prefs, appSettings: settings));
     logger.d('Settings loaded via event');
-  }
-
-  /// Dispatches [SettingsEvent.loadPrefs] to reload preferences.
-  void loadPrefs() => add(const SettingsEvent.loadPrefs());
-
-  SherpaTtsModelInfo? _ttsModelById(String id) {
-    for (final m in ttsModelRepository.availableModels) {
-      if (m.id == id) return m;
-    }
-    return null;
   }
 
   void _onRefreshTts(_RefreshTts event, Emitter<SettingsState> emit) async {
@@ -258,6 +259,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         final downloadedResult =
             await ttsModelRepository.getDownloadedModelIds();
         final downloadedIds = downloadedResult.dataOrNull ?? <String>{};
+        final installedResult =
+            await ttsModelRepository.getInstalledModels();
+        final installedModels = installedResult.dataOrNull ?? <SherpaTtsModelInfo>[];
 
         var activeModelId = ttsModelRepository.activeModelId;
         if (activeModelId == null) {
@@ -282,8 +286,44 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         emit(
           state.copyWith(
             ttsAvailableModels: catalog,
+            ttsInstalledModels: installedModels,
             ttsDownloadedIds: downloadedIds,
             ttsActiveModelId: activeModelId,
+            ttsError: null,
+          ),
+        );
+      },
+    );
+  }
+
+  void _onCheckForTtsUpdates(
+    _CheckForTtsUpdates event,
+    Emitter<SettingsState> emit,
+  ) async {
+    emit(state.copyWith(isCheckingTtsUpdates: true, ttsUpdateNotification: null));
+    final result = await ttsModelRepository.checkForCatalogUpdates();
+    result.fold(
+      (failure) {
+        emit(
+          state.copyWith(
+            isCheckingTtsUpdates: false,
+            ttsError: 'Failed to check for updates: ${failure.message}',
+          ),
+        );
+      },
+      (syncResult) {
+        final String message;
+        if (syncResult.newModelsCount > 0 || syncResult.updatedModelsCount > 0) {
+          message =
+              'Catalog updated: ${syncResult.newModelsCount} new voice(s), ${syncResult.updatedModelsCount} updated';
+        } else {
+          message = 'All voices are up to date';
+        }
+        emit(
+          state.copyWith(
+            isCheckingTtsUpdates: false,
+            ttsAvailableModels: ttsModelRepository.availableModels,
+            ttsUpdateNotification: message,
             ttsError: null,
           ),
         );
@@ -331,9 +371,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _CancelTtsDownload event,
     Emitter<SettingsState> emit,
   ) {
-    _ttsDownloadSubs.remove(event.modelId)?.cancel();
+    _ttsDownloadSubs[event.modelId]?.cancel();
+    _ttsDownloadSubs.remove(event.modelId);
     unawaited(ttsModelRepository.cancelDownload(event.modelId));
-    _removeTtsDownload(event.modelId, emit);
+    final downloads = Map<String, SettingsDownloadStatus>.from(state.ttsDownloads)
+      ..remove(event.modelId);
+    emit(state.copyWith(ttsDownloads: downloads));
   }
 
   void _onPauseTtsDownload(
@@ -341,7 +384,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     unawaited(ttsModelRepository.pauseDownload(event.modelId));
-    _setTtsDownloadStage(event.modelId, ModelDownloadStage.paused, emit);
   }
 
   void _onResumeTtsDownload(
@@ -349,26 +391,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     unawaited(ttsModelRepository.resumeDownload(event.modelId));
-    _setTtsDownloadStage(event.modelId, ModelDownloadStage.downloading, emit);
-  }
-
-  void _setTtsDownloadStage(
-    String id,
-    ModelDownloadStage stage,
-    Emitter<SettingsState> emit,
-  ) {
-    final current = state.ttsDownloads[id];
-    if (current == null) return;
-    final downloads = Map<String, SettingsDownloadStatus>.of(
-      state.ttsDownloads,
-    );
-    downloads[id] = SettingsDownloadStatus(
-      stage: stage,
-      fraction: current.fraction,
-      speedBytesPerSec: current.speedBytesPerSec,
-      timeRemaining: current.timeRemaining,
-    );
-    emit(state.copyWith(ttsDownloads: downloads));
   }
 
   void _onTtsDownloadProgress(
@@ -376,62 +398,87 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     if (event.stage == ModelDownloadStage.done) {
-      _ttsDownloadSubs.remove(event.modelId)?.cancel();
-      _finishTtsDownload(event.modelId, emit);
-      return;
+      _ttsDownloadSubs[event.modelId]?.cancel();
+      _ttsDownloadSubs.remove(event.modelId);
+      final downloads =
+          Map<String, SettingsDownloadStatus>.from(state.ttsDownloads)
+            ..remove(event.modelId);
+      emit(
+        state.copyWith(
+          ttsDownloads: downloads,
+          ttsDownloadedIds: {...state.ttsDownloadedIds, event.modelId},
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          ttsDownloads: {
+            ...state.ttsDownloads,
+            event.modelId: SettingsDownloadStatus(
+              stage: event.stage,
+              fraction: event.fraction,
+              speedBytesPerSec: event.speedBytesPerSec,
+              timeRemaining: event.timeRemaining,
+            ),
+          },
+        ),
+      );
     }
-    if (event.stage == ModelDownloadStage.failed) {
-      _removeTtsDownload(event.modelId, emit);
-      return;
-    }
-    if (!state.ttsDownloads.containsKey(event.modelId)) return;
-
-    final downloads = Map<String, SettingsDownloadStatus>.of(
-      state.ttsDownloads,
-    );
-    downloads[event.modelId] = SettingsDownloadStatus(
-      stage: event.stage,
-      fraction: event.fraction,
-      speedBytesPerSec: event.speedBytesPerSec,
-      timeRemaining: event.timeRemaining,
-    );
-    emit(state.copyWith(ttsDownloads: downloads));
   }
 
   void _onTtsDownloadFailed(
     _TtsDownloadFailed event,
     Emitter<SettingsState> emit,
   ) {
-    if (_ttsDownloadSubs.remove(event.modelId) != null ||
-        state.ttsDownloads.containsKey(event.modelId)) {
-      final name = _ttsModelById(event.modelId)?.displayName ?? 'voice';
-      final downloads = Map<String, SettingsDownloadStatus>.of(
-        state.ttsDownloads,
-      )..remove(event.modelId);
-      emit(
-        state.copyWith(
-          ttsError: 'Failed to download $name: ${event.error}',
-          ttsDownloads: downloads,
-        ),
-      );
-    }
-  }
-
-  void _removeTtsDownload(String id, Emitter<SettingsState> emit) {
-    if (!state.ttsDownloads.containsKey(id)) return;
-    final downloads = Map<String, SettingsDownloadStatus>.of(state.ttsDownloads)
-      ..remove(id);
-    emit(state.copyWith(ttsDownloads: downloads));
-  }
-
-  void _finishTtsDownload(String id, Emitter<SettingsState> emit) {
-    final downloads = Map<String, SettingsDownloadStatus>.of(state.ttsDownloads)
-      ..remove(id);
+    _ttsDownloadSubs[event.modelId]?.cancel();
+    _ttsDownloadSubs.remove(event.modelId);
+    final downloads = Map<String, SettingsDownloadStatus>.from(state.ttsDownloads)
+      ..remove(event.modelId);
+    final name = state.ttsAvailableModels
+            .where((m) => m.id == event.modelId)
+            .firstOrNull
+            ?.displayName ??
+        'voice';
     emit(
       state.copyWith(
         ttsDownloads: downloads,
-        ttsDownloadedIds: {...state.ttsDownloadedIds, id},
+        ttsError: 'Download failed for $name: ${event.error}',
       ),
+    );
+  }
+
+  void _onImportCustomTtsModel(
+    _ImportCustomTtsModel event,
+    Emitter<SettingsState> emit,
+  ) async {
+    emit(state.copyWith(ttsError: null));
+    final result = await ttsModelRepository.importCustomModel(
+      inspection: event.inspection,
+      displayName: event.displayName,
+      languageCode: event.languageCode,
+      languageLabel: event.languageLabel,
+      typeOverride: event.typeOverride,
+      speakerCount: event.speakerCount,
+      sampleRate: event.sampleRate,
+    );
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(ttsError: failure.message));
+      },
+      (importedModel) {
+        emit(
+          state.copyWith(
+            ttsAvailableModels: ttsModelRepository.availableModels,
+            ttsDownloadedIds: {...state.ttsDownloadedIds, importedModel.id},
+            ttsInstalledModels: [
+              ...state.ttsInstalledModels.where((m) => m.id != importedModel.id),
+              importedModel,
+            ],
+            ttsUpdateNotification: 'Voice "${importedModel.displayName}" imported successfully',
+          ),
+        );
+      },
     );
   }
 
@@ -471,6 +518,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
             ttsDownloadedIds: state.ttsDownloadedIds
                 .where((e) => e != id)
                 .toSet(),
+            ttsInstalledModels: state.ttsInstalledModels
+                .where((m) => m.id != id)
+                .toList(),
             ttsActiveModelId: wasActive ? null : state.ttsActiveModelId,
           ),
         );
@@ -551,6 +601,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   Future<void> close() {
     _settingsSub?.cancel();
     _catalogSub?.cancel();
+    _installedModelsSub?.cancel();
     _downloadedIdsSub?.cancel();
     for (final sub in _ttsDownloadSubs.values) {
       sub.cancel();

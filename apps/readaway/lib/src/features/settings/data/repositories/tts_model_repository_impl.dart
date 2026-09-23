@@ -7,9 +7,9 @@ import 'package:path/path.dart' as p;
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/services/audio/audio_player_service.dart';
-import '../../../../core/services/http/http_service.dart';
-import '../../../../core/services/logging_service.dart';
 import '../../../../core/services/path_service.dart';
+import '../../../../core/services/tts/catalog/tts_catalog_service.dart';
+import '../../../../core/services/tts/importer/custom_tts_model_importer_service.dart';
 import '../../../../core/services/tts/sherpa/sherpa_onnx_tts_service.dart';
 import '../../../../core/services/tts/tts_model_store.dart';
 import '../../../../core/services/tts/tts_models.dart';
@@ -17,7 +17,8 @@ import '../../domain/repositories/tts_model_repository.dart';
 
 @LazySingleton(as: TtsModelRepository)
 class TtsModelRepositoryImpl implements TtsModelRepository {
-  final HttpService _httpService;
+  final TtsCatalogService _catalogService;
+  final CustomTtsModelImporterService _importerService;
   final TtsModelStore _store;
   final SherpaOnnxTtsService _ttsService;
   final AudioPlayerService _audioPlayer;
@@ -26,7 +27,8 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   String? _activeModelId;
 
   TtsModelRepositoryImpl(
-    this._httpService,
+    this._catalogService,
+    this._importerService,
     this._store,
     this._ttsService,
     this._audioPlayer,
@@ -34,10 +36,21 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   );
 
   @override
-  List<SherpaTtsModelInfo> get availableModels => _store.loadCatalog();
+  List<SherpaTtsModelInfo> get availableModels {
+    final catalog = _store.loadCatalog();
+    final customModels = _store
+        .loadInstalledModelsList()
+        .where((m) => m.isCustom)
+        .toList();
+    return [...customModels, ...catalog];
+  }
 
   @override
   Stream<List<SherpaTtsModelInfo>> watchCatalog() => _store.watchCatalog();
+
+  @override
+  Stream<List<SherpaTtsModelInfo>> watchInstalledModels() =>
+      _store.watchInstalledModels();
 
   @override
   Stream<Set<String>> watchDownloadedModelIds() => _store.watchDownloadedIds();
@@ -51,55 +64,12 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   }) {
     return guard(
       () async {
-        final cached = _store.loadCatalog();
-        if (!forceRefresh && cached.isNotEmpty) {
-          return cached;
+        if (forceRefresh) {
+          await _catalogService.syncFromRemote(force: true);
+        } else {
+          await _catalogService.ensureInitialCatalog();
         }
-
-        try {
-          final response = await _httpService.getCached<Map<String, dynamic>>(
-            path: SherpaTtsUrls.manifestApiUrl,
-            maxStale: forceRefresh ? Duration.zero : const Duration(days: 1),
-            headers: const {'User-Agent': 'readaway'},
-          );
-
-          final rawAssets = response.data?['assets'] as List? ?? const [];
-          final parsed = <SherpaTtsModelInfo>[];
-          for (final a in rawAssets) {
-            if (a is! Map<String, dynamic>) continue;
-            final name = a['name'] as String?;
-            final size = (a['size'] as num?)?.toInt();
-            final downloadUrl = a['browser_download_url'] as String?;
-            if (name == null || size == null || downloadUrl == null) continue;
-            final m = SherpaTtsModelInfo.fromAsset(
-              name: name,
-              sizeBytes: size,
-              downloadUrl: downloadUrl,
-              hifiganUrl: SherpaTtsUrls.hifiganUrl,
-            );
-            if (m != null) parsed.add(m);
-          }
-
-          if (parsed.isEmpty && cached.isNotEmpty) {
-            return cached;
-          }
-
-          parsed.sort((a, b) {
-            final c = a.languageLabel.compareTo(b.languageLabel);
-            return c != 0 ? c : a.displayName.compareTo(b.displayName);
-          });
-
-          if (parsed.isNotEmpty) {
-            await _store.saveCatalog(parsed);
-            unawaited(_fetchAndSaveChecksums(forceRefresh: forceRefresh));
-          }
-
-          return parsed;
-        } catch (e, st) {
-          logger.e('Failed to fetch TTS manifest from GitHub', e, st);
-          if (cached.isNotEmpty) return cached;
-          throw Exception('Failed to load TTS catalog: $e');
-        }
+        return availableModels;
       },
       onError: (error, stack) => ServerFailure(
         null,
@@ -110,33 +80,19 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
     );
   }
 
-  Future<void> _fetchAndSaveChecksums({bool forceRefresh = false}) async {
-    try {
-      final response = await _httpService.getCached<String>(
-        path: SherpaTtsUrls.checksumUrl,
-        maxStale: forceRefresh ? Duration.zero : const Duration(days: 1),
-        headers: const {'User-Agent': 'readaway'},
-        responseType: ResponseType.plain,
-      );
-      final text = response.data;
-      if (text == null) return;
-      final map = <String, String>{};
-      for (final line in text.split('\n')) {
-        final trimmed = line.trim();
-        if (trimmed.isEmpty) continue;
-        final parts = trimmed.split(RegExp(r'\s+'));
-        if (parts.length < 2) continue;
-        final hash = parts.first.toLowerCase();
-        if (hash.length != 64) continue;
-        final name = parts.sublist(1).join(' ');
-        map[name] = hash;
-      }
-      if (map.isNotEmpty) {
-        await _store.saveChecksums(map);
-      }
-    } catch (e) {
-      logger.w('Failed to load TTS checksums; skipping verification: $e');
-    }
+  @override
+  Future<Result<TtsCatalogSyncResult>> checkForCatalogUpdates() {
+    return guard(
+      () async {
+        return _catalogService.syncFromRemote(force: true);
+      },
+      onError: (error, stack) => ServerFailure(
+        null,
+        'Failed to check for model updates: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
   }
 
   @override
@@ -145,6 +101,63 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
       () async => _store.loadDownloadedIds(),
       onError: (error, stack) => TtsSynthesisFailure(
         'Failed to fetch downloaded models: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  Future<Result<List<SherpaTtsModelInfo>>> getInstalledModels() {
+    return guard(
+      () async => _ttsService.getDownloadedModels(),
+      onError: (error, stack) => TtsSynthesisFailure(
+        'Failed to fetch installed models: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  Future<Result<CustomModelInspectionResult>> inspectCustomModel(
+    String sourcePath,
+  ) {
+    return guard(
+      () async => _importerService.inspectSource(sourcePath),
+      onError: (error, stack) => TtsSynthesisFailure(
+        'Failed to inspect model: $error',
+        cause: error,
+        stackTrace: stack,
+      ),
+    );
+  }
+
+  @override
+  Future<Result<SherpaTtsModelInfo>> importCustomModel({
+    required CustomModelInspectionResult inspection,
+    required String displayName,
+    required String languageCode,
+    required String languageLabel,
+    SherpaTtsModelType? typeOverride,
+    int speakerCount = 0,
+    int sampleRate = 22050,
+  }) {
+    return guard(
+      () async {
+        final model = await _importerService.importModel(
+          inspection: inspection,
+          displayName: displayName,
+          languageCode: languageCode,
+          languageLabel: languageLabel,
+          typeOverride: typeOverride,
+          speakerCount: speakerCount,
+          sampleRate: sampleRate,
+        );
+        return model;
+      },
+      onError: (error, stack) => StorageWriteFailure(
+        displayName,
         cause: error,
         stackTrace: stack,
       ),

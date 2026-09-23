@@ -122,9 +122,7 @@ class SherpaOnnxTtsService {
 
   Future<List<SherpaTtsModelInfo>> getDownloadedModels() async {
     await reconcilePendingDownloads();
-    final downloadedIds = _store.loadDownloadedIds();
-    final catalog = _store.loadCatalog();
-    return catalog.where((m) => downloadedIds.contains(m.id)).toList();
+    return _store.loadInstalledModelsList();
   }
 
   /// Finishes any model downloads that were interrupted after the archive
@@ -177,7 +175,7 @@ class SherpaOnnxTtsService {
     } else if (await dir.exists()) {
       await dir.delete(recursive: true);
     }
-    await _store.unmarkDownloaded(modelId);
+    await _store.removeInstalledModel(modelId);
   }
 
   Stream<ModelDownloadProgress> downloadModel(SherpaTtsModelInfo model) async* {

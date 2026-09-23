@@ -1,30 +1,35 @@
+// ignore_for_file: prefer_initializing_formals
 import 'dart:async';
 import 'dart:io';
 
-import 'package:archive/archive_io.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 
 import '../../background_downloader_service.dart';
 import '../../logging_service.dart';
 import '../../path_service.dart';
+import '../extractor/tts_archive_extractor.dart';
 import '../tts_model_store.dart';
 import '../tts_models.dart';
 
 @singleton
 class SherpaTtsModelDownloaderService {
   SherpaTtsModelDownloaderService({
-    required this._backgroundDownloader,
-    required this._pathService,
-    required this._store,
-  });
+    required BackGroundDownloaderService backgroundDownloader,
+    required AppPathService pathService,
+    required TtsModelStore store,
+    required TtsArchiveExtractor archiveExtractor,
+  }) : _backgroundDownloader = backgroundDownloader,
+       _pathService = pathService,
+       _store = store,
+       _archiveExtractor = archiveExtractor;
 
   final BackGroundDownloaderService _backgroundDownloader;
   final AppPathService _pathService;
   final TtsModelStore _store;
+  final TtsArchiveExtractor _archiveExtractor;
 
   final _downloadControllers =
       <String, StreamController<ModelDownloadProgress>>{};
@@ -85,8 +90,14 @@ class SherpaTtsModelDownloaderService {
         ),
       );
 
-      // Fully downloaded and extracted — persist the index entry.
-      await _store.markDownloaded(model.id);
+      // Fully downloaded and extracted — record installed metadata and checksum
+      final checksum = _store.checksumFor(model.archiveFileName);
+      final installedModel = model.copyWith(
+        installedChecksum: checksum ?? model.installedChecksum,
+        installedSizeBytes: (model.approxSizeMb * 1024 * 1024).round(),
+        installedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      await _store.saveInstalledModel(installedModel);
 
       controller.add(
         ModelDownloadProgress(
@@ -172,12 +183,10 @@ class SherpaTtsModelDownloaderService {
       await _verifyChecksum(archiveFile, archiveFileName);
 
       onProgress(ModelDownloadStage.extracting, 0);
-      final bytes = await archiveFile.readAsBytes();
-      await compute(_extractModelArchiveWorker, (
-        bytes: bytes,
-        archivePath: archiveFile.path,
-        destPath: destDir.path,
-      ));
+      await _archiveExtractor.extractModelArchive(
+        archiveFile: archiveFile,
+        destDir: destDir,
+      );
       onProgress(ModelDownloadStage.extracting, 1);
 
       await archiveFile.delete();
@@ -300,14 +309,11 @@ class SherpaTtsModelDownloaderService {
       await _verifyChecksum(archiveFile, 'espeak-ng-data.tar.bz2');
     }
 
-    final bytes = await archiveFile.readAsBytes();
-
-    await compute(_extractEspeakArchiveWorker, (
-      bytes: bytes,
-      archivePath: archivePath,
-      modelDirPath: targetDir.path,
-      espeakDirPath: espeakDir.path,
-    ));
+    await _archiveExtractor.extractEspeakArchive(
+      archiveFile: archiveFile,
+      targetDir: targetDir,
+      espeakDir: espeakDir,
+    );
 
     if (!await espeakDir.exists()) {
       throw SherpaTtsException(
@@ -317,8 +323,7 @@ class SherpaTtsModelDownloaderService {
   }
 
   /// Downloads the optional vocoder and scoped espeak-ng-data for [model]
-  /// if they are missing. Shared by the normal download flow and by
-  /// [reconcileModel].
+  /// if they are missing.
   Future<void> _installAuxiliaryFiles(
     SherpaTtsModelInfo model,
     Directory destDir, {
@@ -340,10 +345,7 @@ class SherpaTtsModelDownloaderService {
     }
   }
 
-  /// Completes a model download that was interrupted after the archive
-  /// transfer finished but before extraction ran (e.g. the app was killed
-  /// mid-download). Used by
-  /// [SherpaOnnxTtsService.reconcilePendingDownloads].
+  /// Completes a model download that was interrupted after the archive transfer finished.
   Future<void> reconcileModel(
     SherpaTtsModelInfo model,
     Directory destDir,
@@ -352,38 +354,21 @@ class SherpaTtsModelDownloaderService {
     if (!await archiveFile.exists()) return;
 
     await _verifyChecksum(archiveFile, model.archiveFileName);
-    final bytes = await archiveFile.readAsBytes();
-    await compute(_extractModelArchiveWorker, (
-      bytes: bytes,
-      archivePath: archiveFile.path,
-      destPath: destDir.path,
-    ));
+    await _archiveExtractor.extractModelArchive(
+      archiveFile: archiveFile,
+      destDir: destDir,
+    );
     await archiveFile.delete();
 
     await _installAuxiliaryFiles(model, destDir, onVocoderProgress: (_) {});
 
-    // Reconciliation completed the full pipeline — persist the index entry.
-    await _store.markDownloaded(model.id);
-  }
-
-  static Archive _decodeArchive(Uint8List bytes, String path) {
-    if (path.endsWith('.tar.bz2') || path.endsWith('.tbz2')) {
-      final tarBytes = BZip2Decoder().decodeBytes(bytes);
-      return TarDecoder().decodeBytes(tarBytes);
-    } else if (path.endsWith('.tar.gz') || path.endsWith('.tgz')) {
-      final tarBytes = GZipDecoder().decodeBytes(bytes);
-      return TarDecoder().decodeBytes(tarBytes);
-    } else if (path.endsWith('.zip')) {
-      return ZipDecoder().decodeBytes(bytes);
-    }
-    throw SherpaTtsException('Unsupported archive format: $path');
-  }
-
-  static String _stripTopLevelDir(String entryName) {
-    final normalized = entryName.replaceAll('\\', '/');
-    final firstSlash = normalized.indexOf('/');
-    if (firstSlash == -1) return normalized;
-    return normalized.substring(firstSlash + 1);
+    final checksum = _store.checksumFor(model.archiveFileName);
+    final installedModel = model.copyWith(
+      installedChecksum: checksum ?? model.installedChecksum,
+      installedSizeBytes: (model.approxSizeMb * 1024 * 1024).round(),
+      installedAt: DateTime.now().millisecondsSinceEpoch,
+    );
+    await _store.saveInstalledModel(installedModel);
   }
 
   @disposeMethod
@@ -395,50 +380,6 @@ class SherpaTtsModelDownloaderService {
   }
 }
 
-Future<void> _extractModelArchiveWorker(
-  ({Uint8List bytes, String archivePath, String destPath}) args,
-) async {
-  final archive = SherpaTtsModelDownloaderService._decodeArchive(
-    args.bytes,
-    args.archivePath,
-  );
-  for (final entry in archive.files) {
-    if (!entry.isFile) continue;
-    final relative = SherpaTtsModelDownloaderService._stripTopLevelDir(
-      entry.name,
-    );
-    if (relative.isEmpty) continue;
-    final outFile = File(p.join(args.destPath, relative));
-    await outFile.parent.create(recursive: true);
-    await outFile.writeAsBytes(entry.content as List<int>);
-  }
-}
-
-Future<void> _extractEspeakArchiveWorker(
-  ({
-    Uint8List bytes,
-    String archivePath,
-    String modelDirPath,
-    String espeakDirPath,
-  })
-  args,
-) async {
-  final archive = SherpaTtsModelDownloaderService._decodeArchive(
-    args.bytes,
-    args.archivePath,
-  );
-  final files = archive.files.where((e) => e.isFile).toList();
-  final hasTopLevelDir = files.any(
-    (e) => e.name.replaceAll('\\', '/').startsWith('espeak-ng-data/'),
-  );
-  final basePath = hasTopLevelDir ? args.modelDirPath : args.espeakDirPath;
-  for (final entry in files) {
-    final outFile = File(p.join(basePath, entry.name));
-    await outFile.parent.create(recursive: true);
-    await outFile.writeAsBytes(entry.content as List<int>);
-  }
-}
-
 /// Thrown internally when a transfer is canceled by the user; the caller
 /// treats it as a quiet stop rather than a failure.
 class _DownloadCanceledException implements Exception {
@@ -446,10 +387,7 @@ class _DownloadCanceledException implements Exception {
 }
 
 /// Called by background_downloader when the archive transfer reaches a final
-/// state — including if the app was killed and relaunched mid-download.
-/// Writes a `.done` marker next to the archive so
-/// [SherpaOnnxTtsService.reconcilePendingDownloads] can finish the
-/// checksum/extract/vocoder/espeak pipeline on next launch.
+/// state.
 @pragma('vm:entry-point')
 Future<void> ttsModelTaskFinished(TaskStatusUpdate update) async {
   await _writeDoneMarker(update.task);

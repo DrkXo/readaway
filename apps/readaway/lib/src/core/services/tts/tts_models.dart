@@ -152,6 +152,12 @@ abstract class SherpaTtsModelInfo with _$SherpaTtsModelInfo {
     /// 'matcha', 'kokoro', 'vits'). Nullable so persisted catalogs written
     /// before this field existed still deserialize.
     SherpaTtsModelFamily? family,
+    @Default(false) bool isCustom,
+    String? customModelPath,
+    String? installedChecksum,
+    int? installedSizeBytes,
+    int? installedAt,
+    Map<String, dynamic>? extraMetadata,
   }) = _SherpaTtsModelInfo;
 
   factory SherpaTtsModelInfo.fromJson(Map<String, dynamic> json) =>
@@ -164,6 +170,23 @@ abstract class SherpaTtsModelInfo with _$SherpaTtsModelInfo {
 
   /// Human-readable label for [family] (e.g. 'Piper'), derived from the enum.
   String? get familyLabel => family?.label;
+
+  /// Returns true if this installed model has an updated version available in [latestCatalogModel].
+  bool hasUpdateAvailable(SherpaTtsModelInfo latestCatalogModel) {
+    if (isCustom) return false;
+    if (installedChecksum != null &&
+        latestCatalogModel.installedChecksum != null) {
+      return installedChecksum != latestCatalogModel.installedChecksum;
+    }
+    if (installedSizeBytes != null && latestCatalogModel.approxSizeMb > 0) {
+      final latestBytes =
+          (latestCatalogModel.approxSizeMb * 1024 * 1024).round();
+      if ((installedSizeBytes! - latestBytes).abs() > 1024 * 100) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   /// Parses a raw release asset into a model, or null when the asset is not
   /// a supported TTS model archive.
@@ -418,7 +441,8 @@ extension SherpaTtsModelTypeX on SherpaTtsModelType {
     const base =
         'https://huggingface.co/csukuangfj/sherpa-onnx-tts-samples/resolve/main';
     if (id.contains('piper-')) {
-      return '$base/piper/mp3/$langToken/$id/0.mp3';
+      final langFolder = langToken.replaceAll('-', '_');
+      return '$base/piper/mp3/$langFolder/$id/0.mp3';
     }
     if (id.contains('inflect')) {
       return '$base/inflect/$id/mp3/0.mp3';

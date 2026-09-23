@@ -22,6 +22,9 @@ abstract class SettingsState with _$SettingsState {
     @Default([])
     List<SherpaTtsModelInfo> ttsAvailableModels,
     @JsonKey(includeFromJson: false, includeToJson: false)
+    @Default([])
+    List<SherpaTtsModelInfo> ttsInstalledModels,
+    @JsonKey(includeFromJson: false, includeToJson: false)
     @Default({})
     Set<String> ttsDownloadedIds,
     @JsonKey(includeFromJson: false, includeToJson: false)
@@ -32,6 +35,11 @@ abstract class SettingsState with _$SettingsState {
     @JsonKey(includeFromJson: false, includeToJson: false)
     String? ttsBusyModelId,
     @JsonKey(includeFromJson: false, includeToJson: false) String? ttsError,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    @Default(false)
+    bool isCheckingTtsUpdates,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    String? ttsUpdateNotification,
   }) = _SettingsState;
 
   factory SettingsState.fromJson(Map<String, dynamic> json) =>
@@ -57,4 +65,15 @@ extension SettingsStateX on SettingsState {
   bool isTtsBusy(String id) => ttsBusyModelId == id;
 
   SettingsDownloadStatus? ttsDownloadOf(String id) => ttsDownloads[id];
+
+  SherpaTtsModelInfo? installedModelById(String id) =>
+      ttsInstalledModels.where((m) => m.id == id).firstOrNull;
+
+  bool modelHasUpdate(String id) {
+    final installed = installedModelById(id);
+    if (installed == null || installed.isCustom) return false;
+    final latest = ttsAvailableModels.where((m) => m.id == id).firstOrNull;
+    if (latest == null) return false;
+    return installed.hasUpdateAvailable(latest);
+  }
 }
