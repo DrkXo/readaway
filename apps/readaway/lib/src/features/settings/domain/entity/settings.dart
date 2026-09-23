@@ -1,4 +1,9 @@
-part of 'models.dart';
+import 'dart:convert';
+
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'settings.freezed.dart';
+part 'settings.g.dart';
 
 Settings settingsFromJson(String str) => Settings.fromJson(json.decode(str));
 

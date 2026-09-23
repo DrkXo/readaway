@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../../core/models/models.dart';
 import '../../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../bloc/reader_bloc.dart';
 import 'reader_bottom_bar.dart';

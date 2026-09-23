@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
-import '../models/models.dart';
+import '../../features/settings/domain/entity/settings.dart';
 import 'logging_service.dart';
 import 'storage/hive/app_storage_service.dart';
 

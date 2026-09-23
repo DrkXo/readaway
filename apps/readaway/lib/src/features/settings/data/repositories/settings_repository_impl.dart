@@ -2,8 +2,8 @@ import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/error/failures.dart';
-import '../../../../core/models/models.dart';
 import '../../../../core/services/settings_service.dart';
+import '../../domain/entity/settings.dart';
 import '../../domain/repositories/settings_repository.dart';
 
 @LazySingleton(as: SettingsRepository)

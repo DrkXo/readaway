@@ -8,7 +8,7 @@ import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 import 'package:rxdart/rxdart.dart';
 
-import '../models/reader/supported_document_formats.dart';
+import '../models/document_format.dart';
 import 'logging_service.dart';
 
 /// Represents an incoming document file received from the OS or CLI.

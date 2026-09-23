@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 
-import '../models/models.dart';
+import '../../features/settings/domain/entity/settings.dart';
 import '../theme/theme.dart';
 import '../theme/theme_scheme.dart';
 import 'settings_service.dart';

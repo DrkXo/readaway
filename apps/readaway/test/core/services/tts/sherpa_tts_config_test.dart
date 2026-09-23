@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:readaway/src/core/models/models.dart';
 import 'package:readaway/src/core/services/tts/sherpa/sherpa_isolate_worker_service.dart';
+import 'package:readaway/src/features/settings/domain/entity/settings.dart';
 
 void main() {
   group('Sherpa TTS Config Builders', () {

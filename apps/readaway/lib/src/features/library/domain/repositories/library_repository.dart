@@ -42,4 +42,7 @@ abstract interface class LibraryRepository {
     String path,
     ReadingStatus status,
   );
+
+  /// Resets reading progress for a document back to the beginning (page 0, unread).
+  TaskEither<Failure, RecentDocument> resetReadingProgress(String path);
 }

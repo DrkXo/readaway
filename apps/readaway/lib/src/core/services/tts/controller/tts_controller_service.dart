@@ -10,7 +10,7 @@ import 'package:readaway_core/readaway_core.dart'
     show TtsChunk, computeChunkGapSec;
 import 'package:rxdart/rxdart.dart';
 
-import '../../../models/models.dart';
+import '../../../../features/settings/domain/entity/settings.dart';
 import '../../services.dart';
 import '../stream/paragraph_stream_audio_source.dart';
 

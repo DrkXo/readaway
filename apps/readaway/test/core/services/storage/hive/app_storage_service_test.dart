@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:readaway/src/core/models/models.dart';
 import 'package:readaway/src/core/services/settings_service.dart';
 import 'package:readaway/src/core/services/storage/hive/app_storage_service.dart';
+import 'package:readaway/src/features/settings/domain/entity/settings.dart';
 import 'package:readaway/src/core/services/storage/hive/hive_boxes.dart';
 import 'package:readaway/src/core/services/storage/hive/hive_config_service.dart';
 import 'package:readaway/src/core/services/tts/tts_model_store.dart';
@@ -23,6 +23,7 @@ void main() {
   late Directory tempDir;
   late MockAppPathService pathService;
   late HiveConfigService configService;
+  late HiveBoxes hiveBoxes;
   late AppStorageService storageService;
 
   setUp(() async {
@@ -30,8 +31,12 @@ void main() {
     pathService = MockAppPathService();
     when(pathService.getHiveDirectory()).thenAnswer((_) async => tempDir);
 
-    configService = HiveConfigService(pathService);
-    storageService = AppStorageService(config: configService);
+    hiveBoxes = HiveBoxes();
+    configService = HiveConfigService(pathService, hiveBoxes);
+    storageService = AppStorageService(
+      config: configService,
+      boxes: hiveBoxes,
+    );
     await storageService.init();
   });
 
@@ -47,16 +52,16 @@ void main() {
   group('AppStorageService feature-scoped boxes', () {
     test('initializes and provides open boxes for all features', () {
       expect(storageService.settingsBox.isOpen, isTrue);
-      expect(storageService.settingsBox.name, HiveBoxes.settings);
+      expect(storageService.settingsBox.name, hiveBoxes.settings);
 
       expect(storageService.libraryBox.isOpen, isTrue);
-      expect(storageService.libraryBox.name, HiveBoxes.library);
+      expect(storageService.libraryBox.name, hiveBoxes.library);
 
       expect(storageService.readerBox.isOpen, isTrue);
-      expect(storageService.readerBox.name, HiveBoxes.reader);
+      expect(storageService.readerBox.name, hiveBoxes.reader);
 
       expect(storageService.ttsBox.isOpen, isTrue);
-      expect(storageService.ttsBox.name, HiveBoxes.tts);
+      expect(storageService.ttsBox.name, hiveBoxes.tts);
     });
 
     test('settings service persists in settingsBox', () async {

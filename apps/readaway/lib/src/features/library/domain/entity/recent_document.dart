@@ -38,6 +38,8 @@ abstract class RecentDocument with _$RecentDocument {
       (author != null && author!.trim().isNotEmpty) ? author!.trim() : null;
 
   double get progressPercent {
+    if (readingStatus == ReadingStatus.finished) return 1.0;
+    if (readingStatus == ReadingStatus.unread) return 0.0;
     if (pageCount <= 0) return 0.0;
     // Anchor-based progress: (chapter + progression) / chapterCount. This is
     // stable across reflow and correct for reflowable documents.
@@ -56,6 +58,7 @@ abstract class RecentDocument with _$RecentDocument {
 
   bool get isFinished {
     if (readingStatus == ReadingStatus.finished) return true;
+    if (readingStatus == ReadingStatus.unread) return false;
     if (pageCount <= 0) return false;
     final hasAnchor = lastReadChapter > 0 || lastReadProgression > 0.0;
     if (hasAnchor) return lastReadChapter >= pageCount - 1;

@@ -519,18 +519,44 @@ class EpubDocumentReader
     var file = _entriesByName[norm] ?? _entriesByName[path];
     if (file != null) return file;
 
+    // Try URL-decoded path if different
+    try {
+      final decodedNorm = Uri.decodeComponent(norm);
+      if (decodedNorm != norm) {
+        file = _entriesByName[decodedNorm] ??
+            _entriesByName[Uri.decodeComponent(path)];
+        if (file != null) return file;
+      }
+    } catch (_) {}
+
     // Try relative to opfDir
     if (_opfDir.isNotEmpty && !norm.startsWith('$_opfDir/')) {
       final withOpf = _normalizePath('$_opfDir/$norm');
       file = _entriesByName[withOpf];
       if (file != null) return file;
+      try {
+        final decodedWithOpf = Uri.decodeComponent(withOpf);
+        if (decodedWithOpf != withOpf) {
+          file = _entriesByName[decodedWithOpf];
+          if (file != null) return file;
+        }
+      } catch (_) {}
     }
 
     // Try finding by basename as last resort
     final base = p.posix.basename(norm);
+    String? decodedBase;
+    try {
+      decodedBase = Uri.decodeComponent(base);
+    } catch (_) {}
+
     for (final entry in _archive) {
-      if (entry.isFile && p.posix.basename(entry.name) == base) {
-        return entry;
+      if (entry.isFile) {
+        final entryBase = p.posix.basename(entry.name);
+        if (entryBase == base ||
+            (decodedBase != null && entryBase == decodedBase)) {
+          return entry;
+        }
       }
     }
     return null;

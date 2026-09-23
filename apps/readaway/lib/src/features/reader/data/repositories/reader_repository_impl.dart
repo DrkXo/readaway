@@ -10,7 +10,7 @@ import 'package:readaway/src/core/services/logging_service.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
-import '../../../../core/models/reader/supported_document_formats.dart';
+import '../../../../core/models/document_format.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/path_service.dart';
 import '../../../../core/services/window_service.dart';

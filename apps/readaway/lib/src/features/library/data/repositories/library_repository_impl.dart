@@ -55,10 +55,35 @@ class LibraryRepositoryImpl implements LibraryRepository {
     );
   }
 
+  Future<void> _deleteCoverFile(RecentDocument? doc, String path) async {
+    try {
+      if (doc?.coverPath != null) {
+        final f = File(doc!.coverPath!);
+        if (await f.exists()) {
+          await f.delete();
+        }
+      }
+      final coverDir = await _pathService.getCoversDirectory();
+      final fileHash =
+          md5.convert(utf8.encode(path)).toString().substring(0, 8);
+      final fileName = doc?.fileName ?? p.basename(path);
+      final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+      final coverFile = File(
+        p.join(coverDir.path, 'cover_${safeName}_$fileHash.jpg'),
+      );
+      if (await coverFile.exists()) {
+        await coverFile.delete();
+      }
+    } catch (_) {}
+  }
+
   @override
   TaskEither<Failure, Unit> removeRecentDocument(String path) {
     return TaskEither.tryCatch(
       () async {
+        final docs = await _localDataSource.getRecentDocuments();
+        final doc = docs.where((d) => d.path == path).firstOrNull;
+        await _deleteCoverFile(doc, path);
         await _localDataSource.removeRecentDocument(path);
         return unit;
       },
@@ -74,6 +99,11 @@ class LibraryRepositoryImpl implements LibraryRepository {
   TaskEither<Failure, Unit> removeMultipleDocuments(List<String> paths) {
     return TaskEither.tryCatch(
       () async {
+        final docs = await _localDataSource.getRecentDocuments();
+        final docMap = {for (final d in docs) d.path: d};
+        for (final path in paths) {
+          await _deleteCoverFile(docMap[path], path);
+        }
         await _localDataSource.removeMultipleDocuments(paths);
         return unit;
       },
@@ -274,7 +304,32 @@ class LibraryRepositoryImpl implements LibraryRepository {
       () async {
         final docs = await _localDataSource.getRecentDocuments();
         final doc = docs.firstWhere((d) => d.path == path);
-        final updated = doc.copyWith(readingStatus: status);
+        final RecentDocument updated;
+        switch (status) {
+          case ReadingStatus.unread:
+            updated = doc.copyWith(
+              readingStatus: ReadingStatus.unread,
+              lastReadPage: 0,
+              lastReadChapter: 0,
+              lastReadProgression: 0.0,
+            );
+          case ReadingStatus.finished:
+            final lastPage = doc.pageCount > 0 ? doc.pageCount - 1 : 0;
+            updated = doc.copyWith(
+              readingStatus: ReadingStatus.finished,
+              lastReadPage: lastPage,
+              lastReadChapter: lastPage,
+              lastReadProgression: 1.0,
+            );
+          case ReadingStatus.reading:
+            updated = doc.copyWith(
+              readingStatus: ReadingStatus.reading,
+            );
+          case ReadingStatus.abandoned:
+            updated = doc.copyWith(
+              readingStatus: ReadingStatus.abandoned,
+            );
+        }
         await _localDataSource.saveRecentDocument(updated);
         return updated;
       },
@@ -284,5 +339,10 @@ class LibraryRepositoryImpl implements LibraryRepository {
         stackTrace: stack,
       ),
     );
+  }
+
+  @override
+  TaskEither<Failure, RecentDocument> resetReadingProgress(String path) {
+    return updateReadingStatus(path, ReadingStatus.unread);
   }
 }

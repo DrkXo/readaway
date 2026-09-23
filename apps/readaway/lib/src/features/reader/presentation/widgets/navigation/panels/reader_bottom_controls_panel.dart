@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../../core/models/models.dart';
 import '../../../../../../core/theme/theme.dart';
+import '../reader_bottom_panel.dart';
 import 'reader_brightness_quick_view.dart';
 import 'reader_font_size_quick_view.dart';
 import 'reader_page_navigation_quick_view.dart';

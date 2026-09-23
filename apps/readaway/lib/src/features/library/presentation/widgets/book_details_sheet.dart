@@ -17,6 +17,7 @@ class BookDetailsSheet extends StatelessWidget {
     required this.onOpenReader,
     required this.onToggleFavorite,
     required this.onUpdateStatus,
+    required this.onResetProgress,
     required this.onRemove,
   });
 
@@ -25,6 +26,7 @@ class BookDetailsSheet extends StatelessWidget {
   final VoidCallback onOpenReader;
   final VoidCallback onToggleFavorite;
   final ValueChanged<ReadingStatus> onUpdateStatus;
+  final VoidCallback onResetProgress;
   final VoidCallback onRemove;
 
   static Future<void> show(
@@ -34,6 +36,7 @@ class BookDetailsSheet extends StatelessWidget {
     required VoidCallback onOpenReader,
     required VoidCallback onToggleFavorite,
     required ValueChanged<ReadingStatus> onUpdateStatus,
+    required VoidCallback onResetProgress,
     required VoidCallback onRemove,
   }) {
     return showModalBottomSheet<void>(
@@ -50,6 +53,7 @@ class BookDetailsSheet extends StatelessWidget {
         onOpenReader: onOpenReader,
         onToggleFavorite: onToggleFavorite,
         onUpdateStatus: onUpdateStatus,
+        onResetProgress: onResetProgress,
         onRemove: onRemove,
       ),
     );
@@ -202,6 +206,11 @@ class BookDetailsSheet extends StatelessWidget {
                   label: Text('Finished'),
                   icon: Icon(LucideIcons.circleCheck, size: 14),
                 ),
+                ButtonSegment(
+                  value: ReadingStatus.abandoned,
+                  label: Text('On Hold'),
+                  icon: Icon(LucideIcons.pauseCircle, size: 14),
+                ),
               ],
               selected: {doc.readingStatus},
               onSelectionChanged: (selected) {
@@ -211,7 +220,56 @@ class BookDetailsSheet extends StatelessWidget {
               },
             ),
 
-            const SizedBox(height: 20),
+            if (doc.readingStatus != ReadingStatus.unread ||
+                doc.lastReadPage > 0 ||
+                doc.lastReadChapter > 0 ||
+                doc.lastReadProgression > 0.0) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: scheme.error,
+                  ),
+                  icon: const Icon(LucideIcons.rotateCcw, size: 13),
+                  label: const Text(
+                    'Reset Progress to Beginning',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Reset Reading Progress?'),
+                        content: Text(
+                          'This will reset "${doc.displayTitle}" back to page 1 and mark it as unread.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: scheme.error,
+                              foregroundColor: scheme.onError,
+                            ),
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            child: const Text('Reset'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      onResetProgress();
+                    }
+                  },
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 16),
 
             // Metadata info list
             Container(
@@ -300,9 +358,36 @@ class BookDetailsSheet extends StatelessWidget {
                     color: scheme.error,
                   ),
                   tooltip: 'Remove from library',
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onRemove();
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Remove from Library?'),
+                        content: Text(
+                          'Are you sure you want to remove "${doc.displayTitle}" from your library?\n\nReading progress and preferences will be cleared. The book file on your device will NOT be deleted.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: scheme.error,
+                              foregroundColor: scheme.onError,
+                            ),
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            child: const Text('Remove'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                      onRemove();
+                    }
                   },
                 ),
               ],

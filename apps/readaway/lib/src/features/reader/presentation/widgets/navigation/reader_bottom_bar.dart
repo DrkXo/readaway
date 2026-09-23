@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../../../core/models/models.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/reader_bloc.dart';
 import 'reader_bottom_bar_mixin.dart';
+import 'reader_bottom_panel.dart';
 
 export 'panels/panels.dart';
 export 'reader_bottom_bar_mixin.dart';
+export 'reader_bottom_panel.dart';
 
 /// Fixed-height reader navigation bar with 5 primary action controls:
 /// - Outline / Table of Contents

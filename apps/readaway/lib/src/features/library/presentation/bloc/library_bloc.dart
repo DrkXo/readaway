@@ -26,6 +26,7 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     on<_RemoveDocument>(_onRemoveDocument);
     on<_ToggleFavorite>(_onToggleFavorite);
     on<_UpdateReadingStatus>(_onUpdateReadingStatus);
+    on<_ResetProgress>(_onResetProgress);
     on<_ViewModeChanged>(_onViewModeChanged);
     on<_SortByChanged>(_onSortByChanged);
     on<_SortOrderToggled>(_onSortOrderToggled);
@@ -269,6 +270,26 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     final result = await _repository
         .updateReadingStatus(event.path, event.status)
         .run();
+
+    result.fold(
+      (failure) => emit(state.copyWith(failure: failure)),
+      (updatedDoc) {
+        final currentList = state.recentDocuments;
+        final index = currentList.indexWhere((d) => d.path == event.path);
+        if (index != -1) {
+          final updatedList = List<RecentDocument>.from(currentList);
+          updatedList[index] = updatedDoc;
+          emit(state.copyWith(recentDocuments: updatedList));
+        }
+      },
+    );
+  }
+
+  Future<void> _onResetProgress(
+    _ResetProgress event,
+    Emitter<LibraryState> emit,
+  ) async {
+    final result = await _repository.resetReadingProgress(event.path).run();
 
     result.fold(
       (failure) => emit(state.copyWith(failure: failure)),

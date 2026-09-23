@@ -8,7 +8,7 @@ void main() {
     int pageCount = 10,
     int lastReadChapter = 0,
     double lastReadProgression = 0.0,
-    ReadingStatus readingStatus = ReadingStatus.unread,
+    ReadingStatus readingStatus = ReadingStatus.reading,
   }) {
     return RecentDocument(
       path: '/tmp/book.epub',
@@ -43,6 +43,26 @@ void main() {
       final d = doc(pageCount: 0);
       expect(d.progressPercent, 0.0);
     });
+
+    test('returns 0 for unread documents even if page data was previously recorded', () {
+      final d = doc(
+        lastReadChapter: 5,
+        lastReadProgression: 0.5,
+        readingStatus: ReadingStatus.unread,
+      );
+      expect(d.progressPercent, 0.0);
+      expect(d.progressFormatted, '0%');
+    });
+
+    test('returns 1.0 (100%) when readingStatus is finished', () {
+      final d = doc(
+        lastReadChapter: 2,
+        readingStatus: ReadingStatus.finished,
+      );
+      expect(d.progressPercent, 1.0);
+      expect(d.progressFormatted, '100%');
+      expect(d.isFinished, isTrue);
+    });
   });
 
   group('RecentDocument isFinished', () {
@@ -53,6 +73,11 @@ void main() {
 
     test('is not finished mid-book with an anchor', () {
       final d = doc(lastReadChapter: 5, lastReadProgression: 0.5);
+      expect(d.isFinished, isFalse);
+    });
+
+    test('is not finished when readingStatus is unread', () {
+      final d = doc(lastReadChapter: 9, readingStatus: ReadingStatus.unread);
       expect(d.isFinished, isFalse);
     });
 

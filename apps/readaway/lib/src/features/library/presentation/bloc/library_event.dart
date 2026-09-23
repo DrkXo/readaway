@@ -12,6 +12,7 @@ abstract class LibraryEvent with _$LibraryEvent {
     String path,
     ReadingStatus status,
   ) = _UpdateReadingStatus;
+  const factory LibraryEvent.resetProgress(String path) = _ResetProgress;
   const factory LibraryEvent.viewModeChanged(LibraryViewMode viewMode) =
       _ViewModeChanged;
   const factory LibraryEvent.sortByChanged(

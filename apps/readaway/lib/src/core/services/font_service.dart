@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 
-import '../models/models.dart';
+import '../../features/settings/domain/entity/settings.dart';
 import 'logging_service.dart';
 import 'path_service.dart';
 import 'settings_service.dart';

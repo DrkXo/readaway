@@ -40,6 +40,7 @@ class _LibraryView extends StatefulWidget {
 class _LibraryViewState extends State<_LibraryView> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearchVisible = false;
+  bool _isFilterVisible = false;
 
   @override
   void dispose() {
@@ -63,6 +64,7 @@ class _LibraryViewState extends State<_LibraryView> {
       onToggleFavorite: () => bloc.add(LibraryEvent.toggleFavorite(doc.path)),
       onUpdateStatus: (status) =>
           bloc.add(LibraryEvent.updateReadingStatus(doc.path, status)),
+      onResetProgress: () => bloc.add(LibraryEvent.resetProgress(doc.path)),
       onRemove: () => bloc.add(LibraryEvent.removeDocument(doc.path)),
     );
   }
@@ -142,6 +144,30 @@ class _LibraryViewState extends State<_LibraryView> {
                       if (!_isSearchVisible) {
                         _searchController.clear();
                         bloc.add(const LibraryEvent.searchQueryChanged(''));
+                      }
+                    });
+                  },
+                ),
+                // Filter toggle
+                IconButton(
+                  icon: Icon(
+                    _isFilterVisible ? LucideIcons.filterX : LucideIcons.filter,
+                    size: 20,
+                    color: state.filterStatus != ReadingStatusFilter.all
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  tooltip: 'Filter books',
+                  onPressed: () {
+                    setState(() {
+                      _isFilterVisible = !_isFilterVisible;
+                      if (!_isFilterVisible &&
+                          state.filterStatus != ReadingStatusFilter.all) {
+                        bloc.add(
+                          const LibraryEvent.filterChanged(
+                            ReadingStatusFilter.all,
+                          ),
+                        );
                       }
                     });
                   },
@@ -273,8 +299,8 @@ class _LibraryViewState extends State<_LibraryView> {
                   ),
                 ),
 
-              // Filter Chips Bar
-              if (state.recentDocuments.isNotEmpty)
+              // Filter Chips Bar (expandable)
+              if (_isFilterVisible && state.recentDocuments.isNotEmpty)
                 LibraryFilterBar(
                   selectedFilter: state.filterStatus,
                   state: state,
@@ -580,6 +606,8 @@ class _LibraryViewState extends State<_LibraryView> {
     LibraryBloc bloc,
   ) {
     final appColors = context.appColors;
+    final scheme = Theme.of(context).colorScheme;
+    final count = state.selectedPaths.length;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -614,6 +642,25 @@ class _LibraryViewState extends State<_LibraryView> {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: scheme.onSurface,
+                  side: BorderSide(color: scheme.outlineVariant),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                icon: const Icon(LucideIcons.clock, size: 15),
+                label: const Text('Mark Unread'),
+                onPressed: () => bloc.add(
+                  const LibraryEvent.batchUpdateStatusSelected(
+                    ReadingStatus.unread,
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(width: 10),
             IconButton.filled(
               style: IconButton.styleFrom(
@@ -625,8 +672,40 @@ class _LibraryViewState extends State<_LibraryView> {
               ),
               icon: const Icon(LucideIcons.trash2, size: 16),
               tooltip: 'Delete selected',
-              onPressed: () =>
-                  bloc.add(const LibraryEvent.batchDeleteSelected()),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(
+                      count == 1
+                          ? 'Remove 1 Book from Library?'
+                          : 'Remove $count Books from Library?',
+                    ),
+                    content: Text(
+                      count == 1
+                          ? 'Are you sure you want to remove the selected book from your library?\n\nReading progress and preferences will be cleared. The book file on your device will NOT be deleted.'
+                          : 'Are you sure you want to remove $count selected books from your library?\n\nReading progress and preferences will be cleared. The book files on your device will NOT be deleted.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: scheme.error,
+                          foregroundColor: scheme.onError,
+                        ),
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text('Remove'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  bloc.add(const LibraryEvent.batchDeleteSelected());
+                }
+              },
             ),
           ],
         ),

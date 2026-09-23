@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/error/failures.dart';
+import 'package:readaway/src/features/library/domain/entity/reading_status.dart';
 import 'package:readaway/src/features/library/domain/entity/recent_document.dart';
 import 'package:readaway/src/features/library/presentation/bloc/library_bloc.dart';
 
@@ -72,6 +73,48 @@ void main() {
       ],
       verify: (_) {
         verify(mockRepo.removeRecentDocument(doc1.path)).called(1);
+      },
+    );
+
+    blocTest<LibraryBloc, LibraryState>(
+      'resets progress on resetProgress event',
+      build: () {
+        final resetDoc = doc1.copyWith(
+          lastReadPage: 0,
+          lastReadChapter: 0,
+          lastReadProgression: 0.0,
+          readingStatus: ReadingStatus.unread,
+        );
+        when(mockRepo.resetReadingProgress(doc1.path)).thenAnswer(
+          (_) => TaskEither<Failure, RecentDocument>.of(resetDoc),
+        );
+        return LibraryBloc(mockRepo);
+      },
+      seed: () => LibraryState(
+        recentDocuments: [
+          doc1.copyWith(
+            lastReadPage: 10,
+            lastReadChapter: 2,
+            lastReadProgression: 0.5,
+            readingStatus: ReadingStatus.reading,
+          ),
+        ],
+      ),
+      act: (bloc) => bloc.add(LibraryEvent.resetProgress(doc1.path)),
+      expect: () => [
+        LibraryState(
+          recentDocuments: [
+            doc1.copyWith(
+              lastReadPage: 0,
+              lastReadChapter: 0,
+              lastReadProgression: 0.0,
+              readingStatus: ReadingStatus.unread,
+            ),
+          ],
+        ),
+      ],
+      verify: (_) {
+        verify(mockRepo.resetReadingProgress(doc1.path)).called(1);
       },
     );
   });

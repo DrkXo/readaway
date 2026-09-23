@@ -1,7 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/failures.dart';
-import '../../../../core/models/models.dart';
+import '../entity/settings.dart';
 
 /// Contract for general application settings, window preferences, and theme state.
 abstract interface class SettingsRepository {

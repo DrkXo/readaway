@@ -135,78 +135,96 @@ class _FallbackCover extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            scheme.surfaceContainerHigh,
-            scheme.surfaceContainerHighest,
-          ],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact =
+            constraints.maxWidth < 65 || constraints.maxHeight < 95;
+        final hasAuthor = author != null && author!.trim().isNotEmpty;
+
+        return Container(
+          padding: EdgeInsets.all(isCompact ? 6 : 10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                scheme.surfaceContainerHigh,
+                scheme.surfaceContainerHighest,
+              ],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                LucideIcons.bookOpen,
-                size: 16,
-                color: scheme.primary.withValues(alpha: 0.75),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 5,
-                  vertical: 1.5,
-                ),
-                decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  format.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                    color: scheme.primary,
+              Row(
+                mainAxisAlignment: isCompact
+                    ? MainAxisAlignment.start
+                    : MainAxisAlignment.spaceBetween,
+                children: [
+                  if (!isCompact)
+                    Icon(
+                      LucideIcons.bookOpen,
+                      size: 14,
+                      color: scheme.primary.withValues(alpha: 0.75),
+                    ),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 4 : 5,
+                      vertical: 1.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      format.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: isCompact ? 7.5 : 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                        color: scheme.primary,
+                      ),
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: isCompact ? 2 : 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: isCompact ? 10 : 12,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    if (!isCompact && hasAuthor) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        author!.trim(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontStyle: FontStyle.italic,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
           ),
-          const Spacer(),
-          Text(
-            title,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              height: 1.25,
-              color: scheme.onSurface,
-            ),
-          ),
-          if (author != null && author!.trim().isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              author!.trim(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10,
-                fontStyle: FontStyle.italic,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          const Spacer(),
-        ],
-      ),
+        );
+      },
     );
   }
 }

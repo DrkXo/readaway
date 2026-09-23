@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 
-import '../../../../core/models/reader/supported_document_formats.dart';
+import '../../../../core/models/document_format.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
 

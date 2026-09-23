@@ -26,6 +26,19 @@ extension UDTNodeExtensions on UDTNode {
     required Color linkColor,
     required UDTNode? parentBlock,
   }) {
+    // 0. Container sizing: Clear rigid heights/max-heights on non-atomic nodes.
+    // EPubs often contain fixed height constraints on header/banner/wrapper blocks (e.g. height: 50px)
+    // which overflow and throw RenderFlex layout assertion errors when rendered with custom
+    // reader typography (font-size, line-height, text wrapping).
+    if (node is! AtomicNode) {
+      node.style.height = null;
+      node.style.maxHeight = null;
+      if (node.style.display == DisplayType.flex ||
+          node.style.display == DisplayType.grid) {
+        node.style.display = DisplayType.block;
+      }
+    }
+
     // 1. Link handling: links and their descendants always receive linkColor
     if (node.tagName == 'a') {
       node.applyColor(linkColor);

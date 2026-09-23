@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/theme.dart';
+import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
 import 'book_cover_widget.dart';
 
@@ -196,6 +197,15 @@ class BookGridCard extends StatelessWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: appColors.success,
+                    ),
+                  )
+                else if (document.readingStatus == ReadingStatus.abandoned)
+                  Text(
+                    'On Hold',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: appColors.warning,
                     ),
                   )
                 else if (document.progressPercent > 0)

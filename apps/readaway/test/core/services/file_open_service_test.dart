@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:readaway/src/core/models/reader/supported_document_formats.dart';
+import 'package:readaway/src/core/models/document_format.dart';
 import 'package:readaway/src/core/services/file_open_service.dart';
 import 'package:readaway/src/core/services/logging_service.dart';
 

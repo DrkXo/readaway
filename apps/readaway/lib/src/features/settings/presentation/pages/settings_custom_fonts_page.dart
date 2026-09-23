@@ -4,9 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../../core/models/models.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/widgets/core_widgets.dart';
+import '../../domain/entity/settings.dart';
 import '../bloc/settings/settings_bloc.dart';
 import '../widgets/widgets.dart';
 

@@ -4,7 +4,7 @@ import 'package:readaway_core/readaway_core.dart';
 import '../../../../features/library/domain/entity/reading_status.dart';
 import '../../../../features/library/domain/entity/recent_document.dart';
 import '../../../../features/settings/domain/entity/reader_preferences.dart';
-import '../../../models/models.dart';
+import '../../../../features/settings/domain/entity/settings.dart';
 import '../../tts/tts_models.dart';
 
 part 'hive_adapters.g.dart';

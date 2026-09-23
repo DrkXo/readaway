@@ -5,7 +5,7 @@ import 'package:injectable/injectable.dart';
 
 import '../../../../features/library/domain/entity/recent_document.dart';
 import '../../../../features/settings/domain/entity/reader_preferences.dart';
-import '../../../models/models.dart';
+import '../../../../features/settings/domain/entity/settings.dart';
 import 'hive_boxes.dart';
 import 'hive_config_service.dart';
 import 'hive_registrar.g.dart';
@@ -13,6 +13,7 @@ import 'hive_registrar.g.dart';
 @Singleton()
 class AppStorageService {
   final HiveConfigService _config;
+  final HiveBoxes _boxes;
 
   late final Box<Settings> _settingsBox;
   late final Box<RecentDocument> _libraryBox;
@@ -28,6 +29,7 @@ class AppStorageService {
 
   AppStorageService({
     required this._config,
+    required this._boxes,
   });
 
   @PostConstruct(preResolve: true)
@@ -39,10 +41,10 @@ class AppStorageService {
       _adaptersRegistered = true;
     }
 
-    _settingsBox = await Hive.openBox<Settings>(HiveBoxes.settings);
-    _libraryBox = await Hive.openBox<RecentDocument>(HiveBoxes.library);
-    _readerBox = await Hive.openBox<ReaderPreferences>(HiveBoxes.reader);
-    _ttsBox = await Hive.openBox<dynamic>(HiveBoxes.tts);
+    _settingsBox = await Hive.openBox<Settings>(_boxes.settings);
+    _libraryBox = await Hive.openBox<RecentDocument>(_boxes.library);
+    _readerBox = await Hive.openBox<ReaderPreferences>(_boxes.reader);
+    _ttsBox = await Hive.openBox<dynamic>(_boxes.tts);
   }
 
   Future<void> resetStorage({bool reopen = false}) async {
@@ -58,10 +60,10 @@ class AppStorageService {
         if (await file.exists()) await file.delete();
       }
       if (reopen) {
-        _settingsBox = await Hive.openBox<Settings>(HiveBoxes.settings);
-        _libraryBox = await Hive.openBox<RecentDocument>(HiveBoxes.library);
-        _readerBox = await Hive.openBox<ReaderPreferences>(HiveBoxes.reader);
-        _ttsBox = await Hive.openBox<dynamic>(HiveBoxes.tts);
+        _settingsBox = await Hive.openBox<Settings>(_boxes.settings);
+        _libraryBox = await Hive.openBox<RecentDocument>(_boxes.library);
+        _readerBox = await Hive.openBox<ReaderPreferences>(_boxes.reader);
+        _ttsBox = await Hive.openBox<dynamic>(_boxes.tts);
       }
     } catch (e) {
       throw AppStorageException('Failed to reset Hive storage: $e');

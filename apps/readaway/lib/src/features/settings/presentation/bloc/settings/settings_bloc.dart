@@ -5,11 +5,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../../core/models/models.dart';
 import '../../../../../core/services/logging_service.dart';
 import '../../../../../core/services/tts/tts_models.dart';
 import '../../../../reader/domain/repositories/reader_preferences_repository.dart';
 import '../../../domain/entity/reader_preferences.dart';
+import '../../../domain/entity/settings.dart';
 import '../../../domain/repositories/settings_repository.dart';
 import '../../../domain/repositories/tts_model_repository.dart';
 

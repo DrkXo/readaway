@@ -42,6 +42,7 @@ enum ReadingStatusFilter {
   reading,
   unread,
   finished,
+  onHold,
   favorites;
 
   String get label => switch (this) {
@@ -49,6 +50,7 @@ enum ReadingStatusFilter {
     ReadingStatusFilter.reading => 'Reading',
     ReadingStatusFilter.unread => 'Unread',
     ReadingStatusFilter.finished => 'Finished',
+    ReadingStatusFilter.onHold => 'On Hold',
     ReadingStatusFilter.favorites => 'Favorites',
   };
 }
@@ -81,6 +83,9 @@ abstract class LibraryState with _$LibraryState {
       .where((d) => d.readingStatus == ReadingStatus.unread)
       .length;
   int get finishedCount => recentDocuments.where((d) => d.isFinished).length;
+  int get onHoldCount => recentDocuments
+      .where((d) => d.readingStatus == ReadingStatus.abandoned)
+      .length;
   int get favoritesCount => recentDocuments.where((d) => d.isFavorite).length;
 
   int countForFilter(ReadingStatusFilter filter) => switch (filter) {
@@ -88,6 +93,7 @@ abstract class LibraryState with _$LibraryState {
     ReadingStatusFilter.reading => readingCount,
     ReadingStatusFilter.unread => unreadCount,
     ReadingStatusFilter.finished => finishedCount,
+    ReadingStatusFilter.onHold => onHoldCount,
     ReadingStatusFilter.favorites => favoritesCount,
   };
 
@@ -100,6 +106,8 @@ abstract class LibraryState with _$LibraryState {
           doc.readingStatus == ReadingStatus.reading,
         ReadingStatusFilter.unread => doc.readingStatus == ReadingStatus.unread,
         ReadingStatusFilter.finished => doc.isFinished,
+        ReadingStatusFilter.onHold =>
+          doc.readingStatus == ReadingStatus.abandoned,
         ReadingStatusFilter.favorites => doc.isFavorite,
       };
       if (!matchesStatus) return false;

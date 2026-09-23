@@ -33,6 +33,7 @@ class LibraryFilterBar extends StatelessWidget {
               ReadingStatusFilter.reading => LucideIcons.bookOpen,
               ReadingStatusFilter.unread => LucideIcons.clock,
               ReadingStatusFilter.finished => LucideIcons.circleCheck,
+              ReadingStatusFilter.onHold => LucideIcons.pauseCircle,
               ReadingStatusFilter.favorites => LucideIcons.star,
             };
 

@@ -488,6 +488,84 @@ void main() {
   );
 
   test(
+    'applyReaderPreferences clears rigid height and maxHeight on non-atomic containers',
+    () {
+      const html = '''
+        <div style="height: 50px; max-height: 100px;">
+          <p style="height: 30px;">First line</p>
+          <p>Second line</p>
+          <p>Third line</p>
+        </div>
+        <img src="test.png" style="height: 120px; width: 80px;" />
+      ''';
+
+      final adapter = HtmlAdapter();
+      final docNode = adapter.parse(html);
+      StyleResolver().resolveStyles(docNode);
+
+      final divBefore = docNode.children.firstWhere((n) => n.tagName == 'div');
+      expect(divBefore.style.height, equals(50.0));
+      expect(divBefore.style.maxHeight, equals(100.0));
+
+      docNode.applyReaderPreferences(
+        prefs: const ReaderPreferences(),
+        textColor: Colors.black,
+        linkColor: Colors.blue,
+      );
+
+      final divAfter = docNode.children.firstWhere((n) => n.tagName == 'div');
+      final pAfter = divAfter.children.firstWhere((n) => n.tagName == 'p');
+      final imgAfter = docNode.children.firstWhere((n) => n.tagName == 'img');
+
+      // Non-atomic container heights and max-heights must be cleared
+      expect(divAfter.style.height, isNull);
+      expect(divAfter.style.maxHeight, isNull);
+      expect(pAfter.style.height, isNull);
+
+      // Atomic node heights must be preserved
+      expect(imgAfter.style.height, equals(120.0));
+      expect(imgAfter.style.width, equals(80.0));
+    },
+  );
+
+  test(
+    'applyReaderPreferences normalizes flex and grid display to block on non-atomic containers',
+    () {
+      const html = '''
+        <div id="flex-container" style="display: flex; flex-direction: column;">
+          <div id="grid-container" style="display: grid;">
+            <p>Text</p>
+          </div>
+          <img src="cover.jpg" />
+        </div>
+      ''';
+
+      final adapter = HtmlAdapter();
+      final docNode = adapter.parse(html);
+      StyleResolver().resolveStyles(docNode);
+
+      UDTNode? flexDiv;
+      UDTNode? gridDiv;
+      docNode.traverse((node) {
+        if (node.attributes['id'] == 'flex-container') flexDiv = node;
+        if (node.attributes['id'] == 'grid-container') gridDiv = node;
+      });
+
+      expect(flexDiv?.style.display, equals(DisplayType.flex));
+      expect(gridDiv?.style.display, equals(DisplayType.grid));
+
+      docNode.applyReaderPreferences(
+        prefs: const ReaderPreferences(),
+        textColor: Colors.black,
+        linkColor: Colors.blue,
+      );
+
+      expect(flexDiv?.style.display, equals(DisplayType.block));
+      expect(gridDiv?.style.display, equals(DisplayType.block));
+    },
+  );
+
+  test(
     'StyleResolver on real EPUB chapter XHTML',
     () async {
       final epubPath = _resolveTestDocPath('TEST_EPUB_PATH', 'EPUB_PATH')!;

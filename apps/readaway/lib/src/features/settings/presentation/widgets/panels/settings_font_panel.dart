@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../../../core/models/models.dart';
 import '../../../../../core/routes/routes.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../../settings/domain/entity/settings.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../reader_prefs_scope.dart';
 import '../settings_bloc_x.dart';
