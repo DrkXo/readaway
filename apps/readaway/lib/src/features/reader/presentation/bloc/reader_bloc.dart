@@ -97,14 +97,12 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       anchor = coordinator.currentAnchor;
     }
 
-    readerRepository
-        .updateReadingProgress(
-          path: path,
-          page: targetPage,
-          pageCount: state.pageCount,
-          anchor: anchor,
-        )
-        .run();
+    readerRepository.updateReadingProgress(
+      path: path,
+      page: targetPage,
+      pageCount: state.pageCount,
+      anchor: anchor,
+    );
   }
 
   void _onClearPendingRestore(
@@ -120,10 +118,10 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _cancelSleepTimer();
     _flushProgress();
     await _ttsStateSub?.cancel();
-    await ttsRepository.stopPipeline().run();
-    await ttsRepository.releaseResources().run();
-    await readerRepository.closeDocument().run();
-    await readerRepository.updateWindowTitle(null).run();
+    await ttsRepository.stopPipeline();
+    await ttsRepository.releaseResources();
+    await readerRepository.closeDocument();
+    await readerRepository.updateWindowTitle(null);
     return super.close();
   }
 
@@ -150,13 +148,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       ),
     );
 
-    final openResult = await readerRepository
-        .openDocument(
-          event.path,
-          defaultTitle: event.fileName,
-          password: event.password,
-        )
-        .run();
+    final openResult = await readerRepository.openDocument(
+      event.path,
+      defaultTitle: event.fileName,
+      password: event.password,
+    );
 
     await openResult.fold(
       (failure) async {
@@ -178,16 +174,16 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
         final count = info.pageCount;
         final isReflow = info.isReflowable;
 
-        final lastPageResult = await readerRepository
-            .getLastReadPage(event.path)
-            .run();
-        final rawLastPage = lastPageResult.getOrElse((_) => 0);
+        final lastPageResult = await readerRepository.getLastReadPage(
+          event.path,
+        );
+        final rawLastPage = lastPageResult.dataOrNull ?? 0;
         final initialPage = count > 0 ? rawLastPage.clamp(0, count - 1) : 0;
 
-        final anchorResult = await readerRepository
-            .getLastReadAnchor(event.path)
-            .run();
-        final savedAnchor = anchorResult.getRight().toNullable();
+        final anchorResult = await readerRepository.getLastReadAnchor(
+          event.path,
+        );
+        final savedAnchor = anchorResult.dataOrNull;
 
         emit(
           state.copyWith(
@@ -195,7 +191,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
             fileName: initialFileName,
             pageCount: count,
             pageHtmls: isReflow ? List<String?>.filled(count, null) : null,
-            pageLinks: isReflow ? List<List<ReaderLink>?>.filled(count, null) : null,
+            pageLinks: isReflow
+                ? List<List<ReaderLink>?>.filled(count, null)
+                : null,
             currentPage: initialPage,
             currentVirtualPage: null,
             virtualPageCount: null,
@@ -219,16 +217,14 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           _precachePages(initialPage);
         }
 
-        await readerRepository.updateWindowTitle(info.title).run();
+        await readerRepository.updateWindowTitle(info.title);
 
-        final coverResult = await readerRepository
-            .getCoverArtUri(
-              filePath: event.path,
-              fileName: initialFileName,
-              pageCount: count,
-            )
-            .run();
-        _coverUri = coverResult.getRight().toNullable();
+        final coverResult = await readerRepository.getCoverArtUri(
+          filePath: event.path,
+          fileName: initialFileName,
+          pageCount: count,
+        );
+        _coverUri = coverResult.dataOrNull;
       },
     );
   }
@@ -289,7 +285,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
     emit(state.copyWith(loadingPages: {...state.loadingPages, index}));
 
-    final result = await readerRepository.loadPage(index).run();
+    final result = await readerRepository.loadPage(index);
 
     await result.fold(
       (failure) async {
@@ -324,9 +320,9 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _cancelSleepTimer();
     _flushProgress();
     _coverUri = null;
-    await ttsRepository.releaseResources().run();
-    await readerRepository.closeDocument().run();
-    await readerRepository.updateWindowTitle(null).run();
+    await ttsRepository.releaseResources();
+    await readerRepository.closeDocument();
+    await readerRepository.updateWindowTitle(null);
     emit(const ReaderState());
   }
 
@@ -349,10 +345,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       return;
     }
 
-    final permissionResult = await readerRepository
-        .requestAudioPermissions()
-        .run();
-    final hasPermission = permissionResult.getOrElse((_) => false);
+    final permissionResult = await readerRepository.requestAudioPermissions();
+    final hasPermission = permissionResult.dataOrNull ?? false;
     if (!hasPermission) {
       emit(
         state.copyWith(
@@ -360,7 +354,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           ttsCurrentPage: null,
           transientFeedback: UiFeedback(
             failure: const NotificationPermissionDeniedFailure(
-              message: 'Audio notification permissions are required for background read-aloud.',
+              message:
+                  'Audio notification permissions are required for background read-aloud.',
             ),
           ),
         ),
@@ -368,8 +363,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       return;
     }
 
-    final prepResult = await ttsRepository.prepareForPlayback().run();
-    final prepFailure = prepResult.getLeft().toNullable();
+    final prepResult = await ttsRepository.prepareForPlayback();
+    final prepFailure = prepResult.failureOrNull;
     if (prepFailure != null) {
       logger.w('[ReaderBloc] TTS preparation failed: $prepFailure');
       emit(
@@ -426,8 +421,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     Emitter<ReaderState>? emit,
     double? startProgression,
   ]) async {
-    final prepResult = await ttsRepository.prepareForPlayback().run();
-    final prepFailure = prepResult.getLeft().toNullable();
+    final prepResult = await ttsRepository.prepareForPlayback();
+    final prepFailure = prepResult.failureOrNull;
     if (prepFailure != null) {
       if (emit != null) {
         emit(
@@ -454,21 +449,17 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       }
     }
 
-    final textResult = await readerRepository
-        .extractSpeechText(pageIndex)
-        .run();
-    final text = textResult.getOrElse((_) => '');
+    final textResult = await readerRepository.extractSpeechText(pageIndex);
+    final text = textResult.dataOrNull ?? '';
     if (text.trim().isEmpty) return;
 
     if (_coverUri == null && state.pageCount > 0) {
-      final coverResult = await readerRepository
-          .getCoverArtUri(
-            filePath: state.documentPath ?? state.fileName ?? 'doc',
-            fileName: state.fileName ?? 'doc',
-            pageCount: state.pageCount,
-          )
-          .run();
-      _coverUri = coverResult.getRight().toNullable();
+      final coverResult = await readerRepository.getCoverArtUri(
+        filePath: state.documentPath ?? state.fileName ?? 'doc',
+        fileName: state.fileName ?? 'doc',
+        pageCount: state.pageCount,
+      );
+      _coverUri = coverResult.dataOrNull;
     }
 
     if (emit != null) {
@@ -478,23 +469,21 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     }
 
     ttsRepository.start();
-    final playResult = await ttsRepository
-        .playText(
-          text,
-          pageIndex: pageIndex,
-          startProgression: startProgression,
-          tag: MediaItem(
-            id: 'page-${pageIndex + 1}',
-            title: 'Page ${pageIndex + 1}',
-            album: state.bookTitle,
-            artist: state.author,
-            genre: 'Ebook',
-            artUri: _coverUri,
-          ),
-        )
-        .run();
+    final playResult = await ttsRepository.playText(
+      text,
+      pageIndex: pageIndex,
+      startProgression: startProgression,
+      tag: MediaItem(
+        id: 'page-${pageIndex + 1}',
+        title: 'Page ${pageIndex + 1}',
+        album: state.bookTitle,
+        artist: state.author,
+        genre: 'Ebook',
+        artUri: _coverUri,
+      ),
+    );
 
-    final playFailure = playResult.getLeft().toNullable();
+    final playFailure = playResult.failureOrNull;
     if (playFailure != null) {
       logger.e('[ReaderBloc] TTS playText failed: $playFailure');
       if (emit != null) {
@@ -542,8 +531,8 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
       int? next;
       for (var i = basePage + 1; i < state.pageCount; i++) {
-        final textResult = await readerRepository.extractSpeechText(i).run();
-        final text = textResult.getOrElse((_) => '');
+        final textResult = await readerRepository.extractSpeechText(i);
+        final text = textResult.dataOrNull ?? '';
         if (text.trim().isNotEmpty) {
           next = i;
           break;
@@ -582,7 +571,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _TtsClose event,
     Emitter<ReaderState> emit,
   ) async {
-    await ttsRepository.releaseResources().run();
+    await ttsRepository.releaseResources();
     _cancelSleepTimer();
     emit(state.copyWith(ttsActive: false, ttsCurrentPage: null));
   }
@@ -648,7 +637,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     // Full cleanup on timer end: stops playback and unloads the TTS engine
     // (terminates the sherpa worker isolate), unlike a plain user close which
     // only stops the session and keeps the engine warm.
-    ttsRepository.releaseResources().run();
+    ttsRepository.releaseResources();
     emit(state.copyWith(ttsActive: false, ttsCurrentPage: null));
   }
 

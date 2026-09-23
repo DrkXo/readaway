@@ -136,7 +136,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                           return TtsSpeedControlPanel(
                             rate: rate,
                             onRateChanged: (newRate) =>
-                                tts.setRate(newRate).run(),
+                                tts.setRate(newRate),
                             onClose: () {
                               setState(() => _showSpeedPanel = false);
                             },
@@ -155,7 +155,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                           return TtsPitchControlPanel(
                             pitch: pitch,
                             onPitchChanged: (newPitch) =>
-                                tts.setPitch(newPitch).run(),
+                                tts.setPitch(newPitch),
                             onClose: () {
                               setState(() => _showPitchPanel = false);
                             },
@@ -323,7 +323,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             }
                           });
                         },
-                        onLongPress: () => tts.setRate(1.0).run(),
+                        onLongPress: () => tts.setRate(1.0),
                       );
                     },
                   ),
@@ -356,7 +356,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             }
                           });
                         },
-                        onLongPress: () => tts.setPitch(1.0).run(),
+                        onLongPress: () => tts.setPitch(1.0),
                       );
                     },
                   ),
@@ -641,7 +641,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     position: pos,
                     duration: dur,
                     waveform: waveform,
-                    onSeek: (target) => tts.seek(target).run(),
+                    onSeek: (target) => tts.seek(target),
                   ),
                 );
               },
@@ -664,7 +664,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     AppIconButton(
                       icon: LucideIcons.square,
                       tooltip: 'Stop reading',
-                      onPressed: () => tts.stop().run(),
+                      onPressed: () => tts.stop(),
                       size: AppIconButtonSize.medium,
                     ),
 
@@ -672,7 +672,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     AppIconButton(
                       icon: LucideIcons.skipBack,
                       tooltip: 'Previous sentence',
-                      onPressed: () => tts.skipToPreviousSentence().run(),
+                      onPressed: () => tts.skipToPreviousSentence(),
                       size: AppIconButtonSize.large,
                     ),
 
@@ -702,9 +702,9 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                           ? null
                           : () {
                               if (isPlaying) {
-                                tts.pause().run();
+                                tts.pause();
                               } else {
-                                tts.resume().run();
+                                tts.resume();
                               }
                             },
                     ),
@@ -713,7 +713,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     AppIconButton(
                       icon: LucideIcons.skipForward,
                       tooltip: 'Next sentence',
-                      onPressed: () => tts.skipToNextSentence().run(),
+                      onPressed: () => tts.skipToNextSentence(),
                       size: AppIconButtonSize.large,
                     ),
 
@@ -721,7 +721,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     AppIconButton(
                       icon: LucideIcons.rotateCcw,
                       tooltip: 'Replay sentence',
-                      onPressed: () => tts.seek(Duration.zero).run(),
+                      onPressed: () => tts.seek(Duration.zero),
                       size: AppIconButtonSize.medium,
                     ),
                   ],

@@ -173,7 +173,7 @@ class _TtsSentenceQueueListState extends State<TtsSentenceQueueList> {
     _userScrollTimer?.cancel();
     _currentIndexNotifier.value = index;
     _scrollToActiveIndex(index, userInitiated: true);
-    widget.tts.seekToChunk(index).run();
+    widget.tts.seekToChunk(index);
   }
 
   @override

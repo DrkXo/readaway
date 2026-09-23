@@ -4,6 +4,3 @@ targets:
       json_serializable:
         options:
           explicit_to_json: true
-      theme_tailor:
-        options:
-          theme_getter: none

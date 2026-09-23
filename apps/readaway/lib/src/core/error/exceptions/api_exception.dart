@@ -63,7 +63,7 @@ enum CustomErrorTypes {
 /// Exception thrown when API requests fail
 ///
 /// Includes details about the error type, message, status code, and any associated data
-class ApiException extends Equatable implements Exception {
+class ApiException implements Exception {
   /// Human-readable error message
   final String message;
 
@@ -83,21 +83,11 @@ class ApiException extends Equatable implements Exception {
     this.data,
   }) : message = message ?? errorType.message;
 
-  // @override
-  // String toString() =>
-  //     'ApiException: $message (Status: $statusCode, Type: $errorType)';
-
   @override
   String toString() => message;
-
-  @override
-  List<Object?> get props => [message, statusCode, errorType, data];
-
-  @override
-  bool get stringify => true;
 }
 
-class DataFormattingException extends Equatable implements Exception {
+class DataFormattingException implements Exception {
   /// Human-readable error message
   final String message;
 
@@ -123,15 +113,9 @@ class DataFormattingException extends Equatable implements Exception {
 
   @override
   String toString() => message;
-
-  @override
-  List<Object?> get props => [message, source, errorType, invalidData, context];
-
-  @override
-  bool get stringify => true;
 }
 
-class DataStorageException extends Equatable implements Exception {
+class DataStorageException implements Exception {
   /// Human-readable error message
   final String message;
 
@@ -161,22 +145,9 @@ class DataStorageException extends Equatable implements Exception {
 
   @override
   String toString() => message;
-
-  @override
-  List<Object?> get props => [
-    message,
-    operation,
-    errorType,
-    dataKey,
-    errorDetails,
-    context,
-  ];
-
-  @override
-  bool get stringify => true;
 }
 
-class NetworkException extends Equatable implements Exception {
+class NetworkException implements Exception {
   /// Human-readable error message
   final String message;
 
@@ -190,10 +161,4 @@ class NetworkException extends Equatable implements Exception {
 
   @override
   String toString() => message;
-
-  @override
-  List<Object?> get props => [message, errorType];
-
-  @override
-  bool get stringify => true;
 }

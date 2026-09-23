@@ -4,9 +4,9 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mockito/mockito.dart';
+import 'package:readaway/src/core/result/result.dart';
 import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/dialogs/reader_password_dialog.dart';
@@ -35,9 +35,9 @@ void main() {
     test('caches and returns page image bytes and dimensions', () async {
       final dummyBytes = Uint8List.fromList([1, 2, 3, 4]);
       when(repo.loadPageImage(0, scale: anyNamed('scale')))
-          .thenAnswer((_) => TaskEither.right(dummyBytes));
+          .thenAnswer((_) async => Success(dummyBytes));
       when(repo.getPageSize(0))
-          .thenAnswer((_) => TaskEither.right(const PageSize(width: 800.0, height: 1200.0)));
+          .thenAnswer((_) async => const Success(PageSize(width: 800.0, height: 1200.0)));
 
       final bytes1 = await cache.getOrLoadImage(repo, '/test.pdf', 0);
       final size1 = await cache.getOrLoadSize(repo, '/test.pdf', 0);
@@ -53,7 +53,7 @@ void main() {
 
     test('evicts oldest entry when exceeding maxEntries', () async {
       when(repo.loadPageImage(any, scale: anyNamed('scale')))
-          .thenAnswer((i) => TaskEither.right(Uint8List.fromList([i.positionalArguments[0] as int])));
+          .thenAnswer((i) async => Success(Uint8List.fromList([i.positionalArguments[0] as int])));
 
       await cache.getOrLoadImage(repo, '/test.pdf', 0);
       await cache.getOrLoadImage(repo, '/test.pdf', 1);
@@ -67,7 +67,7 @@ void main() {
 
     test('clears document cache cleanly', () async {
       when(repo.loadPageImage(any, scale: anyNamed('scale')))
-          .thenAnswer((_) => TaskEither.right(Uint8List.fromList([1, 2])));
+          .thenAnswer((_) async => Success(Uint8List.fromList([1, 2])));
 
       await cache.getOrLoadImage(repo, '/doc1.cbz', 0); // Call 1
       await cache.getOrLoadImage(repo, '/doc2.cbz', 0); // Call 2

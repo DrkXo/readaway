@@ -1,7 +1,7 @@
-import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/services/settings_service.dart';
 import '../../domain/entity/settings.dart';
 import '../../domain/repositories/settings_repository.dart';
@@ -13,10 +13,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
   SettingsRepositoryImpl(this._settingsService);
 
   @override
-  TaskEither<Failure, Settings> getSettings() {
-    return TaskEither.tryCatch(
+  Future<Result<Settings>> getSettings() {
+    return guard(
       () async => _settingsService.settings,
-      (error, stack) => StorageReadFailure(
+      onError: (error, stack) => StorageReadFailure(
         'app_settings',
         cause: error,
         stackTrace: stack,
@@ -25,13 +25,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> saveSettings(Settings settings) {
-    return TaskEither.tryCatch(
-      () async {
-        await _settingsService.save(settings);
-        return unit;
-      },
-      (error, stack) => StorageWriteFailure(
+  Future<Result<void>> saveSettings(Settings settings) {
+    return guard(
+      () async => _settingsService.save(settings),
+      onError: (error, stack) => StorageWriteFailure(
         'app_settings',
         cause: error,
         stackTrace: stack,
@@ -40,13 +37,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> resetSettings() {
-    return TaskEither.tryCatch(
-      () async {
-        await _settingsService.save(const Settings());
-        return unit;
-      },
-      (error, stack) => StorageResetFailure(
+  Future<Result<void>> resetSettings() {
+    return guard(
+      () async => _settingsService.save(const Settings()),
+      onError: (error, stack) => StorageResetFailure(
         'Failed to reset settings: $error',
         cause: error,
         stackTrace: stack,

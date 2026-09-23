@@ -107,18 +107,18 @@ void main() {
       final repo = ReaderPreferencesRepositoryImpl(storageService);
 
       const prefs = ReaderPreferences(fontSize: 22.0);
-      final saveResult = await repo.saveGlobalPreferences(prefs).run();
-      expect(saveResult.isRight(), isTrue);
+      final saveResult = await repo.saveGlobalPreferences(prefs);
+      expect(saveResult.isSuccess, isTrue);
 
-      final readResult = await repo.getGlobalPreferences().run();
-      expect(readResult.getRight().toNullable()?.fontSize, 22.0);
+      final readResult = await repo.getGlobalPreferences();
+      expect(readResult.dataOrNull?.fontSize, 22.0);
 
       const docPrefs = ReaderPreferences(fontSize: 28.0);
-      await repo.saveDocumentPreferences('/path/to/book.epub', docPrefs).run();
+      await repo.saveDocumentPreferences('/path/to/book.epub', docPrefs);
 
       final docResult =
-          await repo.getDocumentPreferences('/path/to/book.epub').run();
-      expect(docResult.getRight().toNullable()?.toNullable()?.fontSize, 28.0);
+          await repo.getDocumentPreferences('/path/to/book.epub');
+      expect(docResult.dataOrNull?.fontSize, 28.0);
 
       expect(storageService.readerBox.containsKey('reader_global'), isTrue);
       expect(

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:mockito/mockito.dart';
-import 'package:readaway/src/core/error/failures.dart';
+import 'package:readaway/src/core/result/result.dart';
 import 'package:readaway/src/features/library/domain/entity/reading_status.dart';
 import 'package:readaway/src/features/library/domain/entity/recent_document.dart';
 import 'package:readaway/src/features/reader/data/repositories/reader_repository_impl.dart';
@@ -30,12 +29,12 @@ void main() {
     );
 
     when(libRepo.getRecentDocuments()).thenAnswer(
-      (_) => TaskEither<Failure, List<RecentDocument>>.of([storedDoc]),
+      (_) async => Success([storedDoc]),
     );
     when(libRepo.saveRecentDocument(any)).thenAnswer(
-      (invocation) {
+      (invocation) async {
         storedDoc = invocation.positionalArguments.first as RecentDocument;
-        return TaskEither<Failure, Unit>.of(unit);
+        return const Success(null);
       },
     );
 
@@ -49,23 +48,20 @@ void main() {
 
   group('reading progress anchor persistence', () {
     test('saves and restores a reading anchor', () async {
-      final save = await repository
-          .updateReadingProgress(
-            path: '/tmp/book.epub',
-            page: 12,
-            pageCount: 10,
-            anchor: const ReadingAnchor(
-              chapterIndex: 5,
-              progressionInChapter: 0.5,
-            ),
-          )
-          .run();
-      expect(save.isRight(), isTrue);
+      final save = await repository.updateReadingProgress(
+        path: '/tmp/book.epub',
+        page: 12,
+        pageCount: 10,
+        anchor: const ReadingAnchor(
+          chapterIndex: 5,
+          progressionInChapter: 0.5,
+        ),
+      );
+      expect(save.isSuccess, isTrue);
 
       final anchorResult = await repository
-          .getLastReadAnchor('/tmp/book.epub')
-          .run();
-      final anchor = anchorResult.getRight().toNullable();
+          .getLastReadAnchor('/tmp/book.epub');
+      final anchor = anchorResult.dataOrNull;
       expect(anchor, isNotNull);
       expect(anchor!.chapterIndex, 5);
       expect(anchor.progressionInChapter, closeTo(0.5, 0.001));
@@ -77,15 +73,13 @@ void main() {
         lastReadProgression: 0.25,
       );
 
-      final save = await repository
-          .updateReadingProgress(
-            path: '/tmp/book.epub',
-            page: 8,
-            pageCount: 10,
-            anchor: null,
-          )
-          .run();
-      expect(save.isRight(), isTrue);
+      final save = await repository.updateReadingProgress(
+        path: '/tmp/book.epub',
+        page: 8,
+        pageCount: 10,
+        anchor: null,
+      );
+      expect(save.isSuccess, isTrue);
 
       expect(storedDoc.lastReadChapter, 3);
       expect(storedDoc.lastReadProgression, closeTo(0.25, 0.001));
@@ -93,25 +87,22 @@ void main() {
 
     test('returns null when no anchor has been saved', () async {
       final anchorResult = await repository
-          .getLastReadAnchor('/tmp/book.epub')
-          .run();
-      expect(anchorResult.getRight().toNullable(), isNull);
+          .getLastReadAnchor('/tmp/book.epub');
+      expect(anchorResult.dataOrNull, isNull);
     });
 
     test(
       'marks the document finished when the anchor reaches the last chapter',
       () async {
-        await repository
-            .updateReadingProgress(
-              path: '/tmp/book.epub',
-              page: 20,
-              pageCount: 10,
-              anchor: const ReadingAnchor(
-                chapterIndex: 9,
-                progressionInChapter: 1.0,
-              ),
-            )
-            .run();
+        await repository.updateReadingProgress(
+          path: '/tmp/book.epub',
+          page: 20,
+          pageCount: 10,
+          anchor: const ReadingAnchor(
+            chapterIndex: 9,
+            progressionInChapter: 1.0,
+          ),
+        );
 
         expect(storedDoc.readingStatus, ReadingStatus.finished);
       },

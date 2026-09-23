@@ -1,10 +1,8 @@
-import 'package:equatable/equatable.dart';
-
 import '../error/failures.dart';
 
 /// Represents a single-fire, transient feedback notification to be rendered
 /// by the UI (e.g. Floating SnackBar or Toast) with optional recovery action.
-class UiFeedback extends Equatable {
+class UiFeedback {
   final Failure failure;
   final String? actionLabel;
   final String? actionRoute;
@@ -18,5 +16,16 @@ class UiFeedback extends Equatable {
   }) : timestamp = timestamp ?? DateTime.now();
 
   @override
-  List<Object?> get props => [failure, actionLabel, actionRoute, timestamp];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UiFeedback &&
+          runtimeType == other.runtimeType &&
+          failure == other.failure &&
+          actionLabel == other.actionLabel &&
+          actionRoute == other.actionRoute &&
+          timestamp == other.timestamp);
+
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, failure, actionLabel, actionRoute, timestamp);
 }

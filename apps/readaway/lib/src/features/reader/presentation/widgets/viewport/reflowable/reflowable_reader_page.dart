@@ -246,8 +246,7 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
 
   Future<List<int>?> _loadAssetBytes(String src) async {
     final res = await GetIt.I<ReaderRepository>()
-        .loadAssetBytes(src, pageIndex: widget.index)
-        .run();
+        .loadAssetBytes(src, pageIndex: widget.index);
     return res.fold(
       (failure) {
         if (kDebugMode) {
@@ -276,17 +275,15 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
 
     // Check if the link target is a footnote or note
     final footnoteRes = await GetIt.I<ReaderRepository>()
-        .resolveFootnote(url, currentChapterIndex: widget.index)
-        .run();
-    final footnote = footnoteRes.getRight().toNullable()?.toNullable();
+        .resolveFootnote(url, currentChapterIndex: widget.index);
+    final footnote = footnoteRes.dataOrNull;
     if (footnote != null && context.mounted) {
       // Resolve optional cross-chapter jump target
       VoidCallback? onJump;
       if (!url.startsWith('#')) {
         final reflowRes = await GetIt.I<ReaderRepository>()
-            .resolveReflowableLink(url)
-            .run();
-        final targetSection = reflowRes.getRight().toNullable();
+            .resolveReflowableLink(url);
+        final targetSection = reflowRes.dataOrNull;
         if (targetSection != null &&
             targetSection >= 0 &&
             targetSection != widget.index) {
@@ -312,9 +309,8 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
 
     // Try resolving cross-chapter link in reflowable document
     final reflowRes = await GetIt.I<ReaderRepository>()
-        .resolveReflowableLink(url)
-        .run();
-    final targetSection = reflowRes.getRight().toNullable();
+        .resolveReflowableLink(url);
+    final targetSection = reflowRes.dataOrNull;
     if (targetSection != null && targetSection >= 0) {
       if (!context.mounted) return;
       final maxIndex = context.read<ReaderBloc>().state.pageCount - 1;

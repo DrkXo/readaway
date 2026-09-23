@@ -56,11 +56,10 @@ void main() {
           .thenAnswer((_) async => Future.value());
 
       final result = await repository
-          .updateReadingStatus(testDoc.path, ReadingStatus.unread)
-          .run();
+          .updateReadingStatus(testDoc.path, ReadingStatus.unread);
 
-      expect(result.isRight(), isTrue);
-      final updated = result.getOrElse((_) => throw Exception());
+      expect(result.isSuccess, isTrue);
+      final updated = result.dataOrNull!;
       expect(updated.readingStatus, ReadingStatus.unread);
       expect(updated.lastReadPage, 0);
       expect(updated.lastReadChapter, 0);
@@ -83,10 +82,10 @@ void main() {
       when(mockDataSource.saveRecentDocument(any))
           .thenAnswer((_) async => Future.value());
 
-      final result = await repository.resetReadingProgress(testDoc.path).run();
+      final result = await repository.resetReadingProgress(testDoc.path);
 
-      expect(result.isRight(), isTrue);
-      final updated = result.getOrElse((_) => throw Exception());
+      expect(result.isSuccess, isTrue);
+      final updated = result.dataOrNull!;
       expect(updated.readingStatus, ReadingStatus.unread);
       expect(updated.lastReadPage, 0);
       expect(updated.lastReadChapter, 0);
@@ -100,11 +99,10 @@ void main() {
           .thenAnswer((_) async => Future.value());
 
       final result = await repository
-          .updateReadingStatus(testDoc.path, ReadingStatus.finished)
-          .run();
+          .updateReadingStatus(testDoc.path, ReadingStatus.finished);
 
-      expect(result.isRight(), isTrue);
-      final updated = result.getOrElse((_) => throw Exception());
+      expect(result.isSuccess, isTrue);
+      final updated = result.dataOrNull!;
       expect(updated.readingStatus, ReadingStatus.finished);
       expect(updated.lastReadPage, 99);
       expect(updated.lastReadChapter, 99);
@@ -120,11 +118,10 @@ void main() {
           .thenAnswer((_) async => Future.value());
 
       final result = await repository
-          .updateReadingStatus(testDoc.path, ReadingStatus.abandoned)
-          .run();
+          .updateReadingStatus(testDoc.path, ReadingStatus.abandoned);
 
-      expect(result.isRight(), isTrue);
-      final updated = result.getOrElse((_) => throw Exception());
+      expect(result.isSuccess, isTrue);
+      final updated = result.dataOrNull!;
       expect(updated.readingStatus, ReadingStatus.abandoned);
       expect(updated.lastReadPage, 45); // preserves progress
     });
@@ -137,9 +134,9 @@ void main() {
       when(mockDataSource.removeRecentDocument(testDoc.path))
           .thenAnswer((_) async => Future.value());
 
-      final result = await repository.removeRecentDocument(testDoc.path).run();
+      final result = await repository.removeRecentDocument(testDoc.path);
 
-      expect(result.isRight(), isTrue);
+      expect(result.isSuccess, isTrue);
       verify(mockDataSource.removeRecentDocument(testDoc.path)).called(1);
     });
   });

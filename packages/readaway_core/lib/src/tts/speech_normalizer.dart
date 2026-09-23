@@ -1,5 +1,4 @@
 import 'package:diacritic/diacritic.dart';
-import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 /// High-performance speech text normalizer implemented in pure Dart.
 ///
@@ -150,9 +149,8 @@ class SpeechNormalizer {
     final expanded = expandNumbersAndCurrency(unescaped);
 
     if (isLatinDominant(expanded)) {
-      // Normalize Unicode via NFKC and remove accents for Latin text
-      final nfkcText = unorm.nfkc(expanded);
-      final transliterated = removeDiacritics(nfkcText);
+      // Remove accents for Latin text
+      final transliterated = removeDiacritics(expanded);
       return transliterated.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).join(' ');
     } else {
       // Preserve non-Latin scripts (CJK, Arabic, etc.) intact

@@ -104,9 +104,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _SetGlobalReaderPref event,
     Emitter<SettingsState> emit,
   ) async {
-    final result = await preferencesRepository
-        .saveGlobalPreferences(event.prefs)
-        .run();
+    final result = await preferencesRepository.saveGlobalPreferences(event.prefs);
     result.fold(
       (failure) => logger.e('Failed to set global prefs: $failure'),
       (_) {
@@ -120,8 +118,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _ResetAllReaderPrefs event,
     Emitter<SettingsState> emit,
   ) async {
-    await preferencesRepository.resetAllPreferences().run();
-    await settingsRepository.resetSettings().run();
+    await preferencesRepository.resetAllPreferences();
+    await settingsRepository.resetSettings();
     emit(
       const SettingsState(
         globalReaderPrefs: ReaderPreferences(),
@@ -135,9 +133,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _LoadDocumentPrefs event,
     Emitter<SettingsState> emit,
   ) async {
-    final result = await preferencesRepository
-        .getDocumentPreferences(event.path)
-        .run();
+    final result = await preferencesRepository.getDocumentPreferences(event.path);
     result.fold(
       (failure) => logger.e('Failed to load document prefs: $failure'),
       (loaded) {
@@ -146,10 +142,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         );
         // Only keep an entry when a real override exists; otherwise remove it
         // so the effective prefs fall back to the LIVE global prefs.
-        loaded.fold(
-          () => map.remove(event.path),
-          (prefs) => map[event.path] = prefs,
-        );
+        if (loaded == null) {
+          map.remove(event.path);
+        } else {
+          map[event.path] = loaded;
+        }
         emit(state.copyWith(documentReaderPrefs: map));
         logger.d('Document reader prefs loaded for ${event.path}');
       },
@@ -160,9 +157,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _SetDocumentReaderPref event,
     Emitter<SettingsState> emit,
   ) async {
-    final result = await preferencesRepository
-        .saveDocumentPreferences(event.path, event.prefs)
-        .run();
+    final result = await preferencesRepository.saveDocumentPreferences(
+      event.path,
+      event.prefs,
+    );
     result.fold(
       (failure) => logger.e('Failed to set document prefs: $failure'),
       (_) {
@@ -183,9 +181,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _ClearDocumentPrefs event,
     Emitter<SettingsState> emit,
   ) async {
-    final result = await preferencesRepository
-        .clearDocumentPreferences(event.path)
-        .run();
+    final result = await preferencesRepository.clearDocumentPreferences(event.path);
     result.fold(
       (failure) => logger.e('Failed to clear document prefs: $failure'),
       (_) {
@@ -203,7 +199,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _UpdateAppSettings event,
     Emitter<SettingsState> emit,
   ) async {
-    await settingsRepository.saveSettings(event.settings).run();
+    await settingsRepository.saveSettings(event.settings);
     emit(state.copyWith(appSettings: event.settings));
     logger.d('App settings updated');
   }
@@ -213,9 +209,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) async {
     final global = event.all['global'] ?? const ReaderPreferences();
-    final result = await preferencesRepository
-        .importGlobalPreferences(global)
-        .run();
+    final result = await preferencesRepository.importGlobalPreferences(global);
     result.fold(
       (failure) => logger.e('Failed to import prefs: $failure'),
       (_) {
@@ -229,13 +223,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _LoadPrefs event,
     Emitter<SettingsState> emit,
   ) async {
-    final prefsResult = await preferencesRepository
-        .getGlobalPreferences()
-        .run();
-    final settingsResult = await settingsRepository.getSettings().run();
+    final prefsResult = await preferencesRepository.getGlobalPreferences();
+    final settingsResult = await settingsRepository.getSettings();
 
-    final prefs = prefsResult.getOrElse((_) => state.globalReaderPrefs);
-    final settings = settingsResult.getOrElse((_) => state.appSettings);
+    final prefs = prefsResult.dataOrNull ?? state.globalReaderPrefs;
+    final settings = settingsResult.dataOrNull ?? state.appSettings;
 
     emit(state.copyWith(globalReaderPrefs: prefs, appSettings: settings));
     logger.d('Settings loaded via event');
@@ -252,9 +244,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   }
 
   void _onRefreshTts(_RefreshTts event, Emitter<SettingsState> emit) async {
-    final catalogResult = await ttsModelRepository
-        .getCatalog(forceRefresh: event.force)
-        .run();
+    final catalogResult = await ttsModelRepository.getCatalog(
+      forceRefresh: event.force,
+    );
 
     await catalogResult.fold(
       (failure) async {
@@ -264,14 +256,13 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       },
       (catalog) async {
         final downloadedResult =
-            await ttsModelRepository.getDownloadedModelIds().run();
-        final downloadedIds = downloadedResult.getOrElse((_) => <String>{});
+            await ttsModelRepository.getDownloadedModelIds();
+        final downloadedIds = downloadedResult.dataOrNull ?? <String>{};
 
         var activeModelId = ttsModelRepository.activeModelId;
         if (activeModelId == null) {
-          final settingsResult = await settingsRepository.getSettings().run();
-          final persisted = settingsResult
-              .getOrElse((_) => const Settings())
+          final settingsResult = await settingsRepository.getSettings();
+          final persisted = (settingsResult.dataOrNull ?? const Settings())
               .globalViewSettings
               .ttsVoice;
           final persistedModelId = persisted != null && persisted.contains('@')
@@ -279,10 +270,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
               : persisted;
           if (persistedModelId != null &&
               downloadedIds.contains(persistedModelId)) {
-            final loadResult = await ttsModelRepository
-                .activateModel(persistedModelId)
-                .run();
-            if (loadResult.isRight()) {
+            final loadResult = await ttsModelRepository.activateModel(
+              persistedModelId,
+            );
+            if (loadResult.isSuccess) {
               activeModelId = persistedModelId;
             }
           }
@@ -449,7 +440,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) async {
     final id = event.model.id;
-    final result = await ttsModelRepository.deleteModel(id).run();
+    final result = await ttsModelRepository.deleteModel(id);
     await result.fold(
       (failure) async {
         emit(
@@ -459,22 +450,20 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         );
       },
       (_) async {
-        final settingsResult = await settingsRepository.getSettings().run();
-        final current = settingsResult.getOrElse((_) => const Settings());
+        final settingsResult = await settingsRepository.getSettings();
+        final current = settingsResult.dataOrNull ?? const Settings();
         final currentVoice = current.globalViewSettings.ttsVoice;
         final currentModelId = currentVoice != null && currentVoice.contains('@')
             ? currentVoice.split('@').first
             : currentVoice;
         if (currentModelId == id) {
-          await settingsRepository
-              .saveSettings(
-                current.copyWith(
-                  globalViewSettings: current.globalViewSettings.copyWith(
-                    ttsVoice: null,
-                  ),
-                ),
-              )
-              .run();
+          await settingsRepository.saveSettings(
+            current.copyWith(
+              globalViewSettings: current.globalViewSettings.copyWith(
+                ttsVoice: null,
+              ),
+            ),
+          );
         }
         final wasActive = state.ttsActiveModelId == id;
         emit(
@@ -493,7 +482,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     if (state.ttsBusyModelId != null) return;
     emit(state.copyWith(ttsBusyModelId: event.modelId, ttsError: null));
 
-    final result = await ttsModelRepository.activateModel(event.modelId).run();
+    final result = await ttsModelRepository.activateModel(event.modelId);
     await result.fold(
       (failure) async {
         emit(
@@ -513,36 +502,34 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   }
 
   Future<void> _persistActiveVoice(String modelId) async {
-    final settingsResult = await settingsRepository.getSettings().run();
-    final current = settingsResult.getOrElse((_) => const Settings());
+    final settingsResult = await settingsRepository.getSettings();
+    final current = settingsResult.dataOrNull ?? const Settings();
     if (current.globalViewSettings.ttsVoice == modelId) return;
-    await settingsRepository
-        .saveSettings(
-          current.copyWith(
-            globalViewSettings: current.globalViewSettings.copyWith(
-              ttsVoice: modelId,
-            ),
-          ),
-        )
-        .run();
+    await settingsRepository.saveSettings(
+      current.copyWith(
+        globalViewSettings: current.globalViewSettings.copyWith(
+          ttsVoice: modelId,
+        ),
+      ),
+    );
   }
 
   void _onPreviewTts(_PreviewTts event, Emitter<SettingsState> emit) async {
     // If the currently playing preview is tapped, stop it
     if (state.ttsBusyModelId == event.modelId) {
-      await ttsModelRepository.stopPreview().run();
+      await ttsModelRepository.stopPreview();
       emit(state.copyWith(ttsBusyModelId: null));
       return;
     }
 
     // Stop any existing preview before starting the new one
     if (state.ttsBusyModelId != null) {
-      await ttsModelRepository.stopPreview().run();
+      await ttsModelRepository.stopPreview();
     }
 
     emit(state.copyWith(ttsBusyModelId: event.modelId, ttsError: null));
 
-    final result = await ttsModelRepository.playPreview(event.modelId).run();
+    final result = await ttsModelRepository.playPreview(event.modelId);
     result.fold(
       (failure) {
         emit(

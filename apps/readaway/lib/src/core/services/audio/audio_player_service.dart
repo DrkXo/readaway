@@ -13,11 +13,12 @@ import 'package:media_kit/media_kit.dart' as mk hide PlayerState;
 import 'package:mutex/mutex.dart';
 import 'package:rxdart/rxdart.dart';
 
+import 'package:package_info_plus/package_info_plus.dart';
+
 import '../../../../flavors.dart';
 import '../../error/errors.dart';
 import '../logging_service.dart';
 import '../notification_service.dart';
-import '../package_info_service.dart';
 import 'audio_device.dart';
 import 'audio_handler.dart';
 
@@ -43,14 +44,13 @@ JustAudioService get justAudioService => audioPlayerService;
   dependsOn: [
     LoggingService,
     NotificationService,
-    PackageInfoService,
   ],
 )
 class AudioPlayerService {
-  final PackageInfoService _packageInfoService;
+  final PackageInfo _packageInfo;
   final NotificationService _notificationService;
 
-  AudioPlayerService(this._packageInfoService, this._notificationService);
+  AudioPlayerService(this._packageInfo, this._notificationService);
 
   final Mutex _playlistMutex = Mutex();
 
@@ -119,7 +119,7 @@ class AudioPlayerService {
 
       if (isDesktop && Platform.isLinux) {
         AudioServiceMpris.init(
-          dBusName: _packageInfoService.packageName,
+          dBusName: _packageInfo.packageName,
           identity: F.name,
           canGoNext: true,
           canGoPrevious: true,

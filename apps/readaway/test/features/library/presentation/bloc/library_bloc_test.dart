@@ -1,8 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:mockito/mockito.dart';
-import 'package:readaway/src/core/error/failures.dart';
+import 'package:readaway/src/core/result/result.dart';
 import 'package:readaway/src/features/library/domain/entity/reading_status.dart';
 import 'package:readaway/src/features/library/domain/entity/recent_document.dart';
 import 'package:readaway/src/features/library/presentation/bloc/library_bloc.dart';
@@ -27,7 +26,7 @@ void main() {
   setUp(() {
     mockRepo = MockLibraryRepository();
     when(mockRepo.getCoverArtPath(any))
-        .thenAnswer((_) => TaskEither.of(const None()));
+        .thenAnswer((_) async => const Success(null));
   });
 
   group('LibraryBloc', () {
@@ -35,7 +34,7 @@ void main() {
       'emits loaded state with documents when loadRequested succeeds',
       build: () {
         when(mockRepo.getRecentDocuments()).thenAnswer(
-          (_) => TaskEither<Failure, List<RecentDocument>>.of([doc1]),
+          (_) async => Success([doc1]),
         );
         return LibraryBloc(mockRepo);
       },
@@ -56,7 +55,7 @@ void main() {
       'removes document and updates state on removeDocument event',
       build: () {
         when(mockRepo.removeRecentDocument(doc1.path)).thenAnswer(
-          (_) => TaskEither<Failure, Unit>.of(unit),
+          (_) async => const Success(null),
         );
         return LibraryBloc(mockRepo);
       },
@@ -86,7 +85,7 @@ void main() {
           readingStatus: ReadingStatus.unread,
         );
         when(mockRepo.resetReadingProgress(doc1.path)).thenAnswer(
-          (_) => TaskEither<Failure, RecentDocument>.of(resetDoc),
+          (_) async => Success(resetDoc),
         );
         return LibraryBloc(mockRepo);
       },

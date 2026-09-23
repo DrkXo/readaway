@@ -1,9 +1,9 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:readaway_core/readaway_core.dart' show TtsChunk;
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/services/audio/audio_player_service.dart';
 import '../../../../core/services/tts/controller/tts_controller_service.dart';
 import '../../../../core/services/tts/tts_models.dart';
@@ -105,8 +105,8 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> prepareForPlayback() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> prepareForPlayback() {
+    return guard(
       () async {
         await _ttsController.prepareForPlayback();
         if (_ttsController.currentVoice == null &&
@@ -115,9 +115,8 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
             'No voice model is selected or installed.',
           );
         }
-        return unit;
       },
-      (error, stack) {
+      onError: (error, stack) {
         if (error is Failure) return error;
         return TtsSynthesisFailure(
           'Failed to prepare TTS playback: $error',
@@ -129,13 +128,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> releaseResources() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> releaseResources() {
+    return guard(
       () async {
         await _ttsController.releaseResources();
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to release TTS resources: $error',
         cause: error,
         stackTrace: stack,
@@ -144,14 +142,14 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> playText(
+  Future<Result<void>> playText(
     String text, {
     MediaItem? tag,
     int? pageIndex,
     double? startProgression,
     void Function()? onComplete,
   }) {
-    return TaskEither.tryCatch(
+    return guard(
       () async {
         if (_ttsController.currentVoice == null) {
           throw const TtsNoVoiceSelectedFailure(
@@ -165,9 +163,8 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
           startProgression: startProgression,
           onComplete: onComplete,
         );
-        return unit;
       },
-      (error, stack) {
+      onError: (error, stack) {
         if (error is Failure) return error;
         return TtsSynthesisFailure(
           'Failed to start TTS playback: $error',
@@ -179,13 +176,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> pause() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> pause() {
+    return guard(
       () async {
         await _ttsController.pause();
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to pause TTS: $error',
         cause: error,
         stackTrace: stack,
@@ -194,13 +190,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> resume() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> resume() {
+    return guard(
       () async {
         await _ttsController.resume();
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to resume TTS: $error',
         cause: error,
         stackTrace: stack,
@@ -209,13 +204,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> stop() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> stop() {
+    return guard(
       () async {
         await _ttsController.stop();
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to stop TTS: $error',
         cause: error,
         stackTrace: stack,
@@ -224,13 +218,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> stopPipeline() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> stopPipeline() {
+    return guard(
       () async {
         await _ttsController.stopPipeline();
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to stop TTS pipeline: $error',
         cause: error,
         stackTrace: stack,
@@ -239,13 +232,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> seekToChunk(int index) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> seekToChunk(int index) {
+    return guard(
       () async {
         await _ttsController.seekToChunk(index);
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to seek to chunk $index: $error',
         cause: error,
         stackTrace: stack,
@@ -254,13 +246,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> skipToNextSentence() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> skipToNextSentence() {
+    return guard(
       () async {
         await _ttsController.skipToNextSentence();
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to skip to next sentence: $error',
         cause: error,
         stackTrace: stack,
@@ -269,13 +260,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> skipToPreviousSentence() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> skipToPreviousSentence() {
+    return guard(
       () async {
         await _ttsController.skipToPreviousSentence();
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to skip to previous sentence: $error',
         cause: error,
         stackTrace: stack,
@@ -284,17 +274,16 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> seekFraction(double fraction) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> seekFraction(double fraction) {
+    return guard(
       () async {
         final duration = _ttsController.audioPlayer.duration;
         if (duration != null) {
           final target = duration * fraction;
           await _ttsController.seek(target);
         }
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to seek to fraction $fraction: $error',
         cause: error,
         stackTrace: stack,
@@ -303,13 +292,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> seek(Duration position) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> seek(Duration position) {
+    return guard(
       () async {
         await _ttsController.seek(position);
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to seek audio position: $error',
         cause: error,
         stackTrace: stack,
@@ -318,14 +306,13 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> seekRelative(Duration offset) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> seekRelative(Duration offset) {
+    return guard(
       () async {
         final current = _ttsController.audioPlayer.position;
         await _ttsController.seek(current + offset);
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to seek by $offset: $error',
         cause: error,
         stackTrace: stack,
@@ -334,18 +321,17 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> setSpeed(double speed) {
+  Future<Result<void>> setSpeed(double speed) {
     return setRate(speed);
   }
 
   @override
-  TaskEither<Failure, Unit> setRate(double rate) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> setRate(double rate) {
+    return guard(
       () async {
         await _ttsController.setRate(rate);
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to set playback rate: $error',
         cause: error,
         stackTrace: stack,
@@ -354,13 +340,12 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> setPitch(double pitch) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> setPitch(double pitch) {
+    return guard(
       () async {
         await _ttsController.setPitch(pitch);
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to set playback pitch: $error',
         cause: error,
         stackTrace: stack,

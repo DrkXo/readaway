@@ -2,14 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart';
-import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 
 import 'path_service.dart';
 
-class DownloadResult extends Equatable {
+class DownloadResult {
   final bool success;
   final File? file;
   final TaskStatus status;
@@ -25,7 +24,18 @@ class DownloadResult extends Equatable {
   });
 
   @override
-  List<Object?> get props => [success, file, status, errorMessage, exception];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DownloadResult &&
+          runtimeType == other.runtimeType &&
+          success == other.success &&
+          file?.path == other.file?.path &&
+          status == other.status &&
+          errorMessage == other.errorMessage);
+
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, success, file?.path, status, errorMessage);
 }
 
 /// Central service for all background downloads/uploads in the app.

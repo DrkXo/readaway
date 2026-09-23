@@ -1,11 +1,8 @@
-import 'package:equatable/equatable.dart';
-
 /// Sealed base class for all application failures.
 ///
-/// Designed to be used with `fpdart` (`Either<Failure, T>` and `TaskEither<Failure, T>`).
 /// Subclasses categorize domain failures so UI components can pattern-match and display
 /// targeted error views, recovery prompts, and diagnostics without crashing or throwing.
-sealed class Failure extends Equatable {
+sealed class Failure {
   final String message;
   final Object? cause;
   final StackTrace? stackTrace;
@@ -13,7 +10,15 @@ sealed class Failure extends Equatable {
   const Failure(this.message, {this.cause, this.stackTrace});
 
   @override
-  List<Object?> get props => [message, cause];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Failure &&
+          runtimeType == other.runtimeType &&
+          message == other.message &&
+          cause == other.cause);
+
+  @override
+  int get hashCode => Object.hash(runtimeType, message, cause);
 
   @override
   String toString() =>
@@ -34,12 +39,17 @@ class DocumentNotFoundFailure extends DocumentFailure {
     this.path, {
     super.cause,
     super.stackTrace,
-  }) : super(
-         'Document not found at path: $path',
-       );
+  }) : super('Document not found at path: $path');
 
   @override
-  List<Object?> get props => [path, message, cause];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (super == other &&
+          other is DocumentNotFoundFailure &&
+          path == other.path);
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, path);
 }
 
 class UnsupportedDocumentFormatFailure extends DocumentFailure {
@@ -48,12 +58,17 @@ class UnsupportedDocumentFormatFailure extends DocumentFailure {
     this.format, {
     super.cause,
     super.stackTrace,
-  }) : super(
-         'Unsupported document format: $format',
-       );
+  }) : super('Unsupported document format: $format');
 
   @override
-  List<Object?> get props => [format, message, cause];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (super == other &&
+          other is UnsupportedDocumentFormatFailure &&
+          format == other.format);
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, format);
 }
 
 class CorruptDocumentFailure extends DocumentFailure {
@@ -80,13 +95,21 @@ class DocumentEncryptedFailure extends DocumentFailure {
     super.cause,
     super.stackTrace,
   }) : super(
-         isInvalidPassword
-             ? 'Incorrect password for document: $path'
-             : 'Password required for document: $path',
-       );
+          isInvalidPassword
+              ? 'Incorrect password for document: $path'
+              : 'Password required for document: $path',
+        );
 
   @override
-  List<Object?> get props => [path, isInvalidPassword, message, cause];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (super == other &&
+          other is DocumentEncryptedFailure &&
+          path == other.path &&
+          isInvalidPassword == other.isInvalidPassword);
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, path, isInvalidPassword);
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +126,12 @@ class StorageReadFailure extends StorageFailure {
     : super('Failed to read key: $key');
 
   @override
-  List<Object?> get props => [key, message, cause];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (super == other && other is StorageReadFailure && key == other.key);
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, key);
 }
 
 class StorageWriteFailure extends StorageFailure {
@@ -112,7 +140,12 @@ class StorageWriteFailure extends StorageFailure {
     : super('Failed to write key: $key');
 
   @override
-  List<Object?> get props => [key, message, cause];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (super == other && other is StorageWriteFailure && key == other.key);
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, key);
 }
 
 class StorageResetFailure extends StorageFailure {
@@ -157,7 +190,14 @@ class ServerFailure extends NetworkFailure {
   });
 
   @override
-  List<Object?> get props => [statusCode, message, cause];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (super == other &&
+          other is ServerFailure &&
+          statusCode == other.statusCode);
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, statusCode);
 }
 
 // ---------------------------------------------------------------------------
@@ -174,12 +214,17 @@ class TtsModelNotFoundFailure extends TtsFailure {
     this.modelId, {
     super.cause,
     super.stackTrace,
-  }) : super(
-         'TTS Model "$modelId" was not found',
-       );
+  }) : super('TTS Model "$modelId" was not found');
 
   @override
-  List<Object?> get props => [modelId, message, cause];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (super == other &&
+          other is TtsModelNotFoundFailure &&
+          modelId == other.modelId);
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, modelId);
 }
 
 class TtsDownloadFailure extends TtsFailure {
@@ -192,7 +237,14 @@ class TtsDownloadFailure extends TtsFailure {
   });
 
   @override
-  List<Object?> get props => [modelId, message, cause];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (super == other &&
+          other is TtsDownloadFailure &&
+          modelId == other.modelId);
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, modelId);
 }
 
 class TtsSynthesisFailure extends TtsFailure {

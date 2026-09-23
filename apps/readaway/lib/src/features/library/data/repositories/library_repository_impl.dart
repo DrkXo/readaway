@@ -3,12 +3,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/services/path_service.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
@@ -29,10 +29,10 @@ class LibraryRepositoryImpl implements LibraryRepository {
   );
 
   @override
-  TaskEither<Failure, List<RecentDocument>> getRecentDocuments() {
-    return TaskEither.tryCatch(
+  Future<Result<List<RecentDocument>>> getRecentDocuments() {
+    return guard(
       () => _localDataSource.getRecentDocuments(),
-      (error, stack) => StorageReadFailure(
+      onError: (error, stack) => StorageReadFailure(
         'library_recent_documents',
         cause: error,
         stackTrace: stack,
@@ -41,13 +41,12 @@ class LibraryRepositoryImpl implements LibraryRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> saveRecentDocument(RecentDocument document) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> saveRecentDocument(RecentDocument document) {
+    return guard(
       () async {
         await _localDataSource.saveRecentDocument(document);
-        return unit;
       },
-      (error, stack) => StorageWriteFailure(
+      onError: (error, stack) => StorageWriteFailure(
         'library_recent_documents',
         cause: error,
         stackTrace: stack,
@@ -78,16 +77,15 @@ class LibraryRepositoryImpl implements LibraryRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> removeRecentDocument(String path) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> removeRecentDocument(String path) {
+    return guard(
       () async {
         final docs = await _localDataSource.getRecentDocuments();
         final doc = docs.where((d) => d.path == path).firstOrNull;
         await _deleteCoverFile(doc, path);
         await _localDataSource.removeRecentDocument(path);
-        return unit;
       },
-      (error, stack) => StorageWriteFailure(
+      onError: (error, stack) => StorageWriteFailure(
         'library_recent_documents',
         cause: error,
         stackTrace: stack,
@@ -96,8 +94,8 @@ class LibraryRepositoryImpl implements LibraryRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> removeMultipleDocuments(List<String> paths) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> removeMultipleDocuments(List<String> paths) {
+    return guard(
       () async {
         final docs = await _localDataSource.getRecentDocuments();
         final docMap = {for (final d in docs) d.path: d};
@@ -105,9 +103,8 @@ class LibraryRepositoryImpl implements LibraryRepository {
           await _deleteCoverFile(docMap[path], path);
         }
         await _localDataSource.removeMultipleDocuments(paths);
-        return unit;
       },
-      (error, stack) => StorageWriteFailure(
+      onError: (error, stack) => StorageWriteFailure(
         'library_recent_documents',
         cause: error,
         stackTrace: stack,
@@ -116,8 +113,8 @@ class LibraryRepositoryImpl implements LibraryRepository {
   }
 
   @override
-  TaskEither<Failure, List<RecentDocument>> pickAndAddDocuments() {
-    return TaskEither.tryCatch(
+  Future<Result<List<RecentDocument>>> pickAndAddDocuments() {
+    return guard(
       () async {
         final pickedDocs = await _filePickerDataSource.pickDocumentFiles();
         if (pickedDocs.isEmpty) return <RecentDocument>[];
@@ -129,7 +126,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
         }
         return enrichedList;
       },
-      (error, stack) => DocumentNotFoundFailure(
+      onError: (error, stack) => DocumentNotFoundFailure(
         'Picker error: $error',
         cause: error,
         stackTrace: stack,
@@ -138,21 +135,22 @@ class LibraryRepositoryImpl implements LibraryRepository {
   }
 
   @override
-  TaskEither<Failure, Option<RecentDocument>> pickDocument() {
-    return pickAndAddDocuments().map(
-      (docs) => docs.isEmpty ? none() : some(docs.first),
-    );
+  Future<Result<RecentDocument?>> pickDocument() async {
+    final result = await pickAndAddDocuments();
+    return switch (result) {
+      Success(:final data) => Success(data.isEmpty ? null : data.first),
+      Failed(:final error) => Failed(error),
+    };
   }
 
   @override
-  TaskEither<Failure, Option<RecentDocument>> pickDocumentWithoutSaving() {
-    return TaskEither.tryCatch(
+  Future<Result<RecentDocument?>> pickDocumentWithoutSaving() {
+    return guard(
       () async {
         final doc = await _filePickerDataSource.pickDocumentFile();
-        if (doc == null) return none();
-        return some(doc);
+        return doc;
       },
-      (error, stack) => DocumentNotFoundFailure(
+      onError: (error, stack) => DocumentNotFoundFailure(
         'Picker error: $error',
         cause: error,
         stackTrace: stack,
@@ -224,12 +222,12 @@ class LibraryRepositoryImpl implements LibraryRepository {
   }
 
   @override
-  TaskEither<Failure, Option<String>> getCoverArtPath(RecentDocument document) {
-    return TaskEither.tryCatch(
+  Future<Result<String?>> getCoverArtPath(RecentDocument document) {
+    return guard(
       () async {
         if (document.coverPath != null &&
             await File(document.coverPath!).exists()) {
-          return some(document.coverPath!);
+          return document.coverPath;
         }
 
         try {
@@ -249,7 +247,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
           if (await coverFile.exists()) {
             final updatedDoc = document.copyWith(coverPath: coverFile.path);
             await _localDataSource.saveRecentDocument(updatedDoc);
-            return some(coverFile.path);
+            return coverFile.path;
           }
 
           final session = await IsolateDocumentSession.open(document.path);
@@ -261,15 +259,15 @@ class LibraryRepositoryImpl implements LibraryRepository {
               final updatedDoc = document.copyWith(coverPath: coverFile.path);
               await _localDataSource.saveRecentDocument(updatedDoc);
               await session.dispose();
-              return some(coverFile.path);
+              return coverFile.path;
             }
           }
           await session.dispose();
         } catch (_) {}
 
-        return none();
+        return null;
       },
-      (error, stack) => UnexpectedFailure(
+      onError: (error, stack) => UnexpectedFailure(
         'Failed to extract cover for ${document.fileName}: $error',
         cause: error,
         stackTrace: stack,
@@ -278,8 +276,8 @@ class LibraryRepositoryImpl implements LibraryRepository {
   }
 
   @override
-  TaskEither<Failure, RecentDocument> toggleFavorite(String path) {
-    return TaskEither.tryCatch(
+  Future<Result<RecentDocument>> toggleFavorite(String path) {
+    return guard(
       () async {
         final docs = await _localDataSource.getRecentDocuments();
         final doc = docs.firstWhere((d) => d.path == path);
@@ -287,7 +285,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
         await _localDataSource.saveRecentDocument(updated);
         return updated;
       },
-      (error, stack) => StorageWriteFailure(
+      onError: (error, stack) => StorageWriteFailure(
         'Failed to toggle favorite: $error',
         cause: error,
         stackTrace: stack,
@@ -296,11 +294,11 @@ class LibraryRepositoryImpl implements LibraryRepository {
   }
 
   @override
-  TaskEither<Failure, RecentDocument> updateReadingStatus(
+  Future<Result<RecentDocument>> updateReadingStatus(
     String path,
     ReadingStatus status,
   ) {
-    return TaskEither.tryCatch(
+    return guard(
       () async {
         final docs = await _localDataSource.getRecentDocuments();
         final doc = docs.firstWhere((d) => d.path == path);
@@ -333,7 +331,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
         await _localDataSource.saveRecentDocument(updated);
         return updated;
       },
-      (error, stack) => StorageWriteFailure(
+      onError: (error, stack) => StorageWriteFailure(
         'Failed to update reading status: $error',
         cause: error,
         stackTrace: stack,
@@ -342,7 +340,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
   }
 
   @override
-  TaskEither<Failure, RecentDocument> resetReadingProgress(String path) {
+  Future<Result<RecentDocument>> resetReadingProgress(String path) {
     return updateReadingStatus(path, ReadingStatus.unread);
   }
 }

@@ -8,7 +8,6 @@ export 'http/http_service.dart';
 export 'isolate_service.dart';
 export 'logging_service.dart';
 export 'notification_service.dart';
-export 'package_info_service.dart';
 export 'path_service.dart';
 export 'settings_service.dart';
 export 'storage/hive/app_storage_service.dart';

@@ -1,10 +1,9 @@
 library;
 
-import 'package:equatable/equatable.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
-class Routes extends Equatable {
+class Routes {
   final String path;
   final String name;
 
@@ -14,7 +13,15 @@ class Routes extends Equatable {
   });
 
   @override
-  List<Object?> get props => [path, name];
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Routes &&
+          runtimeType == other.runtimeType &&
+          path == other.path &&
+          name == other.name);
+
+  @override
+  int get hashCode => Object.hash(runtimeType, path, name);
 
   Routes copyWith({
     String? path,

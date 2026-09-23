@@ -4,22 +4,19 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:package_info_plus/package_info_plus.dart';
+
 import '../../../flavors.dart';
 import 'logging_service.dart';
-import 'package_info_service.dart';
 
 NotificationService get notificationService =>
     GetIt.I.get<NotificationService>();
 
-@Singleton(
-  dependsOn: [
-    PackageInfoService,
-  ],
-)
+@Singleton()
 class NotificationService {
-  final PackageInfoService _packageInfoService;
+  final PackageInfo _packageInfo;
 
-  NotificationService(this._packageInfoService);
+  NotificationService(this._packageInfo);
 
   late final String _defaultChannelId;
   String get defaultChannelId => _defaultChannelId;
@@ -48,7 +45,7 @@ class NotificationService {
   }) async {
     if (_initialized) return;
 
-    _defaultChannelId = '${_packageInfoService.packageName}.general';
+    _defaultChannelId = '${_packageInfo.packageName}.general';
     _defaultChannelName = F.name;
     _defaultChannelDescription = 'General';
 
@@ -63,7 +60,7 @@ class NotificationService {
     );
     final windows = WindowsInitializationSettings(
       appName: F.title,
-      appUserModelId: _packageInfoService.packageName,
+      appUserModelId: _packageInfo.packageName,
       guid: 'd49b0314-ee7a-4626-bf79-97cdb8a991bb',
     );
     final settings = InitializationSettings(
@@ -185,7 +182,7 @@ class NotificationService {
     String? channelDescription,
   }) {
     final android = AndroidNotificationDetails(
-      _packageInfoService.packageName,
+      _packageInfo.packageName,
       _defaultChannelName,
       channelDescription: _defaultChannelDescription,
       importance: Importance.defaultImportance,

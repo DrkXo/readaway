@@ -415,9 +415,8 @@ class _ReaderViewportState extends State<ReaderViewport> {
     // HyperPageContent, so every page instance hits memory instead of the
     // EPUB container.
     final res = await GetIt.I<ReaderRepository>()
-        .loadAssetBytes(src, pageIndex: chapterIndex)
-        .run();
-    return res.getRight().toNullable();
+        .loadAssetBytes(src, pageIndex: chapterIndex);
+    return res.dataOrNull;
   }
 
   Future<void> _onLinkTap(BuildContext context, String url) async {
@@ -427,16 +426,14 @@ class _ReaderViewportState extends State<ReaderViewport> {
     final coord =
         _paginationCoordinator.coordinateFromGlobalPage(_currentGlobalPage);
     final footnoteRes = await GetIt.I<ReaderRepository>()
-        .resolveFootnote(url, currentChapterIndex: coord.chapterIndex)
-        .run();
-    final footnote = footnoteRes.getRight().toNullable()?.toNullable();
+        .resolveFootnote(url, currentChapterIndex: coord.chapterIndex);
+    final footnote = footnoteRes.dataOrNull;
     if (footnote != null && context.mounted) {
       VoidCallback? onJump;
       if (!url.startsWith('#')) {
         final reflowRes = await GetIt.I<ReaderRepository>()
-            .resolveReflowableLink(url)
-            .run();
-        final targetChapter = reflowRes.getRight().toNullable();
+            .resolveReflowableLink(url);
+        final targetChapter = reflowRes.dataOrNull;
         if (targetChapter != null &&
             targetChapter >= 0 &&
             targetChapter != coord.chapterIndex) {
@@ -474,9 +471,8 @@ class _ReaderViewportState extends State<ReaderViewport> {
     }
 
     final res = await GetIt.I<ReaderRepository>()
-        .resolveReflowableLink(url)
-        .run();
-    final targetChapter = res.getRight().toNullable();
+        .resolveReflowableLink(url);
+    final targetChapter = res.dataOrNull;
     if (targetChapter != null && targetChapter >= 0 && context.mounted) {
       final isContinuous =
           widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&

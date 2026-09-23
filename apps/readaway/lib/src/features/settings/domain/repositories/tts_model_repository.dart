@@ -1,6 +1,4 @@
-import 'package:fpdart/fpdart.dart';
-
-import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/services/tts/tts_models.dart';
 
 /// Contract for discovering, downloading, activating, and previewing TTS models.
@@ -8,7 +6,7 @@ abstract interface class TtsModelRepository {
   /// Fetches the model catalog. When [forceRefresh] is false, returns the cached
   /// catalog from local storage (or fetches from remote if storage is empty).
   /// When [forceRefresh] is true, fetches fresh data from remote and updates storage.
-  TaskEither<Failure, List<SherpaTtsModelInfo>> getCatalog({
+  Future<Result<List<SherpaTtsModelInfo>>> getCatalog({
     bool forceRefresh = false,
   });
 
@@ -22,13 +20,13 @@ abstract interface class TtsModelRepository {
   List<SherpaTtsModelInfo> get availableModels;
 
   /// IDs of models currently downloaded and available offline.
-  TaskEither<Failure, Set<String>> getDownloadedModelIds();
+  Future<Result<Set<String>>> getDownloadedModelIds();
 
   /// The currently loaded model ID, if any.
   String? get activeModelId;
 
   /// Loads and activates a model by [modelId].
-  TaskEither<Failure, Unit> activateModel(String modelId);
+  Future<Result<void>> activateModel(String modelId);
 
   /// Downloads and extracts a model, emitting progress updates.
   Stream<ModelDownloadProgress> downloadModel(SherpaTtsModelInfo model);
@@ -43,11 +41,11 @@ abstract interface class TtsModelRepository {
   Future<void> cancelDownload(String modelId);
 
   /// Deletes a downloaded model from disk and updates storage.
-  TaskEither<Failure, Unit> deleteModel(String modelId);
+  Future<Result<void>> deleteModel(String modelId);
 
   /// Generates a brief spoken sample and plays it back as an audio preview.
-  TaskEither<Failure, Unit> playPreview(String modelId);
+  Future<Result<void>> playPreview(String modelId);
 
   /// Stops any currently playing audio preview.
-  TaskEither<Failure, Unit> stopPreview();
+  Future<Result<void>> stopPreview();
 }

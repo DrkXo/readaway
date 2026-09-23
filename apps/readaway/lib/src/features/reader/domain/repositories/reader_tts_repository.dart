@@ -1,8 +1,7 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:readaway_core/readaway_core.dart' show TtsChunk;
 
-import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/services/audio/audio_player_service.dart';
 import '../../../../core/services/tts/tts_models.dart';
 
@@ -75,7 +74,7 @@ abstract interface class ReaderTtsRepository {
   void start();
 
   /// Prepares engine and worker isolates for playback on demand.
-  TaskEither<Failure, Unit> prepareForPlayback();
+  Future<Result<void>> prepareForPlayback();
 
   /// Index of the document page currently being read aloud by TTS, if any.
   int? get currentPageIndex;
@@ -84,10 +83,10 @@ abstract interface class ReaderTtsRepository {
   Stream<int?> get currentPageIndexStream;
 
   /// Releases worker isolates and unloads models when leaving the reader.
-  TaskEither<Failure, Unit> releaseResources();
+  Future<Result<void>> releaseResources();
 
   /// Enqueues and begins speaking [text] with optional notification [tag] and [pageIndex].
-  TaskEither<Failure, Unit> playText(
+  Future<Result<void>> playText(
     String text, {
     MediaItem? tag,
     int? pageIndex,
@@ -96,16 +95,16 @@ abstract interface class ReaderTtsRepository {
   });
 
   /// Pauses playback.
-  TaskEither<Failure, Unit> pause();
+  Future<Result<void>> pause();
 
   /// Resumes playback.
-  TaskEither<Failure, Unit> resume();
+  Future<Result<void>> resume();
 
   /// Stops playback immediately.
-  TaskEither<Failure, Unit> stop();
+  Future<Result<void>> stop();
 
   /// Stops playback and disposes active playback session resources.
-  TaskEither<Failure, Unit> stopPipeline();
+  Future<Result<void>> stopPipeline();
 
   /// Sets the sleep-timer duration (0 = off) and persists it as a preference.
   void setSleepTimer(Duration duration);
@@ -114,29 +113,29 @@ abstract interface class ReaderTtsRepository {
   Duration? get sleepTimer;
 
   /// Seeks to a chunk in the active sentence queue.
-  TaskEither<Failure, Unit> seekToChunk(int index);
+  Future<Result<void>> seekToChunk(int index);
 
   /// Skips to the next sentence chunk.
-  TaskEither<Failure, Unit> skipToNextSentence();
+  Future<Result<void>> skipToNextSentence();
 
   /// Skips to the previous sentence chunk.
-  TaskEither<Failure, Unit> skipToPreviousSentence();
+  Future<Result<void>> skipToPreviousSentence();
 
   /// Seeks to a proportional point (0.0 .. 1.0) within the current sentence.
-  TaskEither<Failure, Unit> seekFraction(double fraction);
+  Future<Result<void>> seekFraction(double fraction);
 
   /// Seeks to an absolute audio duration position.
-  TaskEither<Failure, Unit> seek(Duration position);
+  Future<Result<void>> seek(Duration position);
 
   /// Seeks relative to current playback position.
-  TaskEither<Failure, Unit> seekRelative(Duration offset);
+  Future<Result<void>> seekRelative(Duration offset);
 
   /// Adjusts speech playback speed multiplier.
-  TaskEither<Failure, Unit> setSpeed(double speed);
+  Future<Result<void>> setSpeed(double speed);
 
   /// Sets speech playback rate.
-  TaskEither<Failure, Unit> setRate(double rate);
+  Future<Result<void>> setRate(double rate);
 
   /// Sets speech playback pitch.
-  TaskEither<Failure, Unit> setPitch(double pitch);
+  Future<Result<void>> setPitch(double pitch);
 }

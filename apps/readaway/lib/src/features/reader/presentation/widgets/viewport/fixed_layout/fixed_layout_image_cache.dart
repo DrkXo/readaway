@@ -43,15 +43,13 @@ class FixedLayoutImageCache {
 
     final future = () async {
       try {
-        final result = await repository
-            .loadPageImage(
-              pageIndex,
-              scale: scale ?? 1.0,
-              targetWidth: targetWidth,
-              targetHeight: targetHeight,
-            )
-            .run();
-        final bytes = result.getRight().toNullable();
+        final result = await repository.loadPageImage(
+          pageIndex,
+          scale: scale ?? 1.0,
+          targetWidth: targetWidth,
+          targetHeight: targetHeight,
+        );
+        final bytes = result.dataOrNull;
         if (bytes != null) {
           _putImage(key, bytes);
         }
@@ -84,8 +82,8 @@ class FixedLayoutImageCache {
 
     final future = () async {
       try {
-        final result = await repository.getPageSize(pageIndex).run();
-        final size = result.getRight().toNullable();
+        final result = await repository.getPageSize(pageIndex);
+        final size = result.dataOrNull;
         if (size != null) {
           _putSize(key, size);
         }

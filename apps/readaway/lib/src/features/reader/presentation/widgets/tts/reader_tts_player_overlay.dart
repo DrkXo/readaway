@@ -227,9 +227,9 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
     final velocity = details.primaryVelocity ?? 0;
     final tts = context.read<ReaderBloc>().ttsRepository;
     if (velocity < -200) {
-      tts.skipToNextSentence().run();
+      tts.skipToNextSentence();
     } else if (velocity > 200) {
-      tts.skipToPreviousSentence().run();
+      tts.skipToPreviousSentence();
     }
   }
 

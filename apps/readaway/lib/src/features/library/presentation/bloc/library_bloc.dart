@@ -53,7 +53,7 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
   ) async {
     emit(state.copyWith(isLoading: true, failure: null));
 
-    final result = await _repository.getRecentDocuments().run();
+    final result = await _repository.getRecentDocuments();
 
     result.fold(
       (failure) => emit(state.copyWith(isLoading: false, failure: failure)),
@@ -80,23 +80,16 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
       final chunk = missing.skip(i).take(5);
       await Future.wait(
         chunk.map((doc) async {
-          final coverResult = await _repository.getCoverArtPath(doc).run();
-          coverResult.fold(
-            (_) {},
-            (optionPath) {
-              optionPath.fold(
-                () {},
-                (path) {
-                  add(
-                    LibraryEvent.coverUpdated(
-                      path: doc.path,
-                      coverPath: path,
-                    ),
-                  );
-                },
-              );
-            },
-          );
+          final coverResult = await _repository.getCoverArtPath(doc);
+          final path = coverResult.dataOrNull;
+          if (path != null) {
+            add(
+              LibraryEvent.coverUpdated(
+                path: doc.path,
+                coverPath: path,
+              ),
+            );
+          }
         }),
       );
     }
@@ -123,7 +116,7 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
   ) async {
     emit(state.copyWith(isLoading: true, failure: null));
 
-    final result = await _repository.pickAndAddDocuments().run();
+    final result = await _repository.pickAndAddDocuments();
 
     result.fold(
       (failure) => emit(state.copyWith(isLoading: false, failure: failure)),
@@ -163,28 +156,22 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
   ) async {
     emit(state.copyWith(failure: null, directOpenDocument: null));
 
-    final result = await _repository.pickDocumentWithoutSaving().run();
+    final result = await _repository.pickDocumentWithoutSaving();
 
     result.fold(
       (failure) => emit(state.copyWith(failure: failure)),
-      (optionDoc) {
-        optionDoc.fold(
-          () {}, // User cancelled picker
-          (doc) {
-            emit(state.copyWith(directOpenDocument: doc));
-          },
-        );
+      (doc) {
+        if (doc != null) {
+          emit(state.copyWith(directOpenDocument: doc));
+        }
       },
     );
   }
 
   /// Convenience helper to pick a document without adding it to the library.
   Future<RecentDocument?> pickDocumentWithoutAdding() async {
-    final result = await _repository.pickDocumentWithoutSaving().run();
-    return result.fold(
-      (failure) => null,
-      (optionDoc) => optionDoc.toNullable(),
-    );
+    final result = await _repository.pickDocumentWithoutSaving();
+    return result.dataOrNull;
   }
 
   Future<void> _onPickAndOpenDocument(
@@ -193,27 +180,26 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
   ) async {
     emit(state.copyWith(isLoading: true, failure: null, openedDocument: null));
 
-    final result = await _repository.pickDocument().run();
+    final result = await _repository.pickDocument();
 
     result.fold(
       (failure) => emit(state.copyWith(isLoading: false, failure: failure)),
-      (optionDoc) {
-        optionDoc.fold(
-          () => emit(state.copyWith(isLoading: false)),
-          (doc) {
-            final updated = [
-              doc,
-              ...state.recentDocuments.where((d) => d.path != doc.path),
-            ];
-            emit(
-              state.copyWith(
-                isLoading: false,
-                recentDocuments: updated,
-                openedDocument: doc,
-                failure: null,
-              ),
-            );
-          },
+      (doc) {
+        if (doc == null) {
+          emit(state.copyWith(isLoading: false));
+          return;
+        }
+        final updated = [
+          doc,
+          ...state.recentDocuments.where((d) => d.path != doc.path),
+        ];
+        emit(
+          state.copyWith(
+            isLoading: false,
+            recentDocuments: updated,
+            openedDocument: doc,
+            failure: null,
+          ),
         );
       },
     );
@@ -223,7 +209,7 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     _RemoveDocument event,
     Emitter<LibraryState> emit,
   ) async {
-    final result = await _repository.removeRecentDocument(event.path).run();
+    final result = await _repository.removeRecentDocument(event.path);
 
     result.fold(
       (failure) => emit(state.copyWith(failure: failure)),
@@ -247,7 +233,7 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     _ToggleFavorite event,
     Emitter<LibraryState> emit,
   ) async {
-    final result = await _repository.toggleFavorite(event.path).run();
+    final result = await _repository.toggleFavorite(event.path);
 
     result.fold(
       (failure) => emit(state.copyWith(failure: failure)),
@@ -267,9 +253,10 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     _UpdateReadingStatus event,
     Emitter<LibraryState> emit,
   ) async {
-    final result = await _repository
-        .updateReadingStatus(event.path, event.status)
-        .run();
+    final result = await _repository.updateReadingStatus(
+      event.path,
+      event.status,
+    );
 
     result.fold(
       (failure) => emit(state.copyWith(failure: failure)),
@@ -289,7 +276,7 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     _ResetProgress event,
     Emitter<LibraryState> emit,
   ) async {
-    final result = await _repository.resetReadingProgress(event.path).run();
+    final result = await _repository.resetReadingProgress(event.path);
 
     result.fold(
       (failure) => emit(state.copyWith(failure: failure)),
@@ -397,9 +384,7 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     if (state.selectedPaths.isEmpty) return;
 
     final pathsToDelete = state.selectedPaths.toList();
-    final result = await _repository
-        .removeMultipleDocuments(pathsToDelete)
-        .run();
+    final result = await _repository.removeMultipleDocuments(pathsToDelete);
 
     result.fold(
       (failure) => emit(state.copyWith(failure: failure)),
@@ -426,7 +411,7 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     if (state.selectedPaths.isEmpty) return;
 
     for (final path in state.selectedPaths) {
-      await _repository.updateReadingStatus(path, event.status).run();
+      await _repository.updateReadingStatus(path, event.status);
     }
     add(const LibraryEvent.loadRequested());
     emit(state.copyWith(selectedPaths: const {}, isSelectMode: false));

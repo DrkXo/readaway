@@ -1,18 +1,16 @@
-import 'package:fpdart/fpdart.dart';
-
-import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../entity/settings.dart';
 
 /// Contract for general application settings, window preferences, and theme state.
 abstract interface class SettingsRepository {
   /// Fetches current application settings.
-  TaskEither<Failure, Settings> getSettings();
+  Future<Result<Settings>> getSettings();
 
   /// Saves updated application settings.
-  TaskEither<Failure, Unit> saveSettings(Settings settings);
+  Future<Result<void>> saveSettings(Settings settings);
 
   /// Resets application settings to factory defaults.
-  TaskEither<Failure, Unit> resetSettings();
+  Future<Result<void>> resetSettings();
 
   /// Stream of settings changes over time.
   Stream<Settings> watchSettings();

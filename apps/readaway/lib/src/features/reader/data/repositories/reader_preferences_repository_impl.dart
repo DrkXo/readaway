@@ -1,7 +1,7 @@
-import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/services/storage/hive/app_storage_service.dart';
 import '../../../settings/domain/entity/reader_preferences.dart';
 import '../../domain/repositories/reader_preferences_repository.dart';
@@ -16,11 +16,11 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   ReaderPreferencesRepositoryImpl(this._storage);
 
   @override
-  TaskEither<Failure, ReaderPreferences> getGlobalPreferences() {
-    return TaskEither.tryCatch(
+  Future<Result<ReaderPreferences>> getGlobalPreferences() {
+    return guard(
       () async =>
           _storage.readerBox.get(_globalKey) ?? const ReaderPreferences(),
-      (error, stack) => StorageReadFailure(
+      onError: (error, stack) => StorageReadFailure(
         _globalKey,
         cause: error,
         stackTrace: stack,
@@ -29,13 +29,12 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> saveGlobalPreferences(ReaderPreferences prefs) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> saveGlobalPreferences(ReaderPreferences prefs) {
+    return guard(
       () async {
         await _storage.readerBox.put(_globalKey, prefs);
-        return unit;
       },
-      (error, stack) => StorageWriteFailure(
+      onError: (error, stack) => StorageWriteFailure(
         _globalKey,
         cause: error,
         stackTrace: stack,
@@ -44,12 +43,10 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   }
 
   @override
-  TaskEither<Failure, Option<ReaderPreferences>> getDocumentPreferences(
-    String path,
-  ) {
-    return TaskEither.tryCatch(
-      () async => Option.fromNullable(_storage.readerBox.get(_docKey(path))),
-      (error, stack) => StorageReadFailure(
+  Future<Result<ReaderPreferences?>> getDocumentPreferences(String path) {
+    return guard(
+      () async => _storage.readerBox.get(_docKey(path)),
+      onError: (error, stack) => StorageReadFailure(
         _docKey(path),
         cause: error,
         stackTrace: stack,
@@ -58,16 +55,15 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> saveDocumentPreferences(
+  Future<Result<void>> saveDocumentPreferences(
     String path,
     ReaderPreferences prefs,
   ) {
-    return TaskEither.tryCatch(
+    return guard(
       () async {
         await _storage.readerBox.put(_docKey(path), prefs);
-        return unit;
       },
-      (error, stack) => StorageWriteFailure(
+      onError: (error, stack) => StorageWriteFailure(
         _docKey(path),
         cause: error,
         stackTrace: stack,
@@ -76,13 +72,12 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> clearDocumentPreferences(String path) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> clearDocumentPreferences(String path) {
+    return guard(
       () async {
         await _storage.readerBox.delete(_docKey(path));
-        return unit;
       },
-      (error, stack) => StorageWriteFailure(
+      onError: (error, stack) => StorageWriteFailure(
         _docKey(path),
         cause: error,
         stackTrace: stack,
@@ -91,13 +86,12 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> resetAllPreferences() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> resetAllPreferences() {
+    return guard(
       () async {
         await _storage.readerBox.clear();
-        return unit;
       },
-      (error, stack) => StorageResetFailure(
+      onError: (error, stack) => StorageResetFailure(
         'Failed to reset reader preferences: $error',
         cause: error,
         stackTrace: stack,
@@ -106,13 +100,12 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> importGlobalPreferences(ReaderPreferences prefs) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> importGlobalPreferences(ReaderPreferences prefs) {
+    return guard(
       () async {
         await _storage.readerBox.put(_globalKey, prefs);
-        return unit;
       },
-      (error, stack) => StorageWriteFailure(
+      onError: (error, stack) => StorageWriteFailure(
         _globalKey,
         cause: error,
         stackTrace: stack,

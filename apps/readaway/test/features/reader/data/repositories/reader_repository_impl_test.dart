@@ -131,15 +131,15 @@ void main() {
 
     tearDownAll(() async {
       if (hasEpub) {
-        await repository.closeDocument().run();
+        await repository.closeDocument();
       }
     });
 
     test('opens EPUB with readaway_core', () async {
-      final openResult = await repository.openDocument(epubPath!).run();
+      final openResult = await repository.openDocument(epubPath!);
 
-      expect(openResult.isRight(), isTrue);
-      final info = openResult.getRight().toNullable()!;
+      expect(openResult.isSuccess, isTrue);
+      final info = openResult.dataOrNull!;
       expect(info.pageCount, greaterThan(0));
       expect(info.title, isNotEmpty);
       expect(info.outline.length, greaterThanOrEqualTo(0));
@@ -149,10 +149,10 @@ void main() {
     });
 
     test('loads chapter HTML directly from readaway_core', () async {
-      final pageDataResult = await repository.loadPage(0).run();
+      final pageDataResult = await repository.loadPage(0);
 
-      expect(pageDataResult.isRight(), isTrue);
-      final pageData = pageDataResult.getRight().toNullable()!;
+      expect(pageDataResult.isSuccess, isTrue);
+      final pageData = pageDataResult.dataOrNull!;
       expect(pageData.html, isNotNull);
       expect(pageData.html, isNotEmpty);
       expect(pageData.html!.contains('position: absolute'), isFalse);
@@ -161,21 +161,21 @@ void main() {
     test(
       'extracts text from section HTML directly from readaway_core',
       () async {
-        final openResult = await repository.openDocument(epubPath!).run();
-        final info = openResult.getRight().toNullable()!;
+        final openResult = await repository.openDocument(epubPath!);
+        final info = openResult.dataOrNull!;
         final targetSection = info.pageCount > 1 ? 1 : 0;
 
-        final textResult = await repository.extractPageText(targetSection).run();
-        expect(textResult.isRight(), isTrue);
-        final text = textResult.getRight().toNullable()!;
+        final textResult = await repository.extractPageText(targetSection);
+        expect(textResult.isSuccess, isTrue);
+        final text = textResult.dataOrNull!;
         expect(text, isNotEmpty);
       },
     );
 
     test('resolves asset bytes from EPUB archive directly', () async {
-      final bytesResult = await repository.loadAssetBytes('mimetype').run();
-      expect(bytesResult.isRight(), isTrue);
-      final bytes = bytesResult.getRight().toNullable();
+      final bytesResult = await repository.loadAssetBytes('mimetype');
+      expect(bytesResult.isSuccess, isTrue);
+      final bytes = bytesResult.dataOrNull;
       expect(bytes, isNotNull);
       expect(String.fromCharCodes(bytes!), contains('application/epub+zip'));
     });

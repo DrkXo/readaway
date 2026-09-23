@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 import 'package:readaway/src/core/services/logging_service.dart';
@@ -11,6 +10,7 @@ import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/document_format.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/path_service.dart';
 import '../../../../core/services/window_service.dart';
@@ -35,12 +35,12 @@ class ReaderRepositoryImpl implements ReaderRepository {
   );
 
   @override
-  TaskEither<Failure, ReaderDocumentInfo> openDocument(
+  Future<Result<ReaderDocumentInfo>> openDocument(
     String path, {
     String? defaultTitle,
     String? password,
   }) {
-    return TaskEither.tryCatch(
+    return guard(
       () async {
         final file = File(path);
         if (!await file.exists()) {
@@ -96,7 +96,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
           format: session.format,
         );
       },
-      (error, stack) {
+      onError: (error, stack) {
         if (error is Failure) return error;
         return CorruptDocumentFailure(
           'Failed to open document: $error',
@@ -108,8 +108,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, ReaderPageData> loadPage(int pageIndex) {
-    return TaskEither.tryCatch(
+  Future<Result<ReaderPageData>> loadPage(int pageIndex) {
+    return guard(
       () async {
         if (_session != null &&
             pageIndex >= 0 &&
@@ -123,7 +123,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
         throw DocumentParseFailure('Invalid section index: $pageIndex');
       },
-      (error, stack) => DocumentParseFailure(
+      onError: (error, stack) => DocumentParseFailure(
         'Failed to load page $pageIndex: $error',
         cause: error,
         stackTrace: stack,
@@ -132,13 +132,13 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, Uint8List> loadPageImage(
+  Future<Result<Uint8List>> loadPageImage(
     int pageIndex, {
     double scale = 1.0,
     int? targetWidth,
     int? targetHeight,
   }) {
-    return TaskEither.tryCatch(
+    return guard(
       () async {
         if (_session != null &&
             pageIndex >= 0 &&
@@ -152,7 +152,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
         throw DocumentParseFailure('Invalid page index: $pageIndex');
       },
-      (error, stack) => DocumentParseFailure(
+      onError: (error, stack) => DocumentParseFailure(
         'Failed to load page image $pageIndex: $error',
         cause: error,
         stackTrace: stack,
@@ -161,8 +161,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, PageSize?> getPageSize(int pageIndex) {
-    return TaskEither.tryCatch(
+  Future<Result<PageSize?>> getPageSize(int pageIndex) {
+    return guard(
       () async {
         if (_session != null &&
             pageIndex >= 0 &&
@@ -171,7 +171,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
         return null;
       },
-      (error, stack) => DocumentParseFailure(
+      onError: (error, stack) => DocumentParseFailure(
         'Failed to get page size for $pageIndex: $error',
         cause: error,
         stackTrace: stack,
@@ -180,8 +180,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, String> extractPageText(int pageIndex) {
-    return TaskEither.tryCatch(
+  Future<Result<String>> extractPageText(int pageIndex) {
+    return guard(
       () async {
         if (_session != null &&
             pageIndex >= 0 &&
@@ -190,7 +190,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
         throw DocumentParseFailure('Invalid section index: $pageIndex');
       },
-      (error, stack) => DocumentParseFailure(
+      onError: (error, stack) => DocumentParseFailure(
         'Failed to extract text from page $pageIndex: $error',
         cause: error,
         stackTrace: stack,
@@ -199,8 +199,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, String> extractSpeechText(int pageIndex) {
-    return TaskEither.tryCatch(
+  Future<Result<String>> extractSpeechText(int pageIndex) {
+    return guard(
       () async {
         if (_session != null &&
             pageIndex >= 0 &&
@@ -209,7 +209,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
         throw DocumentParseFailure('Invalid section index: $pageIndex');
       },
-      (error, stack) => DocumentParseFailure(
+      onError: (error, stack) => DocumentParseFailure(
         'Failed to extract speech text from page $pageIndex: $error',
         cause: error,
         stackTrace: stack,
@@ -218,26 +218,22 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, Option<FootnoteItem>> resolveFootnote(
+  Future<Result<FootnoteItem?>> resolveFootnote(
     String url, {
     int? currentChapterIndex,
   }) {
-    return TaskEither.tryCatch(
+    return guard(
       () async {
         if (_session == null || url.trim().isEmpty) {
-          return none();
+          return null;
         }
 
-        final footnote = await _session!.resolveFootnote(
+        return await _session!.resolveFootnote(
           url,
           currentChapterIndex: currentChapterIndex,
         );
-        if (footnote != null) {
-          return some(footnote);
-        }
-        return none();
       },
-      (error, stack) => DocumentParseFailure(
+      onError: (error, stack) => DocumentParseFailure(
         'Failed to resolve footnote for "$url": $error',
         cause: error,
         stackTrace: stack,
@@ -246,19 +242,17 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, Uri?> getCoverArtUri({
+  Future<Result<Uri?>> getCoverArtUri({
     required String filePath,
     required String fileName,
     required int pageCount,
   }) {
-    return TaskEither.tryCatch(
+    return guard(
       () async {
         // 1. Check if recent document already has a valid cover path
-        final docsRes = await _libraryRepository.getRecentDocuments().run();
-        final doc = docsRes
-            .getOrElse((_) => [])
-            .where((d) => d.path == filePath)
-            .firstOrNull;
+        final docsRes = await _libraryRepository.getRecentDocuments();
+        final docs = docsRes.dataOrNull ?? [];
+        final doc = docs.where((d) => d.path == filePath).firstOrNull;
         if (doc?.coverPath != null && await File(doc!.coverPath!).exists()) {
           return File(doc.coverPath!).uri;
         }
@@ -285,7 +279,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
         return null;
       },
-      (error, stack) => StorageReadFailure(
+      onError: (error, stack) => StorageReadFailure(
         filePath,
         cause: error,
         stackTrace: stack,
@@ -294,17 +288,16 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> updateWindowTitle(String? title) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> updateWindowTitle(String? title) {
+    return guard(
       () async {
         if (title != null && title.isNotEmpty) {
           await _windowService.setTitle(title);
         } else {
           await _windowService.setDefaultTitle();
         }
-        return unit;
       },
-      (error, stack) => UnexpectedFailure(
+      onError: (error, stack) => UnexpectedFailure(
         'Failed to update window title: $error',
         cause: error,
         stackTrace: stack,
@@ -313,12 +306,10 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, bool> requestAudioPermissions() {
-    return TaskEither.tryCatch(
-      () async {
-        return _notificationService.requestPermissions();
-      },
-      (error, stack) => NotificationPermissionDeniedFailure(
+  Future<Result<bool>> requestAudioPermissions() {
+    return guard(
+      () async => _notificationService.requestPermissions(),
+      onError: (error, stack) => NotificationPermissionDeniedFailure(
         message: 'Failed to request audio playback permissions: $error',
         cause: error,
         stackTrace: stack,
@@ -327,11 +318,11 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, Uint8List?> loadAssetBytes(
+  Future<Result<Uint8List?>> loadAssetBytes(
     String assetPath, {
     int? pageIndex,
   }) {
-    return TaskEither.tryCatch(
+    return guard(
       () async {
         if (_session == null) {
           logger.w(
@@ -409,7 +400,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
         );
         return null;
       },
-      (error, stack) {
+      onError: (error, stack) {
         logger.e(
           '[ReaderRepository] loadAssetBytes error: $error',
           error,
@@ -425,10 +416,10 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, int?> resolveReflowableLink(String uri) {
-    return TaskEither.tryCatch(
+  Future<Result<int?>> resolveReflowableLink(String uri) {
+    return guard(
       () async => _session != null ? await _session!.resolveSectionIndex(uri) : null,
-      (error, stack) => CorruptDocumentFailure(
+      onError: (error, stack) => CorruptDocumentFailure(
         'Failed to resolve reflowable link: $error',
         cause: error,
         stackTrace: stack,
@@ -437,16 +428,16 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> updateReadingProgress({
+  Future<Result<void>> updateReadingProgress({
     required String path,
     required int page,
     required int pageCount,
     ReadingAnchor? anchor,
   }) {
-    return TaskEither.tryCatch(
+    return guard(
       () async {
-        final docsResult = await _libraryRepository.getRecentDocuments().run();
-        final docs = docsResult.getOrElse((_) => []);
+        final docsResult = await _libraryRepository.getRecentDocuments();
+        final docs = docsResult.dataOrNull ?? [];
         final doc = docs.where((d) => d.path == path).firstOrNull;
         if (doc != null) {
           final chapter = anchor?.chapterIndex ?? page;
@@ -462,11 +453,10 @@ class ReaderRepositoryImpl implements ReaderRepository {
                 ? ReadingStatus.finished
                 : ReadingStatus.reading,
           );
-          await _libraryRepository.saveRecentDocument(updated).run();
+          await _libraryRepository.saveRecentDocument(updated);
         }
-        return unit;
       },
-      (error, stack) => DatabaseFailure(
+      onError: (error, stack) => DatabaseFailure(
         'Failed to update reading progress: $error',
         cause: error,
         stackTrace: stack,
@@ -475,15 +465,15 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, int> getLastReadPage(String path) {
-    return TaskEither.tryCatch(
+  Future<Result<int>> getLastReadPage(String path) {
+    return guard(
       () async {
-        final docsResult = await _libraryRepository.getRecentDocuments().run();
-        final docs = docsResult.getOrElse((_) => []);
+        final docsResult = await _libraryRepository.getRecentDocuments();
+        final docs = docsResult.dataOrNull ?? [];
         final doc = docs.where((d) => d.path == path).firstOrNull;
         return doc?.lastReadPage ?? 0;
       },
-      (error, stack) => DatabaseFailure(
+      onError: (error, stack) => DatabaseFailure(
         'Failed to get last read page: $error',
         cause: error,
         stackTrace: stack,
@@ -492,11 +482,11 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, ReadingAnchor?> getLastReadAnchor(String path) {
-    return TaskEither.tryCatch(
+  Future<Result<ReadingAnchor?>> getLastReadAnchor(String path) {
+    return guard(
       () async {
-        final docsResult = await _libraryRepository.getRecentDocuments().run();
-        final docs = docsResult.getOrElse((_) => []);
+        final docsResult = await _libraryRepository.getRecentDocuments();
+        final docs = docsResult.dataOrNull ?? [];
         final doc = docs.where((d) => d.path == path).firstOrNull;
         if (doc == null) return null;
         final hasAnchor =
@@ -507,7 +497,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
           progressionInChapter: doc.lastReadProgression,
         );
       },
-      (error, stack) => DatabaseFailure(
+      onError: (error, stack) => DatabaseFailure(
         'Failed to get last read anchor: $error',
         cause: error,
         stackTrace: stack,
@@ -516,8 +506,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> closeDocument() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> closeDocument() {
+    return guard(
       () async {
         final session = _session;
         _session = null;
@@ -525,9 +515,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
         if (session != null) {
           await session.dispose();
         }
-        return unit;
       },
-      (error, stack) => UnexpectedFailure(
+      onError: (error, stack) => UnexpectedFailure(
         'Failed to close document: $error',
         cause: error,
         stackTrace: stack,

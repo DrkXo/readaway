@@ -1,34 +1,30 @@
-import 'package:fpdart/fpdart.dart';
-
-import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../../../settings/domain/entity/reader_preferences.dart';
 
 /// Contract for persisting and retrieving user reading preferences.
 abstract interface class ReaderPreferencesRepository {
   /// Fetches global reading preferences.
-  TaskEither<Failure, ReaderPreferences> getGlobalPreferences();
+  Future<Result<ReaderPreferences>> getGlobalPreferences();
 
   /// Saves global reading preferences.
-  TaskEither<Failure, Unit> saveGlobalPreferences(ReaderPreferences prefs);
+  Future<Result<void>> saveGlobalPreferences(ReaderPreferences prefs);
 
   /// Fetches document-specific reading preferences.
-  TaskEither<Failure, Option<ReaderPreferences>> getDocumentPreferences(
-    String path,
-  );
+  Future<Result<ReaderPreferences?>> getDocumentPreferences(String path);
 
   /// Saves document-specific reading preferences.
-  TaskEither<Failure, Unit> saveDocumentPreferences(
+  Future<Result<void>> saveDocumentPreferences(
     String path,
     ReaderPreferences prefs,
   );
 
   /// Removes document-specific reading preferences so the document falls back
   /// to the global preferences.
-  TaskEither<Failure, Unit> clearDocumentPreferences(String path);
+  Future<Result<void>> clearDocumentPreferences(String path);
 
   /// Resets all reading preferences in storage.
-  TaskEither<Failure, Unit> resetAllPreferences();
+  Future<Result<void>> resetAllPreferences();
 
   /// Imports and overrides global reading preferences.
-  TaskEither<Failure, Unit> importGlobalPreferences(ReaderPreferences prefs);
+  Future<Result<void>> importGlobalPreferences(ReaderPreferences prefs);
 }

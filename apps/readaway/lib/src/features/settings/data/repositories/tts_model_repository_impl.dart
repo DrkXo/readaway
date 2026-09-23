@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/services/audio/audio_player_service.dart';
 import '../../../../core/services/http/http_service.dart';
 import '../../../../core/services/logging_service.dart';
@@ -46,10 +46,10 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   String? get activeModelId => _activeModelId ?? _ttsService.activeModel?.id;
 
   @override
-  TaskEither<Failure, List<SherpaTtsModelInfo>> getCatalog({
+  Future<Result<List<SherpaTtsModelInfo>>> getCatalog({
     bool forceRefresh = false,
   }) {
-    return TaskEither.tryCatch(
+    return guard(
       () async {
         final cached = _store.loadCatalog();
         if (!forceRefresh && cached.isNotEmpty) {
@@ -101,7 +101,7 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
           throw Exception('Failed to load TTS catalog: $e');
         }
       },
-      (error, stack) => ServerFailure(
+      onError: (error, stack) => ServerFailure(
         null,
         'Failed to load model catalog: $error',
         cause: error,
@@ -140,10 +140,10 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   }
 
   @override
-  TaskEither<Failure, Set<String>> getDownloadedModelIds() {
-    return TaskEither.tryCatch(
+  Future<Result<Set<String>>> getDownloadedModelIds() {
+    return guard(
       () async => _store.loadDownloadedIds(),
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to fetch downloaded models: $error',
         cause: error,
         stackTrace: stack,
@@ -152,17 +152,16 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> activateModel(String modelId) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> activateModel(String modelId) {
+    return guard(
       () async {
         _activeModelId = modelId;
         if (_ttsService.hasLoadedModel &&
             _ttsService.activeModel?.id != modelId) {
           await _ttsService.loadModel(modelId);
         }
-        return unit;
       },
-      (error, stack) => TtsSynthesisFailure(
+      onError: (error, stack) => TtsSynthesisFailure(
         'Failed to activate voice $modelId: $error',
         cause: error,
         stackTrace: stack,
@@ -188,16 +187,15 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
       _ttsService.cancelDownload(modelId);
 
   @override
-  TaskEither<Failure, Unit> deleteModel(String modelId) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> deleteModel(String modelId) {
+    return guard(
       () async {
         if (_activeModelId == modelId) {
           _activeModelId = null;
         }
         await _ttsService.deleteModel(modelId);
-        return unit;
       },
-      (error, stack) => StorageWriteFailure(
+      onError: (error, stack) => StorageWriteFailure(
         modelId,
         cause: error,
         stackTrace: stack,
@@ -206,8 +204,8 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> playPreview(String modelId) {
-    return TaskEither.tryCatch(
+  Future<Result<void>> playPreview(String modelId) {
+    return guard(
       () async {
         final cacheDir = await _pathService.getTtsAudioCacheDirectory();
         final cachedMp3Path = p.join(cacheDir.path, 'preview_$modelId.mp3');
@@ -215,7 +213,7 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
         // 1. Play cached preview audio if available
         if (await File(cachedMp3Path).exists()) {
           await _audioPlayer.playPreviewFile(cachedMp3Path);
-          return unit;
+          return;
         }
 
         // 2. Stream / download remote preview sample
@@ -226,7 +224,7 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
               model!.previewAudioUrl!,
               cacheFilePath: cachedMp3Path,
             );
-            return unit;
+            return;
           } catch (e) {
             final isDownloaded = await _ttsService.isModelDownloaded(modelId);
             if (!isDownloaded) rethrow;
@@ -255,12 +253,12 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
             await _ttsService.loadModel(previousActive);
           }
 
-          return unit;
+          return;
         }
 
         throw Exception('No preview audio available for $modelId');
       },
-      (error, stack) => AudioPlaybackFailure(
+      onError: (error, stack) => AudioPlaybackFailure(
         'Failed to preview voice: $error',
         cause: error,
         stackTrace: stack,
@@ -269,13 +267,12 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   }
 
   @override
-  TaskEither<Failure, Unit> stopPreview() {
-    return TaskEither.tryCatch(
+  Future<Result<void>> stopPreview() {
+    return guard(
       () async {
         await _audioPlayer.stopPreview();
-        return unit;
       },
-      (error, stack) => AudioPlaybackFailure(
+      onError: (error, stack) => AudioPlaybackFailure(
         'Failed to stop voice preview: $error',
         cause: error,
         stackTrace: stack,

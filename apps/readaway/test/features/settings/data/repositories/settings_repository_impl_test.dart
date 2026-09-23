@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:readaway/src/features/settings/domain/entity/settings.dart';
@@ -23,10 +22,10 @@ void main() {
       );
       when(mockSettingsService.settings).thenReturn(expectedSettings);
 
-      final result = await repository.getSettings().run();
+      final result = await repository.getSettings();
 
-      expect(result.isRight(), isTrue);
-      expect(result.getRight().toNullable(), equals(expectedSettings));
+      expect(result.isSuccess, isTrue);
+      expect(result.dataOrNull, equals(expectedSettings));
       verify(mockSettingsService.settings).called(1);
     });
 
@@ -37,20 +36,18 @@ void main() {
       );
       when(mockSettingsService.save(newSettings)).thenAnswer((_) async {});
 
-      final result = await repository.saveSettings(newSettings).run();
+      final result = await repository.saveSettings(newSettings);
 
-      expect(result.isRight(), isTrue);
-      expect(result.getRight().toNullable(), equals(unit));
+      expect(result.isSuccess, isTrue);
       verify(mockSettingsService.save(newSettings)).called(1);
     });
 
     test('resetSettings saves default Settings to SettingsService', () async {
       when(mockSettingsService.save(const Settings())).thenAnswer((_) async {});
 
-      final result = await repository.resetSettings().run();
+      final result = await repository.resetSettings();
 
-      expect(result.isRight(), isTrue);
-      expect(result.getRight().toNullable(), equals(unit));
+      expect(result.isSuccess, isTrue);
       verify(mockSettingsService.save(const Settings())).called(1);
     });
 
