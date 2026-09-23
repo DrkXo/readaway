@@ -67,6 +67,35 @@ class SettingsLayoutPanel extends StatelessWidget {
             _WordSpacingRow(),
           ],
         ),
+        const SizedBox(height: 24),
+        SettingsSection(
+          title: 'Header & Footer',
+          onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(
+              showHeader: true,
+              headerAlignment: ReaderHeaderAlignment.left,
+              headerFontSize: 11.0,
+              showFooter: true,
+              footerProgressStyle: ReaderProgressStyle.pageNumber,
+              showRemainingPages: true,
+              showCurrentTime: false,
+              showBatteryStatus: false,
+              showFooterProgressBar: false,
+              footerFontSize: 11.0,
+            ),
+            documentPath: path,
+          ),
+          rows: const [
+            _ShowHeaderRow(),
+            _HeaderAlignmentRow(),
+            _ShowFooterRow(),
+            _ProgressStyleRow(),
+            _RemainingPagesRow(),
+            _CurrentTimeRow(),
+            _BatteryStatusRow(),
+            _ProgressBarRow(),
+          ],
+        ),
       ],
     );
   }
@@ -378,3 +407,268 @@ class _WordSpacingRow extends StatelessWidget {
     );
   }
 }
+
+class _ShowHeaderRow extends StatelessWidget {
+  const _ShowHeaderRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final enabled = state.effectiveReaderPrefs(path).showHeader;
+        return SettingsSwitchRow(
+          label: 'Show header',
+          description: 'Display current chapter title at the top.',
+          value: enabled,
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(showHeader: v),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HeaderAlignmentRow extends StatelessWidget {
+  const _HeaderAlignmentRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        if (!prefs.showHeader) return const SizedBox.shrink();
+        final current = prefs.headerAlignment;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text('Header position'),
+              ),
+              SegmentedButton<ReaderHeaderAlignment>(
+                segments: const [
+                  ButtonSegment(
+                    value: ReaderHeaderAlignment.left,
+                    icon: Icon(Icons.format_align_left),
+                    tooltip: 'Left',
+                  ),
+                  ButtonSegment(
+                    value: ReaderHeaderAlignment.center,
+                    icon: Icon(Icons.format_align_center),
+                    tooltip: 'Center',
+                  ),
+                  ButtonSegment(
+                    value: ReaderHeaderAlignment.right,
+                    icon: Icon(Icons.format_align_right),
+                    tooltip: 'Right',
+                  ),
+                ],
+                selected: {current},
+                onSelectionChanged: (s) {
+                  if (s.isEmpty) return;
+                  context.read<SettingsBloc>().updateReaderPrefs(
+                    (p) => p.copyWith(headerAlignment: s.first),
+                    documentPath: path,
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ShowFooterRow extends StatelessWidget {
+  const _ShowFooterRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final enabled = state.effectiveReaderPrefs(path).showFooter;
+        return SettingsSwitchRow(
+          label: 'Show footer',
+          description: 'Display page count and reading progress at the bottom.',
+          value: enabled,
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(showFooter: v),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ProgressStyleRow extends StatelessWidget {
+  const _ProgressStyleRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        if (!prefs.showFooter) return const SizedBox.shrink();
+        final current = prefs.footerProgressStyle;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text('Progress display'),
+              ),
+              SegmentedButton<ReaderProgressStyle>(
+                segments: const [
+                  ButtonSegment(
+                    value: ReaderProgressStyle.pageNumber,
+                    label: Text('Page count'),
+                  ),
+                  ButtonSegment(
+                    value: ReaderProgressStyle.percentage,
+                    label: Text('Percentage'),
+                  ),
+                  ButtonSegment(
+                    value: ReaderProgressStyle.hidden,
+                    label: Text('Hidden'),
+                  ),
+                ],
+                selected: {current},
+                onSelectionChanged: (s) {
+                  if (s.isEmpty) return;
+                  context.read<SettingsBloc>().updateReaderPrefs(
+                    (p) => p.copyWith(footerProgressStyle: s.first),
+                    documentPath: path,
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RemainingPagesRow extends StatelessWidget {
+  const _RemainingPagesRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        if (!prefs.showFooter) return const SizedBox.shrink();
+        return SettingsSwitchRow(
+          label: 'Remaining pages in chapter',
+          value: prefs.showRemainingPages,
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(showRemainingPages: v),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CurrentTimeRow extends StatelessWidget {
+  const _CurrentTimeRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        if (!prefs.showFooter) return const SizedBox.shrink();
+        return SettingsSwitchRow(
+          label: 'Clock',
+          description: 'Show current time in the footer.',
+          value: prefs.showCurrentTime,
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(showCurrentTime: v),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BatteryStatusRow extends StatelessWidget {
+  const _BatteryStatusRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        if (!prefs.showFooter) return const SizedBox.shrink();
+        return SettingsSwitchRow(
+          label: 'Battery indicator',
+          description: 'Show battery icon in the footer.',
+          value: prefs.showBatteryStatus,
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(showBatteryStatus: v),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ProgressBarRow extends StatelessWidget {
+  const _ProgressBarRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        if (!prefs.showFooter) return const SizedBox.shrink();
+        return SettingsSwitchRow(
+          label: 'Progress bar line',
+          description: 'Show a slim progress track along the footer bottom.',
+          value: prefs.showFooterProgressBar,
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(showFooterProgressBar: v),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+

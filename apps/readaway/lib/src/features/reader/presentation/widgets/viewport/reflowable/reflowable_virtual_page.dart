@@ -10,6 +10,9 @@ import 'package:readaway_core/readaway_core.dart';
 import '../../../../../../core/theme/theme.dart';
 import '../../../../../settings/domain/entity/reader_preferences.dart';
 import '../../../bloc/reader_bloc.dart';
+import '../../chrome/reader_running_footer.dart';
+import '../../chrome/reader_running_header.dart';
+import '../../toc/reader_toc_content.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
 import 'html/hyper_page_content.dart';
 
@@ -271,26 +274,79 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
             ),
           );
 
-          return Padding(
-            padding: EdgeInsets.only(
-              top: widget.prefs.marginTop,
-              bottom: widget.prefs.marginBottom,
-              left: widget.prefs.marginHorizontal,
-              right: widget.prefs.marginHorizontal,
-            ),
-            child: SizedBox(
-              width: availableWidth,
-              height: availableHeight,
-              child: extraBottom > 0
-                  ? SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Padding(
-                        padding: EdgeInsets.only(bottom: extraBottom),
-                        child: contentWidget,
-                      ),
-                    )
-                  : contentWidget,
-            ),
+          final currentPath = widget.state.outline != null &&
+                  widget.state.outline!.isNotEmpty
+              ? tocCurrentPath(widget.state.outline!, widget.chapterIndex)
+              : null;
+          final chapterTitle = currentPath?.$1.title ??
+              widget.state.bookTitle ??
+              widget.state.fileName ??
+              '';
+
+          final totalGlobalPages = widget.coordinator.currentState.totalPages;
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(
+                  top: widget.prefs.marginTop,
+                  bottom: widget.prefs.marginBottom,
+                  left: widget.prefs.marginHorizontal,
+                  right: widget.prefs.marginHorizontal,
+                ),
+                child: SizedBox(
+                  width: availableWidth,
+                  height: availableHeight,
+                  child: extraBottom > 0
+                      ? SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: extraBottom),
+                            child: contentWidget,
+                          ),
+                        )
+                      : contentWidget,
+                ),
+              ),
+
+              // Running Header
+              if (widget.prefs.showHeader && widget.prefs.marginTop >= 16.0)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: ReaderRunningHeader(
+                    title: chapterTitle,
+                    alignment: widget.prefs.headerAlignment,
+                    fontSize: widget.prefs.headerFontSize,
+                    height: widget.prefs.marginTop,
+                    horizontalPadding: widget.prefs.marginHorizontal,
+                  ),
+                ),
+
+              // Running Footer
+              if (widget.prefs.showFooter && widget.prefs.marginBottom >= 16.0)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: ReaderRunningFooter(
+                    pageInChapter: widget.pageInChapter,
+                    totalPagesInChapter: widget.totalPagesInChapter,
+                    globalPageIndex: widget.globalPageIndex,
+                    totalGlobalPages: totalGlobalPages,
+                    progressStyle: widget.prefs.footerProgressStyle,
+                    showRemainingPages: widget.prefs.showRemainingPages,
+                    showCurrentTime: widget.prefs.showCurrentTime,
+                    showBatteryStatus: widget.prefs.showBatteryStatus,
+                    showProgressBar: widget.prefs.showFooterProgressBar,
+                    fontSize: widget.prefs.footerFontSize,
+                    height: widget.prefs.marginBottom,
+                    horizontalPadding: widget.prefs.marginHorizontal,
+                  ),
+                ),
+            ],
           );
         },
       ),

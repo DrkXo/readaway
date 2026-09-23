@@ -1,6 +1,10 @@
 library;
 
 export '../gestures/reader_gesture_arena.dart';
+// Chrome
+export 'chrome/reader_running_footer.dart';
+export 'chrome/reader_running_header.dart';
+export 'chrome/reader_status_widget.dart';
 // Common
 export 'common/reader_brightness_overlay.dart';
 export 'common/reader_contrast_overlay.dart';

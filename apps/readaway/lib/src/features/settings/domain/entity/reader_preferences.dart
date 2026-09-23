@@ -18,6 +18,20 @@ enum ReaderTextAlign {
   justify,
 }
 
+/// Reading progress style in the footer.
+enum ReaderProgressStyle {
+  pageNumber,
+  percentage,
+  hidden,
+}
+
+/// Alignment position for the running header in the top margin.
+enum ReaderHeaderAlignment {
+  left,
+  center,
+  right,
+}
+
 /// Which built-in font family is used when no explicit [ReaderPreferences.fontFamily]
 /// override is set.
 enum ReaderDefaultFont {
@@ -72,6 +86,20 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     @Default(0.0) double brightnessOverlay,
     @Default(0.0) double contrastOverlay,
     @Default(true) bool showStatusBar,
+    @Default(true) bool showHeader,
+    @Default(ReaderHeaderAlignment.left)
+    @JsonKey(unknownEnumValue: ReaderHeaderAlignment.left)
+    ReaderHeaderAlignment headerAlignment,
+    @Default(11.0) double headerFontSize,
+    @Default(true) bool showFooter,
+    @Default(ReaderProgressStyle.pageNumber)
+    @JsonKey(unknownEnumValue: ReaderProgressStyle.pageNumber)
+    ReaderProgressStyle footerProgressStyle,
+    @Default(true) bool showRemainingPages,
+    @Default(false) bool showCurrentTime,
+    @Default(false) bool showBatteryStatus,
+    @Default(false) bool showFooterProgressBar,
+    @Default(11.0) double footerFontSize,
   }) = _ReaderPreferences;
 
   factory ReaderPreferences.fromJson(Map<String, dynamic> json) =>

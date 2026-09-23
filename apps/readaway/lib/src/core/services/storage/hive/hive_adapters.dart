@@ -19,6 +19,8 @@ part 'hive_adapters.g.dart';
   AdapterSpec<ReaderPreferences>(),
   AdapterSpec<ReaderDefaultFont>(),
   AdapterSpec<ReaderTextAlign>(),
+  AdapterSpec<ReaderProgressStyle>(),
+  AdapterSpec<ReaderHeaderAlignment>(),
   AdapterSpec<ReaderScrollDirection>(),
   AdapterSpec<ReaderPageTransition>(),
 
