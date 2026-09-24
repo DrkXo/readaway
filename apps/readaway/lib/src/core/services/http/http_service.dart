@@ -5,6 +5,7 @@ import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:dio_cache_interceptor_file_store/dio_cache_interceptor_file_store.dart';
 import 'package:injectable/injectable.dart';
 import 'package:native_dio_adapter/native_dio_adapter.dart';
+import 'package:readaway/src/core/services/http/interceptors/http_logging_interceptor.dart';
 
 import '../../error/errors.dart';
 import '../logging_service.dart';
@@ -101,6 +102,7 @@ class HttpService {
       InterceptorsWrapper(
         onError: _onError,
       ),
+      HttpLoggingInterceptor(logger),
     ]);
   }
 
