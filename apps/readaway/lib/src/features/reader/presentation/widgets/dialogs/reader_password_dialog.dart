@@ -121,7 +121,9 @@ class _ReaderPasswordDialogState extends State<ReaderPasswordDialog> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: appColors.sidebarForeground.withValues(alpha: 0.7),
+                            color: appColors.sidebarForeground.withValues(
+                              alpha: 0.7,
+                            ),
                           ),
                         ),
                       ],
@@ -147,14 +149,17 @@ class _ReaderPasswordDialogState extends State<ReaderPasswordDialog> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   hintText: 'Enter password',
-                  errorText: widget.isInvalidPassword ? 'Incorrect password. Please try again.' : null,
+                  errorText: widget.isInvalidPassword
+                      ? 'Incorrect password. Please try again.'
+                      : null,
                   prefixIcon: const Icon(LucideIcons.keyRound, size: 18),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureText ? LucideIcons.eye : LucideIcons.eyeOff,
                       size: 18,
                     ),
-                    onPressed: () => setState(() => _obscureText = !_obscureText),
+                    onPressed: () =>
+                        setState(() => _obscureText = !_obscureText),
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),

@@ -14,7 +14,9 @@ void main() {
     late File sampleTxtFile;
 
     setUp(() async {
-      tempDir = await Directory.systemTemp.createTemp('metadata_extractor_test_');
+      tempDir = await Directory.systemTemp.createTemp(
+        'metadata_extractor_test_',
+      );
 
       // Create a valid test EPUB file
       final archive = Archive();
@@ -70,7 +72,16 @@ void main() {
       );
 
       final dummyJpgBytes = Uint8List.fromList([
-        0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46,
+        0xFF,
+        0xD8,
+        0xFF,
+        0xE0,
+        0x00,
+        0x10,
+        0x4A,
+        0x46,
+        0x49,
+        0x46,
       ]);
       archive.addFile(
         ArchiveFile(

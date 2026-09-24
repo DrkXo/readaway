@@ -36,8 +36,9 @@ void main() {
       final dummyBytes = Uint8List.fromList([1, 2, 3, 4]);
       when(repo.loadPageImage(0, scale: anyNamed('scale')))
           .thenAnswer((_) async => Success(dummyBytes));
-      when(repo.getPageSize(0))
-          .thenAnswer((_) async => const Success(PageSize(width: 800.0, height: 1200.0)));
+      when(repo.getPageSize(0)).thenAnswer(
+        (_) async => const Success(PageSize(width: 800.0, height: 1200.0)),
+      );
 
       final bytes1 = await cache.getOrLoadImage(repo, '/test.pdf', 0);
       final size1 = await cache.getOrLoadSize(repo, '/test.pdf', 0);
@@ -52,8 +53,10 @@ void main() {
     });
 
     test('evicts oldest entry when exceeding maxEntries', () async {
-      when(repo.loadPageImage(any, scale: anyNamed('scale')))
-          .thenAnswer((i) async => Success(Uint8List.fromList([i.positionalArguments[0] as int])));
+      when(repo.loadPageImage(any, scale: anyNamed('scale'))).thenAnswer(
+        (i) async =>
+            Success(Uint8List.fromList([i.positionalArguments[0] as int])),
+      );
 
       await cache.getOrLoadImage(repo, '/test.pdf', 0);
       await cache.getOrLoadImage(repo, '/test.pdf', 1);
@@ -75,7 +78,11 @@ void main() {
       cache.clear('/doc1.cbz');
 
       await cache.getOrLoadImage(repo, '/doc1.cbz', 0); // Call 3 (re-fetched)
-      await cache.getOrLoadImage(repo, '/doc2.cbz', 0); // Reused from cache (no extra call)
+      await cache.getOrLoadImage(
+        repo,
+        '/doc2.cbz',
+        0,
+      ); // Reused from cache (no extra call)
 
       verify(repo.loadPageImage(any, scale: anyNamed('scale'))).called(3);
     });
@@ -118,7 +125,9 @@ void main() {
       expect(cancelled, isFalse);
     });
 
-    testWidgets('displays error message when isInvalidPassword is true', (tester) async {
+    testWidgets('displays error message when isInvalidPassword is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(
@@ -138,12 +147,17 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Incorrect password. Please try again.'), findsOneWidget);
+      expect(
+        find.text('Incorrect password. Please try again.'),
+        findsOneWidget,
+      );
     });
   });
 
   group('ReaderBottomBar Format Adaptation Tests', () {
-    testWidgets('shows all 5 action buttons for reflowable documents', (tester) async {
+    testWidgets('shows all 5 action buttons for reflowable documents', (
+      tester,
+    ) async {
       final mockBloc = MockReaderBloc();
       whenListen(
         mockBloc,
@@ -185,47 +199,50 @@ void main() {
       expect(find.byIcon(LucideIcons.audioLines), findsOneWidget);
     });
 
-    testWidgets('hides font size and TTS buttons for non-reflowable documents', (tester) async {
-      final mockBloc = MockReaderBloc();
-      whenListen(
-        mockBloc,
-        const Stream<ReaderState>.empty(),
-        initialState: const ReaderState(
-          documentPath: '/comic.cbz',
-          isReflowable: false,
-          format: 'cbz',
-          pageCount: 20,
-          currentPage: 0,
-        ),
-      );
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(
-            extensions: [
-              VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
-            ],
+    testWidgets(
+      'hides font size and TTS buttons for non-reflowable documents',
+      (tester) async {
+        final mockBloc = MockReaderBloc();
+        whenListen(
+          mockBloc,
+          const Stream<ReaderState>.empty(),
+          initialState: const ReaderState(
+            documentPath: '/comic.cbz',
+            isReflowable: false,
+            format: 'cbz',
+            pageCount: 20,
+            currentPage: 0,
           ),
-          home: BlocProvider<ReaderBloc>.value(
-            value: mockBloc,
-            child: Scaffold(
-              bottomNavigationBar: ReaderBottomBar(
-                onPreviousPage: () {},
-                onNextPage: () {},
-                onSeekToPage: (_) {},
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(
+              extensions: [
+                VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
+              ],
+            ),
+            home: BlocProvider<ReaderBloc>.value(
+              value: mockBloc,
+              child: Scaffold(
+                bottomNavigationBar: ReaderBottomBar(
+                  onPreviousPage: () {},
+                  onNextPage: () {},
+                  onSeekToPage: (_) {},
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Only 3 icons: outline, brightness, pageNav
-      expect(find.byIcon(LucideIcons.panelLeft), findsOneWidget);
-      expect(find.byIcon(LucideIcons.sunMedium), findsOneWidget);
-      expect(find.byIcon(LucideIcons.slidersHorizontal), findsOneWidget);
-      expect(find.byIcon(LucideIcons.type), findsNothing);
-      expect(find.byIcon(LucideIcons.audioLines), findsNothing);
-    });
+        // Only 3 icons: outline, brightness, pageNav
+        expect(find.byIcon(LucideIcons.panelLeft), findsOneWidget);
+        expect(find.byIcon(LucideIcons.sunMedium), findsOneWidget);
+        expect(find.byIcon(LucideIcons.slidersHorizontal), findsOneWidget);
+        expect(find.byIcon(LucideIcons.type), findsNothing);
+        expect(find.byIcon(LucideIcons.audioLines), findsNothing);
+      },
+    );
   });
 }

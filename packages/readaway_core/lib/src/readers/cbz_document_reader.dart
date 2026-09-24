@@ -77,7 +77,11 @@ class ComicBookDocumentReader
         );
       }
     } catch (e, st) {
-      _log.e('Failed to initialize comic archive adapter for $filePath', error: e, stackTrace: st);
+      _log.e(
+        'Failed to initialize comic archive adapter for $filePath',
+        error: e,
+        stackTrace: st,
+      );
       rethrow;
     }
 
@@ -107,7 +111,11 @@ class ComicBookDocumentReader
         );
       }
     } catch (e, st) {
-      _log.e('Failed to initialize comic archive from bytes for $filePath', error: e, stackTrace: st);
+      _log.e(
+        'Failed to initialize comic archive from bytes for $filePath',
+        error: e,
+        stackTrace: st,
+      );
       rethrow;
     }
 
@@ -164,7 +172,9 @@ class ComicBookDocumentReader
       outline.addAll(ComicTocExtractor.extract(imagePaths));
     }
 
-    _log.i('Comic parsed: $filePath ($format, ${imagePaths.length} pages, outline: ${outline.length})');
+    _log.i(
+      'Comic parsed: $filePath ($format, ${imagePaths.length} pages, outline: ${outline.length})',
+    );
 
     return ComicBookDocumentReader._(
       filePath: filePath,
@@ -236,7 +246,9 @@ class ComicBookDocumentReader
   Uint8List loadPageSync(int pageIndex) {
     checkNotDisposed('loadPageSync');
     if (pageIndex < 0 || pageIndex >= _pagePaths.length) {
-      _log.e('Comic page index out of bounds: $pageIndex (total: ${_pagePaths.length})');
+      _log.e(
+        'Comic page index out of bounds: $pageIndex (total: ${_pagePaths.length})',
+      );
       throw RangeError.range(pageIndex, 0, _pagePaths.length - 1, 'pageIndex');
     }
     final cached = _imageCache[pageIndex];

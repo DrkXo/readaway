@@ -181,7 +181,9 @@ class _CustomTtsImportDialogState extends State<CustomTtsImportDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    color: scheme.surfaceContainerHighest.withValues(
+                      alpha: 0.5,
+                    ),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: scheme.outlineVariant),
                   ),

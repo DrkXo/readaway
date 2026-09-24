@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:test/test.dart';
 import 'package:vscode_theme_parser/vscode_theme_parser.dart';
 
@@ -48,7 +49,10 @@ void main() {
       expect(theme.tokenColors.length, 1);
       final rule = theme.tokenColors.first;
       expect(rule.name, 'Comment');
-      expect(rule.scope?.selectors, ['comment', 'punctuation.definition.comment']);
+      expect(rule.scope?.selectors, [
+        'comment',
+        'punctuation.definition.comment',
+      ]);
       expect(rule.settings.foreground, '#6A9955');
       expect(rule.settings.isItalic, isTrue);
     });
@@ -64,8 +68,14 @@ void main() {
     });
 
     test('parses comma-separated string scope', () {
-      final scope = VsCodeTokenScope.fromSelectors(['storage.type, keyword.operator, meta.function']);
-      expect(scope.selectors, ['storage.type', 'keyword.operator', 'meta.function']);
+      final scope = VsCodeTokenScope.fromSelectors([
+        'storage.type, keyword.operator, meta.function',
+      ]);
+      expect(scope.selectors, [
+        'storage.type',
+        'keyword.operator',
+        'meta.function',
+      ]);
       expect(scope.matches('keyword.operator'), isTrue);
       expect(scope.matches('keyword.operator.logical'), isTrue);
       expect(scope.matches('comment'), isFalse);
@@ -76,7 +86,11 @@ void main() {
         'entity.name.function, support.function',
         'entity.name.method',
       ]);
-      expect(scope.selectors, ['entity.name.function', 'support.function', 'entity.name.method']);
+      expect(scope.selectors, [
+        'entity.name.function',
+        'support.function',
+        'entity.name.method',
+      ]);
     });
   });
 
@@ -100,11 +114,7 @@ void main() {
     });
 
     test('handles fontSize and lineHeight as double or num', () {
-      final json = {
-        'foreground': '#FFF',
-        'fontSize': 14,
-        'lineHeight': 1.5,
-      };
+      final json = {'foreground': '#FFF', 'fontSize': 14, 'lineHeight': 1.5};
       final settings = VsCodeTokenSettings.fromJson(json);
       expect(settings.fontSize, 14.0);
       expect(settings.lineHeight, 1.5);
@@ -253,7 +263,10 @@ void main() {
         }
 
         if (entry.value['semanticCount'] != null) {
-          expect(theme.semanticTokenColors.length, entry.value['semanticCount']);
+          expect(
+            theme.semanticTokenColors.length,
+            entry.value['semanticCount'],
+          );
         }
 
         if (entry.value['hasColors'] == true) {
@@ -270,7 +283,10 @@ void main() {
         expect(reconstructed.name, theme.name);
         expect(reconstructed.tokenColors.length, theme.tokenColors.length);
         expect(reconstructed.colors.length, theme.colors.length);
-        expect(reconstructed.semanticTokenColors.length, theme.semanticTokenColors.length);
+        expect(
+          reconstructed.semanticTokenColors.length,
+          theme.semanticTokenColors.length,
+        );
       });
     }
   });
@@ -296,9 +312,7 @@ void main() {
       final childTheme = VsCodeTheme(
         name: 'Child Theme',
         type: 'dark',
-        colors: {
-          'activityBar.background': '#222222',
-        },
+        colors: {'activityBar.background': '#222222'},
         tokenColors: [
           VsCodeTokenColor(
             name: 'Child Keyword',

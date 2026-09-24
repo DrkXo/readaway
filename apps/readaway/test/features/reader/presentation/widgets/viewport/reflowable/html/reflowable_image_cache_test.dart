@@ -34,40 +34,47 @@ void main() {
     expect(loadCount, 1);
 
     // Already cached — a third resolve never touches the loader.
-    expect(await cache.resolveBytes('doc', 0, 'img/a.jpg', load: load), [1, 2, 3]);
+    expect(await cache.resolveBytes('doc', 0, 'img/a.jpg', load: load), [
+      1,
+      2,
+      3,
+    ]);
     expect(loadCount, 1);
   });
 
-  test('namespace + chapterIndex isolate cached bytes between documents', () async {
-    final called = <String>[];
-    Future<Uint8List?> loadFor(String ns) async {
-      called.add(ns);
-      return Uint8List.fromList(ns.codeUnits);
-    }
+  test(
+    'namespace + chapterIndex isolate cached bytes between documents',
+    () async {
+      final called = <String>[];
+      Future<Uint8List?> loadFor(String ns) async {
+        called.add(ns);
+        return Uint8List.fromList(ns.codeUnits);
+      }
 
-    await cache.resolveBytes(
-      'bookA',
-      1,
-      'images/cover.jpg',
-      load: () => loadFor('A'),
-    );
-    await cache.resolveBytes(
-      'bookB',
-      1,
-      'images/cover.jpg',
-      load: () => loadFor('B'),
-    );
-    await cache.resolveBytes(
-      'bookA',
-      2,
-      'images/cover.jpg',
-      load: () => loadFor('A2'),
-    );
+      await cache.resolveBytes(
+        'bookA',
+        1,
+        'images/cover.jpg',
+        load: () => loadFor('A'),
+      );
+      await cache.resolveBytes(
+        'bookB',
+        1,
+        'images/cover.jpg',
+        load: () => loadFor('B'),
+      );
+      await cache.resolveBytes(
+        'bookA',
+        2,
+        'images/cover.jpg',
+        load: () => loadFor('A2'),
+      );
 
-    expect(called, ['A', 'B', 'A2']);
-    expect(cache.peekBytes('bookA', 1, 'images/cover.jpg'), isNotNull);
-    expect(cache.peekBytes('bookB', 1, 'images/cover.jpg'), isNotNull);
-  });
+      expect(called, ['A', 'B', 'A2']);
+      expect(cache.peekBytes('bookA', 1, 'images/cover.jpg'), isNotNull);
+      expect(cache.peekBytes('bookB', 1, 'images/cover.jpg'), isNotNull);
+    },
+  );
 
   test('decode decodes once and reuses the same ui.Image frame', () async {
     var loadCount = 0;
@@ -93,63 +100,89 @@ void main() {
     );
   });
 
-  test('seedImageDimensions stamps real dims on undecorated img nodes', () async {
-    await cache.decode('doc', 0, 'img/a.png', load: () async => Uint8List.fromList(_png1x1));
-    final document = DocumentNode(children: [
-      AtomicNode.img(src: 'img/a.png'),
-      AtomicNode.img(src: 'img/unknown.png'),
-    ]);
+  test(
+    'seedImageDimensions stamps real dims on undecorated img nodes',
+    () async {
+      await cache.decode(
+        'doc',
+        0,
+        'img/a.png',
+        load: () async => Uint8List.fromList(_png1x1),
+      );
+      final document = DocumentNode(
+        children: [
+          AtomicNode.img(src: 'img/a.png'),
+          AtomicNode.img(src: 'img/unknown.png'),
+        ],
+      );
 
-    HyperPageContent.seedImageDimensions(
-      document,
-      cacheNamespace: 'doc',
-      chapterIndex: 0,
-    );
+      HyperPageContent.seedImageDimensions(
+        document,
+        cacheNamespace: 'doc',
+        chapterIndex: 0,
+      );
 
-    final known = document.children[0] as AtomicNode;
-    expect(known.style.width, 1.0);
-    expect(known.style.height, 1.0);
+      final known = document.children[0] as AtomicNode;
+      expect(known.style.width, 1.0);
+      expect(known.style.height, 1.0);
 
-    // Unknown image: cache miss — dims stay null so the engine uses its
-    // placeholder until the async decode lands.
-    final unknown = document.children[1] as AtomicNode;
-    expect(unknown.style.width, isNull);
-    expect(unknown.style.height, isNull);
-  });
+      // Unknown image: cache miss — dims stay null so the engine uses its
+      // placeholder until the async decode lands.
+      final unknown = document.children[1] as AtomicNode;
+      expect(unknown.style.width, isNull);
+      expect(unknown.style.height, isNull);
+    },
+  );
 
-  test('seedImageDimensions leaves authored CSS dimensions untouched', () async {
-    await cache.decode('doc', 0, 'img/a.png', load: () async => Uint8List.fromList(_png1x1));
-    final styled = AtomicNode.img(src: 'img/a.png')
-      ..style.width = 480.0
-      ..style.height = 640.0;
-    final document = DocumentNode(children: [styled]);
+  test(
+    'seedImageDimensions leaves authored CSS dimensions untouched',
+    () async {
+      await cache.decode(
+        'doc',
+        0,
+        'img/a.png',
+        load: () async => Uint8List.fromList(_png1x1),
+      );
+      final styled = AtomicNode.img(src: 'img/a.png')
+        ..style.width = 480.0
+        ..style.height = 640.0;
+      final document = DocumentNode(children: [styled]);
 
-    HyperPageContent.seedImageDimensions(
-      document,
-      cacheNamespace: 'doc',
-      chapterIndex: 0,
-    );
+      HyperPageContent.seedImageDimensions(
+        document,
+        cacheNamespace: 'doc',
+        chapterIndex: 0,
+      );
 
-    expect(styled.style.width, 480.0);
-    expect(styled.style.height, 640.0);
-  });
+      expect(styled.style.width, 480.0);
+      expect(styled.style.height, 640.0);
+    },
+  );
 
-  test('seedImageDimensions fills the implicit auto dimension from aspect', () async {
-    // 1×1 PNG is square; use a distinct payload via a non-square picture.
-    await cache.decode('doc', 0, 'img/a.png', load: () async => Uint8List.fromList(_png1x1));
-    final widthOnly = AtomicNode.img(src: 'img/a.png')..style.width = 100.0;
-    final heightOnly = AtomicNode.img(src: 'img/a.png')..style.height = 50.0;
-    final document = DocumentNode(children: [widthOnly, heightOnly]);
+  test(
+    'seedImageDimensions fills the implicit auto dimension from aspect',
+    () async {
+      // 1×1 PNG is square; use a distinct payload via a non-square picture.
+      await cache.decode(
+        'doc',
+        0,
+        'img/a.png',
+        load: () async => Uint8List.fromList(_png1x1),
+      );
+      final widthOnly = AtomicNode.img(src: 'img/a.png')..style.width = 100.0;
+      final heightOnly = AtomicNode.img(src: 'img/a.png')..style.height = 50.0;
+      final document = DocumentNode(children: [widthOnly, heightOnly]);
 
-    HyperPageContent.seedImageDimensions(
-      document,
-      cacheNamespace: 'doc',
-      chapterIndex: 0,
-    );
+      HyperPageContent.seedImageDimensions(
+        document,
+        cacheNamespace: 'doc',
+        chapterIndex: 0,
+      );
 
-    expect(widthOnly.style.width, 100.0);
-    expect(widthOnly.style.height, 100.0);
-    expect(heightOnly.style.width, 50.0);
-    expect(heightOnly.style.height, 50.0);
-  });
+      expect(widthOnly.style.width, 100.0);
+      expect(widthOnly.style.height, 100.0);
+      expect(heightOnly.style.width, 50.0);
+      expect(heightOnly.style.height, 50.0);
+    },
+  );
 }

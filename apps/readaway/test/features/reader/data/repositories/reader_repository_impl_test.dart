@@ -11,7 +11,8 @@ import 'package:readaway/src/features/settings/domain/entity/reader_preferences.
 import '../../../../helpers/test_mocks.dart';
 
 String? _resolveTestDocPath(String primaryKey, [String? fallbackKey]) {
-  final envVal = Platform.environment[primaryKey] ??
+  final envVal =
+      Platform.environment[primaryKey] ??
       (fallbackKey != null ? Platform.environment[fallbackKey] : null);
   if (envVal != null && envVal.isNotEmpty) return envVal;
 
@@ -107,77 +108,83 @@ void main() {
     });
   });
 
-  group('Reflowable Document Reader Repository Tests', () {
-    late ReaderRepository repository;
+  group(
+    'Reflowable Document Reader Repository Tests',
+    () {
+      late ReaderRepository repository;
 
-    setUpAll(() async {
-      if (!hasEpub) return;
+      setUpAll(() async {
+        if (!hasEpub) return;
 
-      final windowService = MockWindowService();
-      when(windowService.setTitle(any)).thenAnswer((_) async {});
-      when(windowService.setDefaultTitle()).thenAnswer((_) async {});
+        final windowService = MockWindowService();
+        when(windowService.setTitle(any)).thenAnswer((_) async {});
+        when(windowService.setDefaultTitle()).thenAnswer((_) async {});
 
-      final notifService = MockNotificationService();
-      final pathService = MockAppPathService();
-      final libRepo = MockLibraryRepository();
+        final notifService = MockNotificationService();
+        final pathService = MockAppPathService();
+        final libRepo = MockLibraryRepository();
 
-      repository = ReaderRepositoryImpl(
-        windowService,
-        notifService,
-        pathService,
-        libRepo,
-      );
-    });
+        repository = ReaderRepositoryImpl(
+          windowService,
+          notifService,
+          pathService,
+          libRepo,
+        );
+      });
 
-    tearDownAll(() async {
-      if (hasEpub) {
-        await repository.closeDocument();
-      }
-    });
+      tearDownAll(() async {
+        if (hasEpub) {
+          await repository.closeDocument();
+        }
+      });
 
-    test('opens EPUB with readaway_core', () async {
-      final openResult = await repository.openDocument(epubPath!);
-
-      expect(openResult.isSuccess, isTrue);
-      final info = openResult.dataOrNull!;
-      expect(info.pageCount, greaterThan(0));
-      expect(info.title, isNotEmpty);
-      expect(info.outline.length, greaterThanOrEqualTo(0));
-      if (info.outline.isNotEmpty) {
-        expect(info.outline.first.title, isNotEmpty);
-      }
-    });
-
-    test('loads chapter HTML directly from readaway_core', () async {
-      final pageDataResult = await repository.loadPage(0);
-
-      expect(pageDataResult.isSuccess, isTrue);
-      final pageData = pageDataResult.dataOrNull!;
-      expect(pageData.html, isNotNull);
-      expect(pageData.html, isNotEmpty);
-      expect(pageData.html!.contains('position: absolute'), isFalse);
-    });
-
-    test(
-      'extracts text from section HTML directly from readaway_core',
-      () async {
+      test('opens EPUB with readaway_core', () async {
         final openResult = await repository.openDocument(epubPath!);
+
+        expect(openResult.isSuccess, isTrue);
         final info = openResult.dataOrNull!;
-        final targetSection = info.pageCount > 1 ? 1 : 0;
+        expect(info.pageCount, greaterThan(0));
+        expect(info.title, isNotEmpty);
+        expect(info.outline.length, greaterThanOrEqualTo(0));
+        if (info.outline.isNotEmpty) {
+          expect(info.outline.first.title, isNotEmpty);
+        }
+      });
 
-        final textResult = await repository.extractPageText(targetSection);
-        expect(textResult.isSuccess, isTrue);
-        final text = textResult.dataOrNull!;
-        expect(text, isNotEmpty);
-      },
-    );
+      test('loads chapter HTML directly from readaway_core', () async {
+        final pageDataResult = await repository.loadPage(0);
 
-    test('resolves asset bytes from EPUB archive directly', () async {
-      final bytesResult = await repository.loadAssetBytes('mimetype');
-      expect(bytesResult.isSuccess, isTrue);
-      final bytes = bytesResult.dataOrNull;
-      expect(bytes, isNotNull);
-      expect(String.fromCharCodes(bytes!), contains('application/epub+zip'));
-    });
-  }, skip: !hasEpub ? 'EPUB file not provided or not found (set TEST_EPUB_PATH or EPUB_PATH)' : null);
+        expect(pageDataResult.isSuccess, isTrue);
+        final pageData = pageDataResult.dataOrNull!;
+        expect(pageData.html, isNotNull);
+        expect(pageData.html, isNotEmpty);
+        expect(pageData.html!.contains('position: absolute'), isFalse);
+      });
+
+      test(
+        'extracts text from section HTML directly from readaway_core',
+        () async {
+          final openResult = await repository.openDocument(epubPath!);
+          final info = openResult.dataOrNull!;
+          final targetSection = info.pageCount > 1 ? 1 : 0;
+
+          final textResult = await repository.extractPageText(targetSection);
+          expect(textResult.isSuccess, isTrue);
+          final text = textResult.dataOrNull!;
+          expect(text, isNotEmpty);
+        },
+      );
+
+      test('resolves asset bytes from EPUB archive directly', () async {
+        final bytesResult = await repository.loadAssetBytes('mimetype');
+        expect(bytesResult.isSuccess, isTrue);
+        final bytes = bytesResult.dataOrNull;
+        expect(bytes, isNotNull);
+        expect(String.fromCharCodes(bytes!), contains('application/epub+zip'));
+      });
+    },
+    skip: !hasEpub
+        ? 'EPUB file not provided or not found (set TEST_EPUB_PATH or EPUB_PATH)'
+        : null,
+  );
 }

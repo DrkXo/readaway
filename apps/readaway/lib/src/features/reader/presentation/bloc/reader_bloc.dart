@@ -355,8 +355,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           ttsCurrentPage: null,
           transientFeedback: UiFeedback(
             failure: const NotificationPermissionDeniedFailure(
-              message:
-                  'Audio notification permissions are required for background read-aloud.',
+              message: 'Audio notification permissions are required for background read-aloud.',
             ),
           ),
         ),

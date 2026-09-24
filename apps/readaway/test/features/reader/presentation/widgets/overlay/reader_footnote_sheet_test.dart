@@ -13,16 +13,16 @@ class FakeReflowableReader extends Fake implements ReflowableDocumentReader {
 
   @override
   DocumentMetadata? get metadata => const DocumentMetadata(
-        title: 'Test Book',
-        creator: 'Test Author',
-        language: 'ja',
-      );
+    title: 'Test Book',
+    creator: 'Test Author',
+    language: 'ja',
+  );
 
   @override
   List<OutlineItem> get outline => const [
-        OutlineItem(title: 'Chapter 1', chapterIndex: 0),
-        OutlineItem(title: 'Chapter 2', chapterIndex: 1),
-      ];
+    OutlineItem(title: 'Chapter 1', chapterIndex: 0),
+    OutlineItem(title: 'Chapter 2', chapterIndex: 1),
+  ];
 
   @override
   String loadSectionHtml(int index) {
@@ -54,7 +54,6 @@ class FakeReflowableReader extends Fake implements ReflowableDocumentReader {
 
 void main() {
   group('ReaderDocumentInfo Tests', () {
-
     test('instantiates with author and metadata', () {
       const info = ReaderDocumentInfo(
         path: '/path/to/book.txt',
@@ -109,7 +108,9 @@ void main() {
   });
 
   group('ReaderFootnoteSheet Widget Tests', () {
-    testWidgets('renders footnote details and triggers onJumpToNote', (tester) async {
+    testWidgets('renders footnote details and triggers onJumpToNote', (
+      tester,
+    ) async {
       bool jumped = false;
       const footnote = FootnoteItem(
         id: 'fn1',

@@ -79,7 +79,8 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
         if (!readerState.hasDocument) return const SizedBox.shrink();
 
         final appColors = context.appColors;
-        final barBgColor = widget.backgroundColor ?? appColors.bottombarBackground;
+        final barBgColor =
+            widget.backgroundColor ?? appColors.bottombarBackground;
 
         return Container(
           decoration: BoxDecoration(
@@ -99,65 +100,65 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                // 1. Outline (Chapters / TOC)
-                AppIconButton(
-                  icon: LucideIcons.panelLeft,
-                  tooltip: 'Outline',
-                  size: AppIconButtonSize.medium,
-                  semanticLabel: 'Open chapter outline',
-                  onPressed: handleOutlineTap,
-                ),
-
-                // 2. Brightness & Theme
-                AppIconButton(
-                  icon: LucideIcons.sunMedium,
-                  tooltip: 'Brightness & Theme',
-                  size: AppIconButtonSize.medium,
-                  selected: activePanel == ReaderBottomPanel.brightness,
-                  semanticLabel: 'Display brightness and theme adjustment',
-                  onPressed: () => togglePanel(ReaderBottomPanel.brightness),
-                ),
-
-                // 3. Page Navigation
-                AppIconButton(
-                  icon: LucideIcons.slidersHorizontal,
-                  tooltip: 'Page navigation',
-                  size: AppIconButtonSize.medium,
-                  selected: activePanel == ReaderBottomPanel.pageNavigation,
-                  semanticLabel: 'Page scrubber and jump controls',
-                  onPressed: () =>
-                      togglePanel(ReaderBottomPanel.pageNavigation),
-                ),
-
-                // 4. Font Resizing (Reflowable only)
-                if (readerState.isReflowable)
+                  // 1. Outline (Chapters / TOC)
                   AppIconButton(
-                    icon: LucideIcons.type,
-                    tooltip: 'Font size',
+                    icon: LucideIcons.panelLeft,
+                    tooltip: 'Outline',
                     size: AppIconButtonSize.medium,
-                    selected: activePanel == ReaderBottomPanel.fontSize,
-                    semanticLabel: 'Font size adjustment',
-                    onPressed: () => togglePanel(ReaderBottomPanel.fontSize),
+                    semanticLabel: 'Open chapter outline',
+                    onPressed: handleOutlineTap,
                   ),
 
-                // 5. TTS (Text to Speech) (Reflowable only)
-                if (readerState.isReflowable)
+                  // 2. Brightness & Theme
                   AppIconButton(
-                    icon: LucideIcons.audioLines,
-                    tooltip: readerState.ttsActive
-                        ? 'Close TTS player'
-                        : 'Listen (TTS player)',
+                    icon: LucideIcons.sunMedium,
+                    tooltip: 'Brightness & Theme',
                     size: AppIconButtonSize.medium,
-                    selected: readerState.ttsActive,
-                    semanticLabel: 'Text to speech player toggle',
-                    onPressed: () => handleTtsTap(readerState),
+                    selected: activePanel == ReaderBottomPanel.brightness,
+                    semanticLabel: 'Display brightness and theme adjustment',
+                    onPressed: () => togglePanel(ReaderBottomPanel.brightness),
                   ),
-              ],
+
+                  // 3. Page Navigation
+                  AppIconButton(
+                    icon: LucideIcons.slidersHorizontal,
+                    tooltip: 'Page navigation',
+                    size: AppIconButtonSize.medium,
+                    selected: activePanel == ReaderBottomPanel.pageNavigation,
+                    semanticLabel: 'Page scrubber and jump controls',
+                    onPressed: () =>
+                        togglePanel(ReaderBottomPanel.pageNavigation),
+                  ),
+
+                  // 4. Font Resizing (Reflowable only)
+                  if (readerState.isReflowable)
+                    AppIconButton(
+                      icon: LucideIcons.type,
+                      tooltip: 'Font size',
+                      size: AppIconButtonSize.medium,
+                      selected: activePanel == ReaderBottomPanel.fontSize,
+                      semanticLabel: 'Font size adjustment',
+                      onPressed: () => togglePanel(ReaderBottomPanel.fontSize),
+                    ),
+
+                  // 5. TTS (Text to Speech) (Reflowable only)
+                  if (readerState.isReflowable)
+                    AppIconButton(
+                      icon: LucideIcons.audioLines,
+                      tooltip: readerState.ttsActive
+                          ? 'Close TTS player'
+                          : 'Listen (TTS player)',
+                      size: AppIconButtonSize.medium,
+                      selected: readerState.ttsActive,
+                      semanticLabel: 'Text to speech player toggle',
+                      onPressed: () => handleTtsTap(readerState),
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 }

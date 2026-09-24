@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 /// Displays current time and battery status in the reader's running footer.
@@ -84,7 +85,8 @@ class _ReaderStatusWidgetState extends State<ReaderStatusWidget> {
       return const SizedBox.shrink();
     }
 
-    final textColor = widget.color ?? Theme.of(context).colorScheme.onSurfaceVariant;
+    final textColor =
+        widget.color ?? Theme.of(context).colorScheme.onSurfaceVariant;
     final textStyle = TextStyle(
       fontSize: widget.fontSize,
       color: textColor,
@@ -100,8 +102,7 @@ class _ReaderStatusWidgetState extends State<ReaderStatusWidget> {
             _formatTime(_now),
             style: textStyle,
           ),
-        if (widget.showTime && widget.showBattery)
-          const SizedBox(width: 8),
+        if (widget.showTime && widget.showBattery) const SizedBox(width: 8),
         if (widget.showBattery)
           _BatteryIcon(
             fontSize: widget.fontSize,

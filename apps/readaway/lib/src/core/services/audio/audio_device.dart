@@ -1,4 +1,5 @@
 import 'package:audio_session/audio_session.dart';
+import 'package:equatable/equatable.dart';
 import 'package:media_kit/media_kit.dart' as mk hide PlayerState;
 
 /// A unified representation of an output audio device across platforms.
@@ -7,7 +8,7 @@ import 'package:media_kit/media_kit.dart' as mk hide PlayerState;
 /// `audio_session` on mobile, [mk.AudioDevice] from `media_kit` on desktop)
 /// behind a single [id] + [name] surface so UI can render a consistent
 /// device list without branching on platform.
-class OutputAudioDevice {
+class OutputAudioDevice extends Equatable {
   const OutputAudioDevice({
     required this.id,
     required this.name,
@@ -35,17 +36,8 @@ class OutputAudioDevice {
       native = device;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is OutputAudioDevice &&
-          runtimeType == other.runtimeType &&
-          id == other.id &&
-          name == other.name &&
-          native == other.native);
+  List<Object?> get props => [id, name, native];
 
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, native);
-
-  @override
-  String toString() => 'OutputAudioDevice(id: $id, name: $name, native: $native)';
+  bool? get stringify => true;
 }

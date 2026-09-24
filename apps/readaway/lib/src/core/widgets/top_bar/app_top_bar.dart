@@ -171,7 +171,9 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
 
               // Desktop Window Caption Controls
-              if (showCaptionControls && isDesktop && windowService != null) ...[
+              if (showCaptionControls &&
+                  isDesktop &&
+                  windowService != null) ...[
                 const SizedBox(width: 4),
                 Container(
                   height: 18,

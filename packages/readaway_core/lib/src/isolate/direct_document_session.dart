@@ -168,10 +168,7 @@ class DirectDocumentSession with DisposableMixin implements DocumentSession {
   Future<String> resolveAssetPath(int sectionIndex, String relativePath) async {
     final r = _reader;
     if (r is! ReflowableDocumentReader) return relativePath;
-    return r.resolveAssetPath(
-      sectionIndex,
-      relativePath,
-    );
+    return r.resolveAssetPath(sectionIndex, relativePath);
   }
 
   @override

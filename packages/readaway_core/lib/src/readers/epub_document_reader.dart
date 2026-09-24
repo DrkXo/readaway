@@ -59,7 +59,11 @@ class EpubDocumentReader
     try {
       archive = ZipDecoder().decodeStream(stream, verify: false);
     } catch (e, st) {
-      _log.e('Failed to parse EPUB zip archive from stream: $filePath', error: e, stackTrace: st);
+      _log.e(
+        'Failed to parse EPUB zip archive from stream: $filePath',
+        error: e,
+        stackTrace: st,
+      );
       await stream.close();
       throw DocumentParseException('Failed to parse EPUB zip archive: $e');
     }
@@ -76,7 +80,11 @@ class EpubDocumentReader
     try {
       archive = ZipDecoder().decodeBytes(bytes, verify: false);
     } catch (e, st) {
-      _log.e('Failed to parse EPUB zip archive from bytes: $filePath', error: e, stackTrace: st);
+      _log.e(
+        'Failed to parse EPUB zip archive from bytes: $filePath',
+        error: e,
+        stackTrace: st,
+      );
       throw DocumentParseException('Failed to parse EPUB zip archive: $e');
     }
     return _fromArchive(archive, filePath: filePath);
@@ -302,7 +310,9 @@ class EpubDocumentReader
       }
     }
 
-    _log.i('EPUB parsed successfully: "${metadata.title ?? 'Untitled'}", ${sections.length} sections, ${outline.length} outline items');
+    _log.i(
+      'EPUB parsed successfully: "${metadata.title ?? 'Untitled'}", ${sections.length} sections, ${outline.length} outline items',
+    );
 
     return EpubDocumentReader._(
       filePath: filePath,

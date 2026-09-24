@@ -260,8 +260,10 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
         // 2. Check if cover file exists in cache directory
         final coverDir = await _pathService.getCoversDirectory();
-        final fileHash =
-            md5.convert(utf8.encode(filePath)).toString().substring(0, 8);
+        final fileHash = md5
+            .convert(utf8.encode(filePath))
+            .toString()
+            .substring(0, 8);
         final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
         final coverFile = File(
           p.join(coverDir.path, 'cover_${safeName}_$fileHash.jpg'),
@@ -437,7 +439,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
   @override
   Future<Result<int?>> resolveReflowableLink(String uri) {
     return guard(
-      () async => _session != null ? await _session!.resolveSectionIndex(uri) : null,
+      () async =>
+          _session != null ? await _session!.resolveSectionIndex(uri) : null,
       onError: (error, stack) => CorruptDocumentFailure(
         'Failed to resolve reflowable link: $error',
         cause: error,

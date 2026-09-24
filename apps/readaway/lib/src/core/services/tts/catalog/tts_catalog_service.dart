@@ -67,7 +67,11 @@ class TtsCatalogService {
       await _store.saveChecksums(checksums);
       return models;
     } catch (e, st) {
-      _log.e('Failed to load bundled TTS catalog assets', error: e, stackTrace: st);
+      _log.e(
+        'Failed to load bundled TTS catalog assets',
+        error: e,
+        stackTrace: st,
+      );
       return _store.loadCatalog();
     }
   }

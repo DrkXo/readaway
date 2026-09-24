@@ -671,4 +671,3 @@ class _ProgressBarRow extends StatelessWidget {
     );
   }
 }
-

@@ -49,32 +49,43 @@ void main() {
   });
 
   group('LibraryRepositoryImpl - Status and Progress Management', () {
-    test('marking as unread resets lastReadPage, chapter, and progression', () async {
-      when(mockDataSource.getRecentDocuments())
-          .thenAnswer((_) async => [testDoc]);
-      when(mockDataSource.saveRecentDocument(any))
-          .thenAnswer((_) async => Future.value());
+    test(
+      'marking as unread resets lastReadPage, chapter, and progression',
+      () async {
+        when(mockDataSource.getRecentDocuments())
+            .thenAnswer((_) async => [testDoc]);
+        when(mockDataSource.saveRecentDocument(any))
+            .thenAnswer((_) async => Future.value());
 
-      final result = await repository
-          .updateReadingStatus(testDoc.path, ReadingStatus.unread);
+        final result = await repository.updateReadingStatus(
+          testDoc.path,
+          ReadingStatus.unread,
+        );
 
-      expect(result.isSuccess, isTrue);
-      final updated = result.dataOrNull!;
-      expect(updated.readingStatus, ReadingStatus.unread);
-      expect(updated.lastReadPage, 0);
-      expect(updated.lastReadChapter, 0);
-      expect(updated.lastReadProgression, 0.0);
-      expect(updated.progressPercent, 0.0);
-      expect(updated.isFinished, isFalse);
+        expect(result.isSuccess, isTrue);
+        final updated = result.dataOrNull!;
+        expect(updated.readingStatus, ReadingStatus.unread);
+        expect(updated.lastReadPage, 0);
+        expect(updated.lastReadChapter, 0);
+        expect(updated.lastReadProgression, 0.0);
+        expect(updated.progressPercent, 0.0);
+        expect(updated.isFinished, isFalse);
 
-      verify(mockDataSource.saveRecentDocument(argThat(
-        predicate<RecentDocument>((d) =>
-            d.readingStatus == ReadingStatus.unread &&
-            d.lastReadPage == 0 &&
-            d.lastReadChapter == 0 &&
-            d.lastReadProgression == 0.0),
-      ))).called(1);
-    });
+        verify(
+          mockDataSource.saveRecentDocument(
+            argThat(
+              predicate<RecentDocument>(
+                (d) =>
+                    d.readingStatus == ReadingStatus.unread &&
+                    d.lastReadPage == 0 &&
+                    d.lastReadChapter == 0 &&
+                    d.lastReadProgression == 0.0,
+              ),
+            ),
+          ),
+        ).called(1);
+      },
+    );
 
     test('resetReadingProgress resets progress and marks as unread', () async {
       when(mockDataSource.getRecentDocuments())
@@ -92,24 +103,29 @@ void main() {
       expect(updated.lastReadProgression, 0.0);
     });
 
-    test('marking as finished sets 100% progress and finished status', () async {
-      when(mockDataSource.getRecentDocuments())
-          .thenAnswer((_) async => [testDoc]);
-      when(mockDataSource.saveRecentDocument(any))
-          .thenAnswer((_) async => Future.value());
+    test(
+      'marking as finished sets 100% progress and finished status',
+      () async {
+        when(mockDataSource.getRecentDocuments())
+            .thenAnswer((_) async => [testDoc]);
+        when(mockDataSource.saveRecentDocument(any))
+            .thenAnswer((_) async => Future.value());
 
-      final result = await repository
-          .updateReadingStatus(testDoc.path, ReadingStatus.finished);
+        final result = await repository.updateReadingStatus(
+          testDoc.path,
+          ReadingStatus.finished,
+        );
 
-      expect(result.isSuccess, isTrue);
-      final updated = result.dataOrNull!;
-      expect(updated.readingStatus, ReadingStatus.finished);
-      expect(updated.lastReadPage, 99);
-      expect(updated.lastReadChapter, 99);
-      expect(updated.lastReadProgression, 1.0);
-      expect(updated.progressPercent, 1.0);
-      expect(updated.isFinished, isTrue);
-    });
+        expect(result.isSuccess, isTrue);
+        final updated = result.dataOrNull!;
+        expect(updated.readingStatus, ReadingStatus.finished);
+        expect(updated.lastReadPage, 99);
+        expect(updated.lastReadChapter, 99);
+        expect(updated.lastReadProgression, 1.0);
+        expect(updated.progressPercent, 1.0);
+        expect(updated.isFinished, isTrue);
+      },
+    );
 
     test('marking as abandoned sets On Hold status', () async {
       when(mockDataSource.getRecentDocuments())
@@ -117,8 +133,10 @@ void main() {
       when(mockDataSource.saveRecentDocument(any))
           .thenAnswer((_) async => Future.value());
 
-      final result = await repository
-          .updateReadingStatus(testDoc.path, ReadingStatus.abandoned);
+      final result = await repository.updateReadingStatus(
+        testDoc.path,
+        ReadingStatus.abandoned,
+      );
 
       expect(result.isSuccess, isTrue);
       final updated = result.dataOrNull!;
@@ -128,16 +146,19 @@ void main() {
   });
 
   group('LibraryRepositoryImpl - Document Deletion', () {
-    test('removeRecentDocument calls localDataSource.removeRecentDocument', () async {
-      when(mockDataSource.getRecentDocuments())
-          .thenAnswer((_) async => [testDoc]);
-      when(mockDataSource.removeRecentDocument(testDoc.path))
-          .thenAnswer((_) async => Future.value());
+    test(
+      'removeRecentDocument calls localDataSource.removeRecentDocument',
+      () async {
+        when(mockDataSource.getRecentDocuments())
+            .thenAnswer((_) async => [testDoc]);
+        when(mockDataSource.removeRecentDocument(testDoc.path))
+            .thenAnswer((_) async => Future.value());
 
-      final result = await repository.removeRecentDocument(testDoc.path);
+        final result = await repository.removeRecentDocument(testDoc.path);
 
-      expect(result.isSuccess, isTrue);
-      verify(mockDataSource.removeRecentDocument(testDoc.path)).called(1);
-    });
+        expect(result.isSuccess, isTrue);
+        verify(mockDataSource.removeRecentDocument(testDoc.path)).called(1);
+      },
+    );
   });
 }

@@ -62,7 +62,9 @@ class PlainTextDocumentReader
   }) async {
     _log.i('Opening plain text from bytes: $filePath (${bytes.length} bytes)');
     final detectedEncoding = EncodingDetector.detect(bytes);
-    _log.d('Detected text encoding: ${detectedEncoding.name} (confidence: ${detectedEncoding.confidence}, BOM: ${detectedEncoding.hasBom})');
+    _log.d(
+      'Detected text encoding: ${detectedEncoding.name} (confidence: ${detectedEncoding.confidence}, BOM: ${detectedEncoding.hasBom})',
+    );
     final text = EncodingDetector.decode(bytes, detected: detectedEncoding);
 
     final headerSample = text.length > 2048 ? text.substring(0, 2048) : text;

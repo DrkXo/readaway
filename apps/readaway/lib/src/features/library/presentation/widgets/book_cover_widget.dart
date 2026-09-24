@@ -47,67 +47,67 @@ class BookCoverWidget extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
-          children: [
-            if (hasImage)
-              Image.file(
-                file,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _FallbackCover(
-                  title: title,
-                  author: author,
-                  format: format,
-                ),
-              )
-            else
-              _FallbackCover(
+        children: [
+          if (hasImage)
+            Image.file(
+              file,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _FallbackCover(
                 title: title,
                 author: author,
                 format: format,
               ),
+            )
+          else
+            _FallbackCover(
+              title: title,
+              author: author,
+              format: format,
+            ),
 
-            // Subtle book spine overlay on left edge
-            if (showSpine)
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 5,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.22),
-                        Colors.white.withValues(alpha: 0.1),
-                        Colors.transparent,
-                      ],
-                    ),
+          // Subtle book spine overlay on left edge
+          if (showSpine)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 5,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.22),
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
+            ),
 
-            // Progress bar along the bottom edge
-            if (progressPercent != null && progressPercent! > 0)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 3.5,
-                child: Container(
-                  color: scheme.surfaceContainerHighest,
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: progressPercent!.clamp(0.0, 1.0),
-                    child: Container(
-                      color: scheme.primary,
-                    ),
+          // Progress bar along the bottom edge
+          if (progressPercent != null && progressPercent! > 0)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 3.5,
+              child: Container(
+                color: scheme.surfaceContainerHighest,
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: progressPercent!.clamp(0.0, 1.0),
+                  child: Container(
+                    color: scheme.primary,
                   ),
                 ),
               ),
-          ],
-        ),
-      );
+            ),
+        ],
+      ),
+    );
 
     if (aspectRatio != null) {
       return AspectRatio(

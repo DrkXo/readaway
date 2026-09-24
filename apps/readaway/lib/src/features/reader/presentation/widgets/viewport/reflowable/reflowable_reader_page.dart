@@ -14,7 +14,9 @@ import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../../gestures/reader_gesture_arena.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
+
 import 'package:readaway/src/features/reader/presentation/widgets/overlay/reader_footnote_sheet.dart';
+
 import 'html/hyper_page_content.dart';
 import 'reflowable_scroll_coordinator.dart';
 
@@ -57,8 +59,9 @@ class ReflowableReaderPage extends StatefulWidget {
 class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   late final ScrollController _scrollController;
   late final ReflowableScrollCoordinator _scrollCoordinator;
-  final LruCache<String, List<int>> _assetCache =
-      LruCache<String, List<int>>(maximumSize: 30);
+  final LruCache<String, List<int>> _assetCache = LruCache<String, List<int>>(
+    maximumSize: 30,
+  );
   final Map<String, Future<List<int>?>> _inFlightAssetRequests = {};
 
   @override
@@ -147,9 +150,7 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
                 prefs: widget.prefs,
                 chapterIndex: widget.index,
                 cacheNamespace:
-                    widget.state.documentPath ??
-                    widget.state.fileName ??
-                    '',
+                    widget.state.documentPath ?? widget.state.fileName ?? '',
                 onResolveAssetBytes: _resolveAssetBytes,
                 onLinkTap: (url) => _onTapUrl(context, url),
               ),
@@ -245,8 +246,10 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   }
 
   Future<List<int>?> _loadAssetBytes(String src) async {
-    final res = await GetIt.I<ReaderRepository>()
-        .loadAssetBytes(src, pageIndex: widget.index);
+    final res = await GetIt.I<ReaderRepository>().loadAssetBytes(
+      src,
+      pageIndex: widget.index,
+    );
     return res.fold(
       (failure) {
         if (kDebugMode) {
@@ -274,8 +277,10 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
     }
 
     // Check if the link target is a footnote or note
-    final footnoteRes = await GetIt.I<ReaderRepository>()
-        .resolveFootnote(url, currentChapterIndex: widget.index);
+    final footnoteRes = await GetIt.I<ReaderRepository>().resolveFootnote(
+      url,
+      currentChapterIndex: widget.index,
+    );
     final footnote = footnoteRes.dataOrNull;
     if (footnote != null && context.mounted) {
       // Resolve optional cross-chapter jump target
@@ -308,8 +313,9 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
     }
 
     // Try resolving cross-chapter link in reflowable document
-    final reflowRes = await GetIt.I<ReaderRepository>()
-        .resolveReflowableLink(url);
+    final reflowRes = await GetIt.I<ReaderRepository>().resolveReflowableLink(
+      url,
+    );
     final targetSection = reflowRes.dataOrNull;
     if (targetSection != null && targetSection >= 0) {
       if (!context.mounted) return;

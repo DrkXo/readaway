@@ -54,8 +54,7 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
   void initState() {
     super.initState();
     _minutes =
-        widget.initialSelection?.inMinutes ??
-        30; // default to 30 min if off
+        widget.initialSelection?.inMinutes ?? 30; // default to 30 min if off
   }
 
   @override
@@ -202,55 +201,59 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             child: Row(
-              children: kSleepTimerPresetMinutes.map((presetMin) {
-                final isSelected = isActive && _minutes == presetMin;
+              children: kSleepTimerPresetMinutes
+                  .map((presetMin) {
+                    final isSelected = isActive && _minutes == presetMin;
 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: InkWell(
-                    onTap: () => _arm(presetMin),
-                    borderRadius: BorderRadius.circular(14),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      constraints: const BoxConstraints(
-                        minHeight: 36,
-                        minWidth: 54,
-                      ),
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? scheme.primary
-                            : scheme.surfaceContainerHighest.withValues(
-                                alpha: 0.5,
-                              ),
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: InkWell(
+                        onTap: () => _arm(presetMin),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isSelected
-                              ? scheme.primary
-                              : scheme.outlineVariant.withValues(alpha: 0.3),
-                          width: 1,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          constraints: const BoxConstraints(
+                            minHeight: 36,
+                            minWidth: 54,
+                          ),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? scheme.primary
+                                : scheme.surfaceContainerHighest.withValues(
+                                    alpha: 0.5,
+                                  ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isSelected
+                                  ? scheme.primary
+                                  : scheme.outlineVariant.withValues(
+                                      alpha: 0.3,
+                                    ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            '$presetMin min',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? scheme.onPrimary
+                                  : scheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
                       ),
-                      child: Text(
-                        '$presetMin min',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? scheme.onPrimary
-                              : scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(growable: false),
+                    );
+                  })
+                  .toList(growable: false),
             ),
           ),
 

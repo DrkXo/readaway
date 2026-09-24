@@ -28,7 +28,9 @@ void main() {
       expect(find.text('Chapter 1: The Boy Who Lived'), findsOneWidget);
     });
 
-    testWidgets('renders chapter title with left and right alignment', (tester) async {
+    testWidgets('renders chapter title with left and right alignment', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrap(
           const ReaderRunningHeader(

@@ -21,13 +21,19 @@ OutlineItem volume(String title, {required List<OutlineItem> children}) =>
 void main() {
   group('tocVisibleRows', () {
     final outline = [
-      volume('Volume 1', children: [
-        chapter('Chapter 1', 0),
-        chapter('Chapter 2', 10),
-      ]),
-      volume('Volume 2', children: [
-        chapter('Chapter 3', 20),
-      ]),
+      volume(
+        'Volume 1',
+        children: [
+          chapter('Chapter 1', 0),
+          chapter('Chapter 2', 10),
+        ],
+      ),
+      volume(
+        'Volume 2',
+        children: [
+          chapter('Chapter 3', 20),
+        ],
+      ),
       chapter('Epilogue', 30),
     ];
 
@@ -51,13 +57,19 @@ void main() {
 
   group('tocCurrentPath', () {
     final outline = [
-      volume('Volume 1', children: [
-        chapter('Chapter 1', 0),
-        chapter('Chapter 2', 10),
-      ]),
-      volume('Volume 2', children: [
-        chapter('Chapter 3', 20),
-      ]),
+      volume(
+        'Volume 1',
+        children: [
+          chapter('Chapter 1', 0),
+          chapter('Chapter 2', 10),
+        ],
+      ),
+      volume(
+        'Volume 2',
+        children: [
+          chapter('Chapter 3', 20),
+        ],
+      ),
       chapter('Epilogue', 30),
     ];
 

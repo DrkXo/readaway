@@ -111,7 +111,11 @@ class SherpaTtsModelDownloaderService {
       // User canceled — the caller already removed the download entry.
       return;
     } catch (e, stackTrace) {
-      _log.e('Failed to download ${model.id}', error: e, stackTrace: stackTrace);
+      _log.e(
+        'Failed to download ${model.id}',
+        error: e,
+        stackTrace: stackTrace,
+      );
       controller.add(
         ModelDownloadProgress(
           modelId: model.id,

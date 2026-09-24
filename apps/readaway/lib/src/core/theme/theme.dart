@@ -21,7 +21,10 @@ class VsCodeThemeExtension extends ThemeExtension<VsCodeThemeExtension> {
       VsCodeThemeExtension(theme ?? this.theme);
 
   @override
-  VsCodeThemeExtension lerp(ThemeExtension<VsCodeThemeExtension>? other, double t) {
+  VsCodeThemeExtension lerp(
+    ThemeExtension<VsCodeThemeExtension>? other,
+    double t,
+  ) {
     if (other is! VsCodeThemeExtension) return this;
     if (t < 0.5) return this;
     return other;
@@ -41,4 +44,3 @@ extension ThemeExtensions on BuildContext {
   /// Whether the active theme is dark.
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
 }
-

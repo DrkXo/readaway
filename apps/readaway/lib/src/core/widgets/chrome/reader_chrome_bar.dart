@@ -74,8 +74,12 @@ class _ReaderChromeBarState extends State<ReaderChromeBar> {
             padding: widget.padding,
             decoration: BoxDecoration(
               color: isTop
-                  ? appColors.topbarBackground.withValues(alpha: widget.glassOpacity)
-                  : appColors.bottombarBackground.withValues(alpha: widget.glassOpacity),
+                  ? appColors.topbarBackground.withValues(
+                      alpha: widget.glassOpacity,
+                    )
+                  : appColors.bottombarBackground.withValues(
+                      alpha: widget.glassOpacity,
+                    ),
               border: isTop
                   ? Border(
                       bottom: BorderSide(

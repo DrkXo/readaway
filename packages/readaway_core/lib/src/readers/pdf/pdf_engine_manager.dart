@@ -77,7 +77,11 @@ class PdfEngineManager {
       await PdfrxEntryFunctions.instance.stopBackgroundWorker();
       _log.d('Stopped pdfrx background worker');
     } catch (e, st) {
-      _log.w('Failed to stop pdfrx background worker cleanly', error: e, stackTrace: st);
+      _log.w(
+        'Failed to stop pdfrx background worker cleanly',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 

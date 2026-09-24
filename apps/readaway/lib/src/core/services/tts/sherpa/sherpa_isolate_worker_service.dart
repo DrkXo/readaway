@@ -231,7 +231,9 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
 }
 
 @visibleForTesting
-sherpa.OfflineTtsGenerationConfig buildGenerationConfigFromMessage(Map message) {
+sherpa.OfflineTtsGenerationConfig buildGenerationConfigFromMessage(
+  Map message,
+) {
   final speakerId = message['speakerId'] as int? ?? 0;
   final speed = (message['speed'] as num?)?.toDouble() ?? 1.0;
   final silenceScale = (message['silenceScale'] as num?)?.toDouble() ?? 0.2;

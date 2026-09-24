@@ -196,7 +196,9 @@ class CustomTtsModelImporterService {
 
       final modelInfo = SherpaTtsModelInfo(
         id: modelId,
-        displayName: displayName.trim().isNotEmpty ? displayName.trim() : 'Custom Voice',
+        displayName: displayName.trim().isNotEmpty
+            ? displayName.trim()
+            : 'Custom Voice',
         languageCode: languageCode,
         languageLabel: languageLabel,
         type: type,
@@ -210,7 +212,8 @@ class CustomTtsModelImporterService {
         customModelPath: destDir.path,
         installedSizeBytes: (inspection.approxSizeMb * 1024 * 1024).round(),
         installedAt: DateTime.now().millisecondsSinceEpoch,
-        needsEspeakData: type == SherpaTtsModelType.kokoro ||
+        needsEspeakData:
+            type == SherpaTtsModelType.kokoro ||
             type == SherpaTtsModelType.matcha ||
             modelId.contains('piper'),
       );
@@ -218,7 +221,11 @@ class CustomTtsModelImporterService {
       await _store.saveInstalledModel(modelInfo);
       return modelInfo;
     } catch (e, st) {
-      _log.e('Failed to import custom TTS model $modelId', error: e, stackTrace: st);
+      _log.e(
+        'Failed to import custom TTS model $modelId',
+        error: e,
+        stackTrace: st,
+      );
       if (await destDir.exists()) {
         await destDir.delete(recursive: true);
       }

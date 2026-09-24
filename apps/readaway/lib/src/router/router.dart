@@ -86,8 +86,9 @@ class AppRouter {
     required FileOpenService fileOpenService,
   }) : _appRoutes = appRoutes,
        _fileOpenService = fileOpenService {
-    _fileOpenSubscription =
-        _fileOpenService.incomingDocuments.listen(_navigateToDocument);
+    _fileOpenSubscription = _fileOpenService.incomingDocuments.listen(
+      _navigateToDocument,
+    );
   }
 
   void _navigateToDocument(IncomingDocument doc) {

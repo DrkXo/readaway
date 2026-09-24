@@ -55,7 +55,9 @@ abstract interface class TtsModelRepository {
   Future<Result<TtsCatalogSyncResult>> checkForCatalogUpdates();
 
   /// Inspects a local archive (.zip, .tar.bz2, .tar.gz) or folder to detect model compatibility.
-  Future<Result<CustomModelInspectionResult>> inspectCustomModel(String sourcePath);
+  Future<Result<CustomModelInspectionResult>> inspectCustomModel(
+    String sourcePath,
+  );
 
   /// Imports an inspected custom model into ReadAway storage.
   Future<Result<SherpaTtsModelInfo>> importCustomModel({

@@ -110,7 +110,9 @@ class _LibrarySortSheetState extends State<LibrarySortSheet> {
                       color: scheme.primary,
                     ),
                   ),
-                  backgroundColor: scheme.primaryContainer.withValues(alpha: 0.3),
+                  backgroundColor: scheme.primaryContainer.withValues(
+                    alpha: 0.3,
+                  ),
                   side: BorderSide.none,
                   onPressed: _handleToggleAscending,
                 ),

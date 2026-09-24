@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../../core/widgets/core_widgets.dart';
 
 /// Full-screen high-contrast overlay for reader text legibility.

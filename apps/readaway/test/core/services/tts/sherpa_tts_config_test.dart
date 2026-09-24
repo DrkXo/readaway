@@ -4,24 +4,27 @@ import 'package:readaway/src/features/settings/domain/entity/settings.dart';
 
 void main() {
   group('Sherpa TTS Config Builders', () {
-    test('buildGenerationConfigFromMessage parses default and custom params', () {
-      final defaultGen = buildGenerationConfigFromMessage({});
-      expect(defaultGen.sid, 0);
-      expect(defaultGen.speed, 1.0);
-      expect(defaultGen.silenceScale, 0.2);
-      expect(defaultGen.numSteps, 5);
+    test(
+      'buildGenerationConfigFromMessage parses default and custom params',
+      () {
+        final defaultGen = buildGenerationConfigFromMessage({});
+        expect(defaultGen.sid, 0);
+        expect(defaultGen.speed, 1.0);
+        expect(defaultGen.silenceScale, 0.2);
+        expect(defaultGen.numSteps, 5);
 
-      final customGen = buildGenerationConfigFromMessage({
-        'speakerId': 3,
-        'speed': 1.25,
-        'silenceScale': 0.15,
-        'numSteps': 8,
-      });
-      expect(customGen.sid, 3);
-      expect(customGen.speed, 1.25);
-      expect(customGen.silenceScale, 0.15);
-      expect(customGen.numSteps, 8);
-    });
+        final customGen = buildGenerationConfigFromMessage({
+          'speakerId': 3,
+          'speed': 1.25,
+          'silenceScale': 0.15,
+          'numSteps': 8,
+        });
+        expect(customGen.sid, 3);
+        expect(customGen.speed, 1.25);
+        expect(customGen.silenceScale, 0.15);
+        expect(customGen.numSteps, 8);
+      },
+    );
 
     test('buildSherpaConfigFromMessage creates VITS config with fine-tuning parameters', () {
       final vitsConfig = buildSherpaConfigFromMessage({

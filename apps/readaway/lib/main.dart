@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:get_it/get_it.dart';
-import 'package:pdfrx/pdfrx.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 
 import 'src/app.dart';
@@ -16,7 +15,6 @@ Future<void> main([List<String> args = const []]) async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      pdfrxFlutterInitialize();
 
       LicenseRegistry.addLicense(() async* {
         for (final family in [

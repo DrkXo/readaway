@@ -145,8 +145,8 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                       fileName: readerState.fileName ?? 'Protected Document',
                       isInvalidPassword: readerState.isInvalidPassword,
                       onUnlock: (pwd) => context.read<ReaderBloc>().add(
-                            ReaderEvent.unlockDocument(password: pwd),
-                          ),
+                        ReaderEvent.unlockDocument(password: pwd),
+                      ),
                       onCancel: closeReader,
                     ),
                   ),

@@ -92,7 +92,11 @@ class SherpaOnnxTtsService {
           });
         }
       } catch (e, st) {
-        _log.w('Error unloading model during releaseIsolate: $e', error: e, stackTrace: st);
+        _log.w(
+          'Error unloading model during releaseIsolate: $e',
+          error: e,
+          stackTrace: st,
+        );
       }
       await _isolateService.disposeIsolate(sherpaTtsIsolateName);
     }
@@ -153,7 +157,11 @@ class SherpaOnnxTtsService {
         }
         _log.d('Reconciled interrupted TTS download for $modelId');
       } catch (e, st) {
-        _log.e('Failed to reconcile TTS download for $modelId', error: e, stackTrace: st);
+        _log.e(
+          'Failed to reconcile TTS download for $modelId',
+          error: e,
+          stackTrace: st,
+        );
       }
     }
   }
@@ -244,9 +252,11 @@ class SherpaOnnxTtsService {
         break;
     }
 
-    final effectiveNoiseScale = noiseScale ??
+    final effectiveNoiseScale =
+        noiseScale ??
         (gvs.ttsNoiseScale != 0.667 ? gvs.ttsNoiseScale : styleNoiseScale);
-    final effectiveNoiseScaleW = noiseScaleW ??
+    final effectiveNoiseScaleW =
+        noiseScaleW ??
         (gvs.ttsNoiseScaleW != 0.80 ? gvs.ttsNoiseScaleW : styleNoiseScaleW);
     final effectiveLengthScale = lengthScale ?? gvs.ttsLengthScale;
 
@@ -463,7 +473,11 @@ class SherpaOnnxTtsService {
         waveform: waveform,
       );
     } catch (e, st) {
-      _log.e('Failed to generate WAV file with Sherpa ONNX', error: e, stackTrace: st);
+      _log.e(
+        'Failed to generate WAV file with Sherpa ONNX',
+        error: e,
+        stackTrace: st,
+      );
       if (e is TtsException) rethrow;
       throw TtsSynthesisException('Synthesis to file failed: $e', e);
     }
@@ -525,7 +539,11 @@ class SherpaOnnxTtsService {
         waveform: waveform,
       );
     } catch (e, st) {
-      _log.e('Failed to generate WAV bytes with Sherpa ONNX', error: e, stackTrace: st);
+      _log.e(
+        'Failed to generate WAV bytes with Sherpa ONNX',
+        error: e,
+        stackTrace: st,
+      );
       if (e is TtsException) rethrow;
       throw TtsSynthesisException('Synthesis to bytes failed: $e', e);
     }

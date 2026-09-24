@@ -238,8 +238,10 @@ void main() {
     test('imports model and saves full metadata into store', () async {
       final modelFolder = Directory('${tempDir.path}/test_import_model');
       await modelFolder.create();
-      await File('${modelFolder.path}/model.onnx').writeAsString('onnx content');
-      await File('${modelFolder.path}/tokens.txt').writeAsString('tokens content');
+      await File('${modelFolder.path}/model.onnx')
+          .writeAsString('onnx content');
+      await File('${modelFolder.path}/tokens.txt')
+          .writeAsString('tokens content');
 
       final inspection = await importer.inspectSource(modelFolder.path);
       final imported = await importer.importModel(

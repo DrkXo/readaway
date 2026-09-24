@@ -97,8 +97,8 @@ class ReaderTtsFullPlayerView extends StatelessWidget {
                             final pageLabel = ttsPage != null
                                 ? 'Page ${ttsPage + 1} of ${state.pageCount}'
                                 : (state.pageCount > 0
-                                    ? '${state.pageCount} pages'
-                                    : 'Sentences');
+                                      ? '${state.pageCount} pages'
+                                      : 'Sentences');
 
                             return Column(
                               mainAxisSize: MainAxisSize.min,
@@ -136,8 +136,9 @@ class ReaderTtsFullPlayerView extends StatelessWidget {
                                               const ReaderEvent.jumpToTtsPage(),
                                             );
                                           },
-                                          borderRadius:
-                                              BorderRadius.circular(10),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                           child: Padding(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 4,

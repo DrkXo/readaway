@@ -266,18 +266,15 @@ class LibraryRepositoryImpl implements LibraryRepository {
             );
             final updatedDoc = document.copyWith(
               coverPath: coverFile.path,
-              title:
-                  document.title.isEmpty && extracted.title.isNotEmpty
-                      ? extracted.title
-                      : document.title,
-              author:
-                  document.author == null && extracted.author != null
-                      ? extracted.author
-                      : document.author,
-              pageCount:
-                  document.pageCount == 0 && extracted.pageCount > 0
-                      ? extracted.pageCount
-                      : document.pageCount,
+              title: document.title.isEmpty && extracted.title.isNotEmpty
+                  ? extracted.title
+                  : document.title,
+              author: document.author == null && extracted.author != null
+                  ? extracted.author
+                  : document.author,
+              pageCount: document.pageCount == 0 && extracted.pageCount > 0
+                  ? extracted.pageCount
+                  : document.pageCount,
             );
             await _localDataSource.saveRecentDocument(updatedDoc);
             return coverFile.path;

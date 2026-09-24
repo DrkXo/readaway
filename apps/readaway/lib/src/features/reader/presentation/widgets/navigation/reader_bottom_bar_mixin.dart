@@ -170,7 +170,9 @@ mixin ReaderBottomBarMixin on State<ReaderBottomBar>, TickerProvider {
                         child: ReaderBottomControlsPanel(
                           width: widget.panelWidth,
                           maxWidth: widget.panelMaxWidth,
-                          backgroundColor: widget.panelBackgroundColor ?? widget.backgroundColor,
+                          backgroundColor:
+                              widget.panelBackgroundColor ??
+                              widget.backgroundColor,
                           documentPath: widget.documentPath,
                           panelNotifier: panelNotifier,
                           onClose: closePanel,

@@ -274,11 +274,12 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
             ),
           );
 
-          final currentPath = widget.state.outline != null &&
-                  widget.state.outline!.isNotEmpty
+          final currentPath =
+              widget.state.outline != null && widget.state.outline!.isNotEmpty
               ? tocCurrentPath(widget.state.outline!, widget.chapterIndex)
               : null;
-          final chapterTitle = currentPath?.$1.title ??
+          final chapterTitle =
+              currentPath?.$1.title ??
               widget.state.bookTitle ??
               widget.state.fileName ??
               '';

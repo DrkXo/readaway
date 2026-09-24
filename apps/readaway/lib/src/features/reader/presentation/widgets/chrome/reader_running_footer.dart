@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/theme.dart';
@@ -40,8 +41,8 @@ class ReaderRunningFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedColor = color ??
-        context.appColors.readerForeground.withValues(alpha: 0.55);
+    final resolvedColor =
+        color ?? context.appColors.readerForeground.withValues(alpha: 0.55);
 
     final textStyle = TextStyle(
       fontSize: fontSize,

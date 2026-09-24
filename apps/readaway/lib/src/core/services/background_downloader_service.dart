@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
@@ -9,7 +10,7 @@ import 'package:readaway_core/readaway_core.dart';
 
 import 'path_service.dart';
 
-class DownloadResult {
+class DownloadResult extends Equatable {
   final bool success;
   final File? file;
   final TaskStatus status;
@@ -25,18 +26,10 @@ class DownloadResult {
   });
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is DownloadResult &&
-          runtimeType == other.runtimeType &&
-          success == other.success &&
-          file?.path == other.file?.path &&
-          status == other.status &&
-          errorMessage == other.errorMessage);
+  List<Object?> get props => [success, file?.path, status, errorMessage];
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, success, file?.path, status, errorMessage);
+  bool? get stringify => true;
 }
 
 /// Central service for all background downloads/uploads in the app.
@@ -130,7 +123,11 @@ class BackGroundDownloaderService {
       _initialized = true;
       completer.complete();
     } catch (e, st) {
-      _log.e('Failed to initialize BackGroundDownloaderService', error: e, stackTrace: st);
+      _log.e(
+        'Failed to initialize BackGroundDownloaderService',
+        error: e,
+        stackTrace: st,
+      );
       completer.completeError(e, st);
       _initCompleter = null; // allow retry on next call
       rethrow;

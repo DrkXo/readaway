@@ -127,7 +127,11 @@ class IsolateDocumentSession with DisposableMixin implements DocumentSession {
       );
       _log.d('Isolate handshake completed for $filePath');
     } catch (e, st) {
-      _log.e('Failed to establish isolate handshake for $filePath', error: e, stackTrace: st);
+      _log.e(
+        'Failed to establish isolate handshake for $filePath',
+        error: e,
+        stackTrace: st,
+      );
       await subscription.cancel();
       hostReceivePort.close();
       isolate.kill(priority: Isolate.immediate);
@@ -146,7 +150,11 @@ class IsolateDocumentSession with DisposableMixin implements DocumentSession {
     try {
       openResponse = await openCompleter.future;
     } catch (e, st) {
-      _log.e('Failed to open document in isolate: $filePath', error: e, stackTrace: st);
+      _log.e(
+        'Failed to open document in isolate: $filePath',
+        error: e,
+        stackTrace: st,
+      );
       await subscription.cancel();
       hostReceivePort.close();
       isolate.kill(priority: Isolate.immediate);
@@ -167,7 +175,9 @@ class IsolateDocumentSession with DisposableMixin implements DocumentSession {
             isReflowable,
             format,
           ) {
-            _log.i('Document session opened in isolate: $filePath (format: $format, title: "$title")');
+            _log.i(
+              'Document session opened in isolate: $filePath (format: $format, title: "$title")',
+            );
             return IsolateDocumentSession._(
               isolate: isolate,
               workerSendPort: workerSendPort,
@@ -187,7 +197,9 @@ class IsolateDocumentSession with DisposableMixin implements DocumentSession {
             );
           },
       encryptedError: (id, message, isInvalidPassword) {
-        _log.w('Document encrypted in isolate: $filePath (invalidPassword: $isInvalidPassword)');
+        _log.w(
+          'Document encrypted in isolate: $filePath (invalidPassword: $isInvalidPassword)',
+        );
         subscription.cancel();
         hostReceivePort.close();
         isolate.kill(priority: Isolate.immediate);

@@ -112,8 +112,7 @@ sealed class VsCodeTokenSettings with _$VsCodeTokenSettings {
       _$VsCodeTokenSettingsFromJson(json);
 
   /// Whether the font style contains `bold`.
-  bool get isBold =>
-      fontStyle?.split(RegExp(r'\s+')).contains('bold') ?? false;
+  bool get isBold => fontStyle?.split(RegExp(r'\s+')).contains('bold') ?? false;
 
   /// Whether the font style contains `italic`.
   bool get isItalic =>
@@ -239,8 +238,7 @@ sealed class VsCodeSemanticTokenStyle with _$VsCodeSemanticTokenStyle {
 
 /// Converter for semantic token color definitions (`Map<String, VsCodeSemanticTokenStyle>`).
 class VsCodeSemanticTokensConverter
-    implements
-        JsonConverter<Map<String, VsCodeSemanticTokenStyle>, Object?> {
+    implements JsonConverter<Map<String, VsCodeSemanticTokenStyle>, Object?> {
   const VsCodeSemanticTokensConverter();
 
   @override
@@ -348,10 +346,7 @@ sealed class VsCodeTheme with _$VsCodeTheme {
   /// Token colors in `this` are appended to [parent.tokenColors]
   /// and colors and semantic token colors are merged.
   VsCodeTheme mergedWith(VsCodeTheme parent) {
-    final mergedColors = <String, String>{
-      ...parent.colors,
-      ...colors,
-    };
+    final mergedColors = <String, String>{...parent.colors, ...colors};
     final mergedSemanticTokens = <String, VsCodeSemanticTokenStyle>{
       ...parent.semanticTokenColors,
       ...semanticTokenColors,

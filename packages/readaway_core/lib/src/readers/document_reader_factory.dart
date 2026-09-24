@@ -77,12 +77,18 @@ class DocumentReaderFactory {
           sniffBytes = file.readAsBytesSync();
           for (final handler in _handlers) {
             if (handler.supports(filePath, sniffBytes)) {
-              _log.d('Matched handler "${handler.format}" via magic bytes for $filePath');
+              _log.d(
+                'Matched handler "${handler.format}" via magic bytes for $filePath',
+              );
               return await handler.open(filePath, password: password);
             }
           }
         } catch (e, st) {
-          _log.w('Failed to read file bytes while sniffing: $filePath', error: e, stackTrace: st);
+          _log.w(
+            'Failed to read file bytes while sniffing: $filePath',
+            error: e,
+            stackTrace: st,
+          );
         }
       }
     }

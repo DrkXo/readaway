@@ -42,7 +42,9 @@ class BookListTile extends StatelessWidget {
         : document.readingStatus.label;
 
     return Material(
-      color: isSelected ? appColors.listActiveSelectionBackground : Colors.transparent,
+      color: isSelected
+          ? appColors.listActiveSelectionBackground
+          : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
@@ -52,7 +54,8 @@ class BookListTile extends StatelessWidget {
               ? BoxDecoration(
                   border: Border(
                     left: BorderSide(
-                      color: appColors.badgeBackground ?? appColors.scheme.primary,
+                      color:
+                          appColors.badgeBackground ?? appColors.scheme.primary,
                       width: 3.5,
                     ),
                   ),
@@ -141,11 +144,14 @@ class BookListTile extends StatelessWidget {
                               fontSize: 12,
                               color: document.isFinished
                                   ? appColors.success
-                                  : document.readingStatus == ReadingStatus.abandoned
+                                  : document.readingStatus ==
+                                        ReadingStatus.abandoned
                                   ? appColors.warning
                                   : scheme.onSurfaceVariant,
-                              fontWeight: document.isFinished ||
-                                      document.readingStatus == ReadingStatus.reading
+                              fontWeight:
+                                  document.isFinished ||
+                                      document.readingStatus ==
+                                          ReadingStatus.reading
                                   ? FontWeight.w600
                                   : FontWeight.normal,
                             ),
@@ -163,7 +169,8 @@ class BookListTile extends StatelessWidget {
                         ],
                       ],
                     ),
-                    if (document.progressPercent > 0 && !document.isFinished) ...[
+                    if (document.progressPercent > 0 &&
+                        !document.isFinished) ...[
                       const SizedBox(height: 8),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(2),

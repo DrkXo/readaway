@@ -73,35 +73,41 @@ void main() {
 
       expect(service.settings.screenWakeLock, isTrue);
       expect(storageService.settingsBox.containsKey('app_settings'), isTrue);
-      expect(storageService.settingsBox.get('app_settings')?.screenWakeLock, isTrue);
-    });
-
-    test('library data source persists in libraryBox directly by path', () async {
-      final dataSource = LibraryLocalDataSource(storageService);
-      final doc = RecentDocument(
-        path: '/path/to/doc.epub',
-        fileName: 'doc.epub',
-        title: 'Doc Title',
-        dateAdded: DateTime(2025),
-        lastOpened: DateTime(2025),
-        fileSize: 1024,
-        format: 'epub',
-      );
-
-      await dataSource.saveRecentDocument(doc);
-      final list = await dataSource.getRecentDocuments();
-
-      expect(list.length, 1);
-      expect(list.first.path, '/path/to/doc.epub');
       expect(
-        storageService.libraryBox.containsKey('/path/to/doc.epub'),
+        storageService.settingsBox.get('app_settings')?.screenWakeLock,
         isTrue,
       );
-      expect(
-        storageService.libraryBox.get('/path/to/doc.epub')?.title,
-        'Doc Title',
-      );
     });
+
+    test(
+      'library data source persists in libraryBox directly by path',
+      () async {
+        final dataSource = LibraryLocalDataSource(storageService);
+        final doc = RecentDocument(
+          path: '/path/to/doc.epub',
+          fileName: 'doc.epub',
+          title: 'Doc Title',
+          dateAdded: DateTime(2025),
+          lastOpened: DateTime(2025),
+          fileSize: 1024,
+          format: 'epub',
+        );
+
+        await dataSource.saveRecentDocument(doc);
+        final list = await dataSource.getRecentDocuments();
+
+        expect(list.length, 1);
+        expect(list.first.path, '/path/to/doc.epub');
+        expect(
+          storageService.libraryBox.containsKey('/path/to/doc.epub'),
+          isTrue,
+        );
+        expect(
+          storageService.libraryBox.get('/path/to/doc.epub')?.title,
+          'Doc Title',
+        );
+      },
+    );
 
     test('reader preferences repository persists in readerBox', () async {
       final repo = ReaderPreferencesRepositoryImpl(storageService);
@@ -116,8 +122,7 @@ void main() {
       const docPrefs = ReaderPreferences(fontSize: 28.0);
       await repo.saveDocumentPreferences('/path/to/book.epub', docPrefs);
 
-      final docResult =
-          await repo.getDocumentPreferences('/path/to/book.epub');
+      final docResult = await repo.getDocumentPreferences('/path/to/book.epub');
       expect(docResult.dataOrNull?.fontSize, 28.0);
 
       expect(storageService.readerBox.containsKey('reader_global'), isTrue);
@@ -170,7 +175,10 @@ void main() {
           format: 'epub',
         ),
       );
-      await storageService.readerBox.put('reader_global', const ReaderPreferences());
+      await storageService.readerBox.put(
+        'reader_global',
+        const ReaderPreferences(),
+      );
       await storageService.ttsBox.put('k4', 'v4');
 
       await storageService.resetStorage();

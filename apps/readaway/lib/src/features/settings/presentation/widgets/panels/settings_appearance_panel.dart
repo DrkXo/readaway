@@ -47,8 +47,6 @@ class SettingsAppearancePanel extends StatelessWidget {
           settings.copyWith(
             globalViewSettings: settings.globalViewSettings.copyWith(
               highlightOpacity: 0.3,
-              invertImgColorInDark: true,
-              applyThemeToPdf: true,
             ),
           ),
         ),
@@ -81,8 +79,6 @@ class SettingsAppearancePanel extends StatelessWidget {
           onReset: resetReading,
           rows: const [
             _HighlightOpacityRow(),
-            _InvertImgColorRow(),
-            _ApplyThemeToPdfRow(),
           ],
         ),
       ],
@@ -242,68 +238,4 @@ class _HighlightOpacityRow extends StatelessWidget {
   }
 }
 
-class _InvertImgColorRow extends StatelessWidget {
-  const _InvertImgColorRow();
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.appSettings.globalViewSettings.invertImgColorInDark !=
-          curr.appSettings.globalViewSettings.invertImgColorInDark,
-      builder: (context, state) {
-        final enabled =
-            state.appSettings.globalViewSettings.invertImgColorInDark;
-        return SettingsSwitchRow(
-          label: 'Invert images in dark mode',
-          value: enabled,
-          onChanged: (v) {
-            final settings = state.appSettings;
-            context.read<SettingsBloc>().add(
-              SettingsEvent.updateAppSettings(
-                settings.copyWith(
-                  globalViewSettings: settings.globalViewSettings.copyWith(
-                    invertImgColorInDark: v,
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _ApplyThemeToPdfRow extends StatelessWidget {
-  const _ApplyThemeToPdfRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.appSettings.globalViewSettings.applyThemeToPdf !=
-          curr.appSettings.globalViewSettings.applyThemeToPdf,
-      builder: (context, state) {
-        final enabled = state.appSettings.globalViewSettings.applyThemeToPdf;
-        return SettingsSwitchRow(
-          label: 'Apply theme to PDF',
-          description: 'Use app theme colors when rendering PDF books',
-          value: enabled,
-          onChanged: (v) {
-            final settings = state.appSettings;
-            context.read<SettingsBloc>().add(
-              SettingsEvent.updateAppSettings(
-                settings.copyWith(
-                  globalViewSettings: settings.globalViewSettings.copyWith(
-                    applyThemeToPdf: v,
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}

@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:equatable/equatable.dart';
+
 import '../models/models.dart';
 import 'timing.dart';
 
@@ -27,7 +29,7 @@ class PunctuationPauses {
 }
 
 /// Represents a segmented speech phrase with its trailing prosodic pause.
-class SpeechProsodySpan {
+class SpeechProsodySpan extends Equatable {
   /// The text phrase to synthesize.
   final String text;
 
@@ -37,19 +39,10 @@ class SpeechProsodySpan {
   const SpeechProsodySpan({required this.text, this.pauseAfterSec = 0.0});
 
   @override
-  String toString() =>
-      'SpeechProsodySpan(text: "$text", pauseAfterSec: ${pauseAfterSec.toStringAsFixed(3)}s)';
+  List<Object?> get props => [text, pauseAfterSec];
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is SpeechProsodySpan &&
-          runtimeType == other.runtimeType &&
-          text == other.text &&
-          pauseAfterSec == other.pauseAfterSec;
-
-  @override
-  int get hashCode => Object.hash(text, pauseAfterSec);
+  bool? get stringify => true;
 }
 
 /// Computes graded pause duration based on the trailing punctuation of [text].

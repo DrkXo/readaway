@@ -110,7 +110,11 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
         imageCacheSize: imageCacheSize,
       );
     } on PdfPasswordException catch (e, st) {
-      _log.w('PDF requires password or password incorrect: $filePath', error: e, stackTrace: st);
+      _log.w(
+        'PDF requires password or password incorrect: $filePath',
+        error: e,
+        stackTrace: st,
+      );
       await PdfEngineManager.release();
       throw DocumentEncryptedException(
         'Password required or incorrect for PDF: $filePath',
@@ -118,7 +122,11 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
         cause: e,
       );
     } catch (e, st) {
-      _log.e('Failed to open PDF document: $filePath', error: e, stackTrace: st);
+      _log.e(
+        'Failed to open PDF document: $filePath',
+        error: e,
+        stackTrace: st,
+      );
       await PdfEngineManager.release();
       if (e is DocumentException) rethrow;
       throw DocumentParseException('Failed to open PDF document: $e', cause: e);
@@ -148,7 +156,11 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
         imageCacheSize: imageCacheSize,
       );
     } on PdfPasswordException catch (e, st) {
-      _log.w('PDF from bytes requires password: $filePath', error: e, stackTrace: st);
+      _log.w(
+        'PDF from bytes requires password: $filePath',
+        error: e,
+        stackTrace: st,
+      );
       await PdfEngineManager.release();
       throw DocumentEncryptedException(
         'Password required or incorrect for PDF: $filePath',
@@ -156,7 +168,11 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
         cause: e,
       );
     } catch (e, st) {
-      _log.e('Failed to open PDF from bytes: $filePath', error: e, stackTrace: st);
+      _log.e(
+        'Failed to open PDF from bytes: $filePath',
+        error: e,
+        stackTrace: st,
+      );
       await PdfEngineManager.release();
       if (e is DocumentException) rethrow;
       throw DocumentParseException('Failed to open PDF document: $e', cause: e);
@@ -192,11 +208,17 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       try {
         outlineItems = await PdfTocExtractor.extract(pdfDoc);
       } catch (e, st) {
-        _log.w('Failed to extract TOC for $filePath: $e', error: e, stackTrace: st);
+        _log.w(
+          'Failed to extract TOC for $filePath: $e',
+          error: e,
+          stackTrace: st,
+        );
       }
     }
 
-    _log.i('PDF loaded successfully: $filePath (${pdfDoc.pages.length} pages, outline: ${outlineItems.length})');
+    _log.i(
+      'PDF loaded successfully: $filePath (${pdfDoc.pages.length} pages, outline: ${outlineItems.length})',
+    );
 
     return PdfDocumentReader._(
       filePath: filePath,

@@ -17,10 +17,12 @@ class WindowService with WindowListener {
 
   WindowManager get _wm => WindowManager.instance;
 
-  final BehaviorSubject<bool> _maximizedSubject =
-      BehaviorSubject<bool>.seeded(false);
-  final BehaviorSubject<String> _titleSubject =
-      BehaviorSubject<String>.seeded(F.title);
+  final BehaviorSubject<bool> _maximizedSubject = BehaviorSubject<bool>.seeded(
+    false,
+  );
+  final BehaviorSubject<String> _titleSubject = BehaviorSubject<String>.seeded(
+    F.title,
+  );
 
   Stream<bool> get windowMaximizeChanges => _maximizedSubject.stream;
   Stream<String> get windowTitleChanges => _titleSubject.stream;

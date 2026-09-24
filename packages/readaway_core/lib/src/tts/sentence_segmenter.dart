@@ -1,5 +1,7 @@
+import 'package:equatable/equatable.dart';
+
 /// Represents a segmented sentence with character offset coordinates.
-class SentenceSpan {
+class SentenceSpan extends Equatable {
   final String text;
   final int charStart;
   final int charEnd;
@@ -13,20 +15,10 @@ class SentenceSpan {
   });
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is SentenceSpan &&
-          text == other.text &&
-          charStart == other.charStart &&
-          charEnd == other.charEnd &&
-          sentenceIndex == other.sentenceIndex;
+  List<Object?> get props => [text, charStart, charEnd, sentenceIndex];
 
   @override
-  int get hashCode => Object.hash(text, charStart, charEnd, sentenceIndex);
-
-  @override
-  String toString() =>
-      'SentenceSpan(idx: $sentenceIndex, range: $charStart..$charEnd, text: "$text")';
+  bool? get stringify => true;
 }
 
 /// Multi-script sentence segmenter implemented in pure Dart.

@@ -59,8 +59,7 @@ void main() {
       );
       expect(save.isSuccess, isTrue);
 
-      final anchorResult = await repository
-          .getLastReadAnchor('/tmp/book.epub');
+      final anchorResult = await repository.getLastReadAnchor('/tmp/book.epub');
       final anchor = anchorResult.dataOrNull;
       expect(anchor, isNotNull);
       expect(anchor!.chapterIndex, 5);
@@ -86,8 +85,7 @@ void main() {
     });
 
     test('returns null when no anchor has been saved', () async {
-      final anchorResult = await repository
-          .getLastReadAnchor('/tmp/book.epub');
+      final anchorResult = await repository.getLastReadAnchor('/tmp/book.epub');
       expect(anchorResult.dataOrNull, isNull);
     });
 

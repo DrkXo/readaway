@@ -148,7 +148,11 @@ class AudioPlayerService {
       _initialized = true;
       _log.i('AudioPlayerService successfully initialized');
     } catch (e, st) {
-      _log.e('Failed to initialize AudioPlayerService', error: e, stackTrace: st);
+      _log.e(
+        'Failed to initialize AudioPlayerService',
+        error: e,
+        stackTrace: st,
+      );
       throw AudioPlaybackException(
         'Failed to initialize AudioPlayerService',
         e,
@@ -229,7 +233,11 @@ class AudioPlayerService {
         await _sessionPlayer.play();
       }
     } catch (e, st) {
-      _log.e('Failed to set playlist in AudioPlayerService', error: e, stackTrace: st);
+      _log.e(
+        'Failed to set playlist in AudioPlayerService',
+        error: e,
+        stackTrace: st,
+      );
       throw AudioPlaybackException('Failed to set audio playlist', e);
     }
   });
@@ -256,7 +264,11 @@ class AudioPlayerService {
         await _sessionPlayer.play();
       }
     } catch (e, st) {
-      _log.e('Failed to append audio source to playlist', error: e, stackTrace: st);
+      _log.e(
+        'Failed to append audio source to playlist',
+        error: e,
+        stackTrace: st,
+      );
       throw AudioPlaybackException('Failed to append audio source', e);
     }
   });
@@ -282,7 +294,11 @@ class AudioPlayerService {
         await _sessionPlayer.play();
       }
     } catch (e, st) {
-      _log.e('Failed to append audio sources to playlist', error: e, stackTrace: st);
+      _log.e(
+        'Failed to append audio sources to playlist',
+        error: e,
+        stackTrace: st,
+      );
       throw AudioPlaybackException('Failed to append audio sources', e);
     }
   });
@@ -444,7 +460,11 @@ class AudioPlayerService {
     try {
       await _audioHandler?.stop();
     } catch (e, st) {
-      _log.e('Failed to stop audio handler during shutdown', error: e, stackTrace: st);
+      _log.e(
+        'Failed to stop audio handler during shutdown',
+        error: e,
+        stackTrace: st,
+      );
     }
     try {
       await _audioHandler?.shutdown();
@@ -464,7 +484,11 @@ class AudioPlayerService {
     try {
       await _audioSessionInstance.setActive(false);
     } catch (e, st) {
-      _log.e('Failed to deactivate audio session during shutdown', error: e, stackTrace: st);
+      _log.e(
+        'Failed to deactivate audio session during shutdown',
+        error: e,
+        stackTrace: st,
+      );
     }
 
     _audioHandler = null;
@@ -488,7 +512,11 @@ class AudioPlayerService {
       await preview.setAudioSource(AudioSource.file(filePath));
       await preview.play();
     } catch (e, st) {
-      _log.e('Failed to play preview file: $filePath', error: e, stackTrace: st);
+      _log.e(
+        'Failed to play preview file: $filePath',
+        error: e,
+        stackTrace: st,
+      );
       throw AudioPlaybackException('Failed to play preview audio file', e);
     }
   }
@@ -630,7 +658,11 @@ class AudioPlayerService {
         await setMobileSpeakerOutput(useSpeaker: isSpeaker);
       }
     } catch (e, st) {
-      _log.e('Failed to set output device: ${device.id}', error: e, stackTrace: st);
+      _log.e(
+        'Failed to set output device: ${device.id}',
+        error: e,
+        stackTrace: st,
+      );
       throw AudioDeviceException('Failed to set output audio device', e);
     }
   }

@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:equatable/equatable.dart';
+
 /// Amplitude ceiling below which a sample counts as silence (−46 dBFS).
 const double kDefaultSilenceThreshold = 0.005;
 
@@ -13,7 +15,7 @@ const double kTailPadSeconds = 0.05;
 const double kEdgeFadeSeconds = 0.003;
 
 /// Half-open interval identifying the voiced region of a PCM buffer.
-class SpeechBounds {
+class SpeechBounds extends Equatable {
   const SpeechBounds(this.startSec, this.endSec);
 
   final double startSec;
@@ -22,17 +24,10 @@ class SpeechBounds {
   double get durationSec => endSec - startSec;
 
   @override
-  bool operator ==(Object other) =>
-      other is SpeechBounds &&
-      other.startSec == startSec &&
-      other.endSec == endSec;
+  List<Object?> get props => [startSec, endSec];
 
   @override
-  int get hashCode => Object.hash(startSec, endSec);
-
-  @override
-  String toString() =>
-      'SpeechBounds(${startSec}s, ${endSec}s, duration: ${durationSec}s)';
+  bool? get stringify => true;
 }
 
 /// Locates the voiced region of mono floating-point [samples].

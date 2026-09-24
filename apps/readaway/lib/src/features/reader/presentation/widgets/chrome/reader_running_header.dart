@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../../core/theme/theme.dart';
 import '../../../../settings/domain/entity/reader_preferences.dart';
 
@@ -25,8 +26,8 @@ class ReaderRunningHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     if (title.isEmpty) return SizedBox(height: height);
 
-    final resolvedColor = color ??
-        context.appColors.readerForeground.withValues(alpha: 0.55);
+    final resolvedColor =
+        color ?? context.appColors.readerForeground.withValues(alpha: 0.55);
 
     final align = switch (alignment) {
       ReaderHeaderAlignment.left => Alignment.centerLeft,

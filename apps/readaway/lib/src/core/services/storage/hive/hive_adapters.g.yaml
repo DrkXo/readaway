@@ -179,10 +179,6 @@ types:
         index: 32
       highlightOpacity:
         index: 36
-      invertImgColorInDark:
-        index: 46
-      applyThemeToPdf:
-        index: 47
       pageTurnStyle:
         index: 71
       ttsRate:

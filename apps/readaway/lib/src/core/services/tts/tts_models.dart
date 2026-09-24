@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:equatable/equatable.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:path/path.dart' as p;
 
@@ -17,7 +18,7 @@ enum TtsEngineKind {
   microsoftTts,
 }
 
-class TtsVoiceOption {
+class TtsVoiceOption extends Equatable {
   const TtsVoiceOption({
     required this.engine,
     required this.id,
@@ -39,17 +40,7 @@ class TtsVoiceOption {
   final String? previewAudioUrl;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is TtsVoiceOption &&
-          runtimeType == other.runtimeType &&
-          engine == other.engine &&
-          id == other.id &&
-          sherpaSpeakerId == other.sherpaSpeakerId;
-
-  @override
-  int get hashCode =>
-      engine.hashCode ^ id.hashCode ^ (sherpaSpeakerId?.hashCode ?? 0);
+  List<Object?> get props => [engine, id, sherpaSpeakerId];
 
   String get storageKey =>
       sherpaSpeakerId != null ? '$id@$sherpaSpeakerId' : id;
@@ -179,8 +170,8 @@ abstract class SherpaTtsModelInfo with _$SherpaTtsModelInfo {
       return installedChecksum != latestCatalogModel.installedChecksum;
     }
     if (installedSizeBytes != null && latestCatalogModel.approxSizeMb > 0) {
-      final latestBytes =
-          (latestCatalogModel.approxSizeMb * 1024 * 1024).round();
+      final latestBytes = (latestCatalogModel.approxSizeMb * 1024 * 1024)
+          .round();
       if ((installedSizeBytes! - latestBytes).abs() > 1024 * 100) {
         return true;
       }
@@ -485,12 +476,9 @@ abstract final class SherpaTtsUrls {
       'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models';
   static const String manifestApiUrl =
       'https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/tts-models';
-  static const String checksumUrl =
-      '$releaseBaseUrl/checksum.txt';
-  static const String espeakDataUrl =
-      '$releaseBaseUrl/espeak-ng-data.tar.bz2';
-  static const String hifiganUrl =
-      '$releaseBaseUrl/hifigan_v2.onnx';
+  static const String checksumUrl = '$releaseBaseUrl/checksum.txt';
+  static const String espeakDataUrl = '$releaseBaseUrl/espeak-ng-data.tar.bz2';
+  static const String hifiganUrl = '$releaseBaseUrl/hifigan_v2.onnx';
 }
 
 class ModelFilesInfo {
@@ -640,7 +628,10 @@ extension SherpaTtsModelInfoX on SherpaTtsModelInfo {
   }
 
   /// Deletes this model's directory and associated preview audio cache.
-  Future<void> deleteFiles(Directory modelDir, {Directory? audioCacheDir}) async {
+  Future<void> deleteFiles(
+    Directory modelDir, {
+    Directory? audioCacheDir,
+  }) async {
     if (await modelDir.exists()) {
       await modelDir.delete(recursive: true);
     }

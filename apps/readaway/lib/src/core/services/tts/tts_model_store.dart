@@ -130,7 +130,9 @@ class TtsModelStore {
   Set<String> loadDownloadedIds() => loadInstalledModels().keys.toSet();
 
   Future<void> saveInstalledModel(SherpaTtsModelInfo model) async {
-    final installed = Map<String, SherpaTtsModelInfo>.from(loadInstalledModels());
+    final installed = Map<String, SherpaTtsModelInfo>.from(
+      loadInstalledModels(),
+    );
     installed[model.id] = model;
     await _storage.ttsBox.put(_installedKey, installed);
     if (!_installedModelsController.isClosed) {
@@ -142,7 +144,9 @@ class TtsModelStore {
   }
 
   Future<void> removeInstalledModel(String modelId) async {
-    final installed = Map<String, SherpaTtsModelInfo>.from(loadInstalledModels());
+    final installed = Map<String, SherpaTtsModelInfo>.from(
+      loadInstalledModels(),
+    );
     installed.remove(modelId);
     await _storage.ttsBox.put(_installedKey, installed);
     if (!_installedModelsController.isClosed) {

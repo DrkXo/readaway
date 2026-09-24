@@ -83,7 +83,9 @@ class LibraryFilterBar extends StatelessWidget {
                                 : FontWeight.w500,
                             color: isSelected
                                 ? scheme.primary
-                                : scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                                : scheme.onSurfaceVariant.withValues(
+                                    alpha: 0.8,
+                                  ),
                           ),
                         ),
                         if (count > 0) ...[

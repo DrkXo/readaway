@@ -320,8 +320,7 @@ class _LibraryViewState extends State<_LibraryView> {
                       return const AppEmptyView(
                         icon: LucideIcons.bookOpen,
                         title: 'Your Library is Empty',
-                        message:
-                            'Add books to your library or open a document directly using the bar below.',
+                        message: 'Add books to your library or open a document directly using the bar below.',
                       );
                     }
 

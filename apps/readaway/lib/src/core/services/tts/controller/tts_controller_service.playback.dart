@@ -184,7 +184,10 @@ extension TtsPlaybackControl on TtsControllerService {
     _masterQueue = chunks;
     _baseTag = tag;
     _currentIndex = -1;
-    int startIndex = startAtChunkIndex.clamp(0, math.max<int>(0, _masterQueue.length - 1));
+    int startIndex = startAtChunkIndex.clamp(
+      0,
+      math.max<int>(0, _masterQueue.length - 1),
+    );
     if (startProgression != null && _masterQueue.isNotEmpty) {
       if (startProgression <= 0.0) {
         startIndex = 0;
@@ -202,9 +205,10 @@ extension TtsPlaybackControl on TtsControllerService {
             startIndex = _masterQueue.length - 1;
           }
         } else {
-          startIndex = ((_masterQueue.length) * startProgression.clamp(0.0, 1.0))
-              .round()
-              .clamp(0, _masterQueue.length - 1);
+          startIndex =
+              ((_masterQueue.length) * startProgression.clamp(0.0, 1.0))
+                  .round()
+                  .clamp(0, _masterQueue.length - 1);
         }
       }
     }

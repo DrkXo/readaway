@@ -37,7 +37,8 @@ extension _TtsSynthesisPipeline on TtsControllerService {
     }
     try {
       final voices = await getInstalledVoices();
-      final isCurrentVoiceValid = _voice != null &&
+      final isCurrentVoiceValid =
+          _voice != null &&
           voices.any(
             (v) =>
                 v.id == _voice!.id &&

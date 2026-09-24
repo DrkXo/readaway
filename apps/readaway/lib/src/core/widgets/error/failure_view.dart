@@ -50,15 +50,13 @@ class _FailureViewState extends State<FailureView> {
       UnsupportedDocumentFormatFailure(:final format) => (
         icon: LucideIcons.fileQuestion,
         title: 'Unsupported Format ($format)',
-        description:
-            'This document format is not supported. Supported formats include PDF, EPUB, FB2, CBZ, XPS, and TXT.',
+        description: 'This document format is not supported. Supported formats include PDF, EPUB, FB2, CBZ, XPS, and TXT.',
         suggestedSecondaryLabel: 'Choose Another File',
       ),
       CorruptDocumentFailure() => (
         icon: LucideIcons.fileWarning,
         title: 'Corrupt Document',
-        description:
-            'Unable to parse or read this document file. It may be incomplete or corrupted.',
+        description: 'Unable to parse or read this document file. It may be incomplete or corrupted.',
         suggestedSecondaryLabel: 'Choose Another File',
       ),
       DocumentParseFailure() => (
@@ -79,8 +77,7 @@ class _FailureViewState extends State<FailureView> {
       StorageResetFailure() => (
         icon: LucideIcons.database,
         title: 'Storage Error',
-        description:
-            'Failed to read or write local data. Storage might be restricted or full.',
+        description: 'Failed to read or write local data. Storage might be restricted or full.',
         suggestedSecondaryLabel: 'Reset Preferences',
       ),
       NoInternetFailure() => (
@@ -93,8 +90,7 @@ class _FailureViewState extends State<FailureView> {
       NetworkTimeoutFailure() => (
         icon: LucideIcons.clockAlert,
         title: 'Connection Timed Out',
-        description:
-            'The remote server took too long to respond. Please check your connection and try again.',
+        description: 'The remote server took too long to respond. Please check your connection and try again.',
         suggestedSecondaryLabel: null,
       ),
       ServerFailure(:final statusCode) => (
@@ -107,8 +103,7 @@ class _FailureViewState extends State<FailureView> {
       TtsNoVoiceSelectedFailure() => (
         icon: LucideIcons.micOff,
         title: 'No Voice Selected',
-        description:
-            'A text-to-speech voice model has not been selected or downloaded. Please configure a voice in Settings.',
+        description: 'A text-to-speech voice model has not been selected or downloaded. Please configure a voice in Settings.',
         suggestedSecondaryLabel: 'TTS Settings',
       ),
       TtsModelNotFoundFailure(:final modelId) => (
@@ -120,15 +115,13 @@ class _FailureViewState extends State<FailureView> {
       TtsDownloadFailure() => (
         icon: LucideIcons.downloadCloud,
         title: 'Voice Download Failed',
-        description:
-            'Failed to download the selected voice model. Please check your connection.',
+        description: 'Failed to download the selected voice model. Please check your connection.',
         suggestedSecondaryLabel: 'Try Again',
       ),
       TtsSynthesisFailure() || TtsWorkerFailure() => (
         icon: LucideIcons.speech,
         title: 'Speech Engine Error',
-        description:
-            'Text-to-speech synthesis failed. Ensure a voice model is selected and ready.',
+        description: 'Text-to-speech synthesis failed. Ensure a voice model is selected and ready.',
         suggestedSecondaryLabel: 'Voice Settings',
       ),
       AudioPlaybackFailure() || AudioDeviceFailure() => (
@@ -141,8 +134,7 @@ class _FailureViewState extends State<FailureView> {
       NotificationPermissionDeniedFailure() => (
         icon: LucideIcons.shieldAlert,
         title: 'Permission Denied',
-        description:
-            'App permissions are required to perform this action. Please check your system settings.',
+        description: 'App permissions are required to perform this action. Please check your system settings.',
         suggestedSecondaryLabel: 'Settings',
       ),
       _ => (

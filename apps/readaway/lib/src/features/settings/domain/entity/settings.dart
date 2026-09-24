@@ -42,8 +42,6 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default('system') String theme,
     @Default('flexoki') String selectedScheme,
     @Default(0.3) double highlightOpacity,
-    @Default(true) bool invertImgColorInDark,
-    @JsonKey(name: 'applyThemeToPDF') @Default(true) bool applyThemeToPdf,
     @Default(false) bool volumeKeysToFlip,
     @Default('slide') String pageTurnStyle,
     @Default(1.0) double ttsRate,

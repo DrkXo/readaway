@@ -132,11 +132,13 @@ class _TtsView extends StatelessWidget {
                   onChanged: (style) {
                     final gvs = state.appSettings.globalViewSettings;
                     final updated = state.appSettings.copyWith(
-                      globalViewSettings: gvs.copyWith(ttsNarrationStyle: style),
+                      globalViewSettings: gvs.copyWith(
+                        ttsNarrationStyle: style,
+                      ),
                     );
                     context.read<SettingsBloc>().add(
-                          SettingsEvent.updateAppSettings(updated),
-                        );
+                      SettingsEvent.updateAppSettings(updated),
+                    );
                   },
                 ),
                 SettingsSliderRow(
@@ -155,8 +157,8 @@ class _TtsView extends StatelessWidget {
                       ),
                     );
                     context.read<SettingsBloc>().add(
-                          SettingsEvent.updateAppSettings(updated),
-                        );
+                      SettingsEvent.updateAppSettings(updated),
+                    );
                   },
                 ),
                 SettingsSliderRow(
@@ -175,14 +177,13 @@ class _TtsView extends StatelessWidget {
                       ),
                     );
                     context.read<SettingsBloc>().add(
-                          SettingsEvent.updateAppSettings(updated),
-                        );
+                      SettingsEvent.updateAppSettings(updated),
+                    );
                   },
                 ),
                 SettingsSliderRow(
                   label: 'Model silence scale',
-                  value:
-                      state.appSettings.globalViewSettings.ttsSilenceScale,
+                  value: state.appSettings.globalViewSettings.ttsSilenceScale,
                   min: 0.0,
                   max: 1.0,
                   divisions: 10,
@@ -195,8 +196,8 @@ class _TtsView extends StatelessWidget {
                       ),
                     );
                     context.read<SettingsBloc>().add(
-                          SettingsEvent.updateAppSettings(updated),
-                        );
+                      SettingsEvent.updateAppSettings(updated),
+                    );
                   },
                 ),
               ],
@@ -230,8 +231,8 @@ class _TtsView extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                       onPressed: () {
                         context.read<SettingsBloc>().add(
-                              const SettingsEvent.checkForTtsUpdates(),
-                            );
+                          const SettingsEvent.checkForTtsUpdates(),
+                        );
                       },
                     ),
                 ],
@@ -243,7 +244,8 @@ class _TtsView extends StatelessWidget {
                   _LanguageGroupTile(
                     language: entry.key,
                     models: entry.value,
-                    initiallyExpanded: entry.key == 'Custom Voices' ||
+                    initiallyExpanded:
+                        entry.key == 'Custom Voices' ||
                         entry.value.any(
                           (m) => m.id == (state.ttsActiveModelId ?? ''),
                         ),
@@ -582,8 +584,8 @@ class _VoiceActions extends StatelessWidget {
       );
     }
 
-    final showPreview = !model.isCustom &&
-        (isDownloaded || model.previewAudioUrl != null);
+    final showPreview =
+        !model.isCustom && (isDownloaded || model.previewAudioUrl != null);
 
     if (!isDownloaded) {
       return Row(

@@ -15,11 +15,15 @@ class WindowCaptionControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb || (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS)) {
+    if (kIsWeb ||
+        (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS)) {
       return const SizedBox.shrink();
     }
-    final windowService = service ??
-        (GetIt.I.isRegistered<WindowService>() ? GetIt.I<WindowService>() : null);
+    final windowService =
+        service ??
+        (GetIt.I.isRegistered<WindowService>()
+            ? GetIt.I<WindowService>()
+            : null);
     if (windowService == null) return const SizedBox.shrink();
 
     return Row(

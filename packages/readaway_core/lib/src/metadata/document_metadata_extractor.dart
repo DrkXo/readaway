@@ -52,25 +52,21 @@ class DocumentMetadataExtractor {
     int thumbnailWidth = 480,
   }) async {
     _log.i('Extracting metadata for document: $filePath');
-    final session = await DocumentSession.open(
-      filePath,
-      password: password,
-    );
+    final session = await DocumentSession.open(filePath, password: password);
     try {
       final metaTitle = session.title;
-      final rawTitle =
-          (metaTitle != null && metaTitle.trim().isNotEmpty)
-              ? metaTitle.trim()
-              : '';
-      final author =
-          (session.metadata?.author?.trim().isNotEmpty == true)
-              ? session.metadata!.author!.trim()
-              : (session.metadata?.creator?.trim().isNotEmpty == true)
-              ? session.metadata!.creator!.trim()
-              : null;
+      final rawTitle = (metaTitle != null && metaTitle.trim().isNotEmpty)
+          ? metaTitle.trim()
+          : '';
+      final author = (session.metadata?.author?.trim().isNotEmpty == true)
+          ? session.metadata!.author!.trim()
+          : (session.metadata?.creator?.trim().isNotEmpty == true)
+          ? session.metadata!.creator!.trim()
+          : null;
 
-      final count =
-          session.isReflowable ? session.sectionCount : session.pageCount;
+      final count = session.isReflowable
+          ? session.sectionCount
+          : session.pageCount;
 
       Uint8List? coverBytes;
       final coverImgPath = session.coverImagePath;

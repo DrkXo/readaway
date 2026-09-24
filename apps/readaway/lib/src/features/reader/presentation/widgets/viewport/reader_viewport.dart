@@ -271,7 +271,8 @@ class _ReaderViewportState extends State<ReaderViewport> {
                 _paginationCoordinator.updateViewport(
                   viewportHeight: availableHeight,
                   contentHeight:
-                      _paginationCoordinator.currentState.chapterHeights[0] ?? 0,
+                      _paginationCoordinator.currentState.chapterHeights[0] ??
+                      0,
                 );
               }
 
@@ -279,7 +280,8 @@ class _ReaderViewportState extends State<ReaderViewport> {
               // (paged mode only; continuous mode restores via scroll offset).
               if (!isContinuous && state.pendingRestoreAnchor != null) {
                 final bloc = context.read<ReaderBloc>();
-                final totalPages = _paginationCoordinator.currentState.totalPages;
+                final totalPages =
+                    _paginationCoordinator.currentState.totalPages;
                 if (totalPages > 0) {
                   final anchor = state.pendingRestoreAnchor!;
                   _paginationCoordinator.setCurrentAnchor(anchor);
@@ -305,8 +307,12 @@ class _ReaderViewportState extends State<ReaderViewport> {
                 state: state,
                 prefs: widget.prefs,
                 viewportController: widget.viewportController,
-                onPageChangeRequested: (idx) =>
-                    _onPageCommitted(context, state, idx, isContinuous: isContinuous),
+                onPageChangeRequested: (idx) => _onPageCommitted(
+                  context,
+                  state,
+                  idx,
+                  isContinuous: isContinuous,
+                ),
               );
             }
 
@@ -319,7 +325,8 @@ class _ReaderViewportState extends State<ReaderViewport> {
                 bottomPadding: miniPlayerPadding,
                 restoreAnchor: state.pendingRestoreAnchor,
                 onAnchorChanged: state.isReflowable
-                    ? (anchor) => _paginationCoordinator.setCurrentAnchor(anchor)
+                    ? (anchor) =>
+                          _paginationCoordinator.setCurrentAnchor(anchor)
                     : null,
                 onRestoreComplete: () => context.read<ReaderBloc>().add(
                   ReaderEvent.clearPendingRestore(),
@@ -337,10 +344,9 @@ class _ReaderViewportState extends State<ReaderViewport> {
                     )
                   : math.max(1, state.pageCount);
 
-              final effectiveCurrentPage = (state.isReflowable
-                      ? _currentGlobalPage
-                      : state.currentPage)
-                  .clamp(0, effectivePageCount - 1);
+              final effectiveCurrentPage =
+                  (state.isReflowable ? _currentGlobalPage : state.currentPage)
+                      .clamp(0, effectivePageCount - 1);
 
               view = PagedReaderView(
                 currentPage: effectiveCurrentPage,
@@ -388,8 +394,12 @@ class _ReaderViewportState extends State<ReaderViewport> {
         state: state,
         prefs: widget.prefs,
         isContinuous: isContinuous,
-        onPageChangeRequested: (idx) =>
-            _onNavigateRequested(context, state, idx, isContinuous: isContinuous),
+        onPageChangeRequested: (idx) => _onNavigateRequested(
+          context,
+          state,
+          idx,
+          isContinuous: isContinuous,
+        ),
       );
     }
     if (isContinuous) {
@@ -425,8 +435,10 @@ class _ReaderViewportState extends State<ReaderViewport> {
     // Bytes are cached and deduplicated by the shared ReflowableImageCache in
     // HyperPageContent, so every page instance hits memory instead of the
     // EPUB container.
-    final res = await GetIt.I<ReaderRepository>()
-        .loadAssetBytes(src, pageIndex: chapterIndex);
+    final res = await GetIt.I<ReaderRepository>().loadAssetBytes(
+      src,
+      pageIndex: chapterIndex,
+    );
     return res.dataOrNull;
   }
 
@@ -434,10 +446,13 @@ class _ReaderViewportState extends State<ReaderViewport> {
     if (url.isEmpty) return;
 
     // Check if the link target is a footnote or note
-    final coord =
-        _paginationCoordinator.coordinateFromGlobalPage(_currentGlobalPage);
-    final footnoteRes = await GetIt.I<ReaderRepository>()
-        .resolveFootnote(url, currentChapterIndex: coord.chapterIndex);
+    final coord = _paginationCoordinator.coordinateFromGlobalPage(
+      _currentGlobalPage,
+    );
+    final footnoteRes = await GetIt.I<ReaderRepository>().resolveFootnote(
+      url,
+      currentChapterIndex: coord.chapterIndex,
+    );
     final footnote = footnoteRes.dataOrNull;
     if (footnote != null && context.mounted) {
       VoidCallback? onJump;
@@ -450,7 +465,8 @@ class _ReaderViewportState extends State<ReaderViewport> {
             targetChapter != coord.chapterIndex) {
           onJump = () {
             final isContinuous =
-                widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
+                widget.prefs.scrollDirection ==
+                    ReaderScrollDirection.vertical &&
                 !widget.prefs.pageSnap;
             if (isContinuous) {
               _onNavigateRequested(
@@ -460,8 +476,8 @@ class _ReaderViewportState extends State<ReaderViewport> {
                 isContinuous: true,
               );
             } else {
-              final targetGlobal =
-                  _paginationCoordinator.getGlobalPageForChapter(targetChapter);
+              final targetGlobal = _paginationCoordinator
+                  .getGlobalPageForChapter(targetChapter);
               _onNavigateRequested(
                 context,
                 context.read<ReaderBloc>().state,
@@ -481,8 +497,7 @@ class _ReaderViewportState extends State<ReaderViewport> {
       return;
     }
 
-    final res = await GetIt.I<ReaderRepository>()
-        .resolveReflowableLink(url);
+    final res = await GetIt.I<ReaderRepository>().resolveReflowableLink(url);
     final targetChapter = res.dataOrNull;
     if (targetChapter != null && targetChapter >= 0 && context.mounted) {
       final isContinuous =

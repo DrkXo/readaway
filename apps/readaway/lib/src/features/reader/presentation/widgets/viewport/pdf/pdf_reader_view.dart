@@ -53,7 +53,8 @@ class _PdfReaderViewState extends State<PdfReaderView> {
       _attachControllerDelegates();
     }
 
-    if (oldWidget.state.currentPage != widget.state.currentPage && !_isSyncing) {
+    if (oldWidget.state.currentPage != widget.state.currentPage &&
+        !_isSyncing) {
       final targetPageNumber = widget.state.currentPage + 1;
       if (_pdfController.isReady &&
           _pdfController.pageNumber != targetPageNumber &&
@@ -80,21 +81,22 @@ class _PdfReaderViewState extends State<PdfReaderView> {
       }
     };
 
-    widget.viewportController.animateToPageDelegate = (
-      int targetIndex, {
-      Duration? duration,
-      Curve? curve,
-    }) async {
-      final pageNumber = targetIndex + 1;
-      if (_pdfController.isReady &&
-          pageNumber >= 1 &&
-          pageNumber <= _pdfController.pageCount) {
-        await _pdfController.goToPage(
-          pageNumber: pageNumber,
-          duration: duration ?? const Duration(milliseconds: 250),
-        );
-      }
-    };
+    widget.viewportController.animateToPageDelegate =
+        (
+          int targetIndex, {
+          Duration? duration,
+          Curve? curve,
+        }) async {
+          final pageNumber = targetIndex + 1;
+          if (_pdfController.isReady &&
+              pageNumber >= 1 &&
+              pageNumber <= _pdfController.pageCount) {
+            await _pdfController.goToPage(
+              pageNumber: pageNumber,
+              duration: duration ?? const Duration(milliseconds: 250),
+            );
+          }
+        };
   }
 
   @override
@@ -140,7 +142,8 @@ class _PdfReaderViewState extends State<PdfReaderView> {
           margin: 8.0,
           layoutPages: isHorizontal
               ? (pages, params) {
-                  final height = pages.fold<double>(
+                  final height =
+                      pages.fold<double>(
                         0.0,
                         (prev, page) => math.max(prev, page.height),
                       ) +
