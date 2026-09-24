@@ -279,38 +279,61 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                       title: 'No contents',
                       message: 'This document has no table of contents.',
                     )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      itemExtent: _itemExtent,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      itemCount: rows.length,
-                      itemBuilder: (context, index) {
-                        final item = rows[index];
-                        final title = item.title;
-                        if (title.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        final hasChildren = item.children.isNotEmpty;
-                        final isCurrent =
-                            current != null && identical(item, current.$1);
-                        return OutlineItemTile(
-                          item: item,
-                          isCurrent: isCurrent,
-                          isExpanded: _expanded.contains(_TocNodeRef(item)),
-                          onTap: () {
-                            if (hasChildren) {
-                              setState(() {
-                                final ref = _TocNodeRef(item);
-                                if (!_expanded.remove(ref)) {
-                                  _expanded.add(ref);
-                                }
-                              });
-                            } else {
-                              widget.onJumpToPage(item.chapterIndex ?? 0);
+                  : ScrollbarTheme(
+                      data: ScrollbarThemeData(
+                        thumbColor: WidgetStateProperty.resolveWith(
+                          (states) {
+                            if (states.contains(WidgetState.dragged)) {
+                              return appColors.scrollbarActiveBackground;
                             }
+                            if (states.contains(WidgetState.hovered)) {
+                              return appColors.scrollbarHoverBackground;
+                            }
+                            return appColors.scrollbarBackground;
                           },
-                        );
-                      },
+                        ),
+                        radius: const Radius.circular(8),
+                        thickness: const WidgetStatePropertyAll(4),
+                        crossAxisMargin: 2,
+                        mainAxisMargin: 4,
+                      ),
+                      child: Scrollbar(
+                        controller: _scrollController,
+                        thumbVisibility: true,
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          itemExtent: _itemExtent,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          itemCount: rows.length,
+                          itemBuilder: (context, index) {
+                            final item = rows[index];
+                            final title = item.title;
+                            if (title.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            final hasChildren = item.children.isNotEmpty;
+                            final isCurrent =
+                                current != null && identical(item, current.$1);
+                            return OutlineItemTile(
+                              item: item,
+                              isCurrent: isCurrent,
+                              isExpanded: _expanded.contains(_TocNodeRef(item)),
+                              onTap: () {
+                                if (hasChildren) {
+                                  setState(() {
+                                    final ref = _TocNodeRef(item);
+                                    if (!_expanded.remove(ref)) {
+                                      _expanded.add(ref);
+                                    }
+                                  });
+                                } else {
+                                  widget.onJumpToPage(item.chapterIndex ?? 0);
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
                     ),
             ),
             const SizedBox(height: 24),
@@ -372,7 +395,9 @@ List<OutlineItem> tocVisibleRows(
       final target = item.chapterIndex ?? -1;
       final isBetter =
           target > bestTarget ||
-          (best != null && target == bestTarget && itemPath.length > bestPath!.length);
+          (best != null &&
+              target == bestTarget &&
+              itemPath.length > bestPath!.length);
       if (target >= 0 && target <= currentPage && isBetter) {
         best = item;
         bestPath = itemPath;
