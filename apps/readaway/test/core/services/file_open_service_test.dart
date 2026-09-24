@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:readaway/src/core/models/document_format.dart';
 import 'package:readaway/src/core/services/file_open_service.dart';
-import 'package:readaway/src/core/services/logging_service.dart';
 
 void main() {
   late Directory tempDir;
@@ -14,7 +13,7 @@ void main() {
   group('handleUri', () {
     test('queues a scheme-less absolute path if the file exists', () async {
       final file = File('${tempDir.path}/book.epub')..createSync();
-      final service = FileOpenService(loggingService: LoggingService());
+      final service = FileOpenService();
       final emitted = <IncomingDocument>[];
       final sub = service.incomingDocuments.listen(emitted.add);
 
@@ -30,7 +29,7 @@ void main() {
 
     test('handles file:// URI with percent encoding', () async {
       final file = File('${tempDir.path}/my space book.epub')..createSync();
-      final service = FileOpenService(loggingService: LoggingService());
+      final service = FileOpenService();
       final emitted = <IncomingDocument>[];
       final sub = service.incomingDocuments.listen(emitted.add);
 
@@ -46,7 +45,7 @@ void main() {
     });
 
     test('drops a scheme-less path that does not exist', () async {
-      final service = FileOpenService(loggingService: LoggingService());
+      final service = FileOpenService();
       final emitted = <IncomingDocument>[];
       final sub = service.incomingDocuments.listen(emitted.add);
 
@@ -64,7 +63,7 @@ void main() {
       // Cold-start on desktop: initializeWithArgs runs before the router
       // subscribes (after first frame). The queued document must not be lost.
       final file = File('${tempDir.path}/queued.epub')..createSync();
-      final service = FileOpenService(loggingService: LoggingService());
+      final service = FileOpenService();
 
       service.initializeWithArgs([file.absolute.path]);
 
@@ -82,7 +81,7 @@ void main() {
 
     test('handles double-quoted CLI argument with spaces', () async {
       final file = File('${tempDir.path}/my special book.epub')..createSync();
-      final service = FileOpenService(loggingService: LoggingService());
+      final service = FileOpenService();
 
       service.initializeWithArgs(['"${file.absolute.path}"']);
 
@@ -101,7 +100,7 @@ void main() {
 
     test('handles file:// URI in CLI argument', () async {
       final file = File('${tempDir.path}/uri_book.epub')..createSync();
-      final service = FileOpenService(loggingService: LoggingService());
+      final service = FileOpenService();
 
       service.initializeWithArgs([Uri.file(file.path).toString()]);
 

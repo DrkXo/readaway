@@ -6,17 +6,17 @@ import 'package:dio_cache_interceptor_file_store/dio_cache_interceptor_file_stor
 import 'package:injectable/injectable.dart';
 import 'package:native_dio_adapter/native_dio_adapter.dart';
 import 'package:readaway/src/core/services/http/interceptors/http_logging_interceptor.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../error/errors.dart';
-import '../logging_service.dart';
 import '../path_service.dart';
 
 export 'package:dio/dio.dart';
 
 @lazySingleton
-@Singleton()
 class HttpService {
-  final LoggingService logger;
+  // ignore: unused_field
+  final _log = AppLogger.instance.scope('HttpService');
   final AppPathService _pathService;
 
   final Dio _dio;
@@ -34,7 +34,6 @@ class HttpService {
       _dio.options.headers.cast<String, String>();
 
   HttpService({
-    required this.logger,
     required this._pathService,
   }) : _dio = Dio(
          BaseOptions(
@@ -102,7 +101,7 @@ class HttpService {
       InterceptorsWrapper(
         onError: _onError,
       ),
-      HttpLoggingInterceptor(logger),
+      HttpLoggingInterceptor(),
     ]);
   }
 

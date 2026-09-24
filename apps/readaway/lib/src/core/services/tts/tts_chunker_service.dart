@@ -5,7 +5,6 @@ import 'package:injectable/injectable.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../isolate_service.dart';
-import '../logging_service.dart';
 
 /// Top-level entry point executed inside the worker isolate.
 ///
@@ -54,6 +53,8 @@ void _textChunkerIsolateEntryPoint(SendPort mainSendPort) {
 /// in-place chunking if the worker ever dies.
 @lazySingleton
 class TtsChunkingService {
+  final _log = AppLogger.instance.scope('TtsChunkingService');
+
   final IsolateService _isolateService;
   static const String _isolateName = 'text_chunker_worker';
 
@@ -110,10 +111,10 @@ class TtsChunkingService {
           .map((map) => TtsChunk.fromJson(Map<String, dynamic>.from(map)))
           .toList(growable: false);
     } catch (e, st) {
-      logger.w(
+      _log.w(
         'Worker isolate chunking failed, falling back to sync chunker',
-        e,
-        st,
+        error: e,
+        stackTrace: st,
       );
       const fallbackChunker = TextChunker();
       return fallbackChunker.chunkSentences(

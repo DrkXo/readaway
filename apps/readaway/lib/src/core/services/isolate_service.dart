@@ -2,9 +2,8 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:injectable/injectable.dart';
+import 'package:readaway_core/readaway_core.dart';
 import 'package:rxdart/rxdart.dart';
-
-import 'logging_service.dart';
 
 class IsolateCommandException implements Exception {
   IsolateCommandException(this.message);
@@ -34,14 +33,10 @@ class _IsolateInstance {
 
 @singleton
 class IsolateService {
-  final LoggingService _loggingService;
+  final _log = AppLogger.instance.scope('IsolateService');
   final Map<String, _IsolateInstance> _instances = {};
 
-  Logger get _log => _loggingService.logger;
-
-  IsolateService({
-    required this._loggingService,
-  });
+  IsolateService();
 
   bool isSpawned(String name) => _instances[name]?.sendPort != null;
 
@@ -72,17 +67,17 @@ class IsolateService {
     }
 
     errorPort.listen((error) {
-      _log.severe('Isolate "$name" uncaught error: $error');
+      _log.e('Isolate "$name" uncaught error: $error');
       failAll(IsolateCommandException('Isolate "$name" crashed: $error'));
     });
 
     exitPort.listen((_) {
-      _log.info('Isolate "$name" exited.');
+      _log.i('Isolate "$name" exited.');
       failAll(IsolateCommandException('Isolate "$name" exited unexpectedly'));
       _instances.remove(name);
     });
 
-    _log.info('Spawning isolate "$name"...');
+    _log.i('Spawning isolate "$name"...');
     instance.isolate = await Isolate.spawn(
       entryPoint,
       receivePort.sendPort,
@@ -102,7 +97,7 @@ class IsolateService {
     });
 
     instance.sendPort = await completer.future;
-    _log.info('Isolate "$name" ready.');
+    _log.i('Isolate "$name" ready.');
     return instance.sendPort!;
   }
 

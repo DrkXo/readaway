@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
-import 'package:readaway/src/core/services/logging_service.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
@@ -20,6 +19,8 @@ import '../../domain/repositories/reader_repository.dart';
 
 @LazySingleton(as: ReaderRepository)
 class ReaderRepositoryImpl implements ReaderRepository {
+  final _log = AppLogger.instance.scope('ReaderRepository');
+
   final WindowService _windowService;
   final NotificationService _notificationService;
   final AppPathService _pathService;
@@ -325,8 +326,8 @@ class ReaderRepositoryImpl implements ReaderRepository {
     return guard(
       () async {
         if (_session == null) {
-          logger.w(
-            '[ReaderRepository] loadAssetBytes: _session is null for asset: $assetPath',
+          _log.w(
+            'loadAssetBytes: _session is null for asset: $assetPath',
           );
           return null;
         }
@@ -395,16 +396,16 @@ class ReaderRepositoryImpl implements ReaderRepository {
           return bytes;
         }
 
-        logger.w(
-          '[ReaderRepository] loadAssetBytes: could not resolve asset "$assetPath" (page: $pageIndex)',
+        _log.w(
+          'loadAssetBytes: could not resolve asset "$assetPath" (page: $pageIndex)',
         );
         return null;
       },
       onError: (error, stack) {
-        logger.e(
-          '[ReaderRepository] loadAssetBytes error: $error',
-          error,
-          stack,
+        _log.e(
+          'loadAssetBytes error: $error',
+          error: error,
+          stackTrace: stack,
         );
         return StorageReadFailure(
           assetPath,

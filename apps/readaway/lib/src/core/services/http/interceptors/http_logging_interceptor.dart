@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:readaway/src/core/error/errors.dart';
 import 'package:readaway/src/core/services/http/http_service.dart';
-import 'package:readaway/src/core/services/logging_service.dart';
+import 'package:readaway_core/readaway_core.dart';
 
-/// Logs HTTP traffic through [LoggingService].
+/// Logs HTTP traffic through [AppLogger].
 ///
 /// Registered last in the interceptor chain so that, in the error phase
 /// (which runs in reverse registration order), it observes the raw
@@ -14,9 +14,7 @@ import 'package:readaway/src/core/services/logging_service.dart';
 /// Sensitive data (auth headers, tokens, passwords in query parameters) is
 /// redacted, and request/response bodies are truncated to keep logs readable.
 class HttpLoggingInterceptor extends Interceptor {
-  HttpLoggingInterceptor(this._loggingService);
-
-  final LoggingService _loggingService;
+  final _log = AppLogger.instance.scope('Http');
 
   static const _maxBodyChars = 2000;
   static const _maxHeaderChars = 200;
@@ -35,7 +33,7 @@ class HttpLoggingInterceptor extends Interceptor {
     'secret',
   };
 
-  Logger get _log => _loggingService.getLogger('Http');
+  HttpLoggingInterceptor();
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {

@@ -8,6 +8,8 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:readaway_core/readaway_core.dart';
+
 import '../core/routes/routes.dart';
 import '../core/services/services.dart';
 import '../features/library/presentation/pages/library_page.dart';
@@ -64,6 +66,8 @@ GoRouter get appRouter => GetIt.I.get<AppRouter>().router;
 
 @Singleton()
 class AppRouter {
+  final _log = AppLogger.instance.scope('AppRouter');
+
   final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
     debugLabel: 'root',
   );
@@ -72,18 +76,15 @@ class AppRouter {
 
   GoRouter get router => _router;
 
-  final LoggingService _logger;
   final AppRoutes _appRoutes;
   final FileOpenService _fileOpenService;
 
   StreamSubscription<IncomingDocument>? _fileOpenSubscription;
 
   AppRouter({
-    required LoggingService logger,
     required AppRoutes appRoutes,
     required FileOpenService fileOpenService,
-  }) : _logger = logger,
-       _appRoutes = appRoutes,
+  }) : _appRoutes = appRoutes,
        _fileOpenService = fileOpenService {
     _fileOpenSubscription =
         _fileOpenService.incomingDocuments.listen(_navigateToDocument);
@@ -92,7 +93,7 @@ class AppRouter {
   void _navigateToDocument(IncomingDocument doc) {
     final route =
         '${_appRoutes.reader.path}?path=${Uri.encodeComponent(doc.path)}&fileName=${Uri.encodeComponent(doc.fileName)}';
-    _logger.logger.info('[AppRouter] Navigating to opened document: $route');
+    _log.i('Navigating to opened document: $route');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_router.state.matchedLocation == route) return;

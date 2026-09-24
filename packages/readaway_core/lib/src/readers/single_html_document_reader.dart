@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../abstracts/reflowable_document_reader.dart';
 import '../errors/document_exception.dart';
 import '../lifecycle/disposable.dart';
+import '../logger/app_logger.dart';
 import '../models/models.dart';
 
 /// Reads a standalone HTML file as a single-section reflowable document.
@@ -16,6 +17,8 @@ import '../models/models.dart';
 class SingleHtmlDocumentReader
     with DisposableMixin
     implements ReflowableDocumentReader {
+  static final _log = AppLogger.instance.scope('SingleHtmlDocumentReader');
+
   final String _filePath;
   final String _baseDir;
   final String _html;
@@ -32,8 +35,10 @@ class SingleHtmlDocumentReader
 
   /// Opens a standalone HTML document from [filePath].
   static Future<SingleHtmlDocumentReader> fromFile(String filePath) async {
+    _log.i('Opening single HTML file: $filePath');
     final file = File(filePath);
     if (!file.existsSync()) {
+      _log.e('HTML file not found: $filePath');
       throw DocumentOpenException('HTML file not found: $filePath');
     }
     final bytes = file.readAsBytesSync();
@@ -51,6 +56,7 @@ class SingleHtmlDocumentReader
     final baseName = p.basename(filePath);
     final safeTitle =
         title ?? _extractTitle(html) ?? p.basenameWithoutExtension(filePath);
+    _log.i('Loaded HTML document: $filePath (title: "$safeTitle")');
     return SingleHtmlDocumentReader._(
       filePath: filePath,
       baseDir: p.dirname(filePath),

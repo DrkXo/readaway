@@ -14,10 +14,10 @@ import 'package:mutex/mutex.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../flavors.dart';
 import '../../error/errors.dart';
-import '../logging_service.dart';
 import '../notification_service.dart';
 import 'audio_device.dart';
 import 'audio_handler.dart';
@@ -42,11 +42,12 @@ JustAudioService get justAudioService => audioPlayerService;
 /// Completely independent of TTS or reading logic.
 @Singleton(
   dependsOn: [
-    LoggingService,
     NotificationService,
   ],
 )
 class AudioPlayerService {
+  final _log = AppLogger.instance.scope('AudioPlayerService');
+
   final PackageInfo _packageInfo;
   final NotificationService _notificationService;
 
@@ -145,8 +146,9 @@ class AudioPlayerService {
 
       _setupAudioSessionListeners();
       _initialized = true;
+      _log.i('AudioPlayerService successfully initialized');
     } catch (e, st) {
-      logger.e('Failed to initialize AudioPlayerService', e, st);
+      _log.e('Failed to initialize AudioPlayerService', error: e, stackTrace: st);
       throw AudioPlaybackException(
         'Failed to initialize AudioPlayerService',
         e,
@@ -227,7 +229,7 @@ class AudioPlayerService {
         await _sessionPlayer.play();
       }
     } catch (e, st) {
-      logger.e('Failed to set playlist in AudioPlayerService', e, st);
+      _log.e('Failed to set playlist in AudioPlayerService', error: e, stackTrace: st);
       throw AudioPlaybackException('Failed to set audio playlist', e);
     }
   });
@@ -254,7 +256,7 @@ class AudioPlayerService {
         await _sessionPlayer.play();
       }
     } catch (e, st) {
-      logger.e('Failed to append audio source to playlist', e, st);
+      _log.e('Failed to append audio source to playlist', error: e, stackTrace: st);
       throw AudioPlaybackException('Failed to append audio source', e);
     }
   });
@@ -280,7 +282,7 @@ class AudioPlayerService {
         await _sessionPlayer.play();
       }
     } catch (e, st) {
-      logger.e('Failed to append audio sources to playlist', e, st);
+      _log.e('Failed to append audio sources to playlist', error: e, stackTrace: st);
       throw AudioPlaybackException('Failed to append audio sources', e);
     }
   });
@@ -291,7 +293,7 @@ class AudioPlayerService {
       await _sessionPlayer.stop();
       await _sessionPlayer.clearAudioSources();
     } catch (e, st) {
-      logger.e('Failed to clear playlist', e, st);
+      _log.e('Failed to clear playlist', error: e, stackTrace: st);
       throw AudioPlaybackException('Failed to clear playlist', e);
     }
   });
@@ -305,7 +307,7 @@ class AudioPlayerService {
     try {
       await _sessionPlayer.seek(position, index: index);
     } catch (e, st) {
-      logger.e('Failed to seek to index $index', e, st);
+      _log.e('Failed to seek to index $index', error: e, stackTrace: st);
       throw AudioPlaybackException('Failed to seek to track $index', e);
     }
   }
@@ -315,7 +317,7 @@ class AudioPlayerService {
     try {
       await _sessionPlayer.seek(position);
     } catch (e, st) {
-      logger.e('Failed to seek to position $position', e, st);
+      _log.e('Failed to seek to position $position', error: e, stackTrace: st);
       throw AudioPlaybackException('Failed to seek position', e);
     }
   }
@@ -325,7 +327,7 @@ class AudioPlayerService {
     try {
       await _sessionPlayer.setSpeed(speed);
     } catch (e, st) {
-      logger.e('Failed to set playback speed: $speed', e, st);
+      _log.e('Failed to set playback speed: $speed', error: e, stackTrace: st);
     }
   }
 
@@ -337,7 +339,7 @@ class AudioPlayerService {
     try {
       await _sessionPlayer.setPitch(pitch);
     } catch (e, st) {
-      logger.e('Failed to set playback pitch: $pitch', e, st);
+      _log.e('Failed to set playback pitch: $pitch', error: e, stackTrace: st);
     }
   }
 
@@ -349,7 +351,7 @@ class AudioPlayerService {
     try {
       await _sessionPlayer.setVolume(volume);
     } catch (e, st) {
-      logger.e('Failed to set volume: $volume', e, st);
+      _log.e('Failed to set volume: $volume', error: e, stackTrace: st);
     }
   }
 
@@ -361,7 +363,7 @@ class AudioPlayerService {
       try {
         await _sessionPlayer.seekToNext();
       } catch (e, st) {
-        logger.e('Failed to seek to next track', e, st);
+        _log.e('Failed to seek to next track', error: e, stackTrace: st);
       }
     }
   }
@@ -371,7 +373,7 @@ class AudioPlayerService {
       try {
         await _sessionPlayer.seekToPrevious();
       } catch (e, st) {
-        logger.e('Failed to seek to previous track', e, st);
+        _log.e('Failed to seek to previous track', error: e, stackTrace: st);
       }
     }
   }
@@ -381,7 +383,7 @@ class AudioPlayerService {
       await _audioSessionInstance.setActive(true);
       await _sessionPlayer.play();
     } catch (e, st) {
-      logger.e('Failed to start audio playback', e, st);
+      _log.e('Failed to start audio playback', error: e, stackTrace: st);
       throw AudioPlaybackException('Failed to play audio', e);
     }
   }
@@ -390,7 +392,7 @@ class AudioPlayerService {
     try {
       await _sessionPlayer.pause();
     } catch (e, st) {
-      logger.e('Failed to pause playback', e, st);
+      _log.e('Failed to pause playback', error: e, stackTrace: st);
     }
   }
 
@@ -403,22 +405,22 @@ class AudioPlayerService {
     try {
       await _audioHandler?.stop();
     } catch (e, st) {
-      logger.e('Failed to stop audio handler', e, st);
+      _log.e('Failed to stop audio handler', error: e, stackTrace: st);
     }
     try {
       await _sessionPlayer.stop();
     } catch (e, st) {
-      logger.e('Failed to stop audio player', e, st);
+      _log.e('Failed to stop audio player', error: e, stackTrace: st);
     }
     try {
       await _sessionPlayer.clearAudioSources();
     } catch (e, st) {
-      logger.e('Failed to clear audio sources', e, st);
+      _log.e('Failed to clear audio sources', error: e, stackTrace: st);
     }
     try {
       await _audioSessionInstance.setActive(false);
     } catch (e, st) {
-      logger.e('Failed to deactivate audio session', e, st);
+      _log.e('Failed to deactivate audio session', error: e, stackTrace: st);
     }
   });
 
@@ -442,27 +444,27 @@ class AudioPlayerService {
     try {
       await _audioHandler?.stop();
     } catch (e, st) {
-      logger.e('Failed to stop audio handler during shutdown', e, st);
+      _log.e('Failed to stop audio handler during shutdown', error: e, stackTrace: st);
     }
     try {
       await _audioHandler?.shutdown();
     } catch (e, st) {
-      logger.e('Failed to shut down audio handler', e, st);
+      _log.e('Failed to shut down audio handler', error: e, stackTrace: st);
     }
     try {
       await _sessionPlayer.dispose();
     } catch (e, st) {
-      logger.e('Failed to dispose session player', e, st);
+      _log.e('Failed to dispose session player', error: e, stackTrace: st);
     }
     try {
       await _previewPlayer?.dispose();
     } catch (e, st) {
-      logger.e('Failed to dispose preview player', e, st);
+      _log.e('Failed to dispose preview player', error: e, stackTrace: st);
     }
     try {
       await _audioSessionInstance.setActive(false);
     } catch (e, st) {
-      logger.e('Failed to deactivate audio session during shutdown', e, st);
+      _log.e('Failed to deactivate audio session during shutdown', error: e, stackTrace: st);
     }
 
     _audioHandler = null;
@@ -486,7 +488,7 @@ class AudioPlayerService {
       await preview.setAudioSource(AudioSource.file(filePath));
       await preview.play();
     } catch (e, st) {
-      logger.e('Failed to play preview file: $filePath', e, st);
+      _log.e('Failed to play preview file: $filePath', error: e, stackTrace: st);
       throw AudioPlaybackException('Failed to play preview audio file', e);
     }
   }
@@ -510,7 +512,7 @@ class AudioPlayerService {
       await preview.setAudioSource(AudioSource.uri(Uri.parse(url)));
       await preview.play();
     } catch (e, st) {
-      logger.e('Failed to play preview URL: $url', e, st);
+      _log.e('Failed to play preview URL: $url', error: e, stackTrace: st);
       throw AudioPlaybackException('Failed to play preview audio URL', e);
     }
   }
@@ -523,7 +525,7 @@ class AudioPlayerService {
       await old?.stop();
       await old?.dispose();
     } catch (e) {
-      logger.w('Error stopping preview player', e);
+      _log.w('Error stopping preview player', error: e);
     }
   }
 
@@ -628,7 +630,7 @@ class AudioPlayerService {
         await setMobileSpeakerOutput(useSpeaker: isSpeaker);
       }
     } catch (e, st) {
-      logger.e('Failed to set output device: ${device.id}', e, st);
+      _log.e('Failed to set output device: ${device.id}', error: e, stackTrace: st);
       throw AudioDeviceException('Failed to set output audio device', e);
     }
   }

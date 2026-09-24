@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import '../abstracts/page_document_reader.dart';
 import '../errors/document_exception.dart';
 import '../lifecycle/disposable.dart';
+import '../logger/app_logger.dart';
 import '../models/models.dart';
 import 'comic/comic_archive_adapter.dart';
 import 'comic/comic_info_parser.dart';
@@ -16,6 +17,8 @@ import 'comic/image_header_parser.dart';
 class ComicBookDocumentReader
     with DisposableMixin
     implements PageDocumentReader {
+  static final _log = AppLogger.instance.scope('ComicBookDocumentReader');
+
   final String filePath;
   final String _format;
   final ComicArchiveAdapter _adapter;
@@ -44,8 +47,10 @@ class ComicBookDocumentReader
     String filePath, {
     String? password,
   }) async {
+    _log.i('Opening comic archive: $filePath');
     final file = File(filePath);
     if (!file.existsSync()) {
+      _log.e('Comic archive not found: $filePath');
       throw DocumentOpenException('Comic archive not found: $filePath');
     }
 
@@ -53,22 +58,27 @@ class ComicBookDocumentReader
     final ComicArchiveAdapter adapter;
     final String format;
 
-    if (ext == '.cbt' || ext == '.tar') {
-      format = 'cbt';
-      adapter = await TarComicArchiveAdapter.fromFile(filePath);
-    } else if (ext == '.cbr' || ext == '.rar') {
-      format = 'cbr';
-      adapter = RarComicArchiveAdapter(filePath);
-    } else if (ext == '.cb7' || ext == '.7z') {
-      format = 'cb7';
-      adapter = SevenZipComicArchiveAdapter(filePath);
-    } else {
-      // Default to CBZ / ZIP
-      format = 'cbz';
-      adapter = await ZipComicArchiveAdapter.fromFile(
-        filePath,
-        password: password,
-      );
+    try {
+      if (ext == '.cbt' || ext == '.tar') {
+        format = 'cbt';
+        adapter = await TarComicArchiveAdapter.fromFile(filePath);
+      } else if (ext == '.cbr' || ext == '.rar') {
+        format = 'cbr';
+        adapter = RarComicArchiveAdapter(filePath);
+      } else if (ext == '.cb7' || ext == '.7z') {
+        format = 'cb7';
+        adapter = SevenZipComicArchiveAdapter(filePath);
+      } else {
+        // Default to CBZ / ZIP
+        format = 'cbz';
+        adapter = await ZipComicArchiveAdapter.fromFile(
+          filePath,
+          password: password,
+        );
+      }
+    } catch (e, st) {
+      _log.e('Failed to initialize comic archive adapter for $filePath', error: e, stackTrace: st);
+      rethrow;
     }
 
     return _build(filePath: filePath, format: format, adapter: adapter);
@@ -80,19 +90,25 @@ class ComicBookDocumentReader
     String filePath = 'comic.cbz',
     String? password,
   }) async {
+    _log.i('Opening comic from bytes: $filePath (${bytes.length} bytes)');
     final ext = p.extension(filePath).toLowerCase();
     final ComicArchiveAdapter adapter;
     final String format;
 
-    if (ext == '.cbt' || ext == '.tar') {
-      format = 'cbt';
-      adapter = await TarComicArchiveAdapter.fromBytes(bytes);
-    } else {
-      format = 'cbz';
-      adapter = await ZipComicArchiveAdapter.fromBytes(
-        bytes,
-        password: password,
-      );
+    try {
+      if (ext == '.cbt' || ext == '.tar') {
+        format = 'cbt';
+        adapter = await TarComicArchiveAdapter.fromBytes(bytes);
+      } else {
+        format = 'cbz';
+        adapter = await ZipComicArchiveAdapter.fromBytes(
+          bytes,
+          password: password,
+        );
+      }
+    } catch (e, st) {
+      _log.e('Failed to initialize comic archive from bytes for $filePath', error: e, stackTrace: st);
+      rethrow;
     }
 
     return _build(filePath: filePath, format: format, adapter: adapter);
@@ -105,6 +121,7 @@ class ComicBookDocumentReader
   }) {
     final imagePaths = adapter.listImageEntries();
     if (imagePaths.isEmpty) {
+      _log.e('No image pages found in comic archive: $filePath');
       adapter.dispose();
       throw const DocumentParseException(
         'No image pages found in comic archive',
@@ -146,6 +163,8 @@ class ComicBookDocumentReader
     if (outline.isEmpty) {
       outline.addAll(ComicTocExtractor.extract(imagePaths));
     }
+
+    _log.i('Comic parsed: $filePath ($format, ${imagePaths.length} pages, outline: ${outline.length})');
 
     return ComicBookDocumentReader._(
       filePath: filePath,
@@ -217,14 +236,17 @@ class ComicBookDocumentReader
   Uint8List loadPageSync(int pageIndex) {
     checkNotDisposed('loadPageSync');
     if (pageIndex < 0 || pageIndex >= _pagePaths.length) {
+      _log.e('Comic page index out of bounds: $pageIndex (total: ${_pagePaths.length})');
       throw RangeError.range(pageIndex, 0, _pagePaths.length - 1, 'pageIndex');
     }
     final cached = _imageCache[pageIndex];
     if (cached != null) return cached;
 
     final path = _pagePaths[pageIndex];
+    _log.d('Loading comic page image at index $pageIndex: $path');
     final bytes = loadAsset(path);
     if (bytes == null) {
+      _log.e('Failed to load page image at index $pageIndex: $path');
       throw DocumentParseException(
         'Failed to load page image at index $pageIndex: $path',
       );
@@ -251,6 +273,7 @@ class ComicBookDocumentReader
 
   @override
   void dispose() {
+    _log.d('Disposing ComicBookDocumentReader for: $filePath');
     super.dispose();
     _imageCache.clear();
     _assetCache.clear();

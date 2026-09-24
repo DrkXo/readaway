@@ -3,15 +3,17 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../features/settings/domain/entity/settings.dart';
-import 'logging_service.dart';
 import 'path_service.dart';
 import 'settings_service.dart';
 
 /// Loads and registers user-added font files so Flutter can render them.
 @Singleton()
 class FontService {
+  final _log = AppLogger.instance.scope('FontService');
+
   final SettingsService _settings;
   final AppPathService _pathService;
 
@@ -38,8 +40,12 @@ class FontService {
     for (final font in _settings.settings.customFonts) {
       try {
         await _registerFont(font.name, font.path);
-      } catch (e) {
-        logger.e('Failed to load custom font ${font.name}: $e');
+      } catch (e, st) {
+        _log.e(
+          'Failed to load custom font ${font.name}',
+          error: e,
+          stackTrace: st,
+        );
       }
     }
   }
@@ -76,8 +82,12 @@ class FontService {
       if (await file.exists()) {
         await file.delete();
       }
-    } catch (e) {
-      logger.e('Failed to delete font file ${font.path}: $e');
+    } catch (e, st) {
+      _log.e(
+        'Failed to delete font file ${font.path}',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -91,7 +101,7 @@ class FontService {
       ..addFont(Future.value(ByteData.view(bytes.buffer)));
     await loader.load();
     _registered.add(familyName);
-    logger.d('Registered custom font: $familyName');
+    _log.d('Registered custom font: $familyName');
   }
 
   String _newId() {

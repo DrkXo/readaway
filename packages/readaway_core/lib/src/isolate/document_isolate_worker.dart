@@ -6,6 +6,7 @@ import '../abstracts/document_reader.dart';
 import '../abstracts/page_document_reader.dart';
 import '../abstracts/reflowable_document_reader.dart';
 import '../errors/document_exception.dart';
+import '../logger/app_logger.dart';
 import '../readers/document_reader_factory.dart';
 import '../readers/html_text_extractor.dart';
 import '../transformers/footnote_transformer.dart';
@@ -41,6 +42,9 @@ class _IsolateLruCache<K, V> {
 
 /// Entry point function executed inside the dedicated document isolate.
 void documentIsolateEntryPoint(SendPort hostSendPort) {
+  final log = AppLogger.instance.scope('DocumentIsolateWorker');
+  log.d('Document isolate entry point initialized');
+
   final receivePort = ReceivePort();
   hostSendPort.send(receivePort.sendPort);
 
@@ -91,6 +95,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
     try {
       await message.when(
         open: (id, filePath, password) async {
+          log.i('Isolate opening document: $filePath (req id: $id)');
           await reader?.dispose();
           reader = null;
           clearCaches();
@@ -117,6 +122,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
               } catch (_) {}
             }
 
+            log.i('Isolate document successfully loaded: $filePath');
             hostSendPort.send(
               DocumentResponse.opened(
                 id: id,
@@ -130,7 +136,8 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
                 format: opened.format,
               ),
             );
-          } on DocumentEncryptedException catch (e) {
+          } on DocumentEncryptedException catch (e, st) {
+            log.w('Document encrypted: $filePath', error: e, stackTrace: st);
             hostSendPort.send(
               DocumentResponse.encryptedError(
                 id: id,
@@ -334,6 +341,11 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
         },
       );
     } catch (e, st) {
+      log.e(
+        'Isolate error processing request ${message.id}: $e',
+        error: e,
+        stackTrace: st,
+      );
       hostSendPort.send(
         DocumentResponse.error(
           id: message.id,

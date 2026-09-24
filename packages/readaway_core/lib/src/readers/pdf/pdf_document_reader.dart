@@ -1,19 +1,19 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 
 import '../../abstracts/page_document_reader.dart';
 import '../../errors/document_exception.dart';
 import '../../lifecycle/disposable.dart';
+import '../../logger/app_logger.dart';
 import '../../models/models.dart';
 import 'pdf_engine_manager.dart';
 import 'pdf_image_encoder.dart';
 import 'pdf_toc_extractor.dart';
 
-final _log = Logger('PdfDocumentReader');
+final _log = AppLogger.instance.scope('PdfDocumentReader');
 
 typedef _CacheKey = (
   int pageIndex,
@@ -88,8 +88,10 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
     String? password,
     int imageCacheSize = 10,
   }) async {
+    _log.i('Opening PDF file: $filePath');
     final file = File(filePath);
     if (!file.existsSync()) {
+      _log.e('PDF file not found: $filePath');
       throw DocumentOpenException('PDF file not found: $filePath');
     }
 
@@ -107,14 +109,16 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
         filePath: filePath,
         imageCacheSize: imageCacheSize,
       );
-    } on PdfPasswordException catch (e) {
+    } on PdfPasswordException catch (e, st) {
+      _log.w('PDF requires password or password incorrect: $filePath', error: e, stackTrace: st);
       await PdfEngineManager.release();
       throw DocumentEncryptedException(
         'Password required or incorrect for PDF: $filePath',
         isInvalidPassword: password != null,
         cause: e,
       );
-    } catch (e) {
+    } catch (e, st) {
+      _log.e('Failed to open PDF document: $filePath', error: e, stackTrace: st);
       await PdfEngineManager.release();
       if (e is DocumentException) rethrow;
       throw DocumentParseException('Failed to open PDF document: $e', cause: e);
@@ -128,6 +132,7 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
     String? password,
     int imageCacheSize = 10,
   }) async {
+    _log.i('Opening PDF from bytes: $filePath (${bytes.length} bytes)');
     await PdfEngineManager.acquire();
 
     final passwordProvider = _buildPasswordProvider(password);
@@ -142,14 +147,16 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
         filePath: filePath,
         imageCacheSize: imageCacheSize,
       );
-    } on PdfPasswordException catch (e) {
+    } on PdfPasswordException catch (e, st) {
+      _log.w('PDF from bytes requires password: $filePath', error: e, stackTrace: st);
       await PdfEngineManager.release();
       throw DocumentEncryptedException(
         'Password required or incorrect for PDF: $filePath',
         isInvalidPassword: password != null,
         cause: e,
       );
-    } catch (e) {
+    } catch (e, st) {
+      _log.e('Failed to open PDF from bytes: $filePath', error: e, stackTrace: st);
       await PdfEngineManager.release();
       if (e is DocumentException) rethrow;
       throw DocumentParseException('Failed to open PDF document: $e', cause: e);
@@ -174,10 +181,10 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       final outlineNodes = await pdfDoc.loadOutline();
       _convertOutlines(outlineNodes, outlineItems);
     } catch (e, st) {
-      _log.warning(
+      _log.w(
         'Failed to load native PDF outline for $filePath: $e',
-        e,
-        st,
+        error: e,
+        stackTrace: st,
       );
     }
 
@@ -185,9 +192,11 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       try {
         outlineItems = await PdfTocExtractor.extract(pdfDoc);
       } catch (e, st) {
-        _log.warning('Failed to extract TOC for $filePath: $e', e, st);
+        _log.w('Failed to extract TOC for $filePath: $e', error: e, stackTrace: st);
       }
     }
+
+    _log.i('PDF loaded successfully: $filePath (${pdfDoc.pages.length} pages, outline: ${outlineItems.length})');
 
     return PdfDocumentReader._(
       filePath: filePath,
@@ -334,6 +343,7 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
   @override
   Future<void> dispose() async {
     if (isDisposed) return;
+    _log.d('Disposing PdfDocumentReader for: $filePath');
     super.dispose();
     _pageCache.clear();
     _pageSizeCache.clear();

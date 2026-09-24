@@ -4,6 +4,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../domain/entity/reading_status.dart';
@@ -16,6 +17,7 @@ part 'library_state.dart';
 
 @injectable
 class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
+  final _log = AppLogger.instance.scope('LibraryBloc');
   final LibraryRepository _repository;
 
   LibraryBloc(this._repository) : super(const LibraryState()) {
@@ -56,7 +58,10 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     final result = await _repository.getRecentDocuments();
 
     result.fold(
-      (failure) => emit(state.copyWith(isLoading: false, failure: failure)),
+      (failure) {
+        _log.e('Failed to load recent documents: $failure');
+        emit(state.copyWith(isLoading: false, failure: failure));
+      },
       (documents) {
         emit(
           state.copyWith(
@@ -119,7 +124,10 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     final result = await _repository.pickAndAddDocuments();
 
     result.fold(
-      (failure) => emit(state.copyWith(isLoading: false, failure: failure)),
+      (failure) {
+        _log.e('Failed to pick and add documents: $failure');
+        emit(state.copyWith(isLoading: false, failure: failure));
+      },
       (newDocs) {
         if (newDocs.isEmpty) {
           emit(state.copyWith(isLoading: false));
@@ -159,7 +167,10 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     final result = await _repository.pickDocumentWithoutSaving();
 
     result.fold(
-      (failure) => emit(state.copyWith(failure: failure)),
+      (failure) {
+        _log.e('Failed to pick document directly: $failure');
+        emit(state.copyWith(failure: failure));
+      },
       (doc) {
         if (doc != null) {
           emit(state.copyWith(directOpenDocument: doc));

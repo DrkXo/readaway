@@ -5,15 +5,17 @@ import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../flavors.dart';
-import 'logging_service.dart';
 
 NotificationService get notificationService =>
     GetIt.I.get<NotificationService>();
 
 @Singleton()
 class NotificationService {
+  final _log = AppLogger.instance.scope('NotificationService');
+
   final PackageInfo _packageInfo;
 
   NotificationService(this._packageInfo);
@@ -76,7 +78,7 @@ class NotificationService {
       onDidReceiveNotificationResponse: onDidReceiveNotificationResponse,
     );
     _initialized = true;
-    logger.d('NotificationService initialised');
+    _log.d('NotificationService initialised');
   }
 
   Future<bool> requestPermissions() async {

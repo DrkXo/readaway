@@ -4,9 +4,9 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:injectable/injectable.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../http/http_service.dart';
-import '../../logging_service.dart';
 import '../tts_model_store.dart';
 import '../tts_models.dart';
 
@@ -24,6 +24,8 @@ class TtsCatalogSyncResult {
 
 @lazySingleton
 class TtsCatalogService {
+  final _log = AppLogger.instance.scope('TtsCatalogService');
+
   TtsCatalogService({
     required HttpService httpService,
     required TtsModelStore store,
@@ -65,7 +67,7 @@ class TtsCatalogService {
       await _store.saveChecksums(checksums);
       return models;
     } catch (e, st) {
-      logger.e('Failed to load bundled TTS catalog assets', e, st);
+      _log.e('Failed to load bundled TTS catalog assets', error: e, stackTrace: st);
       return _store.loadCatalog();
     }
   }
@@ -176,8 +178,8 @@ class TtsCatalogService {
         }
       }
       return map;
-    } catch (e) {
-      logger.w('Failed to fetch remote checksums: $e');
+    } catch (e, st) {
+      _log.w('Failed to fetch remote checksums: $e', error: e, stackTrace: st);
       return const {};
     }
   }

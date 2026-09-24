@@ -7,7 +7,7 @@ import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:mutex/mutex.dart';
 import 'package:readaway_core/readaway_core.dart'
-    show TtsChunk, computeChunkGapSec;
+    show AppLogger, TtsChunk, computeChunkGapSec;
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../features/settings/domain/entity/settings.dart';
@@ -32,6 +32,8 @@ part 'tts_controller_service.voice.dart';
 ///  - `tts_controller_service.cleanup.dart`  — temp file & playback-state cleanup
 @lazySingleton
 class TtsControllerService {
+  final _log = AppLogger.instance.scope('TtsControllerService');
+
   TtsControllerService(
     this._engineRegistry,
     this._audioPlayer,

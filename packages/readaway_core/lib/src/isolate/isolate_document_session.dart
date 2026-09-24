@@ -4,12 +4,15 @@ import 'dart:typed_data';
 
 import '../errors/document_exception.dart';
 import '../lifecycle/disposable.dart';
+import '../logger/app_logger.dart';
 import '../models/models.dart';
 import 'document_isolate_messages.dart';
 import 'document_isolate_worker.dart';
 
 /// Client proxy managing an active document session inside a dedicated background isolate.
 class IsolateDocumentSession with DisposableMixin implements Disposable {
+  static final _log = AppLogger.instance.scope('IsolateDocumentSession');
+
   final Isolate _isolate;
   final SendPort _workerSendPort;
   final ReceivePort _hostReceivePort;
@@ -52,6 +55,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
     String filePath, {
     String? password,
   }) async {
+    _log.i('Spawning isolate session for document: $filePath');
     final hostReceivePort = ReceivePort();
     final isolate = await Isolate.spawn(
       documentIsolateEntryPoint,
@@ -111,7 +115,9 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
       workerSendPort = await workerSendPortCompleter.future.timeout(
         const Duration(seconds: 10),
       );
-    } catch (e) {
+      _log.d('Isolate handshake completed for $filePath');
+    } catch (e, st) {
+      _log.e('Failed to establish isolate handshake for $filePath', error: e, stackTrace: st);
       await subscription.cancel();
       hostReceivePort.close();
       isolate.kill(priority: Isolate.immediate);
@@ -129,7 +135,8 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
     final DocumentResponse openResponse;
     try {
       openResponse = await openCompleter.future;
-    } catch (e) {
+    } catch (e, st) {
+      _log.e('Failed to open document in isolate: $filePath', error: e, stackTrace: st);
       await subscription.cancel();
       hostReceivePort.close();
       isolate.kill(priority: Isolate.immediate);
@@ -150,6 +157,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
             isReflowable,
             format,
           ) {
+            _log.i('Document session opened in isolate: $filePath (format: $format, title: "$title")');
             return IsolateDocumentSession._(
               isolate: isolate,
               workerSendPort: workerSendPort,
@@ -169,6 +177,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
             );
           },
       encryptedError: (id, message, isInvalidPassword) {
+        _log.w('Document encrypted in isolate: $filePath (invalidPassword: $isInvalidPassword)');
         subscription.cancel();
         hostReceivePort.close();
         isolate.kill(priority: Isolate.immediate);
@@ -178,6 +187,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
         );
       },
       error: (id, message, stackTrace) {
+        _log.e('Isolate returned error while opening $filePath: $message');
         subscription.cancel();
         hostReceivePort.close();
         isolate.kill(priority: Isolate.immediate);
@@ -357,6 +367,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   @override
   Future<void> dispose() async {
     if (isDisposed) return;
+    _log.d('Disposing IsolateDocumentSession for: $filePath');
     super.dispose();
 
     if (_pending.isNotEmpty) {

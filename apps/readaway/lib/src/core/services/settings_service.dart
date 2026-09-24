@@ -2,15 +2,17 @@ import 'dart:async';
 
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../features/settings/domain/entity/settings.dart';
-import 'logging_service.dart';
 import 'storage/hive/app_storage_service.dart';
 
 SettingsService get settingsService => GetIt.I.get<SettingsService>();
 
 @Singleton()
 class SettingsService {
+  final _log = AppLogger.instance.scope('SettingsService');
+
   static const String _key = 'app_settings';
   static const Duration _flushDelay = Duration(milliseconds: 500);
 
@@ -30,13 +32,13 @@ class SettingsService {
     final stored = _storage.settingsBox.get(_key);
 
     if (stored == null) {
-      logger.d('No stored settings found, creating defaults');
+      _log.d('No stored settings found, creating defaults');
       await save(const Settings());
       return;
     }
 
     _settings = stored;
-    logger.d('Settings loaded');
+    _log.d('Settings loaded');
   }
 
   Future<void> save(Settings settings) async {
@@ -46,8 +48,8 @@ class SettingsService {
     try {
       await _storage.settingsBox.put(_key, settings);
       _changesController.add(settings);
-    } catch (e) {
-      logger.e('Failed to persist settings: $e');
+    } catch (e, st) {
+      _log.e('Failed to persist settings', error: e, stackTrace: st);
       rethrow;
     }
   }

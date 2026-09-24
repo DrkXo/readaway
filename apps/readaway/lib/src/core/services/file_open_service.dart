@@ -6,10 +6,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
+import 'package:readaway_core/readaway_core.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../models/document_format.dart';
-import 'logging_service.dart';
 
 /// Represents an incoming document file received from the OS or CLI.
 class IncomingDocument {
@@ -30,6 +30,8 @@ class IncomingDocument {
 /// materialized into the app cache via a tiny native resolver.
 @singleton
 class FileOpenService {
+  final _log = AppLogger.instance.scope('FileOpenService');
+
   static const MethodChannel _contentResolver = MethodChannel(
     'dev.readaway/content_resolver',
   );
@@ -39,10 +41,6 @@ class FileOpenService {
   static const MethodChannel _macOsBridge = MethodChannel(
     'dev.readaway/file_opener',
   );
-
-  final LoggingService _loggingService;
-
-  Logger get _log => _loggingService.logger;
 
   // Replays startup-queued documents (CLI args, initial links) to the first
   // listener: the router subscribes after the first frame, but documents can
@@ -57,9 +55,7 @@ class FileOpenService {
   Stream<IncomingDocument> get incomingDocuments =>
       _incomingDocumentSubject.stream;
 
-  FileOpenService({
-    required LoggingService loggingService,
-  }) : _loggingService = loggingService; // ignore: prefer_initializing_formals
+  FileOpenService();
 
   /// Wires up OS file-open forwarding (mobile deep links + macOS Finder + Android share/send intents).
   @PostConstruct(preResolve: true)
@@ -120,14 +116,14 @@ class FileOpenService {
 
         if (file.existsSync()) {
           final fileName = p.basename(file.path);
-          _log.info('[FileOpenService] Detected CLI argument file: ${file.path}');
+          _log.i('Detected CLI argument file: ${file.path}');
           queueDocument(
             IncomingDocument(path: file.absolute.path, fileName: fileName),
           );
           break;
         }
-      } catch (e) {
-        _log.warning('[FileOpenService] Error checking CLI arg "$cleaned": $e');
+      } catch (e, st) {
+        _log.w('Error checking CLI arg "$cleaned"', error: e, stackTrace: st);
       }
     }
   }
@@ -143,8 +139,8 @@ class FileOpenService {
           await handleUri(initial);
         }
       }());
-    } catch (e) {
-      _log.warning('[FileOpenService] app_links unavailable: $e');
+    } catch (e, st) {
+      _log.w('app_links unavailable', error: e, stackTrace: st);
     }
   }
 
@@ -161,8 +157,7 @@ class FileOpenService {
                 queueDocument(
                   IncomingDocument(
                     path: path,
-                    fileName: (args['fileName'] as String?) ??
-                        p.basename(path),
+                    fileName: (args['fileName'] as String?) ?? p.basename(path),
                   ),
                 );
               }
@@ -181,15 +176,14 @@ class FileOpenService {
             queueDocument(
               IncomingDocument(
                 path: path,
-                fileName: (initial['fileName'] as String?) ??
-                    p.basename(path),
+                fileName: (initial['fileName'] as String?) ?? p.basename(path),
               ),
             );
           }
         }
       }());
-    } catch (e) {
-      _log.warning('[FileOpenService] macOS file-open bridge unavailable: $e');
+    } catch (e, st) {
+      _log.w('macOS file-open bridge unavailable', error: e, stackTrace: st);
     }
   }
 
@@ -227,8 +221,12 @@ class FileOpenService {
           }
         }
       }());
-    } catch (e) {
-      _log.warning('[FileOpenService] Android send intent bridge unavailable: $e');
+    } catch (e, st) {
+      _log.w(
+        'Android send intent bridge unavailable',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -249,9 +247,11 @@ class FileOpenService {
         fileName =
             (resolved?['fileName'] as String?) ??
             (path.isNotEmpty ? p.basename(path) : 'document');
-      } on PlatformException catch (e) {
-        _log.warning(
-          '[FileOpenService] Failed to materialize $uri: ${e.message}',
+      } on PlatformException catch (e, st) {
+        _log.w(
+          'Failed to materialize $uri: ${e.message}',
+          error: e,
+          stackTrace: st,
         );
         return;
       }
@@ -266,8 +266,7 @@ class FileOpenService {
       // app_links on Linux/Windows forwards raw command-line paths (e.g.
       // /home/u/doc.epub or C:/docs/a.epub) which parse with an empty or
       // single-letter scheme. Treat them as files when they actually exist.
-      var candidate =
-          (uri.scheme.length == 1) ? uri.toString() : uri.path;
+      var candidate = (uri.scheme.length == 1) ? uri.toString() : uri.path;
       candidate = _sanitizePath(candidate);
       File file = File(candidate);
       if (!file.existsSync()) {
@@ -281,7 +280,7 @@ class FileOpenService {
       }
 
       if (candidate.isEmpty || !file.existsSync()) {
-        _log.warning('[FileOpenService] Ignoring non-file link: $uri');
+        _log.w('Ignoring non-file link: $uri');
         return;
       }
       path = file.absolute.path;
@@ -289,17 +288,17 @@ class FileOpenService {
     }
 
     if (path.isEmpty) return;
-    _log.info('[FileOpenService] Opening document: $path');
+    _log.i('Opening document: $path');
     queueDocument(IncomingDocument(path: path, fileName: fileName));
   }
 
   /// Queues an incoming document and emits it to [incomingDocuments].
   void queueDocument(IncomingDocument doc) {
     if (!SupportedDocumentFormats.isSupported(doc.path)) {
-      _log.warning(
-        '[FileOpenService] Document format not supported for path: ${doc.path}',
-      );
+      _log.w('Document format not supported for path: ${doc.path}');
     }
+
+    _incomingDocumentSubject.add(doc);
 
     _incomingDocumentSubject.add(doc);
   }

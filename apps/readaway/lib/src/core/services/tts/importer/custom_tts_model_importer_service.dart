@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
+import 'package:readaway_core/readaway_core.dart';
 
-import '../../logging_service.dart';
 import '../../path_service.dart';
 import '../extractor/tts_archive_extractor.dart';
 import '../tts_model_store.dart';
@@ -40,6 +40,8 @@ class CustomModelInspectionResult {
 
 @lazySingleton
 class CustomTtsModelImporterService {
+  final _log = AppLogger.instance.scope('CustomTtsModelImporterService');
+
   CustomTtsModelImporterService({
     required TtsArchiveExtractor archiveExtractor,
     required AppPathService pathService,
@@ -216,7 +218,7 @@ class CustomTtsModelImporterService {
       await _store.saveInstalledModel(modelInfo);
       return modelInfo;
     } catch (e, st) {
-      logger.e('Failed to import custom TTS model $modelId', e, st);
+      _log.e('Failed to import custom TTS model $modelId', error: e, stackTrace: st);
       if (await destDir.exists()) {
         await destDir.delete(recursive: true);
       }

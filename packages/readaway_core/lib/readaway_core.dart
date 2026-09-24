@@ -24,6 +24,9 @@ export 'src/isolate/isolate_document_session.dart';
 // Lifecycle
 export 'src/lifecycle/disposable.dart';
 
+// Logger
+export 'src/logger/app_logger.dart';
+
 // Models
 export 'src/models/models.dart';
 

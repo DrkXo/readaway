@@ -4,8 +4,8 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
+import 'package:readaway_core/readaway_core.dart';
 
-import '../../../../../core/services/logging_service.dart';
 import '../../../../../core/services/tts/importer/custom_tts_model_importer_service.dart';
 import '../../../../../core/services/tts/tts_models.dart';
 import '../../../../reader/domain/repositories/reader_preferences_repository.dart';
@@ -21,6 +21,8 @@ part 'settings_state.dart';
 
 @lazySingleton
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
+  final _log = AppLogger.instance.scope('SettingsBloc');
+
   final ReaderPreferencesRepository preferencesRepository;
   final SettingsRepository settingsRepository;
   final TtsModelRepository ttsModelRepository;
@@ -119,10 +121,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     final result = await preferencesRepository.saveGlobalPreferences(event.prefs);
     result.fold(
-      (failure) => logger.e('Failed to set global prefs: $failure'),
+      (failure) => _log.e('Failed to set global prefs: $failure'),
       (_) {
         emit(state.copyWith(globalReaderPrefs: event.prefs));
-        logger.d('Global reader prefs updated');
+        _log.d('Global reader prefs updated');
       },
     );
   }
@@ -139,7 +141,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         appSettings: Settings(),
       ),
     );
-    logger.d('All reader prefs reset');
+    _log.d('All reader prefs reset');
   }
 
   void _onLoadDocumentPrefs(
@@ -148,7 +150,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     final result = await preferencesRepository.getDocumentPreferences(event.path);
     result.fold(
-      (failure) => logger.e('Failed to load document prefs: $failure'),
+      (failure) => _log.e('Failed to load document prefs: $failure'),
       (loaded) {
         final map = Map<String, ReaderPreferences>.of(
           state.documentReaderPrefs,
@@ -159,7 +161,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
           map[event.path] = loaded;
         }
         emit(state.copyWith(documentReaderPrefs: map));
-        logger.d('Document reader prefs loaded for ${event.path}');
+        _log.d('Document reader prefs loaded for ${event.path}');
       },
     );
   }
@@ -173,7 +175,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       event.prefs,
     );
     result.fold(
-      (failure) => logger.e('Failed to set document prefs: $failure'),
+      (failure) => _log.e('Failed to set document prefs: $failure'),
       (_) {
         emit(
           state.copyWith(
@@ -183,7 +185,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
             },
           ),
         );
-        logger.d('Document reader prefs updated for ${event.path}');
+        _log.d('Document reader prefs updated for ${event.path}');
       },
     );
   }
@@ -194,14 +196,14 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     final result = await preferencesRepository.clearDocumentPreferences(event.path);
     result.fold(
-      (failure) => logger.e('Failed to clear document prefs: $failure'),
+      (failure) => _log.e('Failed to clear document prefs: $failure'),
       (_) {
         final map = Map<String, ReaderPreferences>.of(
           state.documentReaderPrefs,
         );
         map.remove(event.path);
         emit(state.copyWith(documentReaderPrefs: map));
-        logger.d('Document reader prefs cleared for ${event.path}');
+        _log.d('Document reader prefs cleared for ${event.path}');
       },
     );
   }
@@ -213,10 +215,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     final global = event.all['global'] ?? const ReaderPreferences();
     final result = await preferencesRepository.importGlobalPreferences(global);
     result.fold(
-      (failure) => logger.e('Failed to import prefs: $failure'),
+      (failure) => _log.e('Failed to import prefs: $failure'),
       (_) {
         emit(state.copyWith(globalReaderPrefs: global));
-        logger.d('Reader prefs imported');
+        _log.d('Reader prefs imported');
       },
     );
   }
@@ -227,7 +229,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     await settingsRepository.saveSettings(event.settings);
     emit(state.copyWith(appSettings: event.settings));
-    logger.d('App settings updated');
+    _log.d('App settings updated');
   }
 
   void _onLoadPrefs(
@@ -241,7 +243,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     final settings = settingsResult.dataOrNull ?? state.appSettings;
 
     emit(state.copyWith(globalReaderPrefs: prefs, appSettings: settings));
-    logger.d('Settings loaded via event');
+    _log.d('Settings loaded via event');
   }
 
   void _onRefreshTts(_RefreshTts event, Emitter<SettingsState> emit) async {

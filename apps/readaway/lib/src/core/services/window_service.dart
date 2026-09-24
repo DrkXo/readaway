@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
-import 'package:logging/logging.dart';
+import 'package:readaway_core/readaway_core.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -13,6 +13,8 @@ import 'audio/audio_player_service.dart';
 
 @Singleton()
 class WindowService with WindowListener {
+  final _log = AppLogger.instance.scope('WindowService');
+
   WindowManager get _wm => WindowManager.instance;
 
   final BehaviorSubject<bool> _maximizedSubject =
@@ -127,10 +129,10 @@ class WindowService with WindowListener {
     try {
       await audioPlayerService.shutdown();
     } catch (e, st) {
-      Logger('WindowService').warning(
+      _log.w(
         'Error shutting down audio on window close: $e',
-        e,
-        st,
+        error: e,
+        stackTrace: st,
       );
     }
     try {
@@ -138,7 +140,7 @@ class WindowService with WindowListener {
         _wm.removeListener(this);
       }
     } catch (e, st) {
-      Logger('WindowService').warning('Error removing window listener: $e', e, st);
+      _log.w('Error removing window listener: $e', error: e, stackTrace: st);
     } finally {
       if (Platform.isLinux) {
         await _wm.setPreventClose(false);

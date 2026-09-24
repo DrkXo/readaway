@@ -5,6 +5,7 @@ import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
+import 'package:readaway_core/readaway_core.dart';
 
 import 'path_service.dart';
 
@@ -49,6 +50,8 @@ class DownloadResult {
 /// hardcoded `BaseDirectory.applicationDocuments`.
 @lazySingleton
 class BackGroundDownloaderService {
+  final _log = AppLogger.instance.scope('BackGroundDownloaderService');
+
   BackGroundDownloaderService(this._appPathService)
     : _downloader = FileDownloader();
 
@@ -116,7 +119,7 @@ class BackGroundDownloaderService {
       _updatesSub = _downloader.updates.listen(
         _updateController.add,
         onError: (Object e, StackTrace st) {
-          debugPrint('BackGroundDownloaderService: update stream error: $e');
+          _log.e('Update stream error', error: e, stackTrace: st);
         },
       );
 
@@ -127,6 +130,7 @@ class BackGroundDownloaderService {
       _initialized = true;
       completer.complete();
     } catch (e, st) {
+      _log.e('Failed to initialize BackGroundDownloaderService', error: e, stackTrace: st);
       completer.completeError(e, st);
       _initCompleter = null; // allow retry on next call
       rethrow;

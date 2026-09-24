@@ -6,10 +6,10 @@ import 'dart:typed_data';
 
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
+import 'package:readaway_core/readaway_core.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 
 import '../../isolate_service.dart';
-import '../../logging_service.dart';
 import '../../path_service.dart';
 import '../../settings_service.dart';
 import '../tts_model_store.dart';
@@ -19,6 +19,7 @@ import 'sherpa_tts_model_downloader.dart';
 
 @lazySingleton
 class SherpaOnnxTtsService {
+  final _log = AppLogger.instance.scope('SherpaOnnxTtsService');
   SherpaOnnxTtsService({
     required SherpaTtsModelDownloaderService downloader,
     required IsolateService isolateService,
@@ -90,8 +91,8 @@ class SherpaOnnxTtsService {
             'type': 'unload',
           });
         }
-      } catch (e) {
-        logger.w('Error unloading model during releaseIsolate: $e');
+      } catch (e, st) {
+        _log.w('Error unloading model during releaseIsolate: $e', error: e, stackTrace: st);
       }
       await _isolateService.disposeIsolate(sherpaTtsIsolateName);
     }
@@ -150,9 +151,9 @@ class SherpaOnnxTtsService {
         for (final marker in markers) {
           await marker.delete();
         }
-        logger.d('Reconciled interrupted TTS download for $modelId');
+        _log.d('Reconciled interrupted TTS download for $modelId');
       } catch (e, st) {
-        logger.e('Failed to reconcile TTS download for $modelId', e, st);
+        _log.e('Failed to reconcile TTS download for $modelId', error: e, stackTrace: st);
       }
     }
   }
@@ -462,7 +463,7 @@ class SherpaOnnxTtsService {
         waveform: waveform,
       );
     } catch (e, st) {
-      logger.e('Failed to generate WAV file with Sherpa ONNX', e, st);
+      _log.e('Failed to generate WAV file with Sherpa ONNX', error: e, stackTrace: st);
       if (e is TtsException) rethrow;
       throw TtsSynthesisException('Synthesis to file failed: $e', e);
     }
@@ -524,7 +525,7 @@ class SherpaOnnxTtsService {
         waveform: waveform,
       );
     } catch (e, st) {
-      logger.e('Failed to generate WAV bytes with Sherpa ONNX', e, st);
+      _log.e('Failed to generate WAV bytes with Sherpa ONNX', error: e, stackTrace: st);
       if (e is TtsException) rethrow;
       throw TtsSynthesisException('Synthesis to bytes failed: $e', e);
     }

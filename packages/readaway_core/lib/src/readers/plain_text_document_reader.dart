@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../abstracts/reflowable_document_reader.dart';
 import '../errors/document_exception.dart';
 import '../lifecycle/disposable.dart';
+import '../logger/app_logger.dart';
 import '../models/models.dart';
 
 /// Reads a plain-text document, automatically detecting character encoding,
@@ -15,6 +16,8 @@ import '../models/models.dart';
 class PlainTextDocumentReader
     with DisposableMixin
     implements ReflowableDocumentReader {
+  static final _log = AppLogger.instance.scope('PlainTextDocumentReader');
+
   final String _filePath;
   final TxtMetadata _txtMetadata;
   final List<TxtChapter> _chapters;
@@ -37,8 +40,10 @@ class PlainTextDocumentReader
     String filePath, {
     int fallbackParagraphsPerChapter = 100,
   }) async {
+    _log.i('Opening plain text file: $filePath');
     final file = File(filePath);
     if (!file.existsSync()) {
+      _log.e('Text file not found: $filePath');
       throw DocumentOpenException('Text file not found: $filePath');
     }
     final bytes = file.readAsBytesSync();
@@ -55,7 +60,9 @@ class PlainTextDocumentReader
     String filePath = 'untitled.txt',
     int fallbackParagraphsPerChapter = 100,
   }) async {
+    _log.i('Opening plain text from bytes: $filePath (${bytes.length} bytes)');
     final detectedEncoding = EncodingDetector.detect(bytes);
+    _log.d('Detected text encoding: ${detectedEncoding.name} (confidence: ${detectedEncoding.confidence}, BOM: ${detectedEncoding.hasBom})');
     final text = EncodingDetector.decode(bytes, detected: detectedEncoding);
 
     final headerSample = text.length > 2048 ? text.substring(0, 2048) : text;

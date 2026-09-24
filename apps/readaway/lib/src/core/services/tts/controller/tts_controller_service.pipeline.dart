@@ -130,12 +130,13 @@ extension _TtsSynthesisPipeline on TtsControllerService {
               tag: mediaItem,
             ),
           );
-        } catch (e) {
+        } catch (e, st) {
           if (sessionId != _activeSessionId) return;
           consecutiveErrors++;
-          logger.w(
+          _log.w(
             'TTS pre-buffering skipped problematic chunk $i ($consecutiveErrors/$maxConsecutiveErrors)',
-            e,
+            error: e,
+            stackTrace: st,
           );
           if (consecutiveErrors >= maxConsecutiveErrors) {
             _stateController.add(
@@ -210,12 +211,13 @@ extension _TtsSynthesisPipeline on TtsControllerService {
             ),
             playIfIdle: true,
           );
-        } catch (e) {
+        } catch (e, st) {
           if (sessionId != _activeSessionId) return;
           consecutiveErrors++;
-          logger.w(
+          _log.w(
             'TTS synthesis skipped problematic chunk $i ($consecutiveErrors/$maxConsecutiveErrors)',
-            e,
+            error: e,
+            stackTrace: st,
           );
           if (consecutiveErrors >= maxConsecutiveErrors) {
             _stateController.add(
@@ -231,7 +233,7 @@ extension _TtsSynthesisPipeline on TtsControllerService {
       }
     } catch (e, st) {
       if (sessionId != _activeSessionId) return;
-      logger.e('TTS playback pipeline crashed', e, st);
+      _log.e('TTS playback pipeline crashed', error: e, stackTrace: st);
       if (!_stateController.isClosed) {
         _stateController.add(
           TtsPlaybackEvent(

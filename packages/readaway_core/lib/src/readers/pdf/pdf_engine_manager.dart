@@ -1,10 +1,14 @@
 import 'package:pdfrx/pdfrx.dart';
 
+import '../../logger/app_logger.dart';
+
 /// Manages the lifecycle of active PDF document instances.
 ///
 /// Ensures zero startup overhead by lazily managing PDFium resources only when
 /// PDF documents are active, and releasing resources when all PDFs are closed.
 class PdfEngineManager {
+  static final _log = AppLogger.instance.scope('PdfEngineManager');
+
   static int _activeDocumentCount = 0;
   static bool _isInitialized = false;
   static Future<void>? _initFuture;
@@ -19,13 +23,18 @@ class PdfEngineManager {
 
     if (_isInitialized) {
       _activeDocumentCount++;
+      _log.d('Acquired PDF engine (active count: $_activeDocumentCount)');
       return;
     }
 
     final future = () async {
+      _log.i('Initializing pdfrx engine...');
       try {
         await pdfrxFlutterInitialize();
-      } catch (_) {}
+        _log.i('pdfrx engine successfully initialized');
+      } catch (e, st) {
+        _log.e('Failed to initialize pdfrx engine', error: e, stackTrace: st);
+      }
       _isInitialized = true;
     }();
 
@@ -33,6 +42,7 @@ class PdfEngineManager {
     try {
       await future;
       _activeDocumentCount++;
+      _log.d('Acquired PDF engine (active count: $_activeDocumentCount)');
     } finally {
       if (_initFuture == future) {
         _initFuture = null;
@@ -45,9 +55,11 @@ class PdfEngineManager {
   static Future<void> release() async {
     if (_activeDocumentCount > 0) {
       _activeDocumentCount--;
+      _log.d('Released PDF engine (remaining active: $_activeDocumentCount)');
     }
     if (_activeDocumentCount == 0 && _isInitialized) {
       _isInitialized = false;
+      _log.i('No active PDF documents remaining. Tearing down pdfrx engine...');
       final teardownFuture = _teardown();
       _initFuture = teardownFuture;
       try {
@@ -63,7 +75,10 @@ class PdfEngineManager {
   static Future<void> _teardown() async {
     try {
       await PdfrxEntryFunctions.instance.stopBackgroundWorker();
-    } catch (_) {}
+      _log.d('Stopped pdfrx background worker');
+    } catch (e, st) {
+      _log.w('Failed to stop pdfrx background worker cleanly', error: e, stackTrace: st);
+    }
   }
 
   /// Resets internal state for test isolation.

@@ -18,6 +18,9 @@ import '../datasources/library_local_data_source.dart';
 
 @LazySingleton(as: LibraryRepository)
 class LibraryRepositoryImpl implements LibraryRepository {
+  // ignore: unused_field
+  final _log = AppLogger.instance.scope('LibraryRepository');
+
   final LibraryLocalDataSource _localDataSource;
   final FilePickerDataSource _filePickerDataSource;
   final AppPathService _pathService;
@@ -63,8 +66,10 @@ class LibraryRepositoryImpl implements LibraryRepository {
         }
       }
       final coverDir = await _pathService.getCoversDirectory();
-      final fileHash =
-          md5.convert(utf8.encode(path)).toString().substring(0, 8);
+      final fileHash = md5
+          .convert(utf8.encode(path))
+          .toString()
+          .substring(0, 8);
       final fileName = doc?.fileName ?? p.basename(path);
       final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
       final coverFile = File(

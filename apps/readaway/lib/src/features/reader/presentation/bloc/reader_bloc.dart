@@ -11,7 +11,6 @@ import 'package:readaway_core/readaway_core.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/ui_feedback.dart';
 import '../../../../core/routes/routes.dart';
-import '../../../../core/services/logging_service.dart';
 import '../../../../core/services/tts/tts_models.dart';
 import '../../../../core/utils/reader/reader_html_utils.dart';
 import '../../domain/entity/reader_link.dart';
@@ -24,6 +23,8 @@ part 'reader_state.dart';
 
 @Injectable()
 class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
+  final _log = AppLogger.instance.scope('ReaderBloc');
+
   final ReaderRepository readerRepository;
   final ReaderTtsRepository ttsRepository;
 
@@ -156,7 +157,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
     await openResult.fold(
       (failure) async {
-        logger.e('[ReaderBloc] Failed to open document: $failure');
+        _log.e('Failed to open document: $failure');
         final isEncrypted = failure is DocumentEncryptedFailure;
         emit(
           state.copyWith(
@@ -289,7 +290,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
     await result.fold(
       (failure) async {
-        logger.d('Failed to load page $index: $failure');
+        _log.d('Failed to load page $index: $failure');
         emit(
           state.copyWith(
             loadingPages: {...state.loadingPages}..remove(index),
@@ -366,7 +367,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     final prepResult = await ttsRepository.prepareForPlayback();
     final prepFailure = prepResult.failureOrNull;
     if (prepFailure != null) {
-      logger.w('[ReaderBloc] TTS preparation failed: $prepFailure');
+      _log.w('TTS preparation failed: $prepFailure');
       emit(
         state.copyWith(
           ttsActive: false,
@@ -485,7 +486,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
 
     final playFailure = playResult.failureOrNull;
     if (playFailure != null) {
-      logger.e('[ReaderBloc] TTS playText failed: $playFailure');
+      _log.e('TTS playText failed: $playFailure');
       if (emit != null) {
         emit(
           state.copyWith(

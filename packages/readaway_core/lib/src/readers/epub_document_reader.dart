@@ -9,12 +9,15 @@ import 'package:xml/xml.dart';
 import '../abstracts/reflowable_document_reader.dart';
 import '../errors/document_exception.dart';
 import '../lifecycle/disposable.dart';
+import '../logger/app_logger.dart';
 import '../models/models.dart';
 
 /// High-performance reflowable EPUB document reader implemented in pure Dart.
 class EpubDocumentReader
     with DisposableMixin
     implements ReflowableDocumentReader {
+  static final _log = AppLogger.instance.scope('EpubDocumentReader');
+
   final String filePath;
   final DocumentMetadata _metadata;
   final List<OutlineItem> _outline;
@@ -45,15 +48,18 @@ class EpubDocumentReader
 
   /// Opens an EPUB document from [filePath].
   static Future<EpubDocumentReader> open(String filePath) async {
+    _log.i('Opening EPUB file: $filePath');
     final file = File(filePath);
     if (!file.existsSync()) {
+      _log.e('EPUB file not found: $filePath');
       throw DocumentOpenException('EPUB file not found: $filePath');
     }
     final stream = InputFileStream(filePath);
     final Archive archive;
     try {
       archive = ZipDecoder().decodeStream(stream, verify: false);
-    } catch (e) {
+    } catch (e, st) {
+      _log.e('Failed to parse EPUB zip archive from stream: $filePath', error: e, stackTrace: st);
       await stream.close();
       throw DocumentParseException('Failed to parse EPUB zip archive: $e');
     }
@@ -65,10 +71,12 @@ class EpubDocumentReader
     Uint8List bytes, {
     String filePath = 'document.epub',
   }) async {
+    _log.i('Opening EPUB from bytes: $filePath (${bytes.length} bytes)');
     final Archive archive;
     try {
       archive = ZipDecoder().decodeBytes(bytes, verify: false);
-    } catch (e) {
+    } catch (e, st) {
+      _log.e('Failed to parse EPUB zip archive from bytes: $filePath', error: e, stackTrace: st);
       throw DocumentParseException('Failed to parse EPUB zip archive: $e');
     }
     return _fromArchive(archive, filePath: filePath);
@@ -294,6 +302,8 @@ class EpubDocumentReader
       }
     }
 
+    _log.i('EPUB parsed successfully: "${metadata.title ?? 'Untitled'}", ${sections.length} sections, ${outline.length} outline items');
+
     return EpubDocumentReader._(
       filePath: filePath,
       metadata: metadata,
@@ -335,6 +345,7 @@ class EpubDocumentReader
   String loadSectionHtml(int index) {
     checkNotDisposed('loadSectionHtml');
     if (index < 0 || index >= sectionCount) {
+      _log.e('Section index out of bounds: $index (total: $sectionCount)');
       throw RangeError.index(index, _sections);
     }
 
@@ -344,15 +355,18 @@ class EpubDocumentReader
     final href = _spineHrefs[index];
     final file = _findFile(href);
     if (file == null) {
+      _log.e('Section file not found in EPUB: $href (index: $index)');
       throw DocumentParseException('Section file not found in EPUB: $href');
     }
 
     try {
+      _log.d('Loading section HTML at index $index: $href');
       final rawHtml = utf8.decode(_extractBytes(file), allowMalformed: true);
       final html = _inlineStylesheets(rawHtml, href);
       _sectionHtmlCache[index] = html;
       return html;
-    } catch (e) {
+    } catch (e, st) {
+      _log.e('Failed to read section $index ($href)', error: e, stackTrace: st);
       throw DocumentParseException('Failed to read section $index: $e');
     }
   }
@@ -503,6 +517,7 @@ class EpubDocumentReader
 
   @override
   void dispose() {
+    _log.d('Disposing EpubDocumentReader for: $filePath');
     super.dispose();
     _sectionHtmlCache.clear();
     _assetCache.clear();

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
@@ -17,6 +18,9 @@ import '../../domain/repositories/tts_model_repository.dart';
 
 @LazySingleton(as: TtsModelRepository)
 class TtsModelRepositoryImpl implements TtsModelRepository {
+  // ignore: unused_field
+  final _log = AppLogger.instance.scope('TtsModelRepository');
+
   final TtsCatalogService _catalogService;
   final CustomTtsModelImporterService _importerService;
   final TtsModelStore _store;

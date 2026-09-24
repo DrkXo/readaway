@@ -167,7 +167,7 @@ extension TtsPlaybackControl on TtsControllerService {
     try {
       chunks = await _chunkingService.chunkText(text);
     } catch (e, st) {
-      logger.e('Failed to chunk text for TTS', e, st);
+      _log.e('Failed to chunk text for TTS', error: e, stackTrace: st);
       if (!_stateController.isClosed) {
         _stateController.add(
           TtsPlaybackEvent(
@@ -308,7 +308,7 @@ extension TtsPlaybackControl on TtsControllerService {
         unawaited(_synthesizeAndPlayPipeline(sessionId, index, _baseTag));
       }
     } catch (e, st) {
-      logger.e('Failed to seek to sentence $index', e, st);
+      _log.e('Failed to seek to sentence $index', error: e, stackTrace: st);
     }
   }
 

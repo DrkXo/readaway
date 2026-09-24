@@ -6,9 +6,9 @@ import 'package:background_downloader/background_downloader.dart';
 import 'package:crypto/crypto.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../background_downloader_service.dart';
-import '../../logging_service.dart';
 import '../../path_service.dart';
 import '../extractor/tts_archive_extractor.dart';
 import '../tts_model_store.dart';
@@ -16,6 +16,7 @@ import '../tts_models.dart';
 
 @singleton
 class SherpaTtsModelDownloaderService {
+  final _log = AppLogger.instance.scope('SherpaTtsModelDownloaderService');
   SherpaTtsModelDownloaderService({
     required BackGroundDownloaderService backgroundDownloader,
     required AppPathService pathService,
@@ -110,7 +111,7 @@ class SherpaTtsModelDownloaderService {
       // User canceled — the caller already removed the download entry.
       return;
     } catch (e, stackTrace) {
-      logger.e('Failed to download ${model.id}', e, stackTrace);
+      _log.e('Failed to download ${model.id}', error: e, stackTrace: stackTrace);
       controller.add(
         ModelDownloadProgress(
           modelId: model.id,
