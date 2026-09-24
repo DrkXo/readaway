@@ -33,6 +33,7 @@ export 'tts/waveform_scrubber.dart';
 export 'viewport/fixed_layout/fixed_layout.dart';
 export 'viewport/modes/continuous_reader_view.dart';
 export 'viewport/modes/paged_reader_view.dart';
+export 'viewport/pdf/pdf.dart';
 export 'viewport/reader_viewport.dart';
 export 'viewport/reflowable/html/hyper_page_content.dart';
 export 'viewport/reflowable/html/widgets/hyper_reflowable_image.dart';

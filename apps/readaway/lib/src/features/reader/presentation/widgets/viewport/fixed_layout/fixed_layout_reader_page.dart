@@ -11,7 +11,7 @@ import 'package:readaway_core/readaway_core.dart';
 import '../../../bloc/reader_bloc.dart';
 import 'fixed_layout_image_cache.dart';
 
-/// Renders an individual fixed-layout page (PDF, CBZ, CBR, CBT, CB7).
+/// Renders an individual fixed-layout page for comic book archives (CBZ, CBR, CBT, CB7, images).
 ///
 /// Supports interactive pinch-to-zoom (1.0x to 4.0x), animated double-tap
 /// to zoom (1.0x <-> 2.5x), smooth image pre-fetching, and responsive layout.

@@ -8,9 +8,10 @@ import '../logger/app_logger.dart';
 import '../models/models.dart';
 import 'document_isolate_messages.dart';
 import 'document_isolate_worker.dart';
+import 'document_session.dart';
 
 /// Client proxy managing an active document session inside a dedicated background isolate.
-class IsolateDocumentSession with DisposableMixin implements Disposable {
+class IsolateDocumentSession with DisposableMixin implements DocumentSession {
   static final _log = AppLogger.instance.scope('IsolateDocumentSession');
 
   final Isolate _isolate;
@@ -20,14 +21,23 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   final Map<int, Completer<DocumentResponse>> _pending;
   int _nextRequestId;
 
+  @override
   final String filePath;
+  @override
   final String? title;
+  @override
   final DocumentMetadata? metadata;
+  @override
   final List<OutlineItem> outline;
+  @override
   final int sectionCount;
+  @override
   final int pageCount;
+  @override
   final String? coverImagePath;
+  @override
   final bool isReflowable;
+  @override
   final String format;
 
   IsolateDocumentSession._({
@@ -224,6 +234,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   }
 
   /// Loads HTML for the reflowable section at [sectionIndex].
+  @override
   Future<String> loadSectionHtml(int sectionIndex) async {
     final res = await _send(
       (id) =>
@@ -236,6 +247,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   }
 
   /// Extracts plain text for the section at [sectionIndex].
+  @override
   Future<String> extractSectionText(int sectionIndex) async {
     final res = await _send(
       (id) => DocumentRequest.extractSectionText(
@@ -251,6 +263,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   }
 
   /// Extracts speech-normalized text for TTS at [sectionIndex].
+  @override
   Future<String> extractSectionSpeechText(int sectionIndex) async {
     final res = await _send(
       (id) => DocumentRequest.extractSectionSpeechText(
@@ -266,6 +279,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   }
 
   /// Resolves an in-document footnote URL.
+  @override
   Future<FootnoteItem?> resolveFootnote(
     String url, {
     int? currentChapterIndex,
@@ -284,6 +298,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   }
 
   /// Loads raw asset bytes with zero-copy [TransferableTypedData] across isolates.
+  @override
   Future<Uint8List?> loadAsset(String assetPath, {int? sectionIndex}) async {
     final res = await _send(
       (id) => DocumentRequest.loadAsset(
@@ -299,6 +314,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   }
 
   /// Loads a page image for fixed-layout documents (PDF, CBZ, CBT) with zero-copy [TransferableTypedData].
+  @override
   Future<Uint8List> loadPageImage(
     int pageIndex, {
     double scale = 1.0,
@@ -328,6 +344,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   }
 
   /// Queries the dimensions of [pageIndex] for fixed-layout documents.
+  @override
   Future<PageSize?> getPageSize(int pageIndex) async {
     final res = await _send(
       (id) => DocumentRequest.getPageSize(id: id, pageIndex: pageIndex),
@@ -339,6 +356,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   }
 
   /// Resolves the chapter index corresponding to a link [href].
+  @override
   Future<int?> resolveSectionIndex(String href) async {
     final res = await _send(
       (id) => DocumentRequest.resolveSectionIndex(id: id, href: href),
@@ -350,6 +368,7 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
   }
 
   /// Resolves a relative asset path against [sectionIndex].
+  @override
   Future<String> resolveAssetPath(int sectionIndex, String relativePath) async {
     final res = await _send(
       (id) => DocumentRequest.resolveAssetPath(

@@ -59,6 +59,7 @@ dependencies:
   xml: ^7.0.1
   background_downloader: ^9.6.1
   flutter_spinkit: ^5.2.2
+  pdfrx: ^2.6.5
 
 dev_dependencies:
   flutter_test:

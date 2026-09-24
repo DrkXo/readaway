@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import '../isolate/isolate_document_session.dart';
+import '../isolate/document_session.dart';
 import '../logger/app_logger.dart';
 import '../models/models.dart';
 
@@ -35,7 +35,7 @@ class ExtractedDocumentMetadata {
 
 /// Standalone high-performance metadata and cover image extractor.
 ///
-/// Runs via [IsolateDocumentSession] to prevent blocking the UI thread and ensures
+/// Runs via [DocumentSession] to prevent blocking the UI thread and ensures
 /// fast, memory-safe metadata extraction with thumbnail scaling.
 class DocumentMetadataExtractor {
   static final _log = AppLogger.instance.scope('DocumentMetadataExtractor');
@@ -43,7 +43,7 @@ class DocumentMetadataExtractor {
   const DocumentMetadataExtractor._();
 
   /// Extracts comprehensive metadata and cover image bytes from [filePath]
-  /// inside a dedicated background isolate.
+  /// inside a dedicated session.
   ///
   /// [thumbnailWidth] specifies the target width for rendered page covers (e.g. PDF/comics).
   static Future<ExtractedDocumentMetadata> extract(
@@ -52,7 +52,7 @@ class DocumentMetadataExtractor {
     int thumbnailWidth = 480,
   }) async {
     _log.i('Extracting metadata for document: $filePath');
-    final session = await IsolateDocumentSession.open(
+    final session = await DocumentSession.open(
       filePath,
       password: password,
     );

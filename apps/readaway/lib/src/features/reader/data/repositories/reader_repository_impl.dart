@@ -25,7 +25,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
   final NotificationService _notificationService;
   final AppPathService _pathService;
   final LibraryRepository _libraryRepository;
-  IsolateDocumentSession? _session;
+  DocumentSession? _session;
   final Map<String, Uint8List> _assetCache = {};
 
   ReaderRepositoryImpl(
@@ -60,9 +60,9 @@ class ReaderRepositoryImpl implements ReaderRepository {
           await oldSession.dispose();
         }
 
-        final IsolateDocumentSession session;
+        final DocumentSession session;
         try {
-          session = await IsolateDocumentSession.open(
+          session = await DocumentSession.open(
             path,
             password: password,
           );
