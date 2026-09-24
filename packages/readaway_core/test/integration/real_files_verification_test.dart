@@ -1,10 +1,12 @@
 // ignore_for_file: avoid_print
 import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 String? _resolveTestDocPath(String primaryKey, [String? fallbackKey]) {
-  final envVal = Platform.environment[primaryKey] ??
+  final envVal =
+      Platform.environment[primaryKey] ??
       (fallbackKey != null ? Platform.environment[fallbackKey] : null);
   if (envVal != null && envVal.isNotEmpty) return envVal;
 
@@ -90,10 +92,9 @@ void main() {
         session.dispose();
         print('CBZ verification completed successfully!\n');
       },
-      skip:
-          !hasCbz
-              ? 'CBZ file not provided or not found (set TEST_CBZ_PATH or CBZ_PATH)'
-              : null,
+      skip: !hasCbz
+          ? 'CBZ file not provided or not found (set TEST_CBZ_PATH or CBZ_PATH)'
+          : null,
     );
 
     test(
@@ -125,10 +126,9 @@ void main() {
         reader.dispose();
         print('PDF verification completed successfully!\n');
       },
-      skip:
-          !hasPdf
-              ? 'PDF file not provided or not found (set TEST_PDF_PATH or PDF_PATH)'
-              : null,
+      skip: !hasPdf
+          ? 'PDF file not provided or not found (set TEST_PDF_PATH or PDF_PATH)'
+          : null,
     );
 
     test(
@@ -136,7 +136,9 @@ void main() {
       () async {
         final path = protectedPdfPath!;
         final file = File(path);
-        print('Testing Protected PDF: $path (Size: ${file.lengthSync()} bytes)');
+        print(
+          'Testing Protected PDF: $path (Size: ${file.lengthSync()} bytes)',
+        );
 
         // 1. Open without password -> Expect DocumentEncryptedException with isInvalidPassword: false
         try {
@@ -190,10 +192,9 @@ void main() {
 
         print('Protected PDF verification completed successfully!\n');
       },
-      skip:
-          !hasProtectedPdf
-              ? 'Protected PDF file not provided or not found (set TEST_PROTECTED_PDF_PATH or PROTECTED_PDF_PATH)'
-              : null,
+      skip: !hasProtectedPdf
+          ? 'Protected PDF file not provided or not found (set TEST_PROTECTED_PDF_PATH or PROTECTED_PDF_PATH)'
+          : null,
     );
   });
 }

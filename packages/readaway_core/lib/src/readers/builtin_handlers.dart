@@ -51,10 +51,16 @@ class PdfFormatHandler implements DocumentFormatHandler {
   bool supports(String filePath, [Uint8List? bytes]) {
     if (p.extension(filePath).toLowerCase() == '.pdf') return true;
     if (bytes != null && bytes.length >= 4) {
-      return bytes[0] == 0x25 && // %
-          bytes[1] == 0x50 && // P
-          bytes[2] == 0x44 && // D
-          bytes[3] == 0x46; // F
+      final scanLimit = bytes.length < 1024 ? bytes.length : 1024;
+      for (var i = 0; i <= scanLimit - 4; i++) {
+        if (bytes[i] == 0x25 && // %
+            bytes[i + 1] == 0x50 && // P
+            bytes[i + 2] == 0x44 && // D
+            bytes[i + 3] == 0x46) {
+          // F
+          return true;
+        }
+      }
     }
     return false;
   }
@@ -107,7 +113,8 @@ class CbtFormatHandler implements DocumentFormatHandler {
           bytes[258] == 0x73 && // s
           bytes[259] == 0x74 && // t
           bytes[260] == 0x61 && // a
-          bytes[261] == 0x72) { // r
+          bytes[261] == 0x72) {
+        // r
         return true;
       }
     }

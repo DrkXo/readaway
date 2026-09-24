@@ -9,10 +9,13 @@ import '../lifecycle/disposable.dart';
 import '../models/models.dart';
 import 'comic/comic_archive_adapter.dart';
 import 'comic/comic_info_parser.dart';
+import 'comic/comic_toc_extractor.dart';
 import 'comic/image_header_parser.dart';
 
 /// High-performance comic document reader supporting CBZ, CBT, CBR, and CB7 containers.
-class ComicBookDocumentReader with DisposableMixin implements PageDocumentReader {
+class ComicBookDocumentReader
+    with DisposableMixin
+    implements PageDocumentReader {
   final String filePath;
   final String _format;
   final ComicArchiveAdapter _adapter;
@@ -33,8 +36,8 @@ class ComicBookDocumentReader with DisposableMixin implements PageDocumentReader
     this._title,
     this._metadata,
     List<OutlineItem> outline = const [],
-  })  : _pagePaths = List.unmodifiable(pagePaths),
-        _outline = List.unmodifiable(outline);
+  }) : _pagePaths = List.unmodifiable(pagePaths),
+       _outline = List.unmodifiable(outline);
 
   /// Opens a comic document archive from [filePath].
   static Future<ComicBookDocumentReader> open(
@@ -62,7 +65,10 @@ class ComicBookDocumentReader with DisposableMixin implements PageDocumentReader
     } else {
       // Default to CBZ / ZIP
       format = 'cbz';
-      adapter = await ZipComicArchiveAdapter.fromFile(filePath, password: password);
+      adapter = await ZipComicArchiveAdapter.fromFile(
+        filePath,
+        password: password,
+      );
     }
 
     return _build(filePath: filePath, format: format, adapter: adapter);
@@ -83,7 +89,10 @@ class ComicBookDocumentReader with DisposableMixin implements PageDocumentReader
       adapter = await TarComicArchiveAdapter.fromBytes(bytes);
     } else {
       format = 'cbz';
-      adapter = await ZipComicArchiveAdapter.fromBytes(bytes, password: password);
+      adapter = await ZipComicArchiveAdapter.fromBytes(
+        bytes,
+        password: password,
+      );
     }
 
     return _build(filePath: filePath, format: format, adapter: adapter);
@@ -97,7 +106,9 @@ class ComicBookDocumentReader with DisposableMixin implements PageDocumentReader
     final imagePaths = adapter.listImageEntries();
     if (imagePaths.isEmpty) {
       adapter.dispose();
-      throw const DocumentParseException('No image pages found in comic archive');
+      throw const DocumentParseException(
+        'No image pages found in comic archive',
+      );
     }
 
     String? title = p.basenameWithoutExtension(filePath);
@@ -120,14 +131,20 @@ class ComicBookDocumentReader with DisposableMixin implements PageDocumentReader
               page.bookmark!.isNotEmpty &&
               page.imageIndex >= 0 &&
               page.imageIndex < imagePaths.length) {
-            outline.add(OutlineItem(
-              title: page.bookmark!,
-              href: 'page:${page.imageIndex}',
-              chapterIndex: page.imageIndex,
-            ));
+            outline.add(
+              OutlineItem(
+                title: page.bookmark!,
+                href: 'page:${page.imageIndex}',
+                chapterIndex: page.imageIndex,
+              ),
+            );
           }
         }
       }
+    }
+
+    if (outline.isEmpty) {
+      outline.addAll(ComicTocExtractor.extract(imagePaths));
     }
 
     return ComicBookDocumentReader._(

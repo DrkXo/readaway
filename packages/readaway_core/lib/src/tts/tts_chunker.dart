@@ -105,7 +105,8 @@ class TtsChunker {
             final span = spans[sIdx];
             final spanLen = span.text.length;
 
-            if (currentLen + spanLen > maxParagraphChunkChars && subSpans.isNotEmpty) {
+            if (currentLen + spanLen > maxParagraphChunkChars &&
+                subSpans.isNotEmpty) {
               final combinedText = subSpans.map((s) => s.text).join(' ');
               final spoken = SpeechNormalizer.normalizeForSpeech(combinedText);
               final duration = SpeechNormalizer.estimateDurationMs(spoken);

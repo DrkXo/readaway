@@ -58,23 +58,26 @@ void main() {
       expect(spans[2].pauseAfterSec, equals(0.35)); // full stop
     });
 
-    test('splits Latin text into sub-phrases with commas, colons and questions', () {
-      const text = 'Wait, listen: is that real? Yes!';
-      final spans = splitProsodySpans(text, enableJitter: false);
+    test(
+      'splits Latin text into sub-phrases with commas, colons and questions',
+      () {
+        const text = 'Wait, listen: is that real? Yes!';
+        final spans = splitProsodySpans(text, enableJitter: false);
 
-      expect(spans.length, equals(4));
-      expect(spans[0].text, equals('Wait,'));
-      expect(spans[0].pauseAfterSec, equals(0.18));
+        expect(spans.length, equals(4));
+        expect(spans[0].text, equals('Wait,'));
+        expect(spans[0].pauseAfterSec, equals(0.18));
 
-      expect(spans[1].text, equals('listen:'));
-      expect(spans[1].pauseAfterSec, equals(0.22));
+        expect(spans[1].text, equals('listen:'));
+        expect(spans[1].pauseAfterSec, equals(0.22));
 
-      expect(spans[2].text, equals('is that real?'));
-      expect(spans[2].pauseAfterSec, equals(0.28));
+        expect(spans[2].text, equals('is that real?'));
+        expect(spans[2].pauseAfterSec, equals(0.28));
 
-      expect(spans[3].text, equals('Yes!'));
-      expect(spans[3].pauseAfterSec, equals(0.28));
-    });
+        expect(spans[3].text, equals('Yes!'));
+        expect(spans[3].pauseAfterSec, equals(0.28));
+      },
+    );
 
     test('handles ideographic comma and ellipsis', () {
       const text = '苹果、香蕉、橙子……';
@@ -114,22 +117,49 @@ void main() {
 
     test('sentenceGapMs proportionally scales all span pauses', () {
       const text = '你好，世界！这是测试。';
-      final spans = splitProsodySpans(text, sentenceGapMs: 700, enableJitter: false);
+      final spans = splitProsodySpans(
+        text,
+        sentenceGapMs: 700,
+        enableJitter: false,
+      );
 
       expect(spans.length, equals(3));
       // 700ms is 2x default 350ms sentence terminal
-      expect(spans[0].pauseAfterSec, closeTo(0.18 * 2.0, 0.001)); // comma: 360ms
-      expect(spans[1].pauseAfterSec, closeTo(0.28 * 2.0, 0.001)); // exclamation: 560ms
-      expect(spans[2].pauseAfterSec, closeTo(0.35 * 2.0, 0.001)); // full stop: 700ms
+      expect(
+        spans[0].pauseAfterSec,
+        closeTo(0.18 * 2.0, 0.001),
+      ); // comma: 360ms
+      expect(
+        spans[1].pauseAfterSec,
+        closeTo(0.28 * 2.0, 0.001),
+      ); // exclamation: 560ms
+      expect(
+        spans[2].pauseAfterSec,
+        closeTo(0.35 * 2.0, 0.001),
+      ); // full stop: 700ms
     });
 
     test('silence scale multiplier scales all span pauses', () {
       const text = 'Hello, world!';
-      final spans1x = splitProsodySpans(text, silenceScaleMultiplier: 1.0, enableJitter: false);
-      final spans2x = splitProsodySpans(text, silenceScaleMultiplier: 2.0, enableJitter: false);
+      final spans1x = splitProsodySpans(
+        text,
+        silenceScaleMultiplier: 1.0,
+        enableJitter: false,
+      );
+      final spans2x = splitProsodySpans(
+        text,
+        silenceScaleMultiplier: 2.0,
+        enableJitter: false,
+      );
 
-      expect(spans2x[0].pauseAfterSec, closeTo(spans1x[0].pauseAfterSec * 2.0, 0.001));
-      expect(spans2x[1].pauseAfterSec, closeTo(spans1x[1].pauseAfterSec * 2.0, 0.001));
+      expect(
+        spans2x[0].pauseAfterSec,
+        closeTo(spans1x[0].pauseAfterSec * 2.0, 0.001),
+      );
+      expect(
+        spans2x[1].pauseAfterSec,
+        closeTo(spans1x[1].pauseAfterSec * 2.0, 0.001),
+      );
     });
   });
 

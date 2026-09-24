@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import 'document_reader.dart';
 
 /// Pluggable format handler for document auto-detection and opening.

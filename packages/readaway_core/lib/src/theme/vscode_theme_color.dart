@@ -78,9 +78,7 @@ extension VsCodeThemeColorX on VsCodeTheme {
 
   /// Top bar / Title bar border (never null).
   Color get topbarBorder =>
-      color('titleBar.border') ??
-      color('activityBar.border') ??
-      borderSubtle;
+      color('titleBar.border') ?? color('activityBar.border') ?? borderSubtle;
 
   /// Inactive Title bar background.
   Color get topbarInactiveBackground =>
@@ -113,9 +111,7 @@ extension VsCodeThemeColorX on VsCodeTheme {
 
   /// Sidebar border (never null).
   Color get sidebarBorder =>
-      color('sideBar.border') ??
-      color('activityBar.border') ??
-      borderSubtle;
+      color('sideBar.border') ?? color('activityBar.border') ?? borderSubtle;
 
   /// Sidebar title foreground (never null).
   Color get sidebarTitleForeground =>
@@ -173,8 +169,7 @@ extension VsCodeThemeColorX on VsCodeTheme {
   Color get bottombarForeground => statusBarForeground ?? readerForeground;
 
   /// Bottom toolbar / status bar border (never null).
-  Color get bottombarBorder =>
-      color('statusBar.border') ?? borderSubtle;
+  Color get bottombarBorder => color('statusBar.border') ?? borderSubtle;
 
   /// Status bar debugging background.
   Color get statusBarDebuggingBackground =>
@@ -235,8 +230,7 @@ extension VsCodeThemeColorX on VsCodeTheme {
 
   /// Hover highlight background (`editor.hoverHighlightBackground`).
   Color get editorHoverHighlightBackground =>
-      color('editor.hoverHighlightBackground') ??
-      listHoverBackground;
+      color('editor.hoverHighlightBackground') ?? listHoverBackground;
 
   /// Find match background (`editor.findMatchBackground`).
   Color get editorFindMatchBackground =>
@@ -254,9 +248,7 @@ extension VsCodeThemeColorX on VsCodeTheme {
 
   /// Cursor / caret color (`editorCursor.foreground`).
   Color get editorCursorForeground =>
-      color('editorCursor.foreground') ??
-      badgeBackground ??
-      readerForeground;
+      color('editorCursor.foreground') ?? badgeBackground ?? readerForeground;
 
   /// Editor gutter background (`editorGutter.background`).
   Color get editorGutterBackground =>
@@ -298,9 +290,7 @@ extension VsCodeThemeColorX on VsCodeTheme {
 
   /// Panel border (`panel.border` or `editorWidget.border`).
   Color get panelBorder =>
-      color('panel.border') ??
-      color('editorWidget.border') ??
-      borderSubtle;
+      color('panel.border') ?? color('editorWidget.border') ?? borderSubtle;
 
   /// Panel title active border.
   Color get panelTitleActiveBorder =>
@@ -329,8 +319,7 @@ extension VsCodeThemeColorX on VsCodeTheme {
       color('editorWidget.background') ?? panelBackground;
 
   /// Editor widget border (`editorWidget.border`).
-  Color get editorWidgetBorder =>
-      color('editorWidget.border') ?? panelBorder;
+  Color get editorWidgetBorder => color('editorWidget.border') ?? panelBorder;
 
   /// Editor widget foreground (`editorWidget.foreground`).
   Color get editorWidgetForeground =>
@@ -338,19 +327,15 @@ extension VsCodeThemeColorX on VsCodeTheme {
 
   /// Peek view border (`peekView.border`).
   Color get peekViewBorder =>
-      color('peekView.border') ??
-      badgeBackground ??
-      borderStrong;
+      color('peekView.border') ?? badgeBackground ?? borderStrong;
 
   /// Peek view title background (`peekViewTitle.background`).
   Color get peekViewTitleBackground =>
-      color('peekViewTitle.background') ??
-      panelBackground;
+      color('peekViewTitle.background') ?? panelBackground;
 
   /// Peek view editor background (`peekViewEditor.background`).
   Color get peekViewEditorBackground =>
-      color('peekViewEditor.background') ??
-      readerBackground;
+      color('peekViewEditor.background') ?? readerBackground;
 
   // -------------------------------------------------------------------------
   // 6. Inputs, Dropdowns & Menus
@@ -365,12 +350,10 @@ extension VsCodeThemeColorX on VsCodeTheme {
           : const Color(0xFFF2F0E5));
 
   /// Text input field text color (`input.foreground`).
-  Color get inputForeground =>
-      color('input.foreground') ?? readerForeground;
+  Color get inputForeground => color('input.foreground') ?? readerForeground;
 
   /// Text input field border (`input.border`).
-  Color get inputBorder =>
-      color('input.border') ?? borderSubtle;
+  Color get inputBorder => color('input.border') ?? borderSubtle;
 
   /// Text input field placeholder text color (`input.placeholderForeground`).
   Color get inputPlaceholderForeground =>
@@ -396,8 +379,7 @@ extension VsCodeThemeColorX on VsCodeTheme {
       color('dropdown.foreground') ?? inputForeground;
 
   /// Dropdown border (`dropdown.border`).
-  Color get dropdownBorder =>
-      color('dropdown.border') ?? inputBorder;
+  Color get dropdownBorder => color('dropdown.border') ?? inputBorder;
 
   /// Dropdown list popup background (`dropdown.listBackground`).
   Color get dropdownListBackground =>
@@ -408,8 +390,7 @@ extension VsCodeThemeColorX on VsCodeTheme {
       color('menu.background') ?? editorWidgetBackground;
 
   /// Popup menu foreground (`menu.foreground`).
-  Color get menuForeground =>
-      color('menu.foreground') ?? readerForeground;
+  Color get menuForeground => color('menu.foreground') ?? readerForeground;
 
   /// Popup menu selection background (`menu.selectionBackground`).
   Color get menuSelectionBackground =>
@@ -420,12 +401,10 @@ extension VsCodeThemeColorX on VsCodeTheme {
       color('menu.selectionForeground') ?? listActiveSelectionForeground;
 
   /// Popup menu border (`menu.border`).
-  Color get menuBorder =>
-      color('menu.border') ?? borderSubtle;
+  Color get menuBorder => color('menu.border') ?? borderSubtle;
 
   /// Popup menu separator (`menu.separatorBackground`).
-  Color get menuSeparator =>
-      color('menu.separatorBackground') ?? borderSubtle;
+  Color get menuSeparator => color('menu.separatorBackground') ?? borderSubtle;
 
   // -------------------------------------------------------------------------
   // 7. Buttons, Badges & Accents
@@ -505,8 +484,7 @@ extension VsCodeThemeColorX on VsCodeTheme {
       color('list.inactiveSelectionForeground') ?? readerForeground;
 
   /// Focus outline border (`focusBorder`).
-  Color get focusBorder =>
-      color('focusBorder') ?? borderStrong;
+  Color get focusBorder => color('focusBorder') ?? borderStrong;
 
   // -------------------------------------------------------------------------
   // 9. Feedback & Notifications
@@ -531,10 +509,9 @@ extension VsCodeThemeColorX on VsCodeTheme {
       const Color(0xFF879A39);
 
   /// Text / icon color on [success] surface.
-  Color get onSuccess =>
-      brightness == Brightness.dark
-          ? const Color(0xFF100F0F)
-          : const Color(0xFFFFFFFF);
+  Color get onSuccess => brightness == Brightness.dark
+      ? const Color(0xFF100F0F)
+      : const Color(0xFFFFFFFF);
 
   /// Warning state color.
   Color get warning =>
@@ -543,10 +520,9 @@ extension VsCodeThemeColorX on VsCodeTheme {
       const Color(0xFFD0A215);
 
   /// Text / icon color on [warning] surface.
-  Color get onWarning =>
-      brightness == Brightness.dark
-          ? const Color(0xFF100F0F)
-          : const Color(0xFFFFFFFF);
+  Color get onWarning => brightness == Brightness.dark
+      ? const Color(0xFF100F0F)
+      : const Color(0xFFFFFFFF);
 
   /// Error state color.
   Color get error =>
@@ -602,36 +578,36 @@ extension VsCodeThemeColorX on VsCodeTheme {
 
   /// Small elevation shadow.
   List<BoxShadow> get shadowSm => [
-        BoxShadow(
-          color: Colors.black.withValues(
-            alpha: brightness == Brightness.dark ? 0.25 : 0.06,
-          ),
-          blurRadius: 4,
-          offset: const Offset(0, 1),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(
+        alpha: brightness == Brightness.dark ? 0.25 : 0.06,
+      ),
+      blurRadius: 4,
+      offset: const Offset(0, 1),
+    ),
+  ];
 
   /// Medium elevation shadow.
   List<BoxShadow> get shadowMd => [
-        BoxShadow(
-          color: Colors.black.withValues(
-            alpha: brightness == Brightness.dark ? 0.35 : 0.12,
-          ),
-          blurRadius: 10,
-          offset: const Offset(0, 3),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(
+        alpha: brightness == Brightness.dark ? 0.35 : 0.12,
+      ),
+      blurRadius: 10,
+      offset: const Offset(0, 3),
+    ),
+  ];
 
   /// Large elevation shadow.
   List<BoxShadow> get shadowLg => [
-        BoxShadow(
-          color: Colors.black.withValues(
-            alpha: brightness == Brightness.dark ? 0.45 : 0.18,
-          ),
-          blurRadius: 20,
-          offset: const Offset(0, 6),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(
+        alpha: brightness == Brightness.dark ? 0.45 : 0.18,
+      ),
+      blurRadius: 20,
+      offset: const Offset(0, 6),
+    ),
+  ];
 
   /// Dynamically computes a Flutter [ColorScheme] from VS Code color keys.
   ColorScheme toColorScheme() {

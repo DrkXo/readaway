@@ -11,7 +11,6 @@ sealed class FootnoteItem with _$FootnoteItem {
     @Default('footnote') String type,
   }) = _FootnoteItem;
 
-
   factory FootnoteItem.fromJson(Map<String, dynamic> json) => FootnoteItem(
     id: json['id'] as String? ?? '',
     referenceId: json['referenceId'] as String?,

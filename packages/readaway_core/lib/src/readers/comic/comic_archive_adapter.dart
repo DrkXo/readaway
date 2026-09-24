@@ -93,7 +93,7 @@ class ZipComicArchiveAdapter implements ComicArchiveAdapter {
     required List<String> imageEntries,
     this._inputStream,
     this._comicInfoXml,
-  })  : _imageEntries = List.unmodifiable(imageEntries);
+  }) : _imageEntries = List.unmodifiable(imageEntries);
 
   /// Creates a [ZipComicArchiveAdapter] from a file at [filePath].
   static Future<ZipComicArchiveAdapter> fromFile(
@@ -107,22 +107,34 @@ class ZipComicArchiveAdapter implements ComicArchiveAdapter {
 
     final stream = InputFileStream(filePath);
     try {
-      final archive = ZipDecoder().decodeStream(stream, verify: false, password: password);
+      final archive = ZipDecoder().decodeStream(
+        stream,
+        verify: false,
+        password: password,
+      );
       return _build(archive, inputStream: stream);
     } on ArchiveException catch (e) {
       await stream.close();
       final msg = e.toString().toLowerCase();
-      if (msg.contains('password') || msg.contains('encrypted') || msg.contains('decrypt')) {
+      if (msg.contains('password') ||
+          msg.contains('encrypted') ||
+          msg.contains('decrypt')) {
         throw DocumentEncryptedException(
           'Encrypted CBZ archive: $e',
           isInvalidPassword: password != null,
           cause: e,
         );
       }
-      throw DocumentParseException('Failed to parse CBZ zip archive: $e', cause: e);
+      throw DocumentParseException(
+        'Failed to parse CBZ zip archive: $e',
+        cause: e,
+      );
     } catch (e) {
       await stream.close();
-      throw DocumentParseException('Failed to parse CBZ zip archive: $e', cause: e);
+      throw DocumentParseException(
+        'Failed to parse CBZ zip archive: $e',
+        cause: e,
+      );
     }
   }
 
@@ -132,20 +144,32 @@ class ZipComicArchiveAdapter implements ComicArchiveAdapter {
     String? password,
   }) async {
     try {
-      final archive = ZipDecoder().decodeBytes(bytes, verify: false, password: password);
+      final archive = ZipDecoder().decodeBytes(
+        bytes,
+        verify: false,
+        password: password,
+      );
       return _build(archive);
     } on ArchiveException catch (e) {
       final msg = e.toString().toLowerCase();
-      if (msg.contains('password') || msg.contains('encrypted') || msg.contains('decrypt')) {
+      if (msg.contains('password') ||
+          msg.contains('encrypted') ||
+          msg.contains('decrypt')) {
         throw DocumentEncryptedException(
           'Encrypted CBZ archive: $e',
           isInvalidPassword: password != null,
           cause: e,
         );
       }
-      throw DocumentParseException('Failed to parse CBZ zip archive: $e', cause: e);
+      throw DocumentParseException(
+        'Failed to parse CBZ zip archive: $e',
+        cause: e,
+      );
     } catch (e) {
-      throw DocumentParseException('Failed to parse CBZ zip archive: $e', cause: e);
+      throw DocumentParseException(
+        'Failed to parse CBZ zip archive: $e',
+        cause: e,
+      );
     }
   }
 
@@ -221,7 +245,7 @@ class TarComicArchiveAdapter implements ComicArchiveAdapter {
     required this._entriesByName,
     required List<String> imageEntries,
     this._comicInfoXml,
-  })  : _imageEntries = List.unmodifiable(imageEntries);
+  }) : _imageEntries = List.unmodifiable(imageEntries);
 
   /// Creates a [TarComicArchiveAdapter] from a file at [filePath].
   static Future<TarComicArchiveAdapter> fromFile(String filePath) async {
@@ -241,7 +265,10 @@ class TarComicArchiveAdapter implements ComicArchiveAdapter {
       try {
         tarBytes = Uint8List.fromList(GZipDecoder().decodeBytes(bytes));
       } catch (_) {}
-    } else if (bytes.length > 3 && bytes[0] == 0x42 && bytes[1] == 0x5A && bytes[2] == 0x68) {
+    } else if (bytes.length > 3 &&
+        bytes[0] == 0x42 &&
+        bytes[1] == 0x5A &&
+        bytes[2] == 0x68) {
       try {
         tarBytes = Uint8List.fromList(BZip2Decoder().decodeBytes(bytes));
       } catch (_) {}
@@ -273,7 +300,9 @@ class TarComicArchiveAdapter implements ComicArchiveAdapter {
       }
 
       if (images.isEmpty) {
-        throw const DocumentParseException('No image pages found in CBT archive');
+        throw const DocumentParseException(
+          'No image pages found in CBT archive',
+        );
       }
 
       images.sort(ComicArchiveAdapter.compareAlphanumeric);
@@ -284,7 +313,10 @@ class TarComicArchiveAdapter implements ComicArchiveAdapter {
         comicInfoXml: comicInfo,
       );
     } catch (e) {
-      throw DocumentParseException('Failed to parse CBT tar archive: $e', cause: e);
+      throw DocumentParseException(
+        'Failed to parse CBT tar archive: $e',
+        cause: e,
+      );
     }
   }
 
@@ -316,8 +348,8 @@ class RarComicArchiveAdapter implements ComicArchiveAdapter {
 
   @override
   List<String> listImageEntries() => throw UnsupportedFormatException(
-        'CBR (RAR) archives require native unrar bridge plugin.',
-      );
+    'CBR (RAR) archives require native unrar bridge plugin.',
+  );
 
   @override
   Uint8List? loadEntryBytes(String entryPath) => null;
@@ -337,8 +369,8 @@ class SevenZipComicArchiveAdapter implements ComicArchiveAdapter {
 
   @override
   List<String> listImageEntries() => throw UnsupportedFormatException(
-        'CB7 (7z) archives require native 7z bridge plugin.',
-      );
+    'CB7 (7z) archives require native 7z bridge plugin.',
+  );
 
   @override
   Uint8List? loadEntryBytes(String entryPath) => null;

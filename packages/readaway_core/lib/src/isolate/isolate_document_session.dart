@@ -74,7 +74,10 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
         if (completer != null && !completer.isCompleted) {
           message.when(
             error: (id, msg, stack) {
-              final ex = (msg.contains('DocumentOpenException') || msg.contains('not found') || msg.contains('No handler supports'))
+              final ex =
+                  (msg.contains('DocumentOpenException') ||
+                      msg.contains('not found') ||
+                      msg.contains('No handler supports'))
                   ? DocumentOpenException(msg)
                   : DocumentParseException(msg);
               completer.completeError(
@@ -119,11 +122,9 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
     final openId = nextId++;
     pending[openId] = openCompleter;
 
-    workerSendPort.send(DocumentRequest.open(
-      id: openId,
-      filePath: filePath,
-      password: password,
-    ));
+    workerSendPort.send(
+      DocumentRequest.open(id: openId, filePath: filePath, password: password),
+    );
 
     final DocumentResponse openResponse;
     try {
@@ -137,35 +138,36 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
     }
 
     return openResponse.when(
-      opened: (
-        id,
-        title,
-        metadata,
-        outline,
-        sectionCount,
-        pageCount,
-        coverImagePath,
-        isReflowable,
-        format,
-      ) {
-        return IsolateDocumentSession._(
-          isolate: isolate,
-          workerSendPort: workerSendPort,
-          hostReceivePort: hostReceivePort,
-          subscription: subscription,
-          pending: pending,
-          nextRequestId: nextId,
-          filePath: filePath,
-          title: title,
-          metadata: metadata,
-          outline: outline,
-          sectionCount: sectionCount,
-          pageCount: pageCount,
-          coverImagePath: coverImagePath,
-          isReflowable: isReflowable,
-          format: format,
-        );
-      },
+      opened:
+          (
+            id,
+            title,
+            metadata,
+            outline,
+            sectionCount,
+            pageCount,
+            coverImagePath,
+            isReflowable,
+            format,
+          ) {
+            return IsolateDocumentSession._(
+              isolate: isolate,
+              workerSendPort: workerSendPort,
+              hostReceivePort: hostReceivePort,
+              subscription: subscription,
+              pending: pending,
+              nextRequestId: nextId,
+              filePath: filePath,
+              title: title,
+              metadata: metadata,
+              outline: outline,
+              sectionCount: sectionCount,
+              pageCount: pageCount,
+              coverImagePath: coverImagePath,
+              isReflowable: isReflowable,
+              format: format,
+            );
+          },
       encryptedError: (id, message, isInvalidPassword) {
         subscription.cancel();
         hostReceivePort.close();
@@ -310,7 +312,8 @@ class IsolateDocumentSession with DisposableMixin implements Disposable {
         }
         return bytes;
       },
-      orElse: () => throw DocumentParseException('Failed to load page image $pageIndex'),
+      orElse: () =>
+          throw DocumentParseException('Failed to load page image $pageIndex'),
     );
   }
 

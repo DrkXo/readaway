@@ -87,9 +87,7 @@ class SentenceSegmenter {
     // - CJK punctuation (。 ！ ？) with or without trailing whitespace
     // - Ellipses (…) followed by whitespace or CJK char
     // - Newlines
-    final boundaryRe = RegExp(
-      r'(?<=[.!?])\s+|(?<=[。！？])\s*|(?<=[…])\s+|\n+',
-    );
+    final boundaryRe = RegExp(r'(?<=[.!?])\s+|(?<=[。！？])\s*|(?<=[…])\s+|\n+');
 
     final matches = boundaryRe.allMatches(masked).toList();
     final spans = <SentenceSpan>[];

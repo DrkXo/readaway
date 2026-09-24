@@ -24,8 +24,6 @@ extension ReadAwayFloatPcmX on Float32List {
   }) => pcm.findSpeechBounds(this, sampleRate, threshold: threshold);
 
   /// Ramps the outer samples linearly to zero in-place to avoid clicks.
-  void applyEdgeFade(
-    int sampleRate, {
-    double fadeSec = pcm.kEdgeFadeSeconds,
-  }) => pcm.applyEdgeFade(this, sampleRate, fadeSec: fadeSec);
+  void applyEdgeFade(int sampleRate, {double fadeSec = pcm.kEdgeFadeSeconds}) =>
+      pcm.applyEdgeFade(this, sampleRate, fadeSec: fadeSec);
 }

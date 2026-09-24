@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 
@@ -8,8 +9,46 @@ import '../../abstracts/page_document_reader.dart';
 import '../../errors/document_exception.dart';
 import '../../lifecycle/disposable.dart';
 import '../../models/models.dart';
-import 'bmp_encoder.dart';
 import 'pdf_engine_manager.dart';
+import 'pdf_image_encoder.dart';
+import 'pdf_toc_extractor.dart';
+
+final _log = Logger('PdfDocumentReader');
+
+typedef _CacheKey = (
+  int pageIndex,
+  double scale,
+  int? targetWidth,
+  int? targetHeight,
+);
+
+final class _LruPageCache {
+  final int maxSize;
+  final _entries = <_CacheKey, Uint8List>{};
+
+  _LruPageCache(this.maxSize);
+
+  Uint8List? get(_CacheKey key) {
+    final v = _entries.remove(key);
+    if (v != null) {
+      _entries[key] = v;
+    }
+    return v;
+  }
+
+  void put(_CacheKey key, Uint8List value) {
+    _entries.remove(key);
+    while (_entries.length >= maxSize && _entries.isNotEmpty) {
+      _entries.remove(_entries.keys.first);
+    }
+    _entries[key] = value;
+  }
+
+  Uint8List? getDefaultRender(int pageIndex) =>
+      get((pageIndex, 1.0, null, null));
+
+  void clear() => _entries.clear();
+}
 
 /// High-performance PDF reader backed by pdfrx / PDFium.
 class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
@@ -19,22 +58,35 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
   final DocumentMetadata? _metadata;
   final List<OutlineItem> _outline;
 
-  final Map<int, Uint8List> _imageCache = {};
-  final Map<int, PageSize> _pageSizeCache = {};
+  final _LruPageCache _pageCache;
+  final Map<int, PageSize> _pageSizeCache;
   Uint8List? _coverBytes;
 
   PdfDocumentReader._({
     required this.filePath,
     required this._pdfDoc,
+    required this._pageSizeCache,
+    int imageCacheSize = 10,
     this._title,
     this._metadata,
     List<OutlineItem> outline = const [],
-  }) : _outline = List.unmodifiable(outline);
+  }) : _pageCache = _LruPageCache(imageCacheSize),
+       _outline = List.unmodifiable(outline);
+
+  static String? Function()? _buildPasswordProvider(String? password) {
+    if (password == null) return null;
+    var attempts = 0;
+    return () {
+      if (attempts++ == 0) return password;
+      return null;
+    };
+  }
 
   /// Opens a PDF document from [filePath] with optional decryption [password].
   static Future<PdfDocumentReader> open(
     String filePath, {
     String? password,
+    int imageCacheSize = 10,
   }) async {
     final file = File(filePath);
     if (!file.existsSync()) {
@@ -43,20 +95,18 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
 
     await PdfEngineManager.acquire();
 
-    var attempts = 0;
-    final String? Function()? passwordProvider = password != null
-        ? () {
-            if (attempts++ == 0) return password;
-            return null;
-          }
-        : null;
+    final passwordProvider = _buildPasswordProvider(password);
 
     try {
       final pdfDoc = await PdfDocument.openFile(
         filePath,
         passwordProvider: passwordProvider,
       );
-      return await _fromPdfDocument(pdfDoc, filePath: filePath);
+      return await _fromPdfDocument(
+        pdfDoc,
+        filePath: filePath,
+        imageCacheSize: imageCacheSize,
+      );
     } on PdfPasswordException catch (e) {
       await PdfEngineManager.release();
       throw DocumentEncryptedException(
@@ -76,23 +126,22 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
     Uint8List bytes, {
     String filePath = 'document.pdf',
     String? password,
+    int imageCacheSize = 10,
   }) async {
     await PdfEngineManager.acquire();
 
-    var attempts = 0;
-    final String? Function()? passwordProvider = password != null
-        ? () {
-            if (attempts++ == 0) return password;
-            return null;
-          }
-        : null;
+    final passwordProvider = _buildPasswordProvider(password);
 
     try {
       final pdfDoc = await PdfDocument.openData(
         bytes,
         passwordProvider: passwordProvider,
       );
-      return await _fromPdfDocument(pdfDoc, filePath: filePath);
+      return await _fromPdfDocument(
+        pdfDoc,
+        filePath: filePath,
+        imageCacheSize: imageCacheSize,
+      );
     } on PdfPasswordException catch (e) {
       await PdfEngineManager.release();
       throw DocumentEncryptedException(
@@ -110,18 +159,41 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
   static Future<PdfDocumentReader> _fromPdfDocument(
     PdfDocument pdfDoc, {
     required String filePath,
+    int imageCacheSize = 10,
   }) async {
     final title = p.basenameWithoutExtension(filePath);
-    final outlineItems = <OutlineItem>[];
+    var outlineItems = <OutlineItem>[];
+
+    final pageSizeCache = <int, PageSize>{};
+    for (var i = 0; i < pdfDoc.pages.length; i++) {
+      final page = pdfDoc.pages[i];
+      pageSizeCache[i] = PageSize(width: page.width, height: page.height);
+    }
 
     try {
       final outlineNodes = await pdfDoc.loadOutline();
       _convertOutlines(outlineNodes, outlineItems);
-    } catch (_) {}
+    } catch (e, st) {
+      _log.warning(
+        'Failed to load native PDF outline for $filePath: $e',
+        e,
+        st,
+      );
+    }
+
+    if (outlineItems.isEmpty) {
+      try {
+        outlineItems = await PdfTocExtractor.extract(pdfDoc);
+      } catch (e, st) {
+        _log.warning('Failed to extract TOC for $filePath: $e', e, st);
+      }
+    }
 
     return PdfDocumentReader._(
       filePath: filePath,
       pdfDoc: pdfDoc,
+      pageSizeCache: pageSizeCache,
+      imageCacheSize: imageCacheSize,
       title: title,
       metadata: DocumentMetadata(title: title),
       outline: outlineItems,
@@ -191,7 +263,13 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
   Uint8List? loadAsset(String assetPath) {
     if (isDisposed) return null;
     if (assetPath == 'page:0' || assetPath == 'cover') {
-      return _coverBytes;
+      return _coverBytes ?? _pageCache.getDefaultRender(0);
+    }
+    if (assetPath.startsWith('page:')) {
+      final pageIndex = int.tryParse(assetPath.substring(5));
+      if (pageIndex != null) {
+        return _pageCache.getDefaultRender(pageIndex);
+      }
     }
     return null;
   }
@@ -213,11 +291,9 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       );
     }
 
-    final cached = _imageCache[pageIndex];
-    if (cached != null &&
-        scale == 1.0 &&
-        targetWidth == null &&
-        targetHeight == null) {
+    final cacheKey = (pageIndex, scale, targetWidth, targetHeight);
+    final cached = _pageCache.get(cacheKey);
+    if (cached != null) {
       return cached;
     }
 
@@ -234,30 +310,32 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       throw DocumentParseException('Failed to render PDF page $pageIndex');
     }
 
-    final bytes = encodeBgraToBmp(
+    final bytes = encodeBgraToPng(
       pdfImage.pixels,
       width: pdfImage.width,
       height: pdfImage.height,
     );
     pdfImage.dispose();
 
-    if (scale == 1.0 && targetWidth == null && targetHeight == null) {
-      _imageCache[pageIndex] = bytes;
-      if (pageIndex == 0) {
-        _coverBytes = bytes;
-      }
+    _pageCache.put(cacheKey, bytes);
+    if (pageIndex == 0 &&
+        scale == 1.0 &&
+        targetWidth == null &&
+        targetHeight == null) {
+      _coverBytes = bytes;
     }
     return bytes;
   }
 
   @override
-  Uint8List? getCachedPageImage(int pageIndex) => _imageCache[pageIndex];
+  Uint8List? getCachedPageImage(int pageIndex) =>
+      _pageCache.getDefaultRender(pageIndex);
 
   @override
   Future<void> dispose() async {
     if (isDisposed) return;
     super.dispose();
-    _imageCache.clear();
+    _pageCache.clear();
     _pageSizeCache.clear();
     _coverBytes = null;
     await _pdfDoc.dispose();

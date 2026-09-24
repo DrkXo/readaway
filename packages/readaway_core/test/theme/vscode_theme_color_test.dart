@@ -8,15 +8,30 @@ void main() {
       expect(BuiltinVsCodeThemes.all.length, 15);
       expect(BuiltinVsCodeThemes.kanagawaDragon.name, 'Kanagawa Dragon');
       expect(BuiltinVsCodeThemes.kanagawaDragon.isDark, isTrue);
-      expect(BuiltinVsCodeThemes.kanagawaDragon.editorBackground, const Color(0xFF181616));
-      expect(BuiltinVsCodeThemes.kanagawaDragon.editorForeground, const Color(0xFFC5C9C5));
+      expect(
+        BuiltinVsCodeThemes.kanagawaDragon.editorBackground,
+        const Color(0xFF181616),
+      );
+      expect(
+        BuiltinVsCodeThemes.kanagawaDragon.editorForeground,
+        const Color(0xFFC5C9C5),
+      );
 
       expect(BuiltinVsCodeThemes.flexokiDark.name, 'Flexoki');
-      expect(BuiltinVsCodeThemes.flexokiDark.editorBackground, const Color(0xFF100F0F));
-      expect(BuiltinVsCodeThemes.flexokiLight.editorBackground, const Color(0xFFFFFCF0));
+      expect(
+        BuiltinVsCodeThemes.flexokiDark.editorBackground,
+        const Color(0xFF100F0F),
+      );
+      expect(
+        BuiltinVsCodeThemes.flexokiLight.editorBackground,
+        const Color(0xFFFFFCF0),
+      );
 
       expect(BuiltinVsCodeThemes.tokenDark.name, 'Token Dark');
-      expect(BuiltinVsCodeThemes.tokenDark.editorBackground, const Color(0xFF262624));
+      expect(
+        BuiltinVsCodeThemes.tokenDark.editorBackground,
+        const Color(0xFF262624),
+      );
 
       final found = BuiltinVsCodeThemes.findByName('Kanagawa Dragon');
       expect(found, isNotNull);

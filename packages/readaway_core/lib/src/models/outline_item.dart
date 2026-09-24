@@ -13,7 +13,6 @@ sealed class OutlineItem with _$OutlineItem {
     @Default(<OutlineItem>[]) List<OutlineItem> children,
   }) = _OutlineItem;
 
-
   /// Returns this item and all descendants in depth-first order.
   List<OutlineItem> flatten() => [
     this,

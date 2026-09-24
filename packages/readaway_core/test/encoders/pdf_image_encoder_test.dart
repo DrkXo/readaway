@@ -2,12 +2,12 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:readaway_core/src/readers/pdf/bmp_encoder.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('encodeBgraToBmp encodes raw BGRA pixels and decodes via ui.instantiateImageCodec', () async {
+  test('encodeBgraToPng encodes raw BGRA pixels and decodes via ui.instantiateImageCodec', () async {
     const width = 100;
     const height = 100;
     final bgraPixels = Uint8List(width * height * 4);
@@ -20,14 +20,17 @@ void main() {
       bgraPixels[i + 3] = 255; // Alpha
     }
 
-    final bmpBytes = encodeBgraToBmp(bgraPixels, width: width, height: height);
+    final pngBytes = encodeBgraToPng(bgraPixels, width: width, height: height);
 
-    expect(bmpBytes.length, equals(54 + width * height * 4));
-    expect(bmpBytes[0], equals(0x42)); // 'B'
-    expect(bmpBytes[1], equals(0x4D)); // 'M'
+    // Validate PNG signature: 89 50 4E 47 0D 0A 1A 0A
+    expect(pngBytes.length, greaterThan(8));
+    expect(pngBytes[0], equals(0x89));
+    expect(pngBytes[1], equals(0x50)); // 'P'
+    expect(pngBytes[2], equals(0x4E)); // 'N'
+    expect(pngBytes[3], equals(0x47)); // 'G'
 
     // Decode with Flutter's image codec
-    final buffer = await ui.ImmutableBuffer.fromUint8List(bmpBytes);
+    final buffer = await ui.ImmutableBuffer.fromUint8List(pngBytes);
     final descriptor = await ui.ImageDescriptor.encoded(buffer);
     expect(descriptor.width, equals(width));
     expect(descriptor.height, equals(height));

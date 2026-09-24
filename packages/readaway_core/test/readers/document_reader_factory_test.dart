@@ -21,21 +21,25 @@ void main() {
       when(mockHandler.format).thenReturn('custom_doc');
     });
 
-    test('registers custom handler and delegates open when supports returns true', () async {
-      when(mockHandler.supports('sample.custom_doc', null)).thenReturn(true);
-      when(mockHandler.open('sample.custom_doc', password: anyNamed('password')))
-          .thenAnswer((_) async => mockReader);
+    test(
+      'registers custom handler and delegates open when supports returns true',
+      () async {
+        when(mockHandler.supports('sample.custom_doc', null)).thenReturn(true);
+        when(
+          mockHandler.open('sample.custom_doc', password: anyNamed('password')),
+        ).thenAnswer((_) async => mockReader);
 
-      factory.register(mockHandler);
+        factory.register(mockHandler);
 
-      expect(factory.handlers.contains(mockHandler), isTrue);
+        expect(factory.handlers.contains(mockHandler), isTrue);
 
-      final reader = await factory.open('sample.custom_doc');
+        final reader = await factory.open('sample.custom_doc');
 
-      expect(reader, equals(mockReader));
-      verify(mockHandler.supports('sample.custom_doc', null)).called(1);
-      verify(mockHandler.open('sample.custom_doc', password: null)).called(1);
-    });
+        expect(reader, equals(mockReader));
+        verify(mockHandler.supports('sample.custom_doc', null)).called(1);
+        verify(mockHandler.open('sample.custom_doc', password: null)).called(1);
+      },
+    );
 
     test('passes password correctly to custom handler', () async {
       when(mockHandler.supports('secure.custom_doc', null)).thenReturn(true);
@@ -44,10 +48,14 @@ void main() {
 
       factory.register(mockHandler);
 
-      final reader = await factory.open('secure.custom_doc', password: 'secret_password');
+      final reader = await factory.open(
+        'secure.custom_doc',
+        password: 'secret_password',
+      );
 
       expect(reader, equals(mockReader));
-      verify(mockHandler.open('secure.custom_doc', password: 'secret_password')).called(1);
+      verify(mockHandler.open('secure.custom_doc', password: 'secret_password'))
+          .called(1);
     });
 
     test('unregisters handler correctly', () async {
@@ -65,7 +73,8 @@ void main() {
 
     test('sniffs magic bytes when bytes parameter is passed', () async {
       final magicBytes = Uint8List.fromList([0x12, 0x34, 0x56, 0x78]);
-      when(mockHandler.supports('unknown_extension', magicBytes)).thenReturn(true);
+      when(mockHandler.supports('unknown_extension', magicBytes))
+          .thenReturn(true);
       when(mockHandler.open('unknown_extension', password: null))
           .thenAnswer((_) async => mockReader);
 

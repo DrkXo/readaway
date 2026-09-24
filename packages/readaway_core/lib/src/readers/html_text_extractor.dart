@@ -20,9 +20,7 @@ class HtmlTextExtractor {
     caseSensitive: false,
   );
 
-  static final RegExp _citationAnchorRe = RegExp(
-    r'^[\[\(]?[\*\d]+[\)\]]?$',
-  );
+  static final RegExp _citationAnchorRe = RegExp(r'^[\[\(]?[\*\d]+[\)\]]?$');
 
   static final RegExp _aTagRe = RegExp(
     r'<a\b[^>]*>([\s\S]*?)<\/a>',
@@ -39,9 +37,7 @@ class HtmlTextExtractor {
     caseSensitive: false,
   );
 
-  static final RegExp _kanaRe = RegExp(
-    r'[\u3040-\u309f\u30a0-\u30ff]',
-  );
+  static final RegExp _kanaRe = RegExp(r'[\u3040-\u309f\u30a0-\u30ff]');
 
   static final RegExp _blockEndRe = RegExp(
     r'<\/(?:h[1-6]|p|blockquote|li|dt|dd|pre|div|section|article)>|<br\s*\/?>',
@@ -146,28 +142,18 @@ class HtmlTextExtractor {
       final attrs = match.group(1) ?? '';
       final id = match.group(2) ?? '';
       final inner = (match.group(3) ?? '').trim();
-      final fnType = attrs.toLowerCase().contains('endnote') ? 'endnote' : 'footnote';
+      final fnType = attrs.toLowerCase().contains('endnote')
+          ? 'endnote'
+          : 'footnote';
 
-      results.add(
-        FootnoteItem(
-          id: id,
-          contentHtml: inner,
-          type: fnType,
-        ),
-      );
+      results.add(FootnoteItem(id: id, contentHtml: inner, type: fnType));
     }
 
     for (final match in _duokanFootnoteRe.allMatches(html)) {
       final id = match.group(2) ?? '';
       final inner = (match.group(3) ?? '').trim();
       if (!results.any((r) => r.id == id)) {
-        results.add(
-          FootnoteItem(
-            id: id,
-            contentHtml: inner,
-            type: 'footnote',
-          ),
-        );
+        results.add(FootnoteItem(id: id, contentHtml: inner, type: 'footnote'));
       }
     }
 

@@ -56,13 +56,7 @@ class SingleHtmlDocumentReader
       baseDir: p.dirname(filePath),
       html: html,
       title: safeTitle,
-      outline: [
-        OutlineItem(
-          title: safeTitle,
-          href: baseName,
-          level: 0,
-        ),
-      ],
+      outline: [OutlineItem(title: safeTitle, href: baseName, level: 0)],
     );
   }
 

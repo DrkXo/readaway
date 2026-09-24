@@ -19,10 +19,7 @@ class TextTransformPipeline {
   final List<TextTransformer> transformers;
   final TransformerErrorCallback? onError;
 
-  const TextTransformPipeline({
-    required this.transformers,
-    this.onError,
-  });
+  const TextTransformPipeline({required this.transformers, this.onError});
 
   /// Standard natural reading pipeline including BiDi repair, whitespace collapse,
   /// quotation rotation, footnote tagging, hanging preposition glue, and HTML cleanup.

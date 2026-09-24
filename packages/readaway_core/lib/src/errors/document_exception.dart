@@ -48,4 +48,3 @@ class DocumentEncryptedException extends DocumentException {
     super.cause,
   });
 }
-

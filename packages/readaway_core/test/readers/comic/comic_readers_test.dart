@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -79,12 +80,35 @@ void main() {
 
       // PNG page 2 (800x1200)
       final p2 = Uint8List.fromList([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x00, 0x00, 0x0D,
-        0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x03, 0x20,
-        0x00, 0x00, 0x04, 0xB0,
-        0x08, 0x06, 0x00, 0x00, 0x00,
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
+        0x00,
+        0x00,
+        0x00,
+        0x0D,
+        0x49,
+        0x48,
+        0x44,
+        0x52,
+        0x00,
+        0x00,
+        0x03,
+        0x20,
+        0x00,
+        0x00,
+        0x04,
+        0xB0,
+        0x08,
+        0x06,
+        0x00,
+        0x00,
+        0x00,
       ]);
 
       const comicInfoXml = '''<?xml version="1.0"?>
@@ -102,7 +126,13 @@ void main() {
   </Pages>
 </ComicInfo>''';
 
-      archive.addFile(ArchiveFile('ComicInfo.xml', comicInfoXml.length, utf8.encode(comicInfoXml)));
+      archive.addFile(
+        ArchiveFile(
+          'ComicInfo.xml',
+          comicInfoXml.length,
+          utf8.encode(comicInfoXml),
+        ),
+      );
       archive.addFile(ArchiveFile('page_10.png', p2.length, p2));
       archive.addFile(ArchiveFile('page_01.png', p1.length, p1));
 
@@ -132,7 +162,10 @@ void main() {
       expect(reader.getCachedPageImage(0), isNotNull);
 
       reader.dispose();
-      expect(() => reader.loadPageSync(0), throwsA(isA<DocumentDisposedException>()));
+      expect(
+        () => reader.loadPageSync(0),
+        throwsA(isA<DocumentDisposedException>()),
+      );
     });
 
     test('TarComicArchiveAdapter opens CBT archives', () async {
@@ -158,5 +191,87 @@ void main() {
 
       reader.dispose();
     });
+
+    test(
+      'ComicTocExtractor extracts hierarchy from folders and chapter patterns',
+      () {
+        // 1. Folder structure
+        final folderPaths = [
+          'Vol 1/Ch 1/01.jpg',
+          'Vol 1/Ch 1/02.jpg',
+          'Vol 1/Ch 2/01.jpg',
+          'Vol 2/Ch 1/01.jpg',
+        ];
+        final folderOutline = ComicTocExtractor.extract(folderPaths);
+        expect(folderOutline.length, 2);
+        expect(folderOutline[0].title, 'Vol 1');
+        expect(folderOutline[0].chapterIndex, 0);
+        expect(folderOutline[0].children.length, 2);
+        expect(folderOutline[0].children[0].title, 'Ch 1');
+        expect(folderOutline[0].children[0].chapterIndex, 0);
+        expect(folderOutline[0].children[1].title, 'Ch 2');
+        expect(folderOutline[0].children[1].chapterIndex, 2);
+        expect(folderOutline[1].title, 'Vol 2');
+        expect(folderOutline[1].chapterIndex, 3);
+
+        // 2. Chapter pattern in filenames
+        final chapterPaths = [
+          'Manga_Ch.01_p01.jpg',
+          'Manga_Ch.01_p02.jpg',
+          'Manga_Ch.02_p01.jpg',
+        ];
+        final chapterOutline = ComicTocExtractor.extract(chapterPaths);
+        expect(chapterOutline.length, 2);
+        expect(chapterOutline[0].title, 'Chapter 01');
+        expect(chapterOutline[0].chapterIndex, 0);
+        expect(chapterOutline[1].title, 'Chapter 02');
+        expect(chapterOutline[1].chapterIndex, 2);
+
+        // 3. Fallback page names
+        final pagePaths = [
+          'exampleCBZ.jpg',
+          'example.jpeg',
+          'example.jpg',
+          'example.png',
+        ];
+        final pageOutline = ComicTocExtractor.extract(pagePaths);
+        expect(pageOutline.length, 4);
+        expect(pageOutline[0].title, 'exampleCBZ');
+        expect(pageOutline[0].chapterIndex, 0);
+        expect(pageOutline[1].title, 'example');
+        expect(pageOutline[1].chapterIndex, 1);
+        expect(pageOutline[2].title, 'example (2)');
+        expect(pageOutline[2].chapterIndex, 2);
+        expect(pageOutline[3].title, 'example (3)');
+        expect(pageOutline[3].chapterIndex, 3);
+      },
+    );
+
+    test(
+      'ComicBookDocumentReader generates outline for dynamic CBZ (example.cbz)',
+      () async {
+        const exampleCbzPath = '/home/drkxo/Documents/Ebooks/example.cbz';
+        if (!File(exampleCbzPath).existsSync()) return;
+
+        final reader = await ComicBookDocumentReader.open(exampleCbzPath);
+        try {
+          expect(reader.format, 'cbz');
+          expect(reader.pageCount, 4);
+          expect(reader.outline, isNotEmpty);
+          expect(reader.outline.length, 4);
+          expect(reader.outline[0].title, 'example');
+          expect(reader.outline[0].chapterIndex, 0);
+          expect(reader.outline[0].href, 'page:0');
+          expect(reader.outline[1].title, 'example (2)');
+          expect(reader.outline[1].chapterIndex, 1);
+          expect(reader.outline[2].title, 'example (3)');
+          expect(reader.outline[2].chapterIndex, 2);
+          expect(reader.outline[3].title, 'exampleCBZ');
+          expect(reader.outline[3].chapterIndex, 3);
+        } finally {
+          reader.dispose();
+        }
+      },
+    );
   });
 }

@@ -62,8 +62,9 @@ class PunctuationTransformer implements TextTransformer {
 
     if (context.vertical) {
       final isHant = context.language?.toLowerCase().contains('hant') ?? false;
-      final verticalMap =
-          isHant ? _verticalQuotationsMapHant : _verticalQuotationsMapHans;
+      final verticalMap = isHant
+          ? _verticalQuotationsMapHant
+          : _verticalQuotationsMapHans;
       for (final entry in verticalMap.entries) {
         result = result.replaceAll(entry.key, entry.value);
       }

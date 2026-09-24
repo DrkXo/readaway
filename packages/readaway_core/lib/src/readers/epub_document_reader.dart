@@ -57,11 +57,7 @@ class EpubDocumentReader
       await stream.close();
       throw DocumentParseException('Failed to parse EPUB zip archive: $e');
     }
-    return _fromArchive(
-      archive,
-      filePath: filePath,
-      inputStream: stream,
-    );
+    return _fromArchive(archive, filePath: filePath, inputStream: stream);
   }
 
   /// Opens an EPUB document from in-memory [bytes].
@@ -83,7 +79,6 @@ class EpubDocumentReader
     required String filePath,
     InputFileStream? inputStream,
   }) async {
-
     final entriesByName = <String, ArchiveFile>{};
     for (final file in archive) {
       if (file.isFile) {
@@ -123,10 +118,7 @@ class EpubDocumentReader
     }
 
     final opfDir = p.posix.dirname(normalizedOpfPath);
-    final opfXmlStr = utf8.decode(
-      _extractBytes(opfFile),
-      allowMalformed: true,
-    );
+    final opfXmlStr = utf8.decode(_extractBytes(opfFile), allowMalformed: true);
     final opfXml = XmlDocument.parse(opfXmlStr);
 
     // 2. Parse Metadata
@@ -378,11 +370,18 @@ class EpubDocumentReader
 
     return html.replaceAllMapped(linkRegex, (match) {
       final attrs = match.group(1) ?? '';
-      final isStylesheet = attrs.contains(
-            RegExp(r'rel\s*=\s*["\x27]?stylesheet["\x27]?', caseSensitive: false),
+      final isStylesheet =
+          attrs.contains(
+            RegExp(
+              r'rel\s*=\s*["\x27]?stylesheet["\x27]?',
+              caseSensitive: false,
+            ),
           ) ||
           attrs.contains(
-            RegExp(r'type\s*=\s*["\x27]?text/css["\x27]?', caseSensitive: false),
+            RegExp(
+              r'type\s*=\s*["\x27]?text/css["\x27]?',
+              caseSensitive: false,
+            ),
           );
 
       if (!isStylesheet) return match.group(0)!;
@@ -430,7 +429,9 @@ class EpubDocumentReader
 
     return css.replaceAllMapped(importRegex, (match) {
       final importHref = match.group(1) ?? match.group(2);
-      if (importHref == null || importHref.trim().isEmpty) return match.group(0)!;
+      if (importHref == null || importHref.trim().isEmpty) {
+        return match.group(0)!;
+      }
 
       final cleanHref = Uri.decodeComponent(importHref.trim());
       final resolvedImportPath = _resolveRelative(cssDir, cleanHref);
@@ -523,7 +524,8 @@ class EpubDocumentReader
     try {
       final decodedNorm = Uri.decodeComponent(norm);
       if (decodedNorm != norm) {
-        file = _entriesByName[decodedNorm] ??
+        file =
+            _entriesByName[decodedNorm] ??
             _entriesByName[Uri.decodeComponent(path)];
         if (file != null) return file;
       }
@@ -716,7 +718,10 @@ class EpubDocumentReader
 
   /// Maps a resolved outline href to its spine index, preferring an exact
   /// normalized-path match and falling back to basename matching.
-  static int? _chapterIndexForHref(String resolvedHref, Map<String, int> index) {
+  static int? _chapterIndexForHref(
+    String resolvedHref,
+    Map<String, int> index,
+  ) {
     final cleanHref = resolvedHref.split('#').first;
     return index[_normalizePath(cleanHref)] ??
         index[p.posix.basename(cleanHref)];

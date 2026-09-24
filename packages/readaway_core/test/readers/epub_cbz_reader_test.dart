@@ -23,7 +23,11 @@ void main() {
   </rootfiles>
 </container>''';
       archive.addFile(
-        ArchiveFile('META-INF/container.xml', containerXml.length, utf8.encode(containerXml)),
+        ArchiveFile(
+          'META-INF/container.xml',
+          containerXml.length,
+          utf8.encode(containerXml),
+        ),
       );
 
       // 3. content.opf
@@ -67,25 +71,41 @@ void main() {
       );
 
       // 5. chapters
-      const ch1Xhtml = '''<html><body><h1>Chapter 1</h1><p>Welcome to the book.</p></body></html>''';
-      const ch2Xhtml = '''<html><body><h1>Chapter 2</h1><p>The end of the book.</p></body></html>''';
+      const ch1Xhtml =
+          '''<html><body><h1>Chapter 1</h1><p>Welcome to the book.</p></body></html>''';
+      const ch2Xhtml =
+          '''<html><body><h1>Chapter 2</h1><p>The end of the book.</p></body></html>''';
       archive.addFile(
-        ArchiveFile('OEBPS/chapter1.xhtml', ch1Xhtml.length, utf8.encode(ch1Xhtml)),
+        ArchiveFile(
+          'OEBPS/chapter1.xhtml',
+          ch1Xhtml.length,
+          utf8.encode(ch1Xhtml),
+        ),
       );
       archive.addFile(
-        ArchiveFile('OEBPS/chapter2.xhtml', ch2Xhtml.length, utf8.encode(ch2Xhtml)),
+        ArchiveFile(
+          'OEBPS/chapter2.xhtml',
+          ch2Xhtml.length,
+          utf8.encode(ch2Xhtml),
+        ),
       );
 
       // 6. image asset
       final fakeImageBytes = [0xFF, 0xD8, 0xFF, 0xE0];
       archive.addFile(
-        ArchiveFile('OEBPS/images/cover.jpg', fakeImageBytes.length, fakeImageBytes),
+        ArchiveFile(
+          'OEBPS/images/cover.jpg',
+          fakeImageBytes.length,
+          fakeImageBytes,
+        ),
       );
 
       final zipBytes = ZipEncoder().encode(archive);
       expect(zipBytes, isNotNull);
 
-      final reader = await EpubDocumentReader.fromBytes(Uint8List.fromList(zipBytes));
+      final reader = await EpubDocumentReader.fromBytes(
+        Uint8List.fromList(zipBytes),
+      );
 
       expect(reader.format, 'epub');
       expect(reader.isReflowable, isTrue);
@@ -116,23 +136,37 @@ void main() {
       expect(reader.resolveSectionIndex('chapter2.xhtml'), 1);
       expect(reader.resolveSectionIndex('OEBPS/chapter1.xhtml'), 0);
 
-      expect(reader.resolveAssetPath(0, 'images/cover.jpg'), 'OEBPS/images/cover.jpg');
+      expect(
+        reader.resolveAssetPath(0, 'images/cover.jpg'),
+        'OEBPS/images/cover.jpg',
+      );
 
       reader.dispose();
-      expect(() => reader.loadSectionHtml(0), throwsA(isA<DocumentDisposedException>()));
+      expect(
+        () => reader.loadSectionHtml(0),
+        throwsA(isA<DocumentDisposedException>()),
+      );
     });
 
     test('EpubDocumentReader automatically inlines external linked stylesheets and handles @import', () async {
       final archive = Archive();
 
-      archive.addFile(ArchiveFile('mimetype', 20, utf8.encode('application/epub+zip')));
+      archive.addFile(
+        ArchiveFile('mimetype', 20, utf8.encode('application/epub+zip')),
+      );
       const containerXml = '''<?xml version="1.0"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
   <rootfiles>
     <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
 </container>''';
-      archive.addFile(ArchiveFile('META-INF/container.xml', containerXml.length, utf8.encode(containerXml)));
+      archive.addFile(
+        ArchiveFile(
+          'META-INF/container.xml',
+          containerXml.length,
+          utf8.encode(containerXml),
+        ),
+      );
 
       const opfXml = '''<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="pub-id">
@@ -149,14 +183,28 @@ void main() {
     <itemref idref="ch1"/>
   </spine>
 </package>''';
-      archive.addFile(ArchiveFile('OEBPS/content.opf', opfXml.length, utf8.encode(opfXml)));
+      archive.addFile(
+        ArchiveFile('OEBPS/content.opf', opfXml.length, utf8.encode(opfXml)),
+      );
 
       const headingsCss = 'h1 { text-align: center; font-style: italic; }';
       const mainCss = '''@import url("headings.css");
 p { text-indent: 2em; line-height: 1.6; }''';
 
-      archive.addFile(ArchiveFile('OEBPS/styles/headings.css', headingsCss.length, utf8.encode(headingsCss)));
-      archive.addFile(ArchiveFile('OEBPS/styles/main.css', mainCss.length, utf8.encode(mainCss)));
+      archive.addFile(
+        ArchiveFile(
+          'OEBPS/styles/headings.css',
+          headingsCss.length,
+          utf8.encode(headingsCss),
+        ),
+      );
+      archive.addFile(
+        ArchiveFile(
+          'OEBPS/styles/main.css',
+          mainCss.length,
+          utf8.encode(mainCss),
+        ),
+      );
 
       const ch1Xhtml = '''<?xml version="1.0" encoding="utf-8"?>
 <html>
@@ -169,17 +217,31 @@ p { text-indent: 2em; line-height: 1.6; }''';
     <p>Body paragraph with indent.</p>
   </body>
 </html>''';
-      archive.addFile(ArchiveFile('OEBPS/text/chapter1.xhtml', ch1Xhtml.length, utf8.encode(ch1Xhtml)));
+      archive.addFile(
+        ArchiveFile(
+          'OEBPS/text/chapter1.xhtml',
+          ch1Xhtml.length,
+          utf8.encode(ch1Xhtml),
+        ),
+      );
 
       final zipBytes = ZipEncoder().encode(archive);
-      final reader = await EpubDocumentReader.fromBytes(Uint8List.fromList(zipBytes));
+      final reader = await EpubDocumentReader.fromBytes(
+        Uint8List.fromList(zipBytes),
+      );
 
       final loadedHtml = reader.loadSectionHtml(0);
 
       // Verify that <link> was replaced by inlined <style> containing resolved CSS & @import content
       expect(loadedHtml, isNot(contains('<link href="../styles/main.css"')));
-      expect(loadedHtml, contains('<style type="text/css" data-href="../styles/main.css">'));
-      expect(loadedHtml, contains('h1 { text-align: center; font-style: italic; }'));
+      expect(
+        loadedHtml,
+        contains('<style type="text/css" data-href="../styles/main.css">'),
+      );
+      expect(
+        loadedHtml,
+        contains('h1 { text-align: center; font-style: italic; }'),
+      );
       expect(loadedHtml, contains('p { text-indent: 2em; line-height: 1.6; }'));
 
       reader.dispose();
@@ -203,13 +265,21 @@ p { text-indent: 2em; line-height: 1.6; }''';
       expect(reader.format, 'cbz');
       expect(reader.isReflowable, isFalse);
       expect(reader.pageCount, 4);
-      expect(reader.pagePaths, ['page_1.png', 'page_2.png', 'page_10.png', 'page_20.png']);
+      expect(reader.pagePaths, [
+        'page_1.png',
+        'page_2.png',
+        'page_10.png',
+        'page_20.png',
+      ]);
 
       final p0 = reader.loadPageSync(0);
       expect(p0.length, 4);
 
       reader.dispose();
-      expect(() => reader.loadPageSync(0), throwsA(isA<DocumentDisposedException>()));
+      expect(
+        () => reader.loadPageSync(0),
+        throwsA(isA<DocumentDisposedException>()),
+      );
     });
   });
 }

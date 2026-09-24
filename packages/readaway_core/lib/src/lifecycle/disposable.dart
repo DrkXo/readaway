@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:meta/meta.dart';
+
 import '../errors/document_exception.dart';
 
 /// Interface for objects that hold resources requiring explicit disposal.

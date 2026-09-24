@@ -23,6 +23,13 @@ void main() {
       await PdfEngineManager.release();
       expect(PdfEngineManager.activeCount, 0);
       expect(PdfEngineManager.isInitialized, isFalse);
+
+      // Test reset
+      await PdfEngineManager.acquire();
+      expect(PdfEngineManager.activeCount, 1);
+      PdfEngineManager.reset();
+      expect(PdfEngineManager.activeCount, 0);
+      expect(PdfEngineManager.isInitialized, isFalse);
     });
 
     test('PdfFormatHandler supports extension and magic bytes', () {
@@ -32,19 +39,50 @@ void main() {
       expect(handler.supports('book.PDF'), isTrue);
       expect(handler.supports('book.epub'), isFalse);
 
-      final pdfMagic = Uint8List.fromList([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x37]); // %PDF-1.7
+      final pdfMagic = Uint8List.fromList([
+        0x25,
+        0x50,
+        0x44,
+        0x46,
+        0x2D,
+        0x31,
+        0x2E,
+        0x37,
+      ]); // %PDF-1.7
       expect(handler.supports('unknown_file', pdfMagic), isTrue);
+
+      // Leading bytes before %PDF header (e.g. comment / linearized)
+      final offsetPdfMagic = Uint8List.fromList([
+        0x23,
+        0x20,
+        0x43,
+        0x6F,
+        0x6D,
+        0x6D,
+        0x65,
+        0x6E,
+        0x74,
+        0x0A, // # Comment\n
+        0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34,
+      ]);
+      expect(handler.supports('unknown_file', offsetPdfMagic), isTrue);
 
       final nonPdf = Uint8List.fromList([0x50, 0x4B, 0x03, 0x04]); // PK..
       expect(handler.supports('unknown_file', nonPdf), isFalse);
     });
 
     test('DocumentEncryptedException properties', () {
-      const ex1 = DocumentEncryptedException('Password needed', isInvalidPassword: false);
+      const ex1 = DocumentEncryptedException(
+        'Password needed',
+        isInvalidPassword: false,
+      );
       expect(ex1.isInvalidPassword, isFalse);
       expect(ex1.message, 'Password needed');
 
-      const ex2 = DocumentEncryptedException('Wrong password', isInvalidPassword: true);
+      const ex2 = DocumentEncryptedException(
+        'Wrong password',
+        isInvalidPassword: true,
+      );
       expect(ex2.isInvalidPassword, isTrue);
       expect(ex2.toString(), contains('Wrong password'));
     });

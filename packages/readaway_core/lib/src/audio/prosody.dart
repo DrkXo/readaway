@@ -34,10 +34,7 @@ class SpeechProsodySpan {
   /// The trailing pause in seconds to insert after this speech span.
   final double pauseAfterSec;
 
-  const SpeechProsodySpan({
-    required this.text,
-    this.pauseAfterSec = 0.0,
-  });
+  const SpeechProsodySpan({required this.text, this.pauseAfterSec = 0.0});
 
   @override
   String toString() =>
@@ -164,7 +161,8 @@ List<SpeechProsodySpan> splitProsodySpans(
       final puncBase = punctuationBasePauseSec(segment);
       double pauseSec;
       if (sentenceGapMs > 0) {
-        final ratio = (sentenceGapMs / 1000.0) / PunctuationPauses.sentenceTerminalSec;
+        final ratio =
+            (sentenceGapMs / 1000.0) / PunctuationPauses.sentenceTerminalSec;
         pauseSec = puncBase * ratio;
       } else {
         pauseSec = puncBase;
@@ -228,13 +226,16 @@ double computeChunkGapSec(
 
   double baseSec;
   if (chunk.isParagraphEnd) {
-    baseSec = paragraphGapMs > 0 ? (paragraphGapMs / 1000.0) : PunctuationPauses.paragraphGapSec;
+    baseSec = paragraphGapMs > 0
+        ? (paragraphGapMs / 1000.0)
+        : PunctuationPauses.paragraphGapSec;
   } else {
     // If custom sentence gap is provided and different from default, use it as baseline
     final puncBase = punctuationBasePauseSec(chunk.text);
     if (sentenceGapMs > 0) {
       // Scale standard punctuation according to custom sentence gap baseline
-      final ratio = (sentenceGapMs / 1000.0) / PunctuationPauses.sentenceTerminalSec;
+      final ratio =
+          (sentenceGapMs / 1000.0) / PunctuationPauses.sentenceTerminalSec;
       baseSec = puncBase * ratio;
     } else {
       baseSec = puncBase;
@@ -242,7 +243,8 @@ double computeChunkGapSec(
   }
 
   // Scale by silence multiplier
-  var scaledSec = baseSec * (silenceScaleMultiplier > 0 ? silenceScaleMultiplier : 1.0);
+  var scaledSec =
+      baseSec * (silenceScaleMultiplier > 0 ? silenceScaleMultiplier : 1.0);
 
   // Apply ±10% jitter to prevent robotic metronome effect
   if (enableJitter && scaledSec > 0) {

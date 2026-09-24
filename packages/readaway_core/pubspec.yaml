@@ -24,6 +24,7 @@ dependencies:
   jsonc: ^0.0.3
   vscode_theme_parser: ^0.1.0
   pdfrx: ^2.6.0
+  image: ^4.10.1
 
 dev_dependencies:
   flutter_test:

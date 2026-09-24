@@ -13,22 +13,31 @@ class PdfEngineManager {
 
   /// Lazily initializes pdfrx if not already initialized, incrementing the active PDF count.
   static Future<void> acquire() async {
-    _activeDocumentCount++;
-    if (_isInitialized) return;
-
-    if (_initFuture != null) {
+    while (_initFuture != null) {
       await _initFuture;
+    }
+
+    if (_isInitialized) {
+      _activeDocumentCount++;
       return;
     }
 
-    _initFuture = () async {
+    final future = () async {
       try {
         await pdfrxFlutterInitialize();
       } catch (_) {}
       _isInitialized = true;
     }();
 
-    await _initFuture;
+    _initFuture = future;
+    try {
+      await future;
+      _activeDocumentCount++;
+    } finally {
+      if (_initFuture == future) {
+        _initFuture = null;
+      }
+    }
   }
 
   /// Releases a reference to the PDF engine, cleaning up reference count.
@@ -39,11 +48,29 @@ class PdfEngineManager {
     }
     if (_activeDocumentCount == 0 && _isInitialized) {
       _isInitialized = false;
-      _initFuture = null;
+      final teardownFuture = _teardown();
+      _initFuture = teardownFuture;
       try {
-        await PdfrxEntryFunctions.instance.stopBackgroundWorker();
-      } catch (_) {}
+        await teardownFuture;
+      } finally {
+        if (_initFuture == teardownFuture) {
+          _initFuture = null;
+        }
+      }
     }
+  }
+
+  static Future<void> _teardown() async {
+    try {
+      await PdfrxEntryFunctions.instance.stopBackgroundWorker();
+    } catch (_) {}
+  }
+
+  /// Resets internal state for test isolation.
+  static void reset() {
+    _activeDocumentCount = 0;
+    _isInitialized = false;
+    _initFuture = null;
   }
 
   /// Current number of active PDF readers.

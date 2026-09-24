@@ -93,7 +93,9 @@ They set out into the wild forest.
       await file.writeAsString('# My Notes\n\nHello **world**.\n');
       addTearDown(() => dir.delete(recursive: true));
 
-      final reader = await DocumentReaderFactory().open(file.path) as ReflowableDocumentReader;
+      final reader = await DocumentReaderFactory().open(
+        file.path,
+      ) as ReflowableDocumentReader;
 
       // Markdown renders through the single-section HTML reader, so it
       // reports the 'html' format; the extension keeps the library badge 'MD'.
@@ -101,10 +103,7 @@ They set out into the wild forest.
       expect(reader.isReflowable, isTrue);
       expect(reader.title, 'My Notes');
       expect(reader.sectionCount, 1);
-      expect(
-        reader.loadSectionHtml(0),
-        contains('<strong>world</strong>'),
-      );
+      expect(reader.loadSectionHtml(0), contains('<strong>world</strong>'));
       reader.dispose();
     });
   });
@@ -115,7 +114,20 @@ They set out into the wild forest.
       expect(factory.handlers.length, 9);
 
       final formats = factory.handlers.map((h) => h.format).toList();
-      expect(formats, containsAll(['epub', 'pdf', 'cbz', 'cbt', 'cbr', 'cb7', 'html', 'txt', 'md']));
+      expect(
+        formats,
+        containsAll([
+          'epub',
+          'pdf',
+          'cbz',
+          'cbt',
+          'cbr',
+          'cb7',
+          'html',
+          'txt',
+          'md',
+        ]),
+      );
 
       expect(factory.handlers.any((h) => h.supports('test.epub')), isTrue);
       expect(factory.handlers.any((h) => h.supports('test.pdf')), isTrue);

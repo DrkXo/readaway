@@ -102,10 +102,12 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
             );
             reader = opened;
 
-            final sectionCount =
-                opened is ReflowableDocumentReader ? opened.sectionCount : 0;
-            final pageCount =
-                opened is PageDocumentReader ? opened.pageCount : 0;
+            final sectionCount = opened is ReflowableDocumentReader
+                ? opened.sectionCount
+                : 0;
+            final pageCount = opened is PageDocumentReader
+                ? opened.pageCount
+                : 0;
 
             // Warm up section 0 if reflowable
             if (sectionCount > 0 && opened is ReflowableDocumentReader) {
@@ -152,9 +154,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
 
           schedulePrefetch(sectionIndex, reflow.sectionCount);
 
-          hostSendPort.send(
-            DocumentResponse.sectionHtml(id: id, html: html),
-          );
+          hostSendPort.send(DocumentResponse.sectionHtml(id: id, html: html));
         },
         extractSectionText: (id, sectionIndex) {
           if (reader is! ReflowableDocumentReader) {
@@ -168,9 +168,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
             textCache.put(sectionIndex, text);
           }
 
-          hostSendPort.send(
-            DocumentResponse.sectionText(id: id, text: text),
-          );
+          hostSendPort.send(DocumentResponse.sectionText(id: id, text: text));
         },
         extractSectionSpeechText: (id, sectionIndex) {
           if (reader is! ReflowableDocumentReader) {
@@ -185,10 +183,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           }
 
           hostSendPort.send(
-            DocumentResponse.sectionSpeechText(
-              id: id,
-              speechText: speechText,
-            ),
+            DocumentResponse.sectionSpeechText(id: id, speechText: speechText),
           );
         },
         resolveFootnote: (id, url, currentChapterIndex) {
@@ -226,7 +221,8 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           if (targetSectionIndex != null &&
               targetSectionIndex >= 0 &&
               targetSectionIndex < reflow.sectionCount) {
-            final html = htmlCache.get(targetSectionIndex) ??
+            final html =
+                htmlCache.get(targetSectionIndex) ??
                 reflow.loadSectionHtml(targetSectionIndex);
             htmlCache.put(targetSectionIndex, html);
             final footnote = FootnoteTransformer.findFootnote(html, anchorId);
@@ -252,7 +248,8 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
             if (sectionIndex != null && reader is ReflowableDocumentReader) {
               final resolved = (reader as ReflowableDocumentReader)
                   .resolveAssetPath(sectionIndex, assetPath);
-              bytes = reader!.loadAsset(resolved) ?? reader!.loadAsset(assetPath);
+              bytes =
+                  reader!.loadAsset(resolved) ?? reader!.loadAsset(assetPath);
             } else {
               bytes = reader!.loadAsset(assetPath);
             }
@@ -311,13 +308,11 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           if (reader is! ReflowableDocumentReader) {
             throw StateError('Current document is not reflowable');
           }
-          final idx =
-              (reader as ReflowableDocumentReader).resolveSectionIndex(href);
+          final idx = (reader as ReflowableDocumentReader).resolveSectionIndex(
+            href,
+          );
           hostSendPort.send(
-            DocumentResponse.sectionIndexResolved(
-              id: id,
-              sectionIndex: idx,
-            ),
+            DocumentResponse.sectionIndexResolved(id: id, sectionIndex: idx),
           );
         },
         resolveAssetPath: (id, sectionIndex, relativePath) {
@@ -327,10 +322,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           final resolved = (reader as ReflowableDocumentReader)
               .resolveAssetPath(sectionIndex, relativePath);
           hostSendPort.send(
-            DocumentResponse.assetPathResolved(
-              id: id,
-              resolvedPath: resolved,
-            ),
+            DocumentResponse.assetPathResolved(id: id, resolvedPath: resolved),
           );
         },
         dispose: (id) async {

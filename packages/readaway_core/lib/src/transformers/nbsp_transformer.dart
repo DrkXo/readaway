@@ -10,29 +10,71 @@ class NbspTransformer implements TextTransformer {
   String get name => 'nbsp';
 
   Map<String, _NbspLanguageConfig> get _languages => {
-        'ru': const _NbspLanguageConfig(
-          script: 'Cyrillic',
-          shortWords: [
-            'без', 'для', 'близ', 'под', 'над', 'про', 'при', 'ради', 'сквозь',
-            'среди', 'через', 'около', 'перед', 'после', 'между', 'кроме',
-            'вокруг', 'против', 'вместо', 'внутри', 'возле',
-            'или', 'либо', 'ибо', 'если', 'едва', 'дабы', 'чтобы', 'чтоб',
-            'хотя', 'пока', 'зато', 'тоже', 'также', 'итак', 'как', 'что',
-            'чем', 'так',
-            'даже', 'лишь', 'ведь', 'вот', 'вон', 'уже', 'хоть', 'разве',
-            'только', 'именно', 'неужели',
-          ],
-        ),
-        'en': const _NbspLanguageConfig(
-          script: 'Latin',
-          shortWords: ['the', 'and', 'for', 'but', 'nor', 'out', 'off', 'via'],
-        ),
-      };
+    'ru': const _NbspLanguageConfig(
+      script: 'Cyrillic',
+      shortWords: [
+        'без',
+        'для',
+        'близ',
+        'под',
+        'над',
+        'про',
+        'при',
+        'ради',
+        'сквозь',
+        'среди',
+        'через',
+        'около',
+        'перед',
+        'после',
+        'между',
+        'кроме',
+        'вокруг',
+        'против',
+        'вместо',
+        'внутри',
+        'возле',
+        'или',
+        'либо',
+        'ибо',
+        'если',
+        'едва',
+        'дабы',
+        'чтобы',
+        'чтоб',
+        'хотя',
+        'пока',
+        'зато',
+        'тоже',
+        'также',
+        'итак',
+        'как',
+        'что',
+        'чем',
+        'так',
+        'даже',
+        'лишь',
+        'ведь',
+        'вот',
+        'вон',
+        'уже',
+        'хоть',
+        'разве',
+        'только',
+        'именно',
+        'неужели',
+      ],
+    ),
+    'en': const _NbspLanguageConfig(
+      script: 'Latin',
+      shortWords: ['the', 'and', 'for', 'but', 'nor', 'out', 'off', 'via'],
+    ),
+  };
 
   RegExp get _textOrSkipPattern => RegExp(
-        r'<(style|script)\b[^>]*>[\s\S]*?<\/\1>|>([^<]+)<',
-        caseSensitive: false,
-      );
+    r'<(style|script)\b[^>]*>[\s\S]*?<\/\1>|>([^<]+)<',
+    caseSensitive: false,
+  );
 
   @override
   String transform(TransformContext context) {

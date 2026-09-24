@@ -1,4 +1,5 @@
 import 'package:xml/xml.dart';
+
 import '../../models/models.dart';
 
 /// Represents a single page annotation inside ComicInfo.xml
@@ -90,7 +91,9 @@ class ComicInfoParser {
 
       String? getElemText(String name) {
         final elem = root.findElements(name).firstOrNull;
-        return elem?.innerText.trim().isNotEmpty == true ? elem!.innerText.trim() : null;
+        return elem?.innerText.trim().isNotEmpty == true
+            ? elem!.innerText.trim()
+            : null;
       }
 
       int? getElemInt(String name) {
@@ -106,14 +109,18 @@ class ComicInfoParser {
           final imgIdx = imgAttr != null ? int.tryParse(imgAttr) : null;
           if (imgIdx != null) {
             final typeAttr = pageElem.getAttribute('Type');
-            final doubleAttr = pageElem.getAttribute('DoublePage')?.toLowerCase();
+            final doubleAttr = pageElem
+                .getAttribute('DoublePage')
+                ?.toLowerCase();
             final bookmarkAttr = pageElem.getAttribute('Bookmark');
-            pages.add(ComicPageInfo(
-              imageIndex: imgIdx,
-              type: typeAttr,
-              isDoublePage: doubleAttr == 'true' || doubleAttr == '1',
-              bookmark: bookmarkAttr,
-            ));
+            pages.add(
+              ComicPageInfo(
+                imageIndex: imgIdx,
+                type: typeAttr,
+                isDoublePage: doubleAttr == 'true' || doubleAttr == '1',
+                bookmark: bookmarkAttr,
+              ),
+            );
           }
         }
       }

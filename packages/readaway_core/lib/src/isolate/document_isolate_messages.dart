@@ -1,4 +1,5 @@
 import 'dart:isolate';
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../models/models.dart';
@@ -65,9 +66,7 @@ sealed class DocumentRequest with _$DocumentRequest {
     required String relativePath,
   }) = _ResolveAssetPathReq;
 
-  const factory DocumentRequest.dispose({
-    required int id,
-  }) = _DisposeDocReq;
+  const factory DocumentRequest.dispose({required int id}) = _DisposeDocReq;
 }
 
 /// Response returned from the document worker isolate to the host isolate.
@@ -130,9 +129,7 @@ sealed class DocumentResponse with _$DocumentResponse {
     required String resolvedPath,
   }) = _AssetPathResolvedResp;
 
-  const factory DocumentResponse.disposed({
-    required int id,
-  }) = _DisposedResp;
+  const factory DocumentResponse.disposed({required int id}) = _DisposedResp;
 
   const factory DocumentResponse.encryptedError({
     required int id,

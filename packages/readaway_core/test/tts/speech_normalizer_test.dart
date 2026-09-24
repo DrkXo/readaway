@@ -31,22 +31,30 @@ void main() {
 
     test('expands ordinals correctly', () {
       expect(
-        SpeechNormalizer.expandNumbersAndCurrency('He finished in 1st place on his 21st birthday.'),
+        SpeechNormalizer.expandNumbersAndCurrency(
+          'He finished in 1st place on his 21st birthday.',
+        ),
         'He finished in first place on his twenty-first birthday.',
       );
       expect(
-        SpeechNormalizer.expandNumbersAndCurrency('The 3rd chapter of the 100th volume.'),
+        SpeechNormalizer.expandNumbersAndCurrency(
+          'The 3rd chapter of the 100th volume.',
+        ),
         'The third chapter of the one hundredth volume.',
       );
     });
 
     test('expands abbreviations correctly', () {
       expect(
-        SpeechNormalizer.expandAbbreviations('Dr. Watson met Mr. Holmes & visited St. John.'),
+        SpeechNormalizer.expandAbbreviations(
+          'Dr. Watson met Mr. Holmes & visited St. John.',
+        ),
         'Doctor Watson met Mister Holmes and visited Saint John.',
       );
       expect(
-        SpeechNormalizer.expandAbbreviations('Apples, oranges, etc. vs. pears (e.g. Bartlett, i.e. green).'),
+        SpeechNormalizer.expandAbbreviations(
+          'Apples, oranges, etc. vs. pears (e.g. Bartlett, i.e. green).',
+        ),
         'Apples, oranges, et cetera versus pears (for example Bartlett, that is green).',
       );
     });
@@ -69,7 +77,9 @@ void main() {
     });
 
     test('estimates speech duration properly', () {
-      final duration = SpeechNormalizer.estimateDurationMs('Hello world, this is a test.');
+      final duration = SpeechNormalizer.estimateDurationMs(
+        'Hello world, this is a test.',
+      );
       expect(duration, greaterThan(1000));
       expect(duration, lessThan(4000));
     });

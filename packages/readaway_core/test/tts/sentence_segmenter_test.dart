@@ -10,7 +10,8 @@ void main() {
     });
 
     test('abbreviation aware splitting does not split on titles and abbreviations', () {
-      const input = 'Dr. Watson met Mrs. Hudson at 8 a.m. It was a lovely day in the U.S.A.';
+      const input =
+          'Dr. Watson met Mrs. Hudson at 8 a.m. It was a lovely day in the U.S.A.';
       final spans = SentenceSegmenter.segmentSentences(input, 'en');
 
       expect(spans.length, 2);

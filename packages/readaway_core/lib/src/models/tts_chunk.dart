@@ -86,7 +86,6 @@ sealed class TtsChunk with _$TtsChunk {
   /// Character length of the display text.
   int get length => text.length;
 
-
   factory TtsChunk.fromJson(Map<String, dynamic> json) =>
       TtsChunk.withDerivedId(
         id: json['id'] as String?,

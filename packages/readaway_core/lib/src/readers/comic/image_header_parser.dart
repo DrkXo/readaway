@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import '../../models/models.dart';
 
 /// Lightweight, zero-overhead parser that extracts image dimensions from headers
@@ -80,7 +81,8 @@ class ImageHeaderParser {
       }
 
       // SOF0 to SOF15 (except DHT 0xC4, JPG 0xC8, DAC 0xCC)
-      final isSof = (marker >= 0xC0 && marker <= 0xC3) ||
+      final isSof =
+          (marker >= 0xC0 && marker <= 0xC3) ||
           (marker >= 0xC5 && marker <= 0xC7) ||
           (marker >= 0xC9 && marker <= 0xCB) ||
           (marker >= 0xCD && marker <= 0xCF);
@@ -121,14 +123,8 @@ class ImageHeaderParser {
     final tag = String.fromCharCodes(bytes.sublist(12, 16));
     if (tag == 'VP8X' && bytes.length >= 30) {
       // Extended WebP: 24-bit canvas width at offset 24, canvas height at offset 27
-      final width = 1 +
-          bytes[24] +
-          (bytes[25] << 8) +
-          (bytes[26] << 16);
-      final height = 1 +
-          bytes[27] +
-          (bytes[28] << 8) +
-          (bytes[29] << 16);
+      final width = 1 + bytes[24] + (bytes[25] << 8) + (bytes[26] << 16);
+      final height = 1 + bytes[27] + (bytes[28] << 8) + (bytes[29] << 16);
       return PageSize(width: width.toDouble(), height: height.toDouble());
     } else if (tag == 'VP8 ' && bytes.length >= 30) {
       // Lossy VP8: check startcode 9d 01 2a at offset 23

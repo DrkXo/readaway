@@ -10,9 +10,9 @@ class FootnoteTransformer implements TextTransformer {
   String get name => 'footnote';
 
   RegExp get _asideEpubTypeRegex => RegExp(
-        r'<aside\s+([^>]*\bepub:type\s*=\s*["\x27](footnote|endnote|note|rearnote)["\x27][^>]*)>',
-        caseSensitive: false,
-      );
+    r'<aside\s+([^>]*\bepub:type\s*=\s*["\x27](footnote|endnote|note|rearnote)["\x27][^>]*)>',
+    caseSensitive: false,
+  );
 
   @override
   String transform(TransformContext context) {

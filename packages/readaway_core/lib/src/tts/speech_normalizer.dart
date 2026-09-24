@@ -8,7 +8,10 @@ class SpeechNormalizer {
   const SpeechNormalizer._();
 
   static final RegExp _currencyRe = RegExp(r'(\$|£|€)(\d+(?:\.\d{1,2})?)');
-  static final RegExp _ordinalRe = RegExp(r'\b(\d+)(?:st|nd|rd|th)\b', caseSensitive: false);
+  static final RegExp _ordinalRe = RegExp(
+    r'\b(\d+)(?:st|nd|rd|th)\b',
+    caseSensitive: false,
+  );
   static final RegExp _percentRe = RegExp(r'\b(\d+(?:\.\d+)?)\s*%');
   static final RegExp _standaloneNumberRe = RegExp(r'\b(\d{1,9})\b');
 
@@ -74,7 +77,10 @@ class SpeechNormalizer {
       if (numStr.contains('.')) {
         final parts = numStr.split('.');
         final whole = int.tryParse(parts[0]) ?? 0;
-        final decimals = parts[1].split('').map((d) => numberToWords(int.parse(d))).join(' ');
+        final decimals = parts[1]
+            .split('')
+            .map((d) => numberToWords(int.parse(d)))
+            .join(' ');
         return '${numberToWords(whole)} point $decimals percent';
       }
       final val = int.tryParse(numStr);
@@ -120,7 +126,8 @@ class SpeechNormalizer {
     var latinCount = 0;
 
     for (final rune in text.runes) {
-      final isAlpha = (rune >= 0x41 && rune <= 0x5A) ||
+      final isAlpha =
+          (rune >= 0x41 && rune <= 0x5A) ||
           (rune >= 0x61 && rune <= 0x7A) ||
           (rune >= 0xC0 && rune <= 0x24F) ||
           (rune >= 0x370 && rune <= 0x1CFF) ||
@@ -151,7 +158,10 @@ class SpeechNormalizer {
     if (isLatinDominant(expanded)) {
       // Remove accents for Latin text
       final transliterated = removeDiacritics(expanded);
-      return transliterated.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).join(' ');
+      return transliterated
+          .split(RegExp(r'\s+'))
+          .where((s) => s.isNotEmpty)
+          .join(' ');
     } else {
       // Preserve non-Latin scripts (CJK, Arabic, etc.) intact
       return expanded;
@@ -162,7 +172,10 @@ class SpeechNormalizer {
   /// Defaults to ~160 words per minute (standard English audiobook pace).
   static int estimateDurationMs(String text, [double? wordsPerMinute]) {
     final wpm = wordsPerMinute ?? 160.0;
-    final wordCount = text.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length;
+    final wordCount = text
+        .split(RegExp(r'\s+'))
+        .where((s) => s.isNotEmpty)
+        .length;
     final effectiveWords = wordCount > 0 ? wordCount : 1;
     return ((effectiveWords / wpm) * 60.0 * 1000.0).round();
   }
@@ -170,24 +183,75 @@ class SpeechNormalizer {
   // --- Number to Words Conversion Utilities ---
 
   static const List<String> _ones = [
-    'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-    'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
-    'seventeen', 'eighteen', 'nineteen'
+    'zero',
+    'one',
+    'two',
+    'three',
+    'four',
+    'five',
+    'six',
+    'seven',
+    'eight',
+    'nine',
+    'ten',
+    'eleven',
+    'twelve',
+    'thirteen',
+    'fourteen',
+    'fifteen',
+    'sixteen',
+    'seventeen',
+    'eighteen',
+    'nineteen',
   ];
 
   static const List<String> _tens = [
-    '', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'
+    '',
+    '',
+    'twenty',
+    'thirty',
+    'forty',
+    'fifty',
+    'sixty',
+    'seventy',
+    'eighty',
+    'ninety',
   ];
 
   static const List<String> _ordinalOnes = [
-    'zeroth', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh',
-    'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth', 'fourteenth',
-    'fifteenth', 'sixteenth', 'seventeenth', 'eighteenth', 'nineteenth'
+    'zeroth',
+    'first',
+    'second',
+    'third',
+    'fourth',
+    'fifth',
+    'sixth',
+    'seventh',
+    'eighth',
+    'ninth',
+    'tenth',
+    'eleventh',
+    'twelfth',
+    'thirteenth',
+    'fourteenth',
+    'fifteenth',
+    'sixteenth',
+    'seventeenth',
+    'eighteenth',
+    'nineteenth',
   ];
 
   static const List<String> _ordinalTens = [
-    '', '', 'twentieth', 'thirtieth', 'fortieth', 'fiftieth', 'sixtieth',
-    'seventieth', 'eightieth', 'ninetieth'
+    '',
+    '',
+    'twentieth',
+    'thirtieth',
+    'fortieth',
+    'fiftieth',
+    'sixtieth',
+    'seventieth',
+    'eightieth',
+    'ninetieth',
   ];
 
   /// Converts an integer [n] (up to 999,999,999) to English words.
