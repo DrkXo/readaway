@@ -61,11 +61,12 @@ class FileOpenService {
     required LoggingService loggingService,
   }) : _loggingService = loggingService; // ignore: prefer_initializing_formals
 
-  /// Wires up OS file-open forwarding (mobile deep links + macOS Finder).
+  /// Wires up OS file-open forwarding (mobile deep links + macOS Finder + Android share/send intents).
   @PostConstruct(preResolve: true)
   Future<void> init() async {
     await _listenForAppLinks();
     await _listenForMacOsFileOpens();
+    await _listenForAndroidSendIntents();
   }
 
   static String _sanitizePath(String raw) {
@@ -189,6 +190,45 @@ class FileOpenService {
       }());
     } catch (e) {
       _log.warning('[FileOpenService] macOS file-open bridge unavailable: $e');
+    }
+  }
+
+  Future<void> _listenForAndroidSendIntents() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      _contentResolver.setMethodCallHandler((call) async {
+        if (call.method == 'onSharedUrisReceived') {
+          final uris = call.arguments;
+          if (uris is List) {
+            for (final uriStr in uris) {
+              if (uriStr is String && uriStr.isNotEmpty) {
+                final uri = Uri.tryParse(uriStr);
+                if (uri != null) {
+                  await handleUri(uri);
+                }
+              }
+            }
+          }
+        }
+      });
+
+      unawaited(() async {
+        final initialUris = await _contentResolver.invokeMethod<List>(
+          'getInitialSharedUris',
+        );
+        if (initialUris != null) {
+          for (final uriStr in initialUris) {
+            if (uriStr is String && uriStr.isNotEmpty) {
+              final uri = Uri.tryParse(uriStr);
+              if (uri != null) {
+                await handleUri(uri);
+              }
+            }
+          }
+        }
+      }());
+    } catch (e) {
+      _log.warning('[FileOpenService] Android send intent bridge unavailable: $e');
     }
   }
 
