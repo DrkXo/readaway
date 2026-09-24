@@ -30,7 +30,7 @@ class PdfEngineManager {
     final future = () async {
       _log.i('Initializing pdfrx engine...');
       try {
-        await pdfrxFlutterInitialize();
+        await pdfrxInitialize();
         _log.i('pdfrx engine successfully initialized');
       } catch (e, st) {
         _log.e('Failed to initialize pdfrx engine', error: e, stackTrace: st);

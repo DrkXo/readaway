@@ -27,7 +27,8 @@ export 'src/lifecycle/disposable.dart';
 // Logger
 export 'src/logger/app_logger.dart';
 
-// Models
+// Models & Metadata
+export 'src/metadata/document_metadata_extractor.dart';
 export 'src/models/models.dart';
 
 // Pagination

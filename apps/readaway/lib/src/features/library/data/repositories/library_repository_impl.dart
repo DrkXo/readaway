@@ -165,30 +165,28 @@ class LibraryRepositoryImpl implements LibraryRepository {
 
   Future<RecentDocument> _enrichAndSave(RecentDocument doc) async {
     String title = doc.title;
-    String? author;
-    int pageCount = 0;
+    String? author = doc.author;
+    int pageCount = doc.pageCount;
     Uint8List? coverBytes;
 
     try {
-      final session = await IsolateDocumentSession.open(doc.path);
-      final metaTitle = session.title;
-      if (metaTitle != null && metaTitle.trim().isNotEmpty) {
-        title = metaTitle.trim();
+      final extracted = await DocumentMetadataExtractor.extract(doc.path);
+      if (extracted.title.isNotEmpty) {
+        title = extracted.title;
       }
-      final metaAuthor = session.metadata?.creator;
-      if (metaAuthor != null && metaAuthor.trim().isNotEmpty) {
-        author = metaAuthor.trim();
+      if (extracted.author != null && extracted.author!.isNotEmpty) {
+        author = extracted.author;
       }
-      pageCount = session.isReflowable
-          ? session.sectionCount
-          : session.pageCount;
-      final coverImgPath = session.coverImagePath;
-      if (coverImgPath != null) {
-        coverBytes = await session.loadAsset(coverImgPath);
+      if (extracted.pageCount > 0) {
+        pageCount = extracted.pageCount;
       }
-      await session.dispose();
-    } catch (_) {
-      // Non-critical if metadata extraction fails for picked file
+      coverBytes = extracted.coverImageBytes;
+    } catch (e, st) {
+      _log.w(
+        'Metadata extraction failed for ${doc.path}',
+        error: e,
+        stackTrace: st,
+      );
     }
 
     String? coverPath;
@@ -206,12 +204,14 @@ class LibraryRepositoryImpl implements LibraryRepository {
         final coverFile = File(
           p.join(coverDir.path, 'cover_${safeName}_$fileHash.jpg'),
         );
-        if (!await coverFile.exists()) {
-          await coverFile.writeAsBytes(coverBytes, flush: true);
-        }
+        await coverFile.writeAsBytes(coverBytes, flush: true);
         coverPath = coverFile.path;
-      } catch (_) {
-        // Non-critical if saving cover file fails
+      } catch (e, st) {
+        _log.w(
+          'Saving cover image failed for ${doc.path}',
+          error: e,
+          stackTrace: st,
+        );
       }
     }
 
@@ -255,20 +255,40 @@ class LibraryRepositoryImpl implements LibraryRepository {
             return coverFile.path;
           }
 
-          final session = await IsolateDocumentSession.open(document.path);
-          final coverImgPath = session.coverImagePath;
-          if (coverImgPath != null) {
-            final bytes = await session.loadAsset(coverImgPath);
-            if (bytes != null && bytes.isNotEmpty) {
-              await coverFile.writeAsBytes(bytes, flush: true);
-              final updatedDoc = document.copyWith(coverPath: coverFile.path);
-              await _localDataSource.saveRecentDocument(updatedDoc);
-              await session.dispose();
-              return coverFile.path;
-            }
+          final extracted = await DocumentMetadataExtractor.extract(
+            document.path,
+          );
+          if (extracted.coverImageBytes != null &&
+              extracted.coverImageBytes!.isNotEmpty) {
+            await coverFile.writeAsBytes(
+              extracted.coverImageBytes!,
+              flush: true,
+            );
+            final updatedDoc = document.copyWith(
+              coverPath: coverFile.path,
+              title:
+                  document.title.isEmpty && extracted.title.isNotEmpty
+                      ? extracted.title
+                      : document.title,
+              author:
+                  document.author == null && extracted.author != null
+                      ? extracted.author
+                      : document.author,
+              pageCount:
+                  document.pageCount == 0 && extracted.pageCount > 0
+                      ? extracted.pageCount
+                      : document.pageCount,
+            );
+            await _localDataSource.saveRecentDocument(updatedDoc);
+            return coverFile.path;
           }
-          await session.dispose();
-        } catch (_) {}
+        } catch (e, st) {
+          _log.w(
+            'Failed to get cover art for ${document.fileName}',
+            error: e,
+            stackTrace: st,
+          );
+        }
 
         return null;
       },

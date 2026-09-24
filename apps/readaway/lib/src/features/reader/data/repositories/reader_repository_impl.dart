@@ -271,8 +271,26 @@ class ReaderRepositoryImpl implements ReaderRepository {
         }
 
         // 3. Fallback to extract from active session
-        if (_session != null && _session!.coverImagePath != null) {
-          final bytes = await _session!.loadAsset(_session!.coverImagePath!);
+        if (_session != null) {
+          final coverPath = _session!.coverImagePath;
+          Uint8List? bytes;
+          if (coverPath != null && coverPath.startsWith('page:')) {
+            final pageIdx = int.tryParse(coverPath.substring(5)) ?? 0;
+            try {
+              bytes = await _session!.loadPageImage(pageIdx, targetWidth: 480);
+            } catch (_) {}
+          } else if (coverPath != null) {
+            try {
+              bytes = await _session!.loadAsset(coverPath);
+            } catch (_) {}
+          }
+          if ((bytes == null || bytes.isEmpty) &&
+              !_session!.isReflowable &&
+              _session!.pageCount > 0) {
+            try {
+              bytes = await _session!.loadPageImage(0, targetWidth: 480);
+            } catch (_) {}
+          }
           if (bytes != null && bytes.isNotEmpty) {
             await coverFile.writeAsBytes(bytes, flush: true);
             return coverFile.uri;
