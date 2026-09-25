@@ -1,6 +1,6 @@
 name: readaway_core
 description: "High-performance pure Dart document reading, formatting, and TTS engine for ReadAway."
-version: 0.1.0
+version: 0.1.1
 resolution: workspace
 
 environment:
@@ -23,7 +23,7 @@ dependencies:
   markdown: ^7.3.1
   diacritic: ^0.1.6
   jsonc: ^0.0.3
-  vscode_theme_parser: ^0.1.0
+  vscode_theme_parser: ^0.1.1
   pdfrx: ^2.6.0
   image: ^4.10.1
 
