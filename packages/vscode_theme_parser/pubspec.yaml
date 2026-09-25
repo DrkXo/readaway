@@ -1,6 +1,6 @@
 name: vscode_theme_parser
 description: "Pure Dart parser and model for VS Code color themes (JSONC)."
-version: 0.1.0
+version: 0.1.1-beta.0
 resolution: workspace
 
 environment:
