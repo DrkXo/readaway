@@ -1,4 +1,5 @@
 name: readaway_workspace
+repository: https://github.com/DrkXo/readaway
 
 environment:
   sdk: ^3.13.0
@@ -25,6 +26,24 @@ melos:
       executeInTerminal: false
 
   sdkPath: .fvm/flutter_sdk
+
+  command:
+    version:
+      # Link commits and PRs to the GitHub repository in generated CHANGELOG.md
+      linkToCommits: true
+      # Print GitHub Release draft creation URLs after versioning
+      releaseUrl: true
+      # Update dependency version constraints of packages in the workspace
+      updateGitTagRefs: true
+      # Generate a root CHANGELOG.md aggregating changes across all packages
+      workspaceChangelog: true
+      # Include scopes in changelog entries (e.g., - **app**: commit message)
+      includeScopes: true
+      # Include commit SHAs in changelog entries
+      includeCommitId: true
+
+      hooks:
+        preCommit: bash scripts/check_branch.sh
 
   categories:
     app:
@@ -69,6 +88,29 @@ melos:
     update:launcher_icon:
       run: melos exec -c 1 --depends-on="flutter_launcher_icons" -- "fvm exec dart run flutter_launcher_icons"
       description: Update launcher icons
+
+    # -------------------------------------------------------------
+    # Versioning & Release Reference (Native Melos CLI)
+    # -------------------------------------------------------------
+    # Melos handles versioning natively via `melos version`. Useful commands:
+    #
+    # • Workspace (All Packages + App):
+    #   fvm dart run melos version --all
+    #   fvm dart run melos version --all --prerelease --preid=beta
+    #   fvm dart run melos version --all --graduate
+    #
+    # • App Only (readaway):
+    #   fvm dart run melos version --category="app" --all
+    #   fvm dart run melos version --category="app" --all --prerelease --preid=beta
+    #   fvm dart run melos version --category="app" --all --graduate
+    #
+    # • Packages Only (readaway_core, vscode_theme_parser):
+    #   fvm dart run melos version --category="packages"
+    #   fvm dart run melos version --category="packages" --prerelease --preid=beta
+    #   fvm dart run melos version --category="packages" --graduate
+    #
+    # • Manual Specific Version:
+    #   fvm dart run melos version -V readaway:1.1.0 -V readaway_core:0.2.0
 
     # -------------------------------------------------------------
     # Build Scripts
