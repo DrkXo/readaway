@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
@@ -312,11 +313,9 @@ class BookDetailsSheet extends StatelessWidget {
                       tooltip: 'Copy file path',
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: doc.path));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Path copied to clipboard'),
-                            duration: Duration(seconds: 2),
-                          ),
+                        context.showInfoToast(
+                          'Path copied to clipboard',
+                          duration: const Duration(seconds: 2),
                         );
                       },
                     ),

@@ -9,28 +9,40 @@ import 'toast_widget.dart';
 /// Top-level getter for quick, context-free access to [ToastService].
 ToastService get toastService => GetIt.I.get<ToastService>();
 
-/// Application-wide toast and snackbar notification service.
+/// Application-wide toast notification service.
 ///
-/// Fully decoupled from [BuildContext] through [scaffoldMessengerKey], allowing
-/// invocations from BLoCs, repositories, asynchronous workers, or UI widgets.
+/// Fully decoupled from [BuildContext] through an overlay host architecture, allowing
+/// toasts to appear cleanly above all routes, dialogs, modal sheets, and full-screen views.
 @lazySingleton
-class ToastService {
+class ToastService extends ChangeNotifier {
+  /// Backward-compatible key for any legacy widgets that reference it.
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>(debugLabel: 'app_toast_messenger');
 
-  ScaffoldMessengerState? get _messenger => scaffoldMessengerKey.currentState;
+  final ValueNotifier<ToastEntry?> _currentToastNotifier =
+      ValueNotifier<ToastEntry?>(null);
 
-  /// Dismisses the currently displayed snackbar immediately.
+  /// Notifier exposing the currently active toast entry for the overlay host.
+  ValueNotifier<ToastEntry?> get currentToastNotifier => _currentToastNotifier;
+
+  /// The currently active toast entry, or null if no toast is displayed.
+  ToastEntry? get currentToast => _currentToastNotifier.value;
+
+  int _toastCounter = 0;
+
+  /// Dismisses the currently displayed toast immediately.
   void hideCurrent() {
-    _messenger?.hideCurrentSnackBar();
+    _currentToastNotifier.value = null;
+    notifyListeners();
   }
 
-  /// Removes all queued and currently showing snackbars.
+  /// Removes all queued and currently showing toasts.
   void clear() {
-    _messenger?.clearSnackBars();
+    _currentToastNotifier.value = null;
+    notifyListeners();
   }
 
-  /// Shows a standardized floating toast notification.
+  /// Shows a standardized floating toast notification over all screens, dialogs, and modals.
   void show({
     required String message,
     String? title,
@@ -40,34 +52,38 @@ class ToastService {
     Duration duration = const Duration(milliseconds: 3500),
     VoidCallback? onTap,
     bool showCloseButton = false,
+    ToastPosition position = ToastPosition.bottom,
+    bool dismissOnSwipe = true,
   }) {
-    final messenger = _messenger;
-    if (messenger == null) return;
+    final toastId =
+        'toast_${++_toastCounter}_${DateTime.now().microsecondsSinceEpoch}';
 
-    messenger.hideCurrentSnackBar();
-
-    messenger.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        padding: EdgeInsets.zero,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        duration: duration,
-        content: Center(
-          child: ToastWidget(
-            message: message,
-            title: title,
-            type: type,
-            icon: icon,
-            action: action,
-            onDismiss: () => messenger.hideCurrentSnackBar(),
-            showCloseButton: showCloseButton,
-            onTap: onTap,
-          ),
-        ),
+    final entry = ToastEntry(
+      id: toastId,
+      duration: duration,
+      position: position,
+      dismissOnSwipe: dismissOnSwipe,
+      content: ToastWidget(
+        message: message,
+        title: title,
+        type: type,
+        icon: icon,
+        action: action,
+        onDismiss: () => _dismissEntry(toastId),
+        showCloseButton: showCloseButton,
+        onTap: onTap,
       ),
     );
+
+    _currentToastNotifier.value = entry;
+    notifyListeners();
+  }
+
+  void _dismissEntry(String toastId) {
+    if (_currentToastNotifier.value?.id == toastId) {
+      _currentToastNotifier.value = null;
+      notifyListeners();
+    }
   }
 
   /// Displays a success toast notification.
@@ -78,6 +94,7 @@ class ToastService {
     ToastAction? action,
     VoidCallback? onTap,
     bool showCloseButton = false,
+    ToastPosition position = ToastPosition.bottom,
   }) {
     show(
       message: message,
@@ -87,6 +104,7 @@ class ToastService {
       action: action,
       onTap: onTap,
       showCloseButton: showCloseButton,
+      position: position,
     );
   }
 
@@ -100,6 +118,7 @@ class ToastService {
     String retryLabel = 'Retry',
     VoidCallback? onTap,
     bool showCloseButton = true,
+    ToastPosition position = ToastPosition.bottom,
   }) {
     final effectiveAction =
         action ??
@@ -115,6 +134,7 @@ class ToastService {
       action: effectiveAction,
       onTap: onTap,
       showCloseButton: showCloseButton,
+      position: position,
     );
   }
 
@@ -126,6 +146,7 @@ class ToastService {
     ToastAction? action,
     VoidCallback? onTap,
     bool showCloseButton = false,
+    ToastPosition position = ToastPosition.bottom,
   }) {
     show(
       message: message,
@@ -135,6 +156,7 @@ class ToastService {
       action: action,
       onTap: onTap,
       showCloseButton: showCloseButton,
+      position: position,
     );
   }
 
@@ -146,6 +168,7 @@ class ToastService {
     ToastAction? action,
     VoidCallback? onTap,
     bool showCloseButton = false,
+    ToastPosition position = ToastPosition.bottom,
   }) {
     show(
       message: message,
@@ -155,6 +178,7 @@ class ToastService {
       action: action,
       onTap: onTap,
       showCloseButton: showCloseButton,
+      position: position,
     );
   }
 
@@ -165,6 +189,7 @@ class ToastService {
     String retryLabel = 'Retry',
     Duration duration = const Duration(seconds: 5),
     String? title,
+    ToastPosition position = ToastPosition.bottom,
   }) {
     showError(
       failure.message,
@@ -172,38 +197,39 @@ class ToastService {
       duration: duration,
       onRetry: onRetry,
       retryLabel: retryLabel,
+      position: position,
     );
   }
 
-  /// Displays a completely custom widget inside a floating snackbar.
+  /// Displays a completely custom widget inside the floating toast overlay.
   void showCustom({
     required Widget content,
     Duration duration = const Duration(seconds: 4),
-    EdgeInsetsGeometry margin = const EdgeInsets.symmetric(
-      horizontal: 16,
-      vertical: 16,
-    ),
+    ToastPosition position = ToastPosition.bottom,
+    bool dismissOnSwipe = true,
   }) {
-    final messenger = _messenger;
-    if (messenger == null) return;
+    final toastId =
+        'custom_toast_${++_toastCounter}_${DateTime.now().microsecondsSinceEpoch}';
 
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        padding: EdgeInsets.zero,
-        margin: margin,
-        duration: duration,
-        content: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: content,
-          ),
-        ),
+    final entry = ToastEntry(
+      id: toastId,
+      duration: duration,
+      position: position,
+      dismissOnSwipe: dismissOnSwipe,
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: content,
       ),
     );
+
+    _currentToastNotifier.value = entry;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _currentToastNotifier.dispose();
+    super.dispose();
   }
 }
 
@@ -221,6 +247,8 @@ extension ToastContextExtension on BuildContext {
     Duration duration = const Duration(milliseconds: 3500),
     VoidCallback? onTap,
     bool showCloseButton = false,
+    ToastPosition position = ToastPosition.bottom,
+    bool dismissOnSwipe = true,
   }) {
     toastService.show(
       message: message,
@@ -231,6 +259,8 @@ extension ToastContextExtension on BuildContext {
       duration: duration,
       onTap: onTap,
       showCloseButton: showCloseButton,
+      position: position,
+      dismissOnSwipe: dismissOnSwipe,
     );
   }
 
@@ -241,6 +271,7 @@ extension ToastContextExtension on BuildContext {
     ToastAction? action,
     VoidCallback? onTap,
     bool showCloseButton = false,
+    ToastPosition position = ToastPosition.bottom,
   }) {
     toastService.showSuccess(
       message,
@@ -249,6 +280,7 @@ extension ToastContextExtension on BuildContext {
       action: action,
       onTap: onTap,
       showCloseButton: showCloseButton,
+      position: position,
     );
   }
 
@@ -261,6 +293,7 @@ extension ToastContextExtension on BuildContext {
     String retryLabel = 'Retry',
     VoidCallback? onTap,
     bool showCloseButton = true,
+    ToastPosition position = ToastPosition.bottom,
   }) {
     toastService.showError(
       message,
@@ -271,6 +304,7 @@ extension ToastContextExtension on BuildContext {
       retryLabel: retryLabel,
       onTap: onTap,
       showCloseButton: showCloseButton,
+      position: position,
     );
   }
 
@@ -281,6 +315,7 @@ extension ToastContextExtension on BuildContext {
     ToastAction? action,
     VoidCallback? onTap,
     bool showCloseButton = false,
+    ToastPosition position = ToastPosition.bottom,
   }) {
     toastService.showWarning(
       message,
@@ -289,6 +324,7 @@ extension ToastContextExtension on BuildContext {
       action: action,
       onTap: onTap,
       showCloseButton: showCloseButton,
+      position: position,
     );
   }
 
@@ -299,6 +335,7 @@ extension ToastContextExtension on BuildContext {
     ToastAction? action,
     VoidCallback? onTap,
     bool showCloseButton = false,
+    ToastPosition position = ToastPosition.bottom,
   }) {
     toastService.showInfo(
       message,
@@ -307,6 +344,7 @@ extension ToastContextExtension on BuildContext {
       action: action,
       onTap: onTap,
       showCloseButton: showCloseButton,
+      position: position,
     );
   }
 
@@ -316,6 +354,7 @@ extension ToastContextExtension on BuildContext {
     String retryLabel = 'Retry',
     Duration duration = const Duration(seconds: 5),
     String? title,
+    ToastPosition position = ToastPosition.bottom,
   }) {
     toastService.showFailure(
       failure,
@@ -323,6 +362,7 @@ extension ToastContextExtension on BuildContext {
       retryLabel: retryLabel,
       duration: duration,
       title: title,
+      position: position,
     );
   }
 

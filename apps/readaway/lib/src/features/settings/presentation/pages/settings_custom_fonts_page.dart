@@ -42,9 +42,7 @@ class SettingsCustomFontsPage extends StatelessWidget {
       );
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add font: $e')),
-        );
+        context.showErrorToast('Failed to add font: $e');
       }
     }
   }

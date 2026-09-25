@@ -19,12 +19,7 @@ class SettingsTtsPanel extends StatelessWidget {
           listenWhen: (prev, curr) =>
               curr.ttsError != null && prev.ttsError != curr.ttsError,
           listener: (context, state) {
-            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-              SnackBar(
-                content: Text(state.ttsError!),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            context.showErrorToast(state.ttsError!);
           },
         ),
         BlocListener<SettingsBloc, SettingsState>(
@@ -33,12 +28,7 @@ class SettingsTtsPanel extends StatelessWidget {
               prev.ttsUpdateNotification != curr.ttsUpdateNotification,
           listener: (context, state) {
             if (state.ttsUpdateNotification != null) {
-              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                SnackBar(
-                  content: Text(state.ttsUpdateNotification!),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              context.showInfoToast(state.ttsUpdateNotification!);
             }
           },
         ),
