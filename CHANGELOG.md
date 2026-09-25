@@ -15,6 +15,26 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - There are no other changes in this release.
+
+Packages graduated to a stable release (see pre-releases prior to the stable version for changelog entries):
+
+ - `readaway` - `v1.1.0+2`
+ - `readaway_core` - `v0.1.1`
+ - `vscode_theme_parser` - `v0.1.1`
+
+## 2026-09-25
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`readaway` - `v1.1.0-beta.0+2`](#readaway---v110-beta02)
  - [`readaway_core` - `v0.1.1-beta.0`](#readaway_core---v011-beta0)
  - [`vscode_theme_parser` - `v0.1.1-beta.0`](#vscode_theme_parser---v011-beta0)
