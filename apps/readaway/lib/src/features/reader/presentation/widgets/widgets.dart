@@ -11,6 +11,9 @@ export 'common/reader_contrast_overlay.dart';
 export 'common/reader_error_view.dart';
 // Dialogs
 export 'dialogs/reader_password_dialog.dart';
+// Overlay
+export 'overlay/reader_footnote_sheet.dart';
+export 'overlay/reader_share_sheet.dart';
 // Navigation
 export 'navigation/navigation.dart';
 // Table of Contents

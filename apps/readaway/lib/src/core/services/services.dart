@@ -9,6 +9,7 @@ export 'isolate_service.dart';
 export 'notification_service.dart';
 export 'path_service.dart';
 export 'settings_service.dart';
+export 'share_service.dart';
 export 'storage/hive/app_storage_service.dart';
 export 'storage/hive/hive_config_service.dart';
 export 'theme_service.dart';

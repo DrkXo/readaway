@@ -10,6 +10,7 @@ import '../../../../../core/routes/routes.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../../router/router.dart';
 import '../../bloc/reader_bloc.dart';
+import '../overlay/reader_share_sheet.dart';
 
 /// Top bar displayed when a reader document is open.
 ///
@@ -85,7 +86,17 @@ class ReaderTopBar extends StatelessWidget implements PreferredSizeWidget {
                   : appRoutes.settings.path,
             );
           },
-          actions: [],
+          actions: [
+            AppIconButton(
+              icon: LucideIcons.share2,
+              tooltip: 'Share document or page',
+              size: AppIconButtonSize.small,
+              onPressed: () => ReaderShareSheet.show(
+                context: context,
+                state: context.read<ReaderBloc>().state,
+              ),
+            ),
+          ],
         );
       },
     );

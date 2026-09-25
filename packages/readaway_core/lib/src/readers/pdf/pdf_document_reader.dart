@@ -331,10 +331,14 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
     final page = _pdfDoc.pages[pageIndex];
     final width = targetWidth ?? (page.width * scale).toInt();
     final height = targetHeight ?? (page.height * scale).toInt();
+    final renderWidth = width > 0 ? width : page.width.toInt();
+    final renderHeight = height > 0 ? height : page.height.toInt();
 
     final pdfImage = await page.render(
-      width: width > 0 ? width : page.width.toInt(),
-      height: height > 0 ? height : page.height.toInt(),
+      fullWidth: renderWidth.toDouble(),
+      fullHeight: renderHeight.toDouble(),
+      width: renderWidth,
+      height: renderHeight,
     );
 
     if (pdfImage == null) {
