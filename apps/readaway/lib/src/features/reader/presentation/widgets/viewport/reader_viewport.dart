@@ -19,7 +19,6 @@ import '../tts/reader_tts_mini_player_bar.dart';
 import 'modes/continuous_reader_view.dart';
 import 'modes/paged_reader_view.dart';
 import 'fixed_layout/fixed_layout.dart';
-import 'pdf/pdf.dart';
 import 'reflowable/reflowable_reader_page.dart';
 import 'reflowable/reflowable_virtual_page.dart';
 
@@ -218,7 +217,9 @@ class _ReaderViewportState extends State<ReaderViewport> {
           prev.currentVirtualPage != curr.currentVirtualPage ||
           prev.virtualPageCount != curr.virtualPageCount ||
           prev.pageHtmls != curr.pageHtmls ||
-          prev.ttsActive != curr.ttsActive,
+          prev.ttsActive != curr.ttsActive ||
+          prev.isReflowable != curr.isReflowable ||
+          prev.documentPath != curr.documentPath,
       builder: (context, state) {
         if (state.loading) {
           return const AppLoadingView(label: 'Opening document...');
@@ -312,20 +313,6 @@ class _ReaderViewportState extends State<ReaderViewport> {
                 }
                 bloc.add(ReaderEvent.clearPendingRestore());
               }
-            }
-
-            if (!state.isReflowable && state.format == 'pdf') {
-              return PdfReaderView(
-                state: state,
-                prefs: widget.prefs,
-                viewportController: widget.viewportController,
-                onPageChangeRequested: (idx) => _onPageCommitted(
-                  context,
-                  state,
-                  idx,
-                  isContinuous: isContinuous,
-                ),
-              );
             }
 
             final Widget view;

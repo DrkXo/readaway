@@ -45,7 +45,7 @@ class FixedLayoutImageCache {
       try {
         final result = await repository.loadPageImage(
           pageIndex,
-          scale: scale ?? 1.0,
+          scale: scale ?? 2.0,
           targetWidth: targetWidth,
           targetHeight: targetHeight,
         );
@@ -114,13 +114,14 @@ class FixedLayoutImageCache {
     ReaderRepository repository,
     String docPath,
     int currentPage,
-    int pageCount,
-  ) {
+    int pageCount, {
+    double? scale,
+  }) {
     for (final delta in const [1, -1, 2, -2]) {
       final target = currentPage + delta;
       if (target >= 0 && target < pageCount) {
         getOrLoadSize(repository, docPath, target);
-        getOrLoadImage(repository, docPath, target);
+        getOrLoadImage(repository, docPath, target, scale: scale);
       }
     }
   }

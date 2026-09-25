@@ -62,6 +62,7 @@ class _PdfReaderViewState extends State<PdfReaderView> {
           targetPageNumber <= _pdfController.pageCount) {
         _pdfController.goToPage(
           pageNumber: targetPageNumber,
+          anchor: PdfPageAnchor.center,
           duration: Duration.zero,
         );
       }
@@ -76,6 +77,7 @@ class _PdfReaderViewState extends State<PdfReaderView> {
           pageNumber <= _pdfController.pageCount) {
         _pdfController.goToPage(
           pageNumber: pageNumber,
+          anchor: PdfPageAnchor.center,
           duration: Duration.zero,
         );
       }
@@ -93,6 +95,7 @@ class _PdfReaderViewState extends State<PdfReaderView> {
               pageNumber <= _pdfController.pageCount) {
             await _pdfController.goToPage(
               pageNumber: pageNumber,
+              anchor: PdfPageAnchor.center,
               duration: duration ?? const Duration(milliseconds: 250),
             );
           }
@@ -141,17 +144,25 @@ class _PdfReaderViewState extends State<PdfReaderView> {
         initialPageNumber: widget.state.currentPage + 1,
         params: PdfViewerParams(
           backgroundColor: appColors.readerBackground,
-          margin: 8.0,
+          margin: 0.0,
+          boundaryMargin: EdgeInsets.zero,
+          pageDropShadow: null,
+          pageAnchor: PdfPageAnchor.center,
+          underflowAnchor: PdfPageAnchor.center,
+          sizeDelegateProvider: PdfViewerSizeDelegateProviderLegacy(
+            useAlternativeFitScaleAsMinScale: true,
+            calculateInitialZoom: (document, controller, fitZoom, coverZoom) {
+              return controller.alternativeFitScale ?? fitZoom;
+            },
+          ),
           layoutPages: isHorizontal
               ? (pages, params) {
-                  final height =
-                      pages.fold<double>(
-                        0.0,
-                        (prev, page) => math.max(prev, page.height),
-                      ) +
-                      params.margin * 2;
+                  final height = pages.fold<double>(
+                    0.0,
+                    (prev, page) => math.max(prev, page.height),
+                  );
                   final pageLayouts = <Rect>[];
-                  double x = params.margin;
+                  double x = 0.0;
                   for (final page in pages) {
                     pageLayouts.add(
                       Rect.fromLTWH(
@@ -165,7 +176,10 @@ class _PdfReaderViewState extends State<PdfReaderView> {
                   }
                   return PdfPageLayout(
                     pageLayouts: pageLayouts,
-                    documentSize: Size(x, height),
+                    documentSize: Size(
+                      x > 0 ? (params.margin > 0 ? x - params.margin : x) : 0,
+                      height,
+                    ),
                   );
                 }
               : null,

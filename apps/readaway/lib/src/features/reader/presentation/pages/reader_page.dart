@@ -125,7 +125,9 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
             prev.failure != curr.failure ||
             prev.fileName != curr.fileName ||
             prev.requiresPassword != curr.requiresPassword ||
-            prev.isInvalidPassword != curr.isInvalidPassword,
+            prev.isInvalidPassword != curr.isInvalidPassword ||
+            prev.isReflowable != curr.isReflowable ||
+            prev.documentPath != curr.documentPath,
         builder: (context, readerState) {
           if (readerState.requiresPassword) {
             return Scaffold(
@@ -182,15 +184,13 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
 
           return BlocBuilder<SettingsBloc, SettingsState>(
             buildWhen: (prev, curr) =>
-                prev.globalReaderPrefs != curr.globalReaderPrefs ||
-                prev.documentReaderPrefs != curr.documentReaderPrefs,
+                prev.effectiveReaderPrefs(readerState.documentPath) !=
+                curr.effectiveReaderPrefs(readerState.documentPath),
             builder: (context, settingsState) {
               // Effective prefs: per-book overrides win, otherwise global.
-              final documentPath = readerState.documentPath;
-              final prefs = documentPath != null
-                  ? (settingsState.documentReaderPrefs[documentPath] ??
-                        settingsState.globalReaderPrefs)
-                  : settingsState.globalReaderPrefs;
+              final prefs = settingsState.effectiveReaderPrefs(
+                readerState.documentPath,
+              );
 
               return PopScope(
                 canPop: false,
@@ -368,7 +368,8 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                             .chromeAnimationDuration,
                                         curve: Curves.easeOutCubic,
                                         child: ReaderBottomBar(
-                                          documentPath: documentPath,
+                                          documentPath:
+                                              readerState.documentPath,
                                           onOpenDrawer: () => _scaffoldKey
                                               .currentState
                                               ?.openDrawer(),
