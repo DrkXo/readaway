@@ -128,8 +128,10 @@ class _PdfReaderViewState extends State<PdfReaderView> {
     }
 
     final appColors = context.appColors;
-    final isHorizontal =
-        widget.prefs.scrollDirection == ReaderScrollDirection.horizontal;
+    final isHorizontal = widget.prefs.effectiveScrollDirection(
+          isReflowable: false,
+        ) ==
+        ReaderScrollDirection.horizontal;
 
     return Container(
       color: appColors.readerBackground,

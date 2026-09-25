@@ -49,6 +49,8 @@ extension ReaderPageTransitionSupport on ReaderPageTransition {
 
 @freezed
 abstract class ReaderPreferences with _$ReaderPreferences {
+  const ReaderPreferences._();
+
   const factory ReaderPreferences({
     String? fontFamily,
     @Default('Noto Serif') String serifFont,
@@ -83,6 +85,13 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     @Default(ReaderPageTransition.slide)
     @JsonKey(unknownEnumValue: ReaderPageTransition.slide)
     ReaderPageTransition pageTransition,
+    @Default(ReaderScrollDirection.vertical)
+    @JsonKey(unknownEnumValue: ReaderScrollDirection.vertical)
+    ReaderScrollDirection nonReflowableScrollDirection,
+    @Default(true) bool nonReflowablePageSnap,
+    @Default(ReaderPageTransition.slide)
+    @JsonKey(unknownEnumValue: ReaderPageTransition.slide)
+    ReaderPageTransition nonReflowablePageTransition,
     @Default(0.0) double brightnessOverlay,
     @Default(0.0) double contrastOverlay,
     @Default(true) bool showStatusBar,
@@ -107,4 +116,16 @@ abstract class ReaderPreferences with _$ReaderPreferences {
 
   static ReaderPreferences fromStoredJson(Map<String, dynamic> json) =>
       _$ReaderPreferencesFromJson(json);
+
+  /// Returns the effective scroll direction for the given format reflowability.
+  ReaderScrollDirection effectiveScrollDirection({required bool isReflowable}) =>
+      isReflowable ? scrollDirection : nonReflowableScrollDirection;
+
+  /// Returns the effective page snap option for the given format reflowability.
+  bool effectivePageSnap({required bool isReflowable}) =>
+      isReflowable ? pageSnap : nonReflowablePageSnap;
+
+  /// Returns the effective page transition for the given format reflowability.
+  ReaderPageTransition effectivePageTransition({required bool isReflowable}) =>
+      isReflowable ? pageTransition : nonReflowablePageTransition;
 }

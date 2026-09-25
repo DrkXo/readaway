@@ -61,7 +61,7 @@ types:
         index: 1
   ReaderPreferences:
     typeId: 3
-    nextIndex: 42
+    nextIndex: 45
     fields:
       fontFamily:
         index: 0
@@ -141,6 +141,12 @@ types:
         index: 40
       headerAlignment:
         index: 41
+      nonReflowableScrollDirection:
+        index: 42
+      nonReflowablePageSnap:
+        index: 43
+      nonReflowablePageTransition:
+        index: 44
   Settings:
     typeId: 4
     nextIndex: 58

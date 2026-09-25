@@ -230,9 +230,14 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                 ReaderGestureArena(
                                   enabled: true,
                                   isVerticalPaging:
-                                      prefs.scrollDirection ==
+                                      prefs.effectiveScrollDirection(
+                                            isReflowable:
+                                                readerState.isReflowable,
+                                          ) ==
                                           ReaderScrollDirection.vertical &&
-                                      prefs.pageSnap,
+                                      prefs.effectivePageSnap(
+                                        isReflowable: readerState.isReflowable,
+                                      ),
                                   isAtScrollBoundary: isAtScrollBoundary,
                                   onPageDragStart:
                                       viewportController.handleDragStart,

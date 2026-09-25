@@ -91,9 +91,13 @@ mixin ReaderControllerMixin on State<ReaderPage> {
 
   void jumpToPage(int page) {
     final isContinuous =
-        settingsBloc.state.readerPrefs.scrollDirection ==
+        settingsBloc.state.readerPrefs.effectiveScrollDirection(
+              isReflowable: readerBloc.state.isReflowable,
+            ) ==
             ReaderScrollDirection.vertical &&
-        !settingsBloc.state.readerPrefs.pageSnap;
+        !settingsBloc.state.readerPrefs.effectivePageSnap(
+          isReflowable: readerBloc.state.isReflowable,
+        );
 
     if (!isContinuous &&
         readerBloc.state.isReflowable &&

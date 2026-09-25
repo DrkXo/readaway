@@ -78,8 +78,9 @@ class _ReaderViewportState extends State<ReaderViewport> {
       if (!context.read<ReaderBloc>().state.isReflowable) return;
 
       final isContinuous =
-          widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
-          !widget.prefs.pageSnap;
+          widget.prefs.effectiveScrollDirection(isReflowable: true) ==
+              ReaderScrollDirection.vertical &&
+          !widget.prefs.effectivePageSnap(isReflowable: true);
 
       // Coalesce: only rebuild/sync when the pagination result actually moved,
       // so a mere re-measure (e.g. an image decode nudging content height a
@@ -116,11 +117,13 @@ class _ReaderViewportState extends State<ReaderViewport> {
     super.didUpdateWidget(oldWidget);
     final isReflowable = context.read<ReaderBloc>().state.isReflowable;
     final wasContinuous =
-        oldWidget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
-        !oldWidget.prefs.pageSnap;
+        oldWidget.prefs.effectiveScrollDirection(isReflowable: isReflowable) ==
+            ReaderScrollDirection.vertical &&
+        !oldWidget.prefs.effectivePageSnap(isReflowable: isReflowable);
     final nowContinuous =
-        widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
-        !widget.prefs.pageSnap;
+        widget.prefs.effectiveScrollDirection(isReflowable: isReflowable) ==
+            ReaderScrollDirection.vertical &&
+        !widget.prefs.effectivePageSnap(isReflowable: isReflowable);
 
     if (isReflowable && oldWidget.prefs != widget.prefs) {
       // Font/layout metrics changed: cached page offsets no longer match the
@@ -182,8 +185,11 @@ class _ReaderViewportState extends State<ReaderViewport> {
           prev.isReflowable != curr.isReflowable,
       listener: (context, state) {
         final isContinuous =
-            widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
-            !widget.prefs.pageSnap;
+            widget.prefs.effectiveScrollDirection(
+                  isReflowable: state.isReflowable,
+                ) ==
+                ReaderScrollDirection.vertical &&
+            !widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
 
         if (!state.isReflowable) {
           widget.viewportController.updatePageCount(state.pageCount);
@@ -236,12 +242,18 @@ class _ReaderViewportState extends State<ReaderViewport> {
         );
 
         final isContinuous =
-            widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
-            !widget.prefs.pageSnap;
+            widget.prefs.effectiveScrollDirection(
+                  isReflowable: state.isReflowable,
+                ) ==
+                ReaderScrollDirection.vertical &&
+            !widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
 
         final isVerticalSnap =
-            widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
-            widget.prefs.pageSnap;
+            widget.prefs.effectiveScrollDirection(
+                  isReflowable: state.isReflowable,
+                ) ==
+                ReaderScrollDirection.vertical &&
+            widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
 
         final double miniPlayerPadding = state.ttsActive
             ? (ReaderTtsMiniPlayerBar.height + 24.0)
@@ -351,8 +363,12 @@ class _ReaderViewportState extends State<ReaderViewport> {
               view = PagedReaderView(
                 currentPage: effectiveCurrentPage,
                 pageCount: effectivePageCount,
-                transition: widget.prefs.pageTransition,
-                direction: widget.prefs.scrollDirection,
+                transition: widget.prefs.effectivePageTransition(
+                  isReflowable: state.isReflowable,
+                ),
+                direction: widget.prefs.effectiveScrollDirection(
+                  isReflowable: state.isReflowable,
+                ),
                 controller: widget.viewportController,
                 backgroundColor: context.appColors.readerBackground,
                 itemBuilder: (ctx, idx) => _buildPageItem(
@@ -465,9 +481,9 @@ class _ReaderViewportState extends State<ReaderViewport> {
             targetChapter != coord.chapterIndex) {
           onJump = () {
             final isContinuous =
-                widget.prefs.scrollDirection ==
+                widget.prefs.effectiveScrollDirection(isReflowable: true) ==
                     ReaderScrollDirection.vertical &&
-                !widget.prefs.pageSnap;
+                !widget.prefs.effectivePageSnap(isReflowable: true);
             if (isContinuous) {
               _onNavigateRequested(
                 context,
@@ -501,8 +517,9 @@ class _ReaderViewportState extends State<ReaderViewport> {
     final targetChapter = res.dataOrNull;
     if (targetChapter != null && targetChapter >= 0 && context.mounted) {
       final isContinuous =
-          widget.prefs.scrollDirection == ReaderScrollDirection.vertical &&
-          !widget.prefs.pageSnap;
+          widget.prefs.effectiveScrollDirection(isReflowable: true) ==
+              ReaderScrollDirection.vertical &&
+          !widget.prefs.effectivePageSnap(isReflowable: true);
       if (isContinuous) {
         _onNavigateRequested(
           context,

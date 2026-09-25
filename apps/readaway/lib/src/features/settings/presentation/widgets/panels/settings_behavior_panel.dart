@@ -22,6 +22,9 @@ class SettingsBehaviorPanel extends StatelessWidget {
           scrollDirection: ReaderScrollDirection.horizontal,
           pageTransition: ReaderPageTransition.slide,
           pageSnap: true,
+          nonReflowableScrollDirection: ReaderScrollDirection.vertical,
+          nonReflowablePageTransition: ReaderPageTransition.slide,
+          nonReflowablePageSnap: true,
         ),
         documentPath: path,
       );
@@ -58,12 +61,22 @@ class SettingsBehaviorPanel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         SettingsSection(
-          title: 'Page turning',
+          title: 'Reflowable books (EPUB, TXT)',
           onReset: resetPageTurning,
           rows: const [
             _ScrollDirectionRow(),
             _PageTransitionRow(),
             _PageSnapRow(),
+          ],
+        ),
+        const SizedBox(height: 24),
+        SettingsSection(
+          title: 'Fixed layout & documents (PDF, CBZ, CBR)',
+          onReset: resetPageTurning,
+          rows: const [
+            _NonReflowableScrollDirectionRow(),
+            _NonReflowablePageTransitionRow(),
+            _NonReflowablePageSnapRow(),
           ],
         ),
         const SizedBox(height: 24),
@@ -115,6 +128,41 @@ class _ScrollDirectionRow extends StatelessWidget {
           onChanged: (direction) =>
               context.read<SettingsBloc>().updateReaderPrefs(
                 (p) => p.copyWith(scrollDirection: direction),
+                documentPath: path,
+              ),
+        );
+      },
+    );
+  }
+}
+
+class _NonReflowableScrollDirectionRow extends StatelessWidget {
+  const _NonReflowableScrollDirectionRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        return SettingsSelectRow<ReaderScrollDirection>(
+          label: 'Scroll direction',
+          value: prefs.nonReflowableScrollDirection,
+          entries: const [
+            SettingsSelectEntry(
+              value: ReaderScrollDirection.vertical,
+              label: 'Vertical',
+            ),
+            SettingsSelectEntry(
+              value: ReaderScrollDirection.horizontal,
+              label: 'Horizontal',
+            ),
+          ],
+          onChanged: (direction) =>
+              context.read<SettingsBloc>().updateReaderPrefs(
+                (p) => p.copyWith(nonReflowableScrollDirection: direction),
                 documentPath: path,
               ),
         );
@@ -176,6 +224,60 @@ class _PageTransitionRow extends StatelessWidget {
   }
 }
 
+class _NonReflowablePageTransitionRow extends StatelessWidget {
+  const _NonReflowablePageTransitionRow();
+
+  static const _allEntries = [
+    SettingsSelectEntry(
+      value: ReaderPageTransition.none,
+      label: 'None',
+    ),
+    SettingsSelectEntry(
+      value: ReaderPageTransition.fade,
+      label: 'Fade',
+    ),
+    SettingsSelectEntry(
+      value: ReaderPageTransition.slide,
+      label: 'Slide',
+    ),
+    SettingsSelectEntry(
+      value: ReaderPageTransition.sharedAxis,
+      label: 'Shared axis',
+    ),
+    SettingsSelectEntry(
+      value: ReaderPageTransition.cover,
+      label: 'Cover',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        final entries = _allEntries
+            .where(
+              (e) => e.value.isSupportedFor(prefs.nonReflowableScrollDirection),
+            )
+            .toList();
+        return SettingsSelectRow<ReaderPageTransition>(
+          label: 'Page transition',
+          value: prefs.nonReflowablePageTransition,
+          entries: entries,
+          onChanged: (transition) =>
+              context.read<SettingsBloc>().updateReaderPrefs(
+                (p) => p.copyWith(nonReflowablePageTransition: transition),
+                documentPath: path,
+              ),
+        );
+      },
+    );
+  }
+}
+
 class _PageSnapRow extends StatelessWidget {
   const _PageSnapRow();
 
@@ -193,6 +295,31 @@ class _PageSnapRow extends StatelessWidget {
           value: prefs.pageSnap,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(pageSnap: v),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _NonReflowablePageSnapRow extends StatelessWidget {
+  const _NonReflowablePageSnapRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        return SettingsSwitchRow(
+          label: 'Snap to page',
+          description: 'Settle on page boundaries while scrolling',
+          value: prefs.nonReflowablePageSnap,
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(nonReflowablePageSnap: v),
             documentPath: path,
           ),
         );
