@@ -3,13 +3,16 @@ script:
   - rm -rf AppDir || true
   - cp -r build/linux/x64/release/bundle AppDir
   - cp linux/dev.readaway.desktop AppDir/dev.readaway.desktop
-  - mkdir -p AppDir/usr/share/icons/hicolor/64x64/apps/
+  - mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps/
+  - cp assets/logo/foreground.png AppDir/usr/share/icons/hicolor/256x256/apps/readaway.png
+  - cp assets/logo/foreground.png AppDir/readaway.png
+  - cp assets/logo/foreground.png AppDir/.DirIcon
 AppDir:
   path: /home/drkxo/Documents/Projects/playground/readaway/apps/readaway/AppDir
   app_info:
     id: dev.readaway
     name: Readaway
-    icon: application-vnd.appimage
+    icon: readaway
     version: latest
     exec: Readaway
     exec_args: "$@"

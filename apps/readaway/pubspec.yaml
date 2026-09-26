@@ -85,6 +85,7 @@ flutter:
   assets:
     - assets/google_fonts/
     - assets/tts/
+    - assets/logo/
   fonts:
     - family: Noto Serif
       fonts:
