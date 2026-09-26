@@ -175,7 +175,7 @@ types:
         index: 2
   GlobalViewSettings:
     typeId: 16
-    nextIndex: 116
+    nextIndex: 119
     fields:
       volumeKeysToFlip:
         index: 18
@@ -211,6 +211,10 @@ types:
         index: 114
       ttsPitch:
         index: 115
+      ttsMaxCacheSizeMb:
+        index: 117
+      ttsPrecacheNextChapter:
+        index: 118
   SherpaTtsModelInfo:
     typeId: 19
     nextIndex: 21

@@ -1,18 +1,16 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:audio_service/audio_service.dart';
 import 'package:injectable/injectable.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:mutex/mutex.dart';
-import 'package:readaway_core/readaway_core.dart'
-    show AppLogger, TtsChunk, computeChunkGapSec;
+import 'package:path/path.dart' as p;
+import 'package:readaway_core/readaway_core.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../features/settings/domain/entity/settings.dart';
 import '../../services.dart';
-import '../stream/paragraph_stream_audio_source.dart';
 
 part 'tts_controller_service.cleanup.dart';
 part 'tts_controller_service.pipeline.dart';
@@ -39,6 +37,7 @@ class TtsControllerService {
     this._audioPlayer,
     this._chunkingService,
     this._settingsService,
+    this._cacheService,
   ) {
     final gvs = _settingsService.settings.globalViewSettings;
     _rate = gvs.ttsRate > 0 ? gvs.ttsRate : 1.0;
@@ -51,12 +50,16 @@ class TtsControllerService {
   final TtsEngineRegistry _engineRegistry;
   final AudioPlayerService _audioPlayer;
   final TtsChunkingService _chunkingService;
-
   final SettingsService _settingsService;
+  final TtsChapterCacheService _cacheService;
 
   StreamSubscription<Settings>? _settingsSubscription;
 
   final Mutex _pipelineMutex = Mutex();
+
+  String? _currentBookPath;
+  int? _currentSectionIndex;
+  TtsChapterCacheManifest? _currentChapterManifest;
 
   TtsVoiceOption? _voice;
   double _rate = 1.0;
@@ -84,7 +87,6 @@ class TtsControllerService {
   int _activeSessionId = 0;
   MediaItem? _baseTag;
   MediaItem? get baseTag => _baseTag;
-  final List<File> _sessionTempFiles = [];
   final Map<int, List<double>> _chunkWaveforms = {};
 
   final _stateController = BehaviorSubject<TtsPlaybackEvent>.seeded(
@@ -145,6 +147,11 @@ class TtsControllerService {
   int? get currentParagraphIndex => activeChunk?.paragraphIndex;
 
   void Function()? _onPageCompletedCallback;
+  void Function()? _onChapterNearEndCallback;
+
+  void setOnChapterNearEndCallback(void Function()? callback) {
+    _onChapterNearEndCallback = callback;
+  }
 
   @disposeMethod
   Future<void> dispose() async {

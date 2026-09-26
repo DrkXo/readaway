@@ -469,8 +469,11 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     }
 
     ttsRepository.start();
+    final docPath = state.documentPath ?? state.fileName ?? 'doc';
     final playResult = await ttsRepository.playText(
       text,
+      bookPath: docPath,
+      sectionIndex: pageIndex,
       pageIndex: pageIndex,
       startProgression: startProgression,
       tag: MediaItem(

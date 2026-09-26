@@ -56,6 +56,8 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default(1.0) double ttsLengthScale,
     @Default(5) int ttsNumSteps,
     @Default(-1) int ttsSleepTimerMinutes,
+    @Default(500) int ttsMaxCacheSizeMb,
+    @Default(true) bool ttsPrecacheNextChapter,
   }) = _GlobalViewSettings;
 
   factory GlobalViewSettings.fromJson(Map<String, dynamic> json) =>

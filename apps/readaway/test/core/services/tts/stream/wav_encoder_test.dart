@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:readaway/src/core/services/tts/stream/paragraph_stream_audio_source.dart';
 import 'package:readaway/src/core/services/tts/stream/wav_encoder.dart';
 
 void main() {
@@ -84,58 +83,6 @@ void main() {
       );
       // data = a(1) + gap(5) + b(1) = 7 samples = 14 bytes
       expect(_u32(wav, 40), 14);
-    });
-  });
-
-  group('ParagraphStreamAudioSource', () {
-    test('serves a full-buffer request', () async {
-      final bytes = Uint8List.fromList(List.generate(100, (i) => i));
-      final source = ParagraphStreamAudioSource(
-        wavBytes: bytes,
-        duration: const Duration(seconds: 1),
-        paragraphIndex: 0,
-      );
-
-      final response = await source.request();
-      expect(response.contentType, 'audio/wav');
-      expect(response.sourceLength, 100);
-      expect(response.contentLength, 100);
-      expect(response.offset, isNull);
-      expect(response.rangeRequestsSupported, isTrue);
-
-      final data = await response.stream.expand((c) => c).toList();
-      expect(data, bytes);
-    });
-
-    test('serves a byte-range request', () async {
-      final bytes = Uint8List.fromList(List.generate(100, (i) => i));
-      final source = ParagraphStreamAudioSource(
-        wavBytes: bytes,
-        duration: const Duration(seconds: 1),
-        paragraphIndex: 0,
-      );
-
-      final response = await source.request(10, 20);
-      expect(response.sourceLength, 100);
-      expect(response.contentLength, 10);
-      expect(response.offset, 10);
-
-      final data = await response.stream.expand((c) => c).toList();
-      expect(data, bytes.sublist(10, 20));
-    });
-
-    test('clamps an out-of-range end', () async {
-      final bytes = Uint8List.fromList(List.generate(100, (i) => i));
-      final source = ParagraphStreamAudioSource(
-        wavBytes: bytes,
-        duration: const Duration(seconds: 1),
-        paragraphIndex: 0,
-      );
-
-      final response = await source.request(90, 500);
-      expect(response.contentLength, 10);
-      final data = await response.stream.expand((c) => c).toList();
-      expect(data, bytes.sublist(90));
     });
   });
 }

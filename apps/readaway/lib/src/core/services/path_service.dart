@@ -73,10 +73,10 @@ class AppPathService {
     return dir;
   }
 
-  /// Directory where temporary TTS synthesized audio chunks live: `<temp>/tts_cache`.
+  /// Directory where TTS synthesized audio chunk cache lives: `<app>/tts_cache`.
   Future<Directory> getTtsAudioCacheDirectory() async {
-    final temp = await tempDirectory;
-    final dir = Directory(p.join(temp.path, 'tts_cache'));
+    final app = await appDirectory;
+    final dir = Directory(p.join(app.path, 'tts_cache'));
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

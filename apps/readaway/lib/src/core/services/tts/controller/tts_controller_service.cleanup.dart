@@ -14,22 +14,9 @@ extension _TtsSessionCleanup on TtsControllerService {
   }
 
   Future<void> _cleanTempFiles() async {
-    final files = List<File>.from(_sessionTempFiles);
-    _sessionTempFiles.clear();
     _chunkWaveforms.clear();
     if (!_waveformController.isClosed) {
       _waveformController.add(const []);
     }
-    for (final f in files) {
-      await _deleteFileSafe(f);
-    }
-  }
-
-  Future<void> _deleteFileSafe(File f) async {
-    try {
-      if (await f.exists()) {
-        await f.delete();
-      }
-    } catch (_) {}
   }
 }

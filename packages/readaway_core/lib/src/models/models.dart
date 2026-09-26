@@ -13,5 +13,6 @@ part 'page_size.dart';
 part 'pagination_state.dart';
 part 'reading_anchor.dart';
 part 'transform_context.dart';
+part 'tts_chapter_cache_manifest.dart';
 part 'tts_chunk.dart';
 part 'txt_models.dart';
