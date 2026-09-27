@@ -8,7 +8,7 @@ script:
   - cp assets/logo/foreground.png AppDir/readaway.png
   - cp assets/logo/foreground.png AppDir/.DirIcon
 AppDir:
-  path: /home/drkxo/Documents/Projects/playground/readaway/apps/readaway/AppDir
+  path: ./AppDir
   app_info:
     id: dev.readaway
     name: Readaway
