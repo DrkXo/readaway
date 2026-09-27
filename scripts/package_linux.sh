@@ -55,9 +55,10 @@ echo "  [OK] Created: $TAR_NAME ($(du -h "$OUT_DIR/$TAR_NAME" | cut -f1))"
 COUNT=$((COUNT + 1))
 
 # -------------------------------------------------------------
-# 2. Package .AppImage
+# 2. Package .AppImage & .zsync
 # -------------------------------------------------------------
 APPIMAGE_NAME="readaway-${VERSION}-linux-x86_64.AppImage"
+ZSYNC_NAME="${APPIMAGE_NAME}.zsync"
 TEMP_APPDIR="$(mktemp -d)/AppDir"
 mkdir -p "$TEMP_APPDIR"
 
@@ -115,9 +116,13 @@ else
   fi
 fi
 
-echo "  [INFO] Building AppImage with appimagetool..."
-ARCH=x86_64 "$TOOL_EXEC" "$TEMP_APPDIR" "$OUT_DIR/$APPIMAGE_NAME" || {
-  ARCH=x86_64 "$TOOL_EXEC" --appimage-extract-and-run "$TEMP_APPDIR" "$OUT_DIR/$APPIMAGE_NAME"
+UPDATE_INFO="gh-releases-zsync|DrkXo|readaway|latest|readaway-*-linux-x86_64.AppImage.zsync"
+
+echo "  [INFO] Building AppImage with appimagetool (with zsync update info)..."
+ARCH=x86_64 "$TOOL_EXEC" -u "$UPDATE_INFO" "$TEMP_APPDIR" "$OUT_DIR/$APPIMAGE_NAME" || {
+  ARCH=x86_64 "$TOOL_EXEC" -u "$UPDATE_INFO" --appimage-extract-and-run "$TEMP_APPDIR" "$OUT_DIR/$APPIMAGE_NAME" || {
+    ARCH=x86_64 "$TOOL_EXEC" "$TEMP_APPDIR" "$OUT_DIR/$APPIMAGE_NAME"
+  }
 }
 
 rm -rf "$(dirname "$TEMP_APPDIR")"
@@ -125,6 +130,21 @@ rm -rf "$(dirname "$TEMP_APPDIR")"
 if [ -f "$OUT_DIR/$APPIMAGE_NAME" ]; then
   echo "  [OK] Created: $APPIMAGE_NAME ($(du -h "$OUT_DIR/$APPIMAGE_NAME" | cut -f1))"
   COUNT=$((COUNT + 1))
+  
+  # Check companion .zsync file
+  if [ -f "$OUT_DIR/$ZSYNC_NAME" ]; then
+    echo "  [OK] Created: $ZSYNC_NAME ($(du -h "$OUT_DIR/$ZSYNC_NAME" | cut -f1))"
+    COUNT=$((COUNT + 1))
+  elif [ -f "$OUT_DIR/$APPIMAGE_NAME.zsync" ]; then
+    echo "  [OK] Created: $APPIMAGE_NAME.zsync ($(du -h "$OUT_DIR/$APPIMAGE_NAME.zsync" | cut -f1))"
+    COUNT=$((COUNT + 1))
+  elif command -v zsyncmake >/dev/null 2>&1; then
+    zsyncmake -u "https://github.com/DrkXo/readaway/releases/latest/download/$APPIMAGE_NAME" -o "$OUT_DIR/$ZSYNC_NAME" "$OUT_DIR/$APPIMAGE_NAME"
+    if [ -f "$OUT_DIR/$ZSYNC_NAME" ]; then
+      echo "  [OK] Created via zsyncmake: $ZSYNC_NAME ($(du -h "$OUT_DIR/$ZSYNC_NAME" | cut -f1))"
+      COUNT=$((COUNT + 1))
+    fi
+  fi
 else
   echo "  [WARN] Failed to generate AppImage."
   exit 1

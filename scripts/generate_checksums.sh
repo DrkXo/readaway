@@ -23,7 +23,7 @@ rm -f "$CHECKSUM_FILE"
 
 cd "$RELEASE_DIR"
 # Find all release binaries excluding checksum files
-FILES=$(find . -maxdepth 1 -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.tar.gz" -o -name "*.AppImage" -o -name "*.zip" \) -printf "%f\n" | sort)
+FILES=$(find . -maxdepth 1 -type f \( -name "*.apk" -o -name "*.tar.gz" -o -name "*.AppImage" -o -name "*.zsync" -o -name "*.zip" \) -printf "%f\n" | sort)
 
 if [ -z "$FILES" ]; then
   echo "[INFO] No release binaries found in $RELEASE_DIR to checksum."
