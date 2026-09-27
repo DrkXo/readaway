@@ -32,10 +32,10 @@ class ThemeScheme {
 
 /// Registry of all available [ThemeScheme]s.
 abstract final class ThemeSchemes {
-  /// The built-in scheme, named "Token (Standard)".
-  static final tokenInspired = ThemeScheme(
-    id: 'tokenInspired',
-    name: 'Token (Standard)',
+  /// The built-in scheme, named "Token".
+  static final token = ThemeScheme(
+    id: 'token',
+    name: 'Token',
     originalRepoLink: 'https://github.com/ThorstenRhau/token',
     light: BuiltinVsCodeThemes.tokenLight,
     dark: BuiltinVsCodeThemes.tokenDark,
@@ -115,21 +115,24 @@ abstract final class ThemeSchemes {
 
   /// All available schemes, in display order.
   static final all = <ThemeScheme>[
-    flexoki,
-    tokenInspired,
+    token,
     tokenFlint,
     tokenMeridian,
     tokenTemper,
     tokenUltra,
+    flexoki,
     kanagawaDragon,
     kanagawaWave,
     kanagawaLotus,
   ];
 
-  /// Resolves a scheme by [id], falling back to [flexoki] when the id
+  /// Resolves a scheme by [id], falling back to [token] when the id
   /// is unknown or null (e.g. a scheme was removed from the registry).
-  static ThemeScheme byId(String? id) => all.firstWhere(
-    (scheme) => scheme.id == id,
-    orElse: () => flexoki,
-  );
+  static ThemeScheme byId(String? id) {
+    if (id == 'tokenInspired') return token;
+    return all.firstWhere(
+      (scheme) => scheme.id == id,
+      orElse: () => token,
+    );
+  }
 }

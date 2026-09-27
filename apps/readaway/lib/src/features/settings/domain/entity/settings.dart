@@ -40,7 +40,7 @@ abstract class CustomFont with _$CustomFont {
 abstract class GlobalViewSettings with _$GlobalViewSettings {
   const factory GlobalViewSettings({
     @Default('system') String theme,
-    @Default('flexoki') String selectedScheme,
+    @Default('token') String selectedScheme,
     @Default(0.3) double highlightOpacity,
     @Default(false) bool volumeKeysToFlip,
     @Default('slide') String pageTurnStyle,
