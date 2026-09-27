@@ -123,6 +123,23 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
           melos run codegen
 
+      - name: Setup Android Release Keystore
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          mkdir -p apps/readaway/android/app
+          echo "$KEYSTORE_BASE64" | base64 -d > apps/readaway/android/app/release-keystore.jks
+          cat <<EOF > apps/readaway/android/key.properties
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=${KEY_PASSWORD:-$KEYSTORE_PASSWORD}
+          keyAlias=${KEY_ALIAS:-release}
+          storeFile=app/release-keystore.jks
+          EOF
+
       - name: Build Android Universal APK
         run: |
           export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
