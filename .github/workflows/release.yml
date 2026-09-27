@@ -256,12 +256,24 @@ jobs:
         run: bash scripts/generate_checksums.sh build/release
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.resolve-version.outputs.tag }}
-          name: ${{ needs.resolve-version.outputs.title }}
-          files: |
-            build/release/*
-          generate_release_notes: true
-          draft: false
-          prerelease: ${{ needs.resolve-version.outputs.is_prerelease == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.resolve-version.outputs.tag }}
+          TITLE: ${{ needs.resolve-version.outputs.title }}
+          IS_PRERELEASE: ${{ needs.resolve-version.outputs.is_prerelease }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "[INFO] Release $TAG already exists. Uploading/updating assets..."
+            gh release upload "$TAG" build/release/* --clobber
+          else
+            echo "[INFO] Creating release $TAG and uploading assets..."
+            gh release create "$TAG" build/release/* \
+              --title "$TITLE" \
+              --generate-notes \
+              $PRERELEASE_FLAG
+          fi
