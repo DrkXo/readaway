@@ -108,8 +108,10 @@ class _ReaderShareSheetState extends State<ReaderShareSheet> {
     final docPath = widget.state.documentPath;
     if (docPath == null) return;
 
-    final cachedBytes =
-        FixedLayoutImageCache.instance.getCachedImage(docPath, pageIndex);
+    final cachedBytes = FixedLayoutImageCache.instance.getCachedImage(
+      docPath,
+      pageIndex,
+    );
 
     setState(() {
       _isSharing = true;
@@ -121,7 +123,8 @@ class _ReaderShareSheetState extends State<ReaderShareSheet> {
     try {
       Uint8List? bytes = cachedBytes;
       if (bytes == null || bytes.isEmpty) {
-        final repo = widget.readerRepository ??
+        final repo =
+            widget.readerRepository ??
             (GetIt.I.isRegistered<ReaderRepository>()
                 ? GetIt.I<ReaderRepository>()
                 : null);
@@ -274,8 +277,9 @@ class _ReaderShareSheetState extends State<ReaderShareSheet> {
                                   '$pageCount pages',
                                   style: TextStyle(
                                     fontSize: 12.0,
-                                    color: colors.sidebarForeground
-                                        .withValues(alpha: 0.7),
+                                    color: colors.sidebarForeground.withValues(
+                                      alpha: 0.7,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -285,8 +289,9 @@ class _ReaderShareSheetState extends State<ReaderShareSheet> {
                                   '• $fileSize',
                                   style: TextStyle(
                                     fontSize: 12.0,
-                                    color: colors.sidebarForeground
-                                        .withValues(alpha: 0.7),
+                                    color: colors.sidebarForeground.withValues(
+                                      alpha: 0.7,
+                                    ),
                                   ),
                                 ),
                               ],

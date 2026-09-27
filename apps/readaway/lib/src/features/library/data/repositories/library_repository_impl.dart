@@ -35,6 +35,22 @@ class LibraryRepositoryImpl implements LibraryRepository {
   );
 
   @override
+  Stream<Result<List<RecentDocument>>> watchRecentDocuments() {
+    return _localDataSource
+        .watchRecentDocuments()
+        .map<Result<List<RecentDocument>>>((docs) => Success(docs))
+        .handleError(
+          (Object error, StackTrace stack) => Failed<List<RecentDocument>>(
+            StorageReadFailure(
+              'library_recent_documents',
+              cause: error,
+              stackTrace: stack,
+            ),
+          ),
+        );
+  }
+
+  @override
   Future<Result<List<RecentDocument>>> getRecentDocuments() {
     return guard(
       () => _localDataSource.getRecentDocuments(),

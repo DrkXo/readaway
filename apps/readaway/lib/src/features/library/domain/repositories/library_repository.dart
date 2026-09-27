@@ -4,6 +4,9 @@ import '../entity/recent_document.dart';
 
 /// Contract for library operations, document persistence, and file imports.
 abstract interface class LibraryRepository {
+  /// Watches all documents, streaming updates whenever the library changes.
+  Stream<Result<List<RecentDocument>>> watchRecentDocuments();
+
   /// Fetches all documents, sorted by most recently opened.
   Future<Result<List<RecentDocument>>> getRecentDocuments();
 

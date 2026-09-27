@@ -33,8 +33,8 @@ void main() {
     blocTest<LibraryBloc, LibraryState>(
       'emits loaded state with documents when loadRequested succeeds',
       build: () {
-        when(mockRepo.getRecentDocuments()).thenAnswer(
-          (_) async => Success([doc1]),
+        when(mockRepo.watchRecentDocuments()).thenAnswer(
+          (_) => Stream.value(Success([doc1])),
         );
         return LibraryBloc(mockRepo);
       },
@@ -47,8 +47,45 @@ void main() {
         ),
       ],
       verify: (_) {
-        verify(mockRepo.getRecentDocuments()).called(1);
+        verify(mockRepo.watchRecentDocuments()).called(1);
       },
+    );
+
+    blocTest<LibraryBloc, LibraryState>(
+      'reactively updates state when watchRecentDocuments emits updated documents',
+      build: () {
+        final doc2 = doc1.copyWith(
+          path: '/path/2.epub',
+          title: 'Book 2',
+          lastOpened: DateTime(2026),
+        );
+        when(mockRepo.watchRecentDocuments()).thenAnswer(
+          (_) => Stream.fromIterable([
+            Success([doc1]),
+            Success([doc2, doc1]),
+          ]),
+        );
+        return LibraryBloc(mockRepo);
+      },
+      act: (bloc) => bloc.add(const LibraryEvent.loadRequested()),
+      expect: () => [
+        const LibraryState(isLoading: true),
+        LibraryState(
+          isLoading: false,
+          recentDocuments: [doc1],
+        ),
+        LibraryState(
+          isLoading: false,
+          recentDocuments: [
+            doc1.copyWith(
+              path: '/path/2.epub',
+              title: 'Book 2',
+              lastOpened: DateTime(2026),
+            ),
+            doc1,
+          ],
+        ),
+      ],
     );
 
     blocTest<LibraryBloc, LibraryState>(

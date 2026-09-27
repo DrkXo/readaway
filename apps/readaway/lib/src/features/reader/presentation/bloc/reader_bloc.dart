@@ -218,6 +218,13 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           _precachePages(initialPage);
         }
 
+        await readerRepository.updateReadingProgress(
+          path: event.path,
+          page: initialPage,
+          pageCount: count,
+          anchor: savedAnchor,
+        );
+
         await readerRepository.updateWindowTitle(info.title);
 
         final coverResult = await readerRepository.getCoverArtUri(

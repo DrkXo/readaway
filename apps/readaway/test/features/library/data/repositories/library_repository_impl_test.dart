@@ -150,6 +150,20 @@ void main() {
     });
   });
 
+  group('LibraryRepositoryImpl - Reactive Streaming', () {
+    test('watchRecentDocuments streams mapped Success results', () async {
+      when(mockDataSource.watchRecentDocuments())
+          .thenAnswer((_) => Stream.value([testDoc]));
+
+      final stream = repository.watchRecentDocuments();
+      final event = await stream.first;
+
+      expect(event.isSuccess, isTrue);
+      expect(event.dataOrNull, [testDoc]);
+      verify(mockDataSource.watchRecentDocuments()).called(1);
+    });
+  });
+
   group('LibraryRepositoryImpl - Document Deletion', () {
     test(
       'removeRecentDocument calls localDataSource.removeRecentDocument',
