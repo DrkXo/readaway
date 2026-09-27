@@ -85,17 +85,18 @@ jobs:
       - name: Setup Gradle Cache
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Cache FVM & Pub Dependencies
+      - name: Cache FVM, Pub & Build Runner Dependencies
         uses: actions/cache@v4
         with:
           path: |
             ~/.fvm/versions
             ~/fvm/versions
             ~/.pub-cache
-          key: ${{ runner.os }}-fvm-${{ hashFiles('.fvmrc') }}-${{ hashFiles('**/pubspec.lock') }}
+            **/.dart_tool/build
+          key: ${{ runner.os }}-build-cache-${{ hashFiles('.fvmrc') }}-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
-            ${{ runner.os }}-fvm-${{ hashFiles('.fvmrc') }}-
-            ${{ runner.os }}-fvm-
+            ${{ runner.os }}-build-cache-${{ hashFiles('.fvmrc') }}-
+            ${{ runner.os }}-build-cache-
 
       - name: Install FVM CLI
         run: |
@@ -117,6 +118,11 @@ jobs:
           dart pub global activate melos
           echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
           melos bootstrap
+
+      - name: Generate Code (Codegen)
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
+          melos run codegen
 
       - name: Build Android Universal APK
         run: |
@@ -175,17 +181,18 @@ jobs:
             file \
             curl
 
-      - name: Cache FVM & Pub Dependencies
+      - name: Cache FVM, Pub & Build Runner Dependencies
         uses: actions/cache@v4
         with:
           path: |
             ~/.fvm/versions
             ~/fvm/versions
             ~/.pub-cache
-          key: ${{ runner.os }}-fvm-${{ hashFiles('.fvmrc') }}-${{ hashFiles('**/pubspec.lock') }}
+            **/.dart_tool/build
+          key: ${{ runner.os }}-build-cache-${{ hashFiles('.fvmrc') }}-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
-            ${{ runner.os }}-fvm-${{ hashFiles('.fvmrc') }}-
-            ${{ runner.os }}-fvm-
+            ${{ runner.os }}-build-cache-${{ hashFiles('.fvmrc') }}-
+            ${{ runner.os }}-build-cache-
 
       - name: Install FVM CLI
         run: |
@@ -207,6 +214,11 @@ jobs:
           dart pub global activate melos
           echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
           melos bootstrap
+
+      - name: Generate Code (Codegen)
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
+          melos run codegen
 
       - name: Build Linux Release Binary
         run: |
