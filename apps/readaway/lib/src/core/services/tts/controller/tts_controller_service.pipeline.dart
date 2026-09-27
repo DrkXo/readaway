@@ -72,15 +72,41 @@ extension _TtsSynthesisPipeline on TtsControllerService {
       final engine = _engineRegistry.getEngineForVoice(_voice!);
       await engine.initialize();
 
-      // 1. Pre-buffer: synthesize up to 2 initial chunks before starting playback
-      // to guarantee the player never starves.
+      final bookPath = _currentBookPath ?? 'doc';
+      final chapterIndex = _currentSectionIndex ?? _currentPageIndex ?? 0;
+      final fullSpeechText = _masterQueue.map((c) => c.speechContent).join('\n');
+      final textHash = _cacheService.computeTextHash(fullSpeechText);
+
+      // Try loading existing chapter manifest or initialize new one
+      _currentChapterManifest = await _cacheService.getChapterManifest(
+        bookPath: bookPath,
+        chapterIndex: chapterIndex,
+        voice: _voice!,
+        textHash: textHash,
+      );
+
+      _currentChapterManifest ??= TtsChapterCacheManifest(
+        chapterIndex: chapterIndex,
+        textHash: textHash,
+        voiceId: _voice!.id,
+        speakerId: _voice!.sherpaSpeakerId ?? 0,
+        configHash: _cacheService.computeConfigHash(
+          _settingsService.settings.globalViewSettings,
+        ),
+        sampleRate: engine is SherpaOnnxTtsEngine ? 22050 : 22050,
+        createdAt: DateTime.now(),
+        lastAccessedAt: DateTime.now(),
+      );
+
+      // 1. Pre-buffer: load from cache or synthesize up to 2 initial chunks
+      // before starting playback to guarantee the player never starves.
       const lookaheadInitialCount = 2;
       final initialEnd = (startIndex + lookaheadInitialCount).clamp(
         startIndex,
         _masterQueue.length,
       );
 
-      final initialSources = <IndexedAudioSource>[];
+      final initialSources = <AudioSource>[];
 
       var consecutiveErrors = 0;
       const maxConsecutiveErrors = 3;
@@ -95,18 +121,62 @@ extension _TtsSynthesisPipeline on TtsControllerService {
         }
 
         try {
-          final result = await engine.synthesizeToBytes(
-            text: textToSpeak,
+          final chunkFile = await _cacheService.getChunkFile(
+            bookPath: bookPath,
+            chapterIndex: chapterIndex,
             voice: _voice!,
-            speed: 1.0,
-            pitch: 1.0,
-            gapSec: _gapForChunk(chunk, i),
+            chunkIndex: i,
           );
+          final isCached = await _cacheService.isChunkFileValid(chunkFile);
+
+          List<double> waveform;
+          Duration duration;
+
+          if (isCached) {
+            final cachedMeta = _currentChapterManifest?.getChunk(i);
+            waveform = cachedMeta?.waveform ?? const [];
+            final durationSec = cachedMeta?.durationSec ?? 0.0;
+            duration = durationSec > 0
+                ? Duration(milliseconds: (durationSec * 1000).round())
+                : Duration(milliseconds: chunk.estimatedDurationMs);
+          } else {
+            final result = await engine.synthesizeToFile(
+              text: textToSpeak,
+              outputPath: chunkFile.path,
+              voice: _voice!,
+              speed: 1.0,
+              pitch: 1.0,
+              gapSec: _gapForChunk(chunk, i),
+            );
+            waveform = result.waveform;
+            duration = Duration(milliseconds: (result.duration * 1000).round());
+
+            final cachedChunk = TtsCachedChunk(
+              chunkIndex: i,
+              fileName: p.basename(chunkFile.path),
+              startOffset: chunk.startOffset,
+              endOffset: chunk.endOffset,
+              durationSec: result.duration,
+              waveform: result.waveform,
+              gapSec: _gapForChunk(chunk, i),
+            );
+            _currentChapterManifest =
+                _currentChapterManifest?.withChunk(cachedChunk);
+            if (_currentChapterManifest != null) {
+              await _cacheService.saveChapterManifest(
+                bookPath: bookPath,
+                chapterIndex: chapterIndex,
+                voice: _voice!,
+                manifest: _currentChapterManifest!,
+              );
+            }
+          }
+
           consecutiveErrors = 0;
           if (sessionId != _activeSessionId) return;
-          _chunkWaveforms[i] = result.waveform;
+          _chunkWaveforms[i] = waveform;
           if (i == startIndex && !_waveformController.isClosed) {
-            _waveformController.add(result.waveform);
+            _waveformController.add(waveform);
           }
 
           final mediaItem = MediaItem(
@@ -118,16 +188,12 @@ extension _TtsSynthesisPipeline on TtsControllerService {
             artist: baseTag?.artist ?? 'ReadAway',
             genre: baseTag?.genre ?? 'Ebook',
             artUri: baseTag?.artUri,
-            duration: Duration(milliseconds: (result.duration * 1000).round()),
+            duration: duration,
           );
 
           initialSources.add(
-            ParagraphStreamAudioSource(
-              wavBytes: result.wavBytes,
-              duration: Duration(
-                milliseconds: (result.duration * 1000).round(),
-              ),
-              paragraphIndex: i,
+            AudioSource.file(
+              chunkFile.path,
               tag: mediaItem,
             ),
           );
@@ -164,6 +230,17 @@ extension _TtsSynthesisPipeline on TtsControllerService {
       if (initialEnd >= _masterQueue.length) {
         // Entire text was small enough to fit into initial buffer
         _pipelineDone = true;
+        if (_currentChapterManifest != null) {
+          _currentChapterManifest =
+              _currentChapterManifest!.copyWith(isComplete: true);
+          await _cacheService.saveChapterManifest(
+            bookPath: bookPath,
+            chapterIndex: chapterIndex,
+            voice: _voice!,
+            manifest: _currentChapterManifest!,
+          );
+        }
+        unawaited(_cacheService.enforceCacheLimit());
         return;
       }
 
@@ -178,16 +255,60 @@ extension _TtsSynthesisPipeline on TtsControllerService {
         }
 
         try {
-          final result = await engine.synthesizeToBytes(
-            text: textToSpeak,
+          final chunkFile = await _cacheService.getChunkFile(
+            bookPath: bookPath,
+            chapterIndex: chapterIndex,
             voice: _voice!,
-            speed: 1.0,
-            pitch: 1.0,
-            gapSec: _gapForChunk(chunk, i),
+            chunkIndex: i,
           );
+          final isCached = await _cacheService.isChunkFileValid(chunkFile);
+
+          List<double> waveform;
+          Duration duration;
+
+          if (isCached) {
+            final cachedMeta = _currentChapterManifest?.getChunk(i);
+            waveform = cachedMeta?.waveform ?? const [];
+            final durationSec = cachedMeta?.durationSec ?? 0.0;
+            duration = durationSec > 0
+                ? Duration(milliseconds: (durationSec * 1000).round())
+                : Duration(milliseconds: chunk.estimatedDurationMs);
+          } else {
+            final result = await engine.synthesizeToFile(
+              text: textToSpeak,
+              outputPath: chunkFile.path,
+              voice: _voice!,
+              speed: 1.0,
+              pitch: 1.0,
+              gapSec: _gapForChunk(chunk, i),
+            );
+            waveform = result.waveform;
+            duration = Duration(milliseconds: (result.duration * 1000).round());
+
+            final cachedChunk = TtsCachedChunk(
+              chunkIndex: i,
+              fileName: p.basename(chunkFile.path),
+              startOffset: chunk.startOffset,
+              endOffset: chunk.endOffset,
+              durationSec: result.duration,
+              waveform: result.waveform,
+              gapSec: _gapForChunk(chunk, i),
+            );
+            _currentChapterManifest =
+                _currentChapterManifest?.withChunk(cachedChunk);
+            if (_currentChapterManifest != null) {
+              await _cacheService.saveChapterManifest(
+                bookPath: bookPath,
+                chapterIndex: chapterIndex,
+                voice: _voice!,
+                manifest: _currentChapterManifest!,
+              );
+            }
+          }
+
           consecutiveErrors = 0;
           if (sessionId != _activeSessionId) return;
-          _chunkWaveforms[i] = result.waveform;
+          _chunkWaveforms[i] = waveform;
 
           final mediaItem = MediaItem(
             id: '${baseTag?.id ?? 'chunk'}-$i',
@@ -198,16 +319,12 @@ extension _TtsSynthesisPipeline on TtsControllerService {
             artist: baseTag?.artist ?? 'ReadAway',
             genre: baseTag?.genre ?? 'Ebook',
             artUri: baseTag?.artUri,
-            duration: Duration(milliseconds: (result.duration * 1000).round()),
+            duration: duration,
           );
 
           await _audioPlayer.appendSource(
-            ParagraphStreamAudioSource(
-              wavBytes: result.wavBytes,
-              duration: Duration(
-                milliseconds: (result.duration * 1000).round(),
-              ),
-              paragraphIndex: i,
+            AudioSource.file(
+              chunkFile.path,
               tag: mediaItem,
             ),
             playIfIdle: true,
@@ -231,6 +348,17 @@ extension _TtsSynthesisPipeline on TtsControllerService {
 
       if (sessionId == _activeSessionId) {
         _pipelineDone = true;
+        if (_currentChapterManifest != null) {
+          _currentChapterManifest =
+              _currentChapterManifest!.copyWith(isComplete: true);
+          await _cacheService.saveChapterManifest(
+            bookPath: bookPath,
+            chapterIndex: chapterIndex,
+            voice: _voice!,
+            manifest: _currentChapterManifest!,
+          );
+        }
+        unawaited(_cacheService.enforceCacheLimit());
       }
     } catch (e, st) {
       if (sessionId != _activeSessionId) return;

@@ -144,6 +144,8 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   @override
   Future<Result<void>> playText(
     String text, {
+    String? bookPath,
+    int? sectionIndex,
     MediaItem? tag,
     int? pageIndex,
     double? startProgression,
@@ -158,6 +160,8 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
         }
         await _ttsController.playText(
           text,
+          bookPath: bookPath,
+          sectionIndex: sectionIndex,
           tag: tag,
           pageIndex: pageIndex,
           startProgression: startProgression,

@@ -22,6 +22,7 @@ export 'tts/sherpa/sherpa_onnx_tts_engine.dart';
 export 'tts/sherpa/sherpa_onnx_tts_service.dart';
 export 'tts/sherpa/sherpa_tts_model_downloader.dart';
 export 'tts/tts_chunker_service.dart';
+export 'tts/cache/tts_chapter_cache_service.dart';
 export 'tts/controller/tts_controller_service.dart';
 export 'tts/tts_engine.dart';
 export 'tts/tts_model_store.dart';

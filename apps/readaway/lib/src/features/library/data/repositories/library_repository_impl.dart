@@ -10,6 +10,7 @@ import 'package:readaway_core/readaway_core.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/services/path_service.dart';
+import '../../../../core/services/tts/cache/tts_chapter_cache_service.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
 import '../../domain/repositories/library_repository.dart';
@@ -24,11 +25,13 @@ class LibraryRepositoryImpl implements LibraryRepository {
   final LibraryLocalDataSource _localDataSource;
   final FilePickerDataSource _filePickerDataSource;
   final AppPathService _pathService;
+  final TtsChapterCacheService _ttsCacheService;
 
   LibraryRepositoryImpl(
     this._localDataSource,
     this._filePickerDataSource,
     this._pathService,
+    this._ttsCacheService,
   );
 
   @override
@@ -88,6 +91,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
         final docs = await _localDataSource.getRecentDocuments();
         final doc = docs.where((d) => d.path == path).firstOrNull;
         await _deleteCoverFile(doc, path);
+        await _ttsCacheService.clearBookCache(path);
         await _localDataSource.removeRecentDocument(path);
       },
       onError: (error, stack) => StorageWriteFailure(
@@ -106,6 +110,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
         final docMap = {for (final d in docs) d.path: d};
         for (final path in paths) {
           await _deleteCoverFile(docMap[path], path);
+          await _ttsCacheService.clearBookCache(path);
         }
         await _localDataSource.removeMultipleDocuments(paths);
       },

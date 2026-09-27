@@ -484,8 +484,7 @@ class SherpaOnnxTtsService {
   }
 
   /// Synthesizes text to an in-memory WAV byte buffer inside the worker
-  /// isolate, avoiding disk I/O. The returned bytes are ready to be served by
-  /// a [ParagraphStreamAudioSource].
+  /// isolate, avoiding disk I/O.
   Future<
     ({
       Uint8List wavBytes,

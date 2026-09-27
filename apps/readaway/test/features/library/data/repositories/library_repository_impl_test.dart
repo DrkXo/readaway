@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/services/path_service.dart';
+import 'package:readaway/src/core/services/tts/cache/tts_chapter_cache_service.dart';
 import 'package:readaway/src/features/library/data/datasources/file_picker_data_source.dart';
 import 'package:readaway/src/features/library/data/datasources/library_local_data_source.dart';
 import 'package:readaway/src/features/library/data/repositories/library_repository_impl.dart';
@@ -14,11 +15,13 @@ import 'library_repository_impl_test.mocks.dart';
   MockSpec<LibraryLocalDataSource>(),
   MockSpec<FilePickerDataSource>(),
   MockSpec<AppPathService>(),
+  MockSpec<TtsChapterCacheService>(),
 ])
 void main() {
   late MockLibraryLocalDataSource mockDataSource;
   late MockFilePickerDataSource mockPicker;
   late MockAppPathService mockPathService;
+  late MockTtsChapterCacheService mockTtsCacheService;
   late LibraryRepositoryImpl repository;
 
   final testDoc = RecentDocument(
@@ -40,11 +43,13 @@ void main() {
     mockDataSource = MockLibraryLocalDataSource();
     mockPicker = MockFilePickerDataSource();
     mockPathService = MockAppPathService();
+    mockTtsCacheService = MockTtsChapterCacheService();
 
     repository = LibraryRepositoryImpl(
       mockDataSource,
       mockPicker,
       mockPathService,
+      mockTtsCacheService,
     );
   });
 

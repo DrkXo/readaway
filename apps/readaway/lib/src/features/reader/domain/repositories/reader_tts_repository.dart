@@ -88,6 +88,8 @@ abstract interface class ReaderTtsRepository {
   /// Enqueues and begins speaking [text] with optional notification [tag] and [pageIndex].
   Future<Result<void>> playText(
     String text, {
+    String? bookPath,
+    int? sectionIndex,
     MediaItem? tag,
     int? pageIndex,
     double? startProgression,

@@ -105,6 +105,13 @@ extension TtsPlaybackControl on TtsControllerService {
           if (!_waveformController.isClosed) {
             _waveformController.add(_chunkWaveforms[masterIndex] ?? const []);
           }
+
+          if (_masterQueue.isNotEmpty) {
+            final progress = (masterIndex + 1) / _masterQueue.length;
+            if (progress >= 0.8 && _pipelineDone) {
+              _onChapterNearEndCallback?.call();
+            }
+          }
         }
       }
     });
@@ -115,6 +122,7 @@ extension TtsPlaybackControl on TtsControllerService {
   Future<void> stopPipeline() async {
     _activeSessionId++;
     _onPageCompletedCallback = null;
+    _onChapterNearEndCallback = null;
     await _audioPlayer.stopSession();
     await _indexSubscription?.cancel();
     _indexSubscription = null;
@@ -130,6 +138,8 @@ extension TtsPlaybackControl on TtsControllerService {
   /// and feeds them gaplessly into [AudioPlayerService].
   Future<void> playText(
     String text, {
+    String? bookPath,
+    int? sectionIndex,
     int startAtChunkIndex = 0,
     double? startProgression,
     void Function()? onPlaybackStarted,
@@ -137,6 +147,8 @@ extension TtsPlaybackControl on TtsControllerService {
     MediaItem? tag,
     int? pageIndex,
   }) => _pipelineMutex.protect(() async {
+    _currentBookPath = bookPath;
+    _currentSectionIndex = sectionIndex ?? pageIndex;
     _currentPageIndex = pageIndex;
     _onPageCompletedCallback = onComplete;
     if (!_pageIndexController.isClosed) {
