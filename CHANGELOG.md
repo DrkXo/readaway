@@ -15,6 +15,32 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`readaway` - `v1.2.0`](#readaway---v120)
+
+Packages graduated to a stable release (see pre-releases prior to the stable version for changelog entries):
+
+ - `readaway_core` - `v0.1.2`
+ - `vscode_theme_parser` - `v0.1.2`
+
+---
+
+#### `readaway` - `v1.2.0`
+
+ - **FEAT**(App): updated readme and default theme. ([8dc7520e](https://github.com/DrkXo/readaway/commit/8dc7520ebc865de9ffe6e5395de750dbbfbe039f))
+
+
+## 2026-09-27
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`readaway` - `v1.2.0-beta.4`](#readaway---v120-beta4)
  - [`readaway_core` - `v0.1.2-beta.4`](#readaway_core---v012-beta4)
  - [`vscode_theme_parser` - `v0.1.2-beta.4`](#vscode_theme_parser---v012-beta4)
