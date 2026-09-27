@@ -127,10 +127,6 @@ melos:
       run: melos exec -c 1 --category="app" -- "fvm exec flutter build apk --release --split-per-abi"
       description: Build release APK split per ABI (armeabi-v7a, arm64-v8a, x86_64)
 
-    build:appbundle:
-      run: melos exec -c 1 --category="app" -- "fvm exec flutter build appbundle --release"
-      description: Build release App Bundle (AAB) for ReadAway app
-
     build:linux:
       run: melos exec -c 1 --category="app" -- "fvm exec flutter build linux --release"
       description: Build Linux binary and clean workspace for ReadAway app

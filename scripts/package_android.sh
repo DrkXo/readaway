@@ -30,7 +30,6 @@ echo "Output Directory: $OUT_DIR"
 echo "=================================================="
 
 APK_DIR="$APP_DIR/build/app/outputs/flutter-apk"
-AAB_DIR="$APP_DIR/build/app/outputs/bundle/release"
 
 COUNT=0
 
@@ -54,9 +53,6 @@ copy_artifact "$APK_DIR/app-release.apk" "readaway-${VERSION}-android-universal.
 copy_artifact "$APK_DIR/app-arm64-v8a-release.apk" "readaway-${VERSION}-android-arm64-v8a.apk"
 copy_artifact "$APK_DIR/app-armeabi-v7a-release.apk" "readaway-${VERSION}-android-armeabi-v7a.apk"
 copy_artifact "$APK_DIR/app-x86_64-release.apk" "readaway-${VERSION}-android-x86_64.apk"
-
-# Copy App Bundle
-copy_artifact "$AAB_DIR/app-release.aab" "readaway-${VERSION}-android.aab"
 
 echo "=================================================="
 if [ "$COUNT" -gt 0 ]; then

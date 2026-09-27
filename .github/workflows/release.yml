@@ -133,11 +133,6 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
           melos run build:apk:split
 
-      - name: Build Android App Bundle (AAB)
-        run: |
-          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
-          melos run build:appbundle
-
       - name: Package & Rename Android Artifacts
         id: package
         run: bash scripts/package_android.sh "${{ needs.resolve-version.outputs.tag }}"
