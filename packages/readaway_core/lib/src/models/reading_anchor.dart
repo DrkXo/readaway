@@ -4,8 +4,8 @@ part of 'models.dart';
 @freezed
 sealed class ReadingAnchor with _$ReadingAnchor {
   const factory ReadingAnchor({
-    required int chapterIndex,
-    required double progressionInChapter,
+    @Default(0) int chapterIndex,
+    @Default(0.0) double progressionInChapter,
   }) = _ReadingAnchor;
 
   factory ReadingAnchor.fromJson(Map<String, dynamic> json) => ReadingAnchor(
