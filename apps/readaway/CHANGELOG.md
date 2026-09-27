@@ -1,3 +1,7 @@
+## 1.2.0-beta.3
+
+ - Update a dependency to the latest release.
+
 ## 1.2.0-beta.2
 
  - **REFACTOR**(App): Refactoring Reader. ([8fa583bb](https://github.com/DrkXo/readaway/commit/8fa583bbff76924a49a920cc670b50d29ddfeb62))
