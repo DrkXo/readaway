@@ -8,7 +8,7 @@ void main() {
   group('ThemeSchemes', () {
     test('all contains all Kanagawa, Flexoki, and Token variations', () {
       expect(ThemeSchemes.all.length, 9);
-      expect(ThemeSchemes.all, contains(ThemeSchemes.tokenInspired));
+      expect(ThemeSchemes.all, contains(ThemeSchemes.token));
       expect(ThemeSchemes.all, contains(ThemeSchemes.tokenFlint));
       expect(ThemeSchemes.all, contains(ThemeSchemes.tokenMeridian));
       expect(ThemeSchemes.all, contains(ThemeSchemes.tokenTemper));
@@ -20,16 +20,17 @@ void main() {
     });
 
     test('byId resolves known schemes', () {
-      expect(ThemeSchemes.byId('tokenInspired'), ThemeSchemes.tokenInspired);
+      expect(ThemeSchemes.byId('token'), ThemeSchemes.token);
+      expect(ThemeSchemes.byId('tokenInspired'), ThemeSchemes.token);
       expect(ThemeSchemes.byId('tokenFlint'), ThemeSchemes.tokenFlint);
       expect(ThemeSchemes.byId('flexoki'), ThemeSchemes.flexoki);
       expect(ThemeSchemes.byId('kanagawaDragon'), ThemeSchemes.kanagawaDragon);
       expect(ThemeSchemes.byId('kanagawaWave'), ThemeSchemes.kanagawaWave);
     });
 
-    test('byId falls back to flexoki for unknown ids', () {
-      expect(ThemeSchemes.byId('unknown'), ThemeSchemes.flexoki);
-      expect(ThemeSchemes.byId(null), ThemeSchemes.flexoki);
+    test('byId falls back to token for unknown ids', () {
+      expect(ThemeSchemes.byId('unknown'), ThemeSchemes.token);
+      expect(ThemeSchemes.byId(null), ThemeSchemes.token);
     });
   });
 

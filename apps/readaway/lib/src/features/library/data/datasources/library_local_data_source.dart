@@ -15,6 +15,11 @@ class LibraryLocalDataSource {
     return docs;
   }
 
+  Stream<List<RecentDocument>> watchRecentDocuments() async* {
+    yield await getRecentDocuments();
+    yield* _storage.libraryBox.watch().asyncMap((_) => getRecentDocuments());
+  }
+
   Future<void> saveRecentDocument(RecentDocument document) async {
     await _storage.libraryBox.put(document.path, document);
   }

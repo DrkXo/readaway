@@ -7,6 +7,7 @@ import 'package:injectable/injectable.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
 import '../../domain/repositories/library_repository.dart';
@@ -20,8 +21,10 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
   final _log = AppLogger.instance.scope('LibraryBloc');
   final LibraryRepository _repository;
 
+  final Set<String> _attemptedCoverPaths = {};
+
   LibraryBloc(this._repository) : super(const LibraryState()) {
-    on<_LoadRequested>(_onLoadRequested, transformer: droppable());
+    on<_LoadRequested>(_onLoadRequested, transformer: restartable());
     on<_AddDocuments>(_onAddDocuments, transformer: droppable());
     on<_OpenDirectly>(_onOpenDirectly, transformer: droppable());
     on<_PickAndOpenDocument>(_onPickAndOpenDocument, transformer: droppable());
@@ -55,31 +58,48 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
   ) async {
     emit(state.copyWith(isLoading: true, failure: null));
 
-    final result = await _repository.getRecentDocuments();
-
-    result.fold(
-      (failure) {
-        _log.e('Failed to load recent documents: $failure');
-        emit(state.copyWith(isLoading: false, failure: failure));
-      },
-      (documents) {
-        emit(
-          state.copyWith(
-            isLoading: false,
-            recentDocuments: documents,
-            failure: null,
-          ),
+    await emit.forEach<Result<List<RecentDocument>>>(
+      _repository.watchRecentDocuments(),
+      onData: (result) {
+        return result.fold(
+          (failure) {
+            _log.e('Failed to load recent documents: $failure');
+            return state.copyWith(isLoading: false, failure: failure);
+          },
+          (documents) {
+            _populateMissingCovers(documents);
+            return state.copyWith(
+              isLoading: false,
+              recentDocuments: documents,
+              failure: null,
+            );
+          },
         );
-        _populateMissingCovers(documents);
+      },
+      onError: (error, stack) {
+        _log.e(
+          'Error watching recent documents: $error',
+          error: error,
+          stackTrace: stack,
+        );
+        return state.copyWith(isLoading: false);
       },
     );
   }
 
   Future<void> _populateMissingCovers(List<RecentDocument> documents) async {
     final missing = documents
-        .where((d) => d.coverPath == null || d.coverPath!.isEmpty)
+        .where(
+          (d) =>
+              (d.coverPath == null || d.coverPath!.isEmpty) &&
+              !_attemptedCoverPaths.contains(d.path),
+        )
         .toList();
     if (missing.isEmpty) return;
+
+    for (final doc in missing) {
+      _attemptedCoverPaths.add(doc.path);
+    }
 
     for (var i = 0; i < missing.length; i += 5) {
       final chunk = missing.skip(i).take(5);

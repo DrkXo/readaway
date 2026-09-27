@@ -1,0 +1,296 @@
+name: Release Build & Publish
+
+on:
+  push:
+    tags:
+      - 'readaway-v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag Name (e.g. readaway-v1.1.0 or v1.1.0)'
+        required: false
+        default: ''
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  # -------------------------------------------------------------
+  # Job 0: Resolve Version & Metadata
+  # -------------------------------------------------------------
+  resolve-version:
+    name: Resolve Version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      title: ${{ steps.version.outputs.title }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine Version and Release Flags
+        id: version
+        run: |
+          INPUT_TAG="${{ github.event.inputs.tag_name }}"
+          REF_NAME="${{ github.ref_name }}"
+          
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="$REF_NAME"
+          else
+            RAW_VERSION=$(grep "^version:" apps/readaway/pubspec.yaml | head -n 1 | awk '{print $2}' | cut -d'+' -f1 | tr -d '"' | tr -d "'")
+            TAG="v$RAW_VERSION"
+          fi
+          
+          # Clean version tag if needed
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "title=ReadAway $TAG" >> $GITHUB_OUTPUT
+          
+          # Check if prerelease
+          if [[ "$TAG" =~ (alpha|beta|rc|dev|preview) ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+  # -------------------------------------------------------------
+  # Job 1: Build & Package Android (APK Universal + Splits + AAB)
+  # -------------------------------------------------------------
+  build-android:
+    name: Build Android
+    needs: resolve-version
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java (JDK 21)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Cache FVM, Pub & Build Runner Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.fvm/versions
+            ~/fvm/versions
+            ~/.pub-cache
+            **/.dart_tool/build
+          key: ${{ runner.os }}-build-cache-${{ hashFiles('.fvmrc') }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-cache-${{ hashFiles('.fvmrc') }}-
+            ${{ runner.os }}-build-cache-
+
+      - name: Install FVM CLI
+        run: |
+          curl -fsSL https://fvm.app/install.sh | bash
+          echo "$HOME/fvm/bin" >> $GITHUB_PATH
+          echo "$HOME/.fvm/bin" >> $GITHUB_PATH
+
+      - name: Setup Flutter SDK via FVM
+        run: |
+          export PATH="$HOME/fvm/bin:$HOME/.fvm/bin:$PATH"
+          fvm install
+          fvm use
+          echo "$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin" >> $GITHUB_PATH
+
+      - name: Setup Melos & Bootstrap
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
+          dart pub global activate melos
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+          melos bootstrap
+
+      - name: Generate Code (Codegen)
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
+          melos run codegen
+
+      - name: Setup Android Release Keystore
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          mkdir -p apps/readaway/android/app
+          echo "$KEYSTORE_BASE64" | base64 -d > apps/readaway/android/app/release-keystore.jks
+          cat <<EOF > apps/readaway/android/key.properties
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=${KEY_PASSWORD:-$KEYSTORE_PASSWORD}
+          keyAlias=${KEY_ALIAS:-release}
+          storeFile=app/release-keystore.jks
+          EOF
+
+      - name: Build Android Universal APK
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
+          melos run build:apk:release
+
+      - name: Build Android Split ABI APKs
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
+          melos run build:apk:split
+
+      - name: Package & Rename Android Artifacts
+        id: package
+        run: bash scripts/package_android.sh "${{ needs.resolve-version.outputs.tag }}"
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-artifacts
+          path: build/release/*
+          retention-days: 7
+          if-no-files-found: error
+
+  # -------------------------------------------------------------
+  # Job 2: Build & Package Linux (.tar.gz + .AppImage)
+  # -------------------------------------------------------------
+  build-linux:
+    name: Build Linux
+    needs: resolve-version
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Linux Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libgtk-3-dev \
+            liblzma-dev \
+            libmpv-dev \
+            mpv \
+            file \
+            curl
+
+      - name: Cache FVM, Pub & Build Runner Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.fvm/versions
+            ~/fvm/versions
+            ~/.pub-cache
+            **/.dart_tool/build
+          key: ${{ runner.os }}-build-cache-${{ hashFiles('.fvmrc') }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-cache-${{ hashFiles('.fvmrc') }}-
+            ${{ runner.os }}-build-cache-
+
+      - name: Install FVM CLI
+        run: |
+          curl -fsSL https://fvm.app/install.sh | bash
+          echo "$HOME/fvm/bin" >> $GITHUB_PATH
+          echo "$HOME/.fvm/bin" >> $GITHUB_PATH
+
+      - name: Setup Flutter SDK via FVM
+        run: |
+          export PATH="$HOME/fvm/bin:$HOME/.fvm/bin:$PATH"
+          fvm install
+          fvm use
+          echo "$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin" >> $GITHUB_PATH
+
+      - name: Setup Melos & Bootstrap
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
+          dart pub global activate melos
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+          melos bootstrap
+
+      - name: Generate Code (Codegen)
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
+          melos run codegen
+
+      - name: Build Linux Release Binary
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
+          melos run build:linux
+
+      - name: Package & Rename Linux Artifacts
+        id: package
+        run: bash scripts/package_linux.sh "${{ needs.resolve-version.outputs.tag }}"
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release-artifacts
+          path: build/release/*
+          retention-days: 7
+          if-no-files-found: error
+
+  # -------------------------------------------------------------
+  # Job 3: Publish GitHub Release & Checksums
+  # -------------------------------------------------------------
+  publish-release:
+    name: Publish GitHub Release
+    needs: [resolve-version, build-android, build-linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Built Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: build/release
+          merge-multiple: true
+
+      - name: Generate Checksums
+        run: bash scripts/generate_checksums.sh build/release
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.resolve-version.outputs.tag }}
+          TITLE: ${{ needs.resolve-version.outputs.title }}
+          IS_PRERELEASE: ${{ needs.resolve-version.outputs.is_prerelease }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "[INFO] Release $TAG already exists. Uploading/updating assets..."
+            gh release upload "$TAG" build/release/* --clobber
+          else
+            echo "[INFO] Creating release $TAG and uploading assets..."
+            gh release create "$TAG" build/release/* \
+              --title "$TITLE" \
+              --generate-notes \
+              $PRERELEASE_FLAG
+          fi

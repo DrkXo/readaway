@@ -65,8 +65,8 @@ melos:
       description: Check formatting in all packages
 
     codegen:
-      description: Run codegen in all apps
-      run: melos exec --depends-on="build_runner" -- "fvm dart run build_runner build"
+      description: Run codegen in all apps and packages
+      run: melos exec --depends-on="build_runner" -- "fvm dart run build_runner build --delete-conflicting-outputs"
 
     refresh:
       description: Refresh Apps & Packages Deps
@@ -132,8 +132,30 @@ melos:
       description: Build Linux binary and clean workspace for ReadAway app
 
     build:linux:appimage:
-      run: melos exec -c 1 --category="app" -- "appimage-builder --recipe AppImageBuilder.yml"
-      description: Build Linux AppImage for ReadAway app
+      run: bash scripts/package_linux.sh
+      description: Build Linux AppImage & tarball for ReadAway app
+
+    # -------------------------------------------------------------
+    # Packaging & Release Artifact Scripts
+    # -------------------------------------------------------------
+    package:android:
+      run: bash scripts/package_android.sh
+      description: Collect, rename, and package all Android release APKs and AAB
+
+    package:linux:
+      run: bash scripts/package_linux.sh
+      description: Package Linux bundle into tar.gz and AppImage
+
+    package:checksums:
+      run: bash scripts/generate_checksums.sh
+      description: Generate SHA-256 checksums for all release binaries
+
+    package:all:
+      steps:
+        - melos run package:android
+        - melos run package:linux
+        - melos run package:checksums
+      description: Package all Android and Linux artifacts and generate checksums
 
     # -------------------------------------------------------------
     # Test Scripts

@@ -60,6 +60,11 @@ apps/readaway/android/app/release
 # FVM Version Cache
 .fvm/
 
+# Android signing keys
+*.jks
+*.keystore
+key.properties
+
 # extra
 .agents
 .config
