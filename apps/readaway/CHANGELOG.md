@@ -1,3 +1,8 @@
+## 1.2.1
+
+ - **FIX**(reader): require only one back gesture to close on Android. ([cf84580e](https://github.com/DrkXo/readaway/commit/cf84580e4dde732382da96150873700604991484))
+ - **FIX**(Android): updated for android builds to strickly use relase keystore. ([42061a0c](https://github.com/DrkXo/readaway/commit/42061a0c439ae6c21370a24764b892fdfabda0d4))
+
 ## 1.2.0
 
  - **FEAT**(App): updated readme and default theme. ([8dc7520e](https://github.com/DrkXo/readaway/commit/8dc7520ebc865de9ffe6e5395de750dbbfbe039f))
