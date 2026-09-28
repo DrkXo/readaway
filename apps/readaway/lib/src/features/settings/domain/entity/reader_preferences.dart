@@ -118,8 +118,9 @@ abstract class ReaderPreferences with _$ReaderPreferences {
       _$ReaderPreferencesFromJson(json);
 
   /// Returns the effective scroll direction for the given format reflowability.
-  ReaderScrollDirection effectiveScrollDirection({required bool isReflowable}) =>
-      isReflowable ? scrollDirection : nonReflowableScrollDirection;
+  ReaderScrollDirection effectiveScrollDirection({
+    required bool isReflowable,
+  }) => isReflowable ? scrollDirection : nonReflowableScrollDirection;
 
   /// Returns the effective page snap option for the given format reflowability.
   bool effectivePageSnap({required bool isReflowable}) =>

@@ -73,8 +73,14 @@ void main() {
         expect(dragStarted, isTrue);
         expect(dragUpdates, greaterThan(0));
         expect(lastPrimaryDelta, isNotNull);
-        expect(lastPrimaryDelta!, lessThan(0)); // upward is negative primary delta
-        expect(lastNormalizedDelta!, greaterThan(0)); // normalized advances forward
+        expect(
+          lastPrimaryDelta!,
+          lessThan(0),
+        ); // upward is negative primary delta
+        expect(
+          lastNormalizedDelta!,
+          greaterThan(0),
+        ); // normalized advances forward
 
         await verticalGesture.up();
         await tester.pump();

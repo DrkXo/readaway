@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# ReadAway Git Hook: commit-msg
+# Enforces Conventional Commits standard aligned with Melos changelog and semantic versioning.
+
+set -e
+
+# ANSI color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+COMMIT_MSG_FILE="$1"
+
+if [ ! -f "$COMMIT_MSG_FILE" ]; then
+  echo -e "${RED}[commit-msg] Commit message file not found: $COMMIT_MSG_FILE${NC}"
+  exit 1
+fi
+
+# Read first line of commit message (ignoring comments)
+FIRST_LINE=$(grep -v '^#' "$COMMIT_MSG_FILE" | head -n 1)
+
+# Allow automated git merge / revert commits without formatting enforcement
+if echo "$FIRST_LINE" | grep -qE '^(Merge|Revert) '; then
+  exit 0
+fi
+
+# Conventional Commits regex pattern:
+# type(scope?)(!)?: description
+# Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+PATTERN='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_\-\/]+\))?!?: [a-zA-Z0-9].+'
+
+if ! echo "$FIRST_LINE" | grep -qE "$PATTERN"; then
+  echo -e "\n${RED}[commit-msg] Invalid commit message format!${NC}"
+  echo -e "${YELLOW}Your commit message was:${NC}"
+  echo -e "   \"$FIRST_LINE\""
+  echo ""
+  echo -e "${BLUE}Follow the Conventional Commits specification:${NC}"
+  echo -e "   <type>(<scope>): <subject>"
+  echo ""
+  echo -e "   ${GREEN}Valid types:${NC} feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+  echo -e "   ${GREEN}Common scopes:${NC} app, core, parser, deps, release, workspace, ci, docs"
+  echo ""
+  echo -e "   ${GREEN}Examples:${NC}"
+  echo -e "     feat(app): add e-reader background theme selection"
+  echo -e "     fix(core): resolve text layout overflow on small screens"
+  echo -e "     docs: update architecture overview in README"
+  echo -e "     chore(deps): upgrade flutter dependencies"
+  echo ""
+  exit 1
+fi
+
+# Check for trailing period on subject line
+if echo "$FIRST_LINE" | grep -qE '\.$'; then
+  echo -e "\n${YELLOW}[commit-msg] Warning: Conventional Commits convention recommends omitting trailing period (.) in subject line.${NC}"
+fi
+
+exit 0

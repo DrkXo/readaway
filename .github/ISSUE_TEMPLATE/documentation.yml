@@ -1,0 +1,41 @@
+name: Documentation Improvement
+description: Suggest improvements or report missing/incorrect docs in ReadAway
+title: "docs: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Clear, accurate documentation helps everyone! Thank you for identifying an area for improvement.
+
+  - type: input
+    id: doc_area
+    attributes:
+      label: Documentation Area
+      description: Where is the documentation issue located?
+      placeholder: e.g., CONTRIBUTING.md, Readme architecture section, packages/readaway_core doc comments
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Missing Information
+      description: Describe what is missing, unclear, outdated, or incorrect.
+      placeholder: e.g., The setup instructions for Linux build dependencies omit 'libgtk-3-dev'.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_fix
+    attributes:
+      label: Proposed Fix / Content
+      description: If you have suggestions or proposed wording/markdown, provide it here.
+      placeholder: e.g., Update step 2 to include 'sudo apt install libgtk-3-dev'.
+
+  - type: checkboxes
+    id: pr_interest
+    attributes:
+      label: Contribution
+      options:
+        - label: I would be happy to submit a PR to update this documentation.

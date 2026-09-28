@@ -61,33 +61,51 @@ void main() {
     test('default non-reflowable preferences are initialized correctly', () {
       const prefs = ReaderPreferences();
       expect(prefs.scrollDirection, ReaderScrollDirection.horizontal);
-      expect(prefs.nonReflowableScrollDirection, ReaderScrollDirection.vertical);
+      expect(
+        prefs.nonReflowableScrollDirection,
+        ReaderScrollDirection.vertical,
+      );
       expect(prefs.pageSnap, isTrue);
       expect(prefs.nonReflowablePageSnap, isTrue);
       expect(prefs.pageTransition, ReaderPageTransition.slide);
       expect(prefs.nonReflowablePageTransition, ReaderPageTransition.slide);
     });
 
-    test('effective preference helpers resolve correctly based on reflowability', () {
-      const prefs = ReaderPreferences(
-        scrollDirection: ReaderScrollDirection.horizontal,
-        nonReflowableScrollDirection: ReaderScrollDirection.vertical,
-        pageSnap: true,
-        nonReflowablePageSnap: false,
-        pageTransition: ReaderPageTransition.sharedAxis,
-        nonReflowablePageTransition: ReaderPageTransition.none,
-      );
+    test(
+      'effective preference helpers resolve correctly based on reflowability',
+      () {
+        const prefs = ReaderPreferences(
+          scrollDirection: ReaderScrollDirection.horizontal,
+          nonReflowableScrollDirection: ReaderScrollDirection.vertical,
+          pageSnap: true,
+          nonReflowablePageSnap: false,
+          pageTransition: ReaderPageTransition.sharedAxis,
+          nonReflowablePageTransition: ReaderPageTransition.none,
+        );
 
-      // Reflowable (EPUB, TXT, HTML)
-      expect(prefs.effectiveScrollDirection(isReflowable: true), ReaderScrollDirection.horizontal);
-      expect(prefs.effectivePageSnap(isReflowable: true), isTrue);
-      expect(prefs.effectivePageTransition(isReflowable: true), ReaderPageTransition.sharedAxis);
+        // Reflowable (EPUB, TXT, HTML)
+        expect(
+          prefs.effectiveScrollDirection(isReflowable: true),
+          ReaderScrollDirection.horizontal,
+        );
+        expect(prefs.effectivePageSnap(isReflowable: true), isTrue);
+        expect(
+          prefs.effectivePageTransition(isReflowable: true),
+          ReaderPageTransition.sharedAxis,
+        );
 
-      // Non-Reflowable (PDF, CBZ, CBR)
-      expect(prefs.effectiveScrollDirection(isReflowable: false), ReaderScrollDirection.vertical);
-      expect(prefs.effectivePageSnap(isReflowable: false), isFalse);
-      expect(prefs.effectivePageTransition(isReflowable: false), ReaderPageTransition.none);
-    });
+        // Non-Reflowable (PDF, CBZ, CBR)
+        expect(
+          prefs.effectiveScrollDirection(isReflowable: false),
+          ReaderScrollDirection.vertical,
+        );
+        expect(prefs.effectivePageSnap(isReflowable: false), isFalse);
+        expect(
+          prefs.effectivePageTransition(isReflowable: false),
+          ReaderPageTransition.none,
+        );
+      },
+    );
 
     test('serializes and deserializes non-reflowable options correctly', () {
       const prefs = ReaderPreferences(
@@ -105,7 +123,10 @@ void main() {
 
       final fromJson = ReaderPreferences.fromJson(json);
       expect(fromJson.scrollDirection, ReaderScrollDirection.vertical);
-      expect(fromJson.nonReflowableScrollDirection, ReaderScrollDirection.horizontal);
+      expect(
+        fromJson.nonReflowableScrollDirection,
+        ReaderScrollDirection.horizontal,
+      );
       expect(fromJson.nonReflowablePageSnap, isFalse);
       expect(fromJson.nonReflowablePageTransition, ReaderPageTransition.fade);
     });

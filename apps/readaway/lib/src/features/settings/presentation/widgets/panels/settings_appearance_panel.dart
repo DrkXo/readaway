@@ -237,5 +237,3 @@ class _HighlightOpacityRow extends StatelessWidget {
     );
   }
 }
-
-

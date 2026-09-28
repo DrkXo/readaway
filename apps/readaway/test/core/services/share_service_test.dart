@@ -64,45 +64,60 @@ void main() {
       expect(capturedParams!.text, 'Sample Book');
     });
 
-    test('sharePageImage writes imageBytes to temp and shares successfully', () async {
-      final testDoc = File('${tempDir.path}/comic.cbz');
-      await testDoc.writeAsString('dummy cbz content');
+    test(
+      'sharePageImage writes imageBytes to temp and shares successfully',
+      () async {
+        final testDoc = File('${tempDir.path}/comic.cbz');
+        await testDoc.writeAsString('dummy cbz content');
 
-      final dummyImageBytes = Uint8List.fromList([137, 80, 78, 71, 13, 10, 26, 10]); // PNG header
+        final dummyImageBytes = Uint8List.fromList([
+          137,
+          80,
+          78,
+          71,
+          13,
+          10,
+          26,
+          10,
+        ]); // PNG header
 
-      ShareParams? capturedParams;
+        ShareParams? capturedParams;
 
-      final service = ShareService.withHandler(
-        tempDirectoryProvider: () async => tempDir,
-        shareHandler: (params) async {
-          capturedParams = params;
-          return const ShareResult('success', ShareResultStatus.success);
-        },
-      );
+        final service = ShareService.withHandler(
+          tempDirectoryProvider: () async => tempDir,
+          shareHandler: (params) async {
+            capturedParams = params;
+            return const ShareResult('success', ShareResultStatus.success);
+          },
+        );
 
-      final result = await service.sharePageImage(
-        filePath: testDoc.path,
-        pageIndex: 2,
-        totalPages: 24,
-        imageBytes: dummyImageBytes,
-        title: 'Awesome Comic',
-      );
+        final result = await service.sharePageImage(
+          filePath: testDoc.path,
+          pageIndex: 2,
+          totalPages: 24,
+          imageBytes: dummyImageBytes,
+          title: 'Awesome Comic',
+        );
 
-      expect(result, isTrue);
-      expect(capturedParams, isNotNull);
-      expect(capturedParams!.files, isNotNull);
-      expect(capturedParams!.files!.length, 1);
-      expect(capturedParams!.files!.first.mimeType, 'image/png');
-      expect(capturedParams!.files!.first.path.endsWith('_page_3.png'), isTrue);
-      expect(capturedParams!.subject, 'Awesome Comic - Page 3');
-      expect(capturedParams!.text, 'Page 3 of 24 from "Awesome Comic"');
+        expect(result, isTrue);
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.files, isNotNull);
+        expect(capturedParams!.files!.length, 1);
+        expect(capturedParams!.files!.first.mimeType, 'image/png');
+        expect(
+          capturedParams!.files!.first.path.endsWith('_page_3.png'),
+          isTrue,
+        );
+        expect(capturedParams!.subject, 'Awesome Comic - Page 3');
+        expect(capturedParams!.text, 'Page 3 of 24 from "Awesome Comic"');
 
-      // Verify the generated file exists and contains the bytes
-      final generatedFile = File(capturedParams!.files!.first.path);
-      expect(generatedFile.existsSync(), isTrue);
-      expect(generatedFile.readAsBytesSync(), dummyImageBytes);
-      await generatedFile.delete();
-    });
+        // Verify the generated file exists and contains the bytes
+        final generatedFile = File(capturedParams!.files!.first.path);
+        expect(generatedFile.existsSync(), isTrue);
+        expect(generatedFile.readAsBytesSync(), dummyImageBytes);
+        await generatedFile.delete();
+      },
+    );
 
     test('sharePageImage returns false when imageBytes is empty', () async {
       final testDoc = File('${tempDir.path}/comic.cbz');
@@ -123,38 +138,41 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('shareImageBytes writes custom image bytes and shares successfully', () async {
-      final dummyBytes = Uint8List.fromList([1, 2, 3, 4]);
-      ShareParams? capturedParams;
+    test(
+      'shareImageBytes writes custom image bytes and shares successfully',
+      () async {
+        final dummyBytes = Uint8List.fromList([1, 2, 3, 4]);
+        ShareParams? capturedParams;
 
-      final service = ShareService.withHandler(
-        tempDirectoryProvider: () async => tempDir,
-        shareHandler: (params) async {
-          capturedParams = params;
-          return const ShareResult('success', ShareResultStatus.success);
-        },
-      );
+        final service = ShareService.withHandler(
+          tempDirectoryProvider: () async => tempDir,
+          shareHandler: (params) async {
+            capturedParams = params;
+            return const ShareResult('success', ShareResultStatus.success);
+          },
+        );
 
-      final result = await service.shareImageBytes(
-        imageBytes: dummyBytes,
-        fileName: 'screenshot.png',
-        subject: 'Screenshot Subject',
-        text: 'Screenshot Text',
-      );
+        final result = await service.shareImageBytes(
+          imageBytes: dummyBytes,
+          fileName: 'screenshot.png',
+          subject: 'Screenshot Subject',
+          text: 'Screenshot Text',
+        );
 
-      expect(result, isTrue);
-      expect(capturedParams, isNotNull);
-      expect(capturedParams!.files, isNotNull);
-      expect(capturedParams!.files!.length, 1);
-      expect(capturedParams!.files!.first.name, 'screenshot.png');
-      expect(capturedParams!.subject, 'Screenshot Subject');
-      expect(capturedParams!.text, 'Screenshot Text');
+        expect(result, isTrue);
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.files, isNotNull);
+        expect(capturedParams!.files!.length, 1);
+        expect(capturedParams!.files!.first.name, 'screenshot.png');
+        expect(capturedParams!.subject, 'Screenshot Subject');
+        expect(capturedParams!.text, 'Screenshot Text');
 
-      final generatedFile = File(capturedParams!.files!.first.path);
-      expect(generatedFile.existsSync(), isTrue);
-      expect(generatedFile.readAsBytesSync(), dummyBytes);
-      await generatedFile.delete();
-    });
+        final generatedFile = File(capturedParams!.files!.first.path);
+        expect(generatedFile.existsSync(), isTrue);
+        expect(generatedFile.readAsBytesSync(), dummyBytes);
+        await generatedFile.delete();
+      },
+    );
 
     test('shareText shares plain text snippet successfully', () async {
       ShareParams? capturedParams;
