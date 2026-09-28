@@ -34,8 +34,10 @@ export 'src/metadata/document_metadata_extractor.dart';
 export 'src/models/models.dart';
 
 // Pagination
+export 'src/pagination/chapter_text_layout.dart';
 export 'src/pagination/page_slicer.dart';
 export 'src/pagination/pagination_coordinator.dart';
+export 'src/pagination/speech_char_map.dart';
 
 // Readers & Factory
 export 'src/readers/builtin_handlers.dart';

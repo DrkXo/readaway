@@ -218,7 +218,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                   autofocus: true,
                   child: Scaffold(
                     key: _scaffoldKey,
-                    drawer: ReaderDrawer(onJumpToPage: jumpToPage),
+                    drawer: ReaderDrawer(onJumpToPage: jumpToChapter),
                     backgroundColor: context.appColors.readerBackground,
                     body: ReaderTtsPlayerOverlay(
                       isChromeVisible: isChromeVisibleNotifier,
@@ -279,7 +279,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                               onPin: () => setState(
                                                 () => _tocPinned = true,
                                               ),
-                                              onJumpToPage: jumpToPage,
+                                              onJumpToPage: jumpToChapter,
                                             ),
                                         ],
                                       ),
@@ -294,7 +294,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                             onUnpin: () => setState(
                                               () => _tocPinned = false,
                                             ),
-                                            onJumpToPage: jumpToPage,
+                                            onJumpToPage: jumpToChapter,
                                           ),
                                         Expanded(child: bodyContent),
                                       ],
@@ -306,7 +306,6 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                               // 3b. Floating Back-to-TTS Jump Pill
                               ReaderBackToTtsPill(
                                 topOffset: isChromeVisible ? 76.0 : 24.0,
-                                onJumpToTtsPage: jumpToPage,
                               ),
 
                               // 4. Floating Top Bar (Animated Slide + Fade)

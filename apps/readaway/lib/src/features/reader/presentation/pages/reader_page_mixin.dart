@@ -89,7 +89,7 @@ mixin ReaderControllerMixin on State<ReaderPage> {
     }
   }
 
-  void jumpToPage(int page) {
+  void jumpToGlobalPage(int globalPage, {bool animated = false}) {
     final prefs = settingsBloc.state.effectiveReaderPrefs(
       readerBloc.state.documentPath,
     );
@@ -106,30 +106,44 @@ mixin ReaderControllerMixin on State<ReaderPage> {
         readerBloc.state.isReflowable &&
         GetIt.I.isRegistered<PaginationCoordinator>()) {
       final coordinator = GetIt.I<PaginationCoordinator>();
-      // If 'page' is a chapter index from TOC (< chapterCount), map to its first global page
-      final globalPage = (page < coordinator.chapterCount)
-          ? coordinator.getGlobalPageForChapter(page)
-          : page
-                .clamp(0, math.max(0, coordinator.currentState.totalPages - 1))
-                .toInt();
-
-      final coord = coordinator.coordinateFromGlobalPage(globalPage);
-      readerBloc.add(
-        ReaderEvent.virtualPageChanged(
-          globalPage: globalPage,
-          totalPages: coordinator.currentState.totalPages,
-          chapterIndex: coord.chapterIndex,
-        ),
-      );
-      viewportController.jumpToPage(globalPage);
+      final total = math.max(0, coordinator.currentState.totalPages);
+      if (total <= 0) return;
+      final clamped = globalPage.clamp(0, total - 1).toInt();
+      if (animated) {
+        viewportController.goToPage(clamped, animated: true);
+      } else {
+        viewportController.jumpToPage(clamped);
+      }
       return;
     }
 
     final count = readerBloc.state.pageCount;
     if (count <= 0) return;
-    final clamped = page.clamp(0, count - 1).toInt();
-    readerBloc.add(ReaderEvent.pageChanged(index: clamped));
-    viewportController.jumpToPage(clamped);
+    final clamped = globalPage.clamp(0, count - 1).toInt();
+    if (animated) {
+      viewportController.goToPage(clamped, animated: true);
+    } else {
+      viewportController.jumpToPage(clamped);
+    }
+  }
+
+  void jumpToChapter(int chapterIndex, {bool animated = false}) {
+    if (readerBloc.state.isReflowable &&
+        GetIt.I.isRegistered<PaginationCoordinator>()) {
+      final coordinator = GetIt.I<PaginationCoordinator>();
+      final globalPage = coordinator.getGlobalPageForChapter(chapterIndex);
+      jumpToGlobalPage(globalPage, animated: animated);
+      return;
+    }
+    jumpToGlobalPage(chapterIndex, animated: animated);
+  }
+
+  void jumpToPage(int page, {bool animated = false, bool isChapter = false}) {
+    if (isChapter) {
+      jumpToChapter(page, animated: animated);
+    } else {
+      jumpToGlobalPage(page, animated: animated);
+    }
   }
 
   void handleTapAction(ReaderTapAction action) {

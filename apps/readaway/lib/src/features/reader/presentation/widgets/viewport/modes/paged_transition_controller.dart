@@ -86,6 +86,7 @@ class PagedTransitionController extends ChangeNotifier {
   }) async {
     if (target < 0 || target >= _pageCount) return;
     if (target == _currentPage && !animationController.isAnimating) return;
+    if (target == _targetPage && animationController.isAnimating) return;
 
     if (_transition == ReaderPageTransition.none) {
       jumpToPage(target);

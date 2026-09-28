@@ -13,6 +13,7 @@ import 'package:readaway/src/core/services/window_service.dart';
 import 'package:readaway/src/features/library/domain/entity/recent_document.dart';
 import 'package:readaway/src/features/library/domain/repositories/library_repository.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
+import 'package:readaway/src/features/reader/domain/repositories/reader_tts_repository.dart';
 import 'package:readaway/src/features/settings/domain/entity/settings.dart';
 import 'package:readaway_core/readaway_core.dart';
 
@@ -23,6 +24,7 @@ import 'package:readaway_core/readaway_core.dart';
   MockSpec<FileOpenService>(),
   MockSpec<LibraryRepository>(),
   MockSpec<ReaderRepository>(),
+  MockSpec<ReaderTtsRepository>(),
   MockSpec<AppStorageService>(),
   MockSpec<SettingsService>(),
 ])

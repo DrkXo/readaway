@@ -14,7 +14,9 @@ import '../../chrome/reader_running_footer.dart';
 import '../../chrome/reader_running_header.dart';
 import '../../toc/reader_toc_content.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
+import 'chapter_text_layout_builder.dart';
 import 'html/hyper_page_content.dart';
+import 'tts_speech_highlight.dart';
 
 /// Renders a single discrete virtual screen page of a reflowable chapter.
 ///
@@ -130,27 +132,26 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
     final contentHeight = renderObject.size.height;
     if (contentHeight <= 0.0) return;
 
-    // Search for RenderHyperBox in the render subtree to extract exact line bounds
+    // Search for RenderHyperBox in the render subtree. It owns the chapter's
+    // laid-out geometry and the canonical character space used for selection.
     final hyperBox = _findHyperBox(renderObject);
-    List<({double top, double bottom})>? lineBounds;
-
-    if (hyperBox != null) {
-      try {
-        final debugLines = hyperBox.debugLines();
-        if (debugLines.isNotEmpty) {
-          lineBounds = debugLines.map((l) {
-            final top = (l['top'] as num).toDouble();
-            final height = (l['height'] as num).toDouble();
-            return (top: top, bottom: top + height);
-          }).toList();
-        }
-      } catch (_) {}
+    if (hyperBox == null) {
+      widget.coordinator.registerChapterHeight(
+        chapterIndex: widget.chapterIndex,
+        contentHeight: contentHeight,
+      );
+      return;
     }
 
-    widget.coordinator.registerChapterHeight(
-      chapterIndex: widget.chapterIndex,
+    final layout = const ChapterTextLayoutBuilder().build(
+      hyperBox: hyperBox,
       contentHeight: contentHeight,
-      lineBounds: lineBounds,
+      viewportHeight: widget.coordinator.currentState.viewportHeight,
+    );
+
+    widget.coordinator.registerChapterLayout(
+      chapterIndex: widget.chapterIndex,
+      layout: layout,
     );
   }
 
@@ -163,6 +164,38 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
       found ??= _findHyperBox(child);
     });
     return found;
+  }
+
+  /// The highlight for the text being read aloud on this page, or null.
+  ///
+  /// Returns null when nothing is being read, when the spoken range belongs to
+  /// another chapter, or when this chapter has no character mapping. Each of
+  /// those means the same thing: there is no position known well enough to
+  /// draw, so nothing is drawn.
+  TtsSpeechHighlightPainter? _buildSpeechHighlight(double sliceTop) {
+    final state = widget.state;
+    final range = state.ttsSpeechRange;
+    if (!state.ttsActive || range == null) return null;
+    if (state.ttsChapterIndex != widget.chapterIndex) return null;
+
+    final rects = widget.coordinator.rectsForSpeechRange(
+      widget.chapterIndex,
+      range.start,
+      range.end,
+    );
+    if (rects.isEmpty) return null;
+
+    return TtsSpeechHighlightPainter(
+      rects: rects,
+      sliceTop: sliceTop,
+      color: _highlightColor(context),
+    );
+  }
+
+  /// Highlight colour, kept translucent so the text underneath stays legible.
+  Color _highlightColor(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return scheme.primary.withValues(alpha: 0.22);
   }
 
   @override
@@ -240,32 +273,39 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
               ? (ReaderTtsMiniPlayerBar.height + 16.0)
               : 0.0;
 
+          final highlight = _buildSpeechHighlight(sliceTop);
+
           final contentWidget = Align(
             alignment: Alignment.topLeft,
             child: SizedBox(
               width: availableWidth,
               height: sliceHeight,
               child: ClipRect(
-                child: OverflowBox(
-                  alignment: Alignment.topCenter,
-                  minWidth: availableWidth,
-                  maxWidth: availableWidth,
-                  minHeight: 0.0,
-                  maxHeight: double.infinity,
-                  child: Transform.translate(
-                    offset: Offset(0.0, -sliceTop),
-                    child: KeyedSubtree(
-                      key: _contentKey,
-                      child: HyperPageContent(
-                        html: html,
-                        prefs: widget.prefs,
-                        chapterIndex: widget.chapterIndex,
-                        cacheNamespace:
-                            widget.state.documentPath ??
-                            widget.state.fileName ??
-                            '',
-                        onResolveAssetBytes: widget.onResolveAssetBytes,
-                        onLinkTap: widget.onLinkTap,
+                child: CustomPaint(
+                  // Behind the text, so a highlighted passage reads as marked
+                  // rather than tinted.
+                  painter: highlight,
+                  child: OverflowBox(
+                    alignment: Alignment.topCenter,
+                    minWidth: availableWidth,
+                    maxWidth: availableWidth,
+                    minHeight: 0.0,
+                    maxHeight: double.infinity,
+                    child: Transform.translate(
+                      offset: Offset(0.0, -sliceTop),
+                      child: KeyedSubtree(
+                        key: _contentKey,
+                        child: HyperPageContent(
+                          html: html,
+                          prefs: widget.prefs,
+                          chapterIndex: widget.chapterIndex,
+                          cacheNamespace:
+                              widget.state.documentPath ??
+                              widget.state.fileName ??
+                              '',
+                          onResolveAssetBytes: widget.onResolveAssetBytes,
+                          onLinkTap: widget.onLinkTap,
+                        ),
                       ),
                     ),
                   ),
