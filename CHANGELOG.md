@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-09-28
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`readaway` - `v1.2.1`](#readaway---v121)
+
+---
+
+#### `readaway` - `v1.2.1`
+
+ - **FIX**(reader): require only one back gesture to close on Android. ([cf84580e](https://github.com/DrkXo/readaway/commit/cf84580e4dde732382da96150873700604991484))
+ - **FIX**(Android): updated for android builds to strickly use relase keystore. ([42061a0c](https://github.com/DrkXo/readaway/commit/42061a0c439ae6c21370a24764b892fdfabda0d4))
+
+
 ## 2026-09-27
 
 ### Changes
