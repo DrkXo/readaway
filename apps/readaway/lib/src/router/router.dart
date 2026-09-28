@@ -1,13 +1,14 @@
 // ignore_for_file: prefer_initializing_formals
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:injectable/injectable.dart';
-
 import 'package:readaway_core/readaway_core.dart';
 
 import '../core/routes/routes.dart';
@@ -92,13 +93,19 @@ class AppRouter {
   }
 
   void _navigateToDocument(IncomingDocument doc) {
+    final externalSuffix = doc.fromExternalLaunch ? '&external=true' : '';
     final route =
-        '${_appRoutes.reader.path}?path=${Uri.encodeComponent(doc.path)}&fileName=${Uri.encodeComponent(doc.fileName)}';
+        '${_appRoutes.reader.path}?path=${Uri.encodeComponent(doc.path)}&fileName=${Uri.encodeComponent(doc.fileName)}$externalSuffix';
     _log.i('Navigating to opened document: $route');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_router.state.matchedLocation == route) return;
-      _router.push(route);
+      // matchedLocation strips query params, so compare against the path only.
+      if (_router.state.matchedLocation == _appRoutes.reader.path) return;
+      if (doc.fromExternalLaunch) {
+        _router.go(route);
+      } else {
+        _router.push(route);
+      }
     });
   }
 
@@ -123,6 +130,19 @@ class AppRouter {
       GoRoute(
         name: _appRoutes.reader.name,
         path: _appRoutes.reader.path,
+        onExit: (context, state) {
+          final isExternal = state.uri.queryParameters['external'] == 'true';
+          if (isExternal && !kIsWeb) {
+            if (Platform.isAndroid ||
+                Platform.isWindows ||
+                Platform.isLinux ||
+                Platform.isMacOS) {
+              SystemNavigator.pop();
+              return false;
+            }
+          }
+          return true;
+        },
         builder: (context, state) {
           return BlocProvider<ReaderBloc>(
             create: (_) => GetIt.I.get<ReaderBloc>(),

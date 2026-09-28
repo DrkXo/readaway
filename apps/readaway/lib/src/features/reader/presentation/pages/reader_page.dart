@@ -28,17 +28,24 @@ class ReaderPage extends StatefulWidget {
     super.key,
     this.initialPath,
     this.initialFileName,
+    this.openedFromExternal = false,
   });
 
   factory ReaderPage.fromRoute(GoRouterState state) {
     return ReaderPage(
       initialPath: state.uri.queryParameters['path'],
       initialFileName: state.uri.queryParameters['fileName'],
+      openedFromExternal: state.uri.queryParameters['external'] == 'true',
     );
   }
 
   final String? initialPath;
   final String? initialFileName;
+
+  /// True when the app was cold-started by an external intent (e.g. opening a
+  /// PDF from the Files app). Closing the reader should return to the calling
+  /// app via [SystemNavigator.pop] rather than navigating back to the library.
+  final bool openedFromExternal;
 
   @override
   State<ReaderPage> createState() => _ReaderPageState();
@@ -192,202 +199,192 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                 readerState.documentPath,
               );
 
-              return PopScope(
-                canPop: false,
-                onPopInvokedWithResult: (didPop, _) {
-                  if (!didPop) closeReader();
+              return CallbackShortcuts(
+                bindings: {
+                  const SingleActivator(LogicalKeyboardKey.arrowLeft):
+                      viewportController.previousPage,
+                  const SingleActivator(LogicalKeyboardKey.arrowRight):
+                      viewportController.nextPage,
+                  const SingleActivator(LogicalKeyboardKey.arrowUp):
+                      viewportController.previousPage,
+                  const SingleActivator(LogicalKeyboardKey.arrowDown):
+                      viewportController.nextPage,
+                  const SingleActivator(LogicalKeyboardKey.pageUp):
+                      viewportController.previousPage,
+                  const SingleActivator(LogicalKeyboardKey.pageDown):
+                      viewportController.nextPage,
                 },
-                child: CallbackShortcuts(
-                  bindings: {
-                    const SingleActivator(LogicalKeyboardKey.arrowLeft):
-                        viewportController.previousPage,
-                    const SingleActivator(LogicalKeyboardKey.arrowRight):
-                        viewportController.nextPage,
-                    const SingleActivator(LogicalKeyboardKey.arrowUp):
-                        viewportController.previousPage,
-                    const SingleActivator(LogicalKeyboardKey.arrowDown):
-                        viewportController.nextPage,
-                    const SingleActivator(LogicalKeyboardKey.pageUp):
-                        viewportController.previousPage,
-                    const SingleActivator(LogicalKeyboardKey.pageDown):
-                        viewportController.nextPage,
-                  },
-                  child: Focus(
-                    autofocus: true,
-                    child: Scaffold(
-                      key: _scaffoldKey,
-                      drawer: ReaderDrawer(onJumpToPage: jumpToPage),
-                      backgroundColor: context.appColors.readerBackground,
-                      body: ReaderTtsPlayerOverlay(
-                        isChromeVisible: isChromeVisibleNotifier,
-                        child: ValueListenableBuilder<bool>(
-                          valueListenable: isChromeVisibleNotifier,
-                          builder: (context, isChromeVisible, _) {
-                            return Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                // 1. Fullscreen Document Viewport with Gesture Arena
-                                ReaderGestureArena(
-                                  enabled: true,
-                                  isVerticalPaging:
-                                      prefs.effectiveScrollDirection(
-                                            isReflowable:
-                                                readerState.isReflowable,
-                                          ) ==
-                                          ReaderScrollDirection.vertical &&
-                                      prefs.effectivePageSnap(
-                                        isReflowable: readerState.isReflowable,
-                                      ),
-                                  isAtScrollBoundary: isAtScrollBoundary,
-                                  onPageDragStart:
-                                      viewportController.handleDragStart,
-                                  onPageDragUpdate:
-                                      viewportController.handleDragUpdate,
-                                  onPageDragEnd:
-                                      viewportController.handleDragEnd,
-                                  onPageDragCancel:
-                                      viewportController.handleDragCancel,
-                                  onTapAction: handleTapAction,
-                                  child: LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      final isWide =
-                                          constraints.maxWidth >= 900;
-                                      final bodyContent = KeyedSubtree(
-                                        key: _contentKey,
-                                        child: Stack(
-                                          fit: StackFit.expand,
-                                          children: [
-                                            Positioned.fill(
-                                              child: SafeArea(
-                                                child: ReaderViewport(
-                                                  viewportController:
-                                                      viewportController,
-                                                  prefs: prefs,
-                                                  onScrollBoundaryChanged:
-                                                      onScrollBoundaryChanged,
-                                                ),
-                                              ),
-                                            ),
-                                            ReaderBrightnessOverlay(
-                                              opacity: prefs.brightnessOverlay,
-                                            ),
-                                            ReaderContrastOverlay(
-                                              intensity: prefs.contrastOverlay,
-                                            ),
-                                            if (isWide && !_tocPinned)
-                                              ReaderTocPeek(
-                                                onPin: () => setState(
-                                                  () => _tocPinned = true,
-                                                ),
-                                                onJumpToPage: jumpToPage,
-                                              ),
-                                          ],
-                                        ),
-                                      );
-
-                                      if (!isWide) return bodyContent;
-
-                                      return Row(
+                child: Focus(
+                  autofocus: true,
+                  child: Scaffold(
+                    key: _scaffoldKey,
+                    drawer: ReaderDrawer(onJumpToPage: jumpToPage),
+                    backgroundColor: context.appColors.readerBackground,
+                    body: ReaderTtsPlayerOverlay(
+                      isChromeVisible: isChromeVisibleNotifier,
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: isChromeVisibleNotifier,
+                        builder: (context, isChromeVisible, _) {
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              // 1. Fullscreen Document Viewport with Gesture Arena
+                              ReaderGestureArena(
+                                enabled: true,
+                                isVerticalPaging:
+                                    prefs.effectiveScrollDirection(
+                                          isReflowable:
+                                              readerState.isReflowable,
+                                        ) ==
+                                        ReaderScrollDirection.vertical &&
+                                    prefs.effectivePageSnap(
+                                      isReflowable: readerState.isReflowable,
+                                    ),
+                                isAtScrollBoundary: isAtScrollBoundary,
+                                onPageDragStart:
+                                    viewportController.handleDragStart,
+                                onPageDragUpdate:
+                                    viewportController.handleDragUpdate,
+                                onPageDragEnd: viewportController.handleDragEnd,
+                                onPageDragCancel:
+                                    viewportController.handleDragCancel,
+                                onTapAction: handleTapAction,
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final isWide = constraints.maxWidth >= 900;
+                                    final bodyContent = KeyedSubtree(
+                                      key: _contentKey,
+                                      child: Stack(
+                                        fit: StackFit.expand,
                                         children: [
-                                          if (_tocPinned)
-                                            ReaderTocSidePanel(
-                                              onUnpin: () => setState(
-                                                () => _tocPinned = false,
+                                          Positioned.fill(
+                                            child: SafeArea(
+                                              child: ReaderViewport(
+                                                viewportController:
+                                                    viewportController,
+                                                prefs: prefs,
+                                                onScrollBoundaryChanged:
+                                                    onScrollBoundaryChanged,
+                                              ),
+                                            ),
+                                          ),
+                                          ReaderBrightnessOverlay(
+                                            opacity: prefs.brightnessOverlay,
+                                          ),
+                                          ReaderContrastOverlay(
+                                            intensity: prefs.contrastOverlay,
+                                          ),
+                                          if (isWide && !_tocPinned)
+                                            ReaderTocPeek(
+                                              onPin: () => setState(
+                                                () => _tocPinned = true,
                                               ),
                                               onJumpToPage: jumpToPage,
                                             ),
-                                          Expanded(child: bodyContent),
                                         ],
-                                      );
-                                    },
-                                  ),
-                                ),
+                                      ),
+                                    );
 
-                                // 3b. Floating Back-to-TTS Jump Pill
-                                ReaderBackToTtsPill(
-                                  topOffset: isChromeVisible ? 76.0 : 24.0,
-                                  onJumpToTtsPage: jumpToPage,
-                                ),
+                                    if (!isWide) return bodyContent;
 
-                                // 4. Floating Top Bar (Animated Slide + Fade)
-                                Positioned(
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  child: IgnorePointer(
-                                    ignoring: !isChromeVisible,
-                                    child: AnimatedSlide(
-                                      offset: isChromeVisible
-                                          ? Offset.zero
-                                          : const Offset(0, -1),
+                                    return Row(
+                                      children: [
+                                        if (_tocPinned)
+                                          ReaderTocSidePanel(
+                                            onUnpin: () => setState(
+                                              () => _tocPinned = false,
+                                            ),
+                                            onJumpToPage: jumpToPage,
+                                          ),
+                                        Expanded(child: bodyContent),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+
+                              // 3b. Floating Back-to-TTS Jump Pill
+                              ReaderBackToTtsPill(
+                                topOffset: isChromeVisible ? 76.0 : 24.0,
+                                onJumpToTtsPage: jumpToPage,
+                              ),
+
+                              // 4. Floating Top Bar (Animated Slide + Fade)
+                              Positioned(
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                child: IgnorePointer(
+                                  ignoring: !isChromeVisible,
+                                  child: AnimatedSlide(
+                                    offset: isChromeVisible
+                                        ? Offset.zero
+                                        : const Offset(0, -1),
+                                    duration: gestureConstants
+                                        .chromeAnimationDuration,
+                                    curve: Curves.easeOutCubic,
+                                    child: AnimatedOpacity(
+                                      opacity: isChromeVisible ? 1.0 : 0.0,
                                       duration: gestureConstants
                                           .chromeAnimationDuration,
                                       curve: Curves.easeOutCubic,
-                                      child: AnimatedOpacity(
-                                        opacity: isChromeVisible ? 1.0 : 0.0,
-                                        duration: gestureConstants
-                                            .chromeAnimationDuration,
-                                        curve: Curves.easeOutCubic,
-                                        child: Container(
-                                          color: context
-                                              .appColors
-                                              .topbarBackground
-                                              .withValues(alpha: 0.95),
-                                          child: SafeArea(
-                                            bottom: false,
-                                            child: ReaderTopBar(
-                                              onOpenDrawer: () => _scaffoldKey
-                                                  .currentState
-                                                  ?.openDrawer(),
-                                              onCloseDocument: closeReader,
-                                            ),
+                                      child: Container(
+                                        color: context
+                                            .appColors
+                                            .topbarBackground
+                                            .withValues(alpha: 0.95),
+                                        child: SafeArea(
+                                          bottom: false,
+                                          child: ReaderTopBar(
+                                            onOpenDrawer: () => _scaffoldKey
+                                                .currentState
+                                                ?.openDrawer(),
+                                            onCloseDocument: closeReader,
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
+                              ),
 
-                                // 5. Floating Bottom Navigation Bar (Animated Slide + Fade)
-                                Positioned(
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  child: IgnorePointer(
-                                    ignoring: !isChromeVisible,
-                                    child: AnimatedSlide(
-                                      offset: isChromeVisible
-                                          ? Offset.zero
-                                          : const Offset(0, 1),
+                              // 5. Floating Bottom Navigation Bar (Animated Slide + Fade)
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                child: IgnorePointer(
+                                  ignoring: !isChromeVisible,
+                                  child: AnimatedSlide(
+                                    offset: isChromeVisible
+                                        ? Offset.zero
+                                        : const Offset(0, 1),
+                                    duration: gestureConstants
+                                        .chromeAnimationDuration,
+                                    curve: Curves.easeOutCubic,
+                                    child: AnimatedOpacity(
+                                      opacity: isChromeVisible ? 1.0 : 0.0,
                                       duration: gestureConstants
                                           .chromeAnimationDuration,
                                       curve: Curves.easeOutCubic,
-                                      child: AnimatedOpacity(
-                                        opacity: isChromeVisible ? 1.0 : 0.0,
-                                        duration: gestureConstants
-                                            .chromeAnimationDuration,
-                                        curve: Curves.easeOutCubic,
-                                        child: ReaderBottomBar(
-                                          documentPath:
-                                              readerState.documentPath,
-                                          onOpenDrawer: () => _scaffoldKey
-                                              .currentState
-                                              ?.openDrawer(),
-                                          onPreviousPage:
-                                              viewportController.previousPage,
-                                          onNextPage:
-                                              viewportController.nextPage,
-                                          onSeekToPage:
-                                              viewportController.goToPage,
-                                        ),
+                                      child: ReaderBottomBar(
+                                        documentPath: readerState.documentPath,
+                                        onOpenDrawer: () => _scaffoldKey
+                                            .currentState
+                                            ?.openDrawer(),
+                                        onPreviousPage:
+                                            viewportController.previousPage,
+                                        onNextPage: viewportController.nextPage,
+                                        onSeekToPage:
+                                            viewportController.goToPage,
                                       ),
                                     ),
                                   ),
                                 ),
-                              ],
-                            );
-                          },
-                        ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),

@@ -148,10 +148,17 @@ mixin ReaderControllerMixin on State<ReaderPage> {
   }
 
   void closeReader() {
-    if (!readerBloc.isClosed) {
-      readerBloc.add(const ReaderEvent.closeDocument());
+    if (context.canPop()) {
+      context.pop();
+    } else if (!kIsWeb &&
+        (Platform.isAndroid ||
+            Platform.isWindows ||
+            Platform.isLinux ||
+            Platform.isMacOS)) {
+      SystemNavigator.pop();
+    } else if (mounted) {
+      context.go(appRoutes.library.path);
     }
-    if (mounted) context.pop();
   }
 
   void disposeReaderState() {
