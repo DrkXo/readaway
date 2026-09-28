@@ -35,7 +35,9 @@ class TtsChapterCacheService {
     if (clean.isEmpty) return 'anonymous_book';
     final bytes = utf8.encode(clean);
     final digest = md5.convert(bytes).toString();
-    final name = p.basenameWithoutExtension(clean).replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
+    final name = p
+        .basenameWithoutExtension(clean)
+        .replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
     final truncatedName = name.length > 24 ? name.substring(0, 24) : name;
     return '${truncatedName}_$digest';
   }
@@ -48,7 +50,8 @@ class TtsChapterCacheService {
 
   /// Computes a configuration signature hash of prosody/silence settings.
   String computeConfigHash(GlobalViewSettings settings) {
-    final raw = '${settings.ttsNarrationStyle}:'
+    final raw =
+        '${settings.ttsNarrationStyle}:'
         '${settings.ttsSentenceGap}:'
         '${settings.ttsParagraphGap}:'
         '${settings.ttsSilenceScale}:'
@@ -68,8 +71,11 @@ class TtsChapterCacheService {
   }) async {
     final root = await _pathService.getTtsAudioCacheDirectory();
     final bookKey = computeBookKey(bookPath);
-    final configHash = computeConfigHash(_settingsService.settings.globalViewSettings);
-    final voiceDirName = '${voice.id.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_')}__'
+    final configHash = computeConfigHash(
+      _settingsService.settings.globalViewSettings,
+    );
+    final voiceDirName =
+        '${voice.id.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_')}__'
         '${voice.sherpaSpeakerId ?? 0}__'
         '$configHash';
     final chapterDirName = 'chapter_${chapterIndex.toString().padLeft(4, '0')}';
@@ -125,8 +131,11 @@ class TtsChapterCacheService {
       final currentConfigHash = computeConfigHash(
         _settingsService.settings.globalViewSettings,
       );
-      if (manifest.textHash != textHash || manifest.configHash != currentConfigHash) {
-        _log.d('Manifest hash mismatch for chapter $chapterIndex. Invalidating stale cache.');
+      if (manifest.textHash != textHash ||
+          manifest.configHash != currentConfigHash) {
+        _log.d(
+          'Manifest hash mismatch for chapter $chapterIndex. Invalidating stale cache.',
+        );
         await _clearDirectory(dir);
         return null;
       }
@@ -136,13 +145,20 @@ class TtsChapterCacheService {
 
       return manifest;
     } catch (e, st) {
-      _log.w('Failed to load TTS chapter manifest: $e', error: e, stackTrace: st);
+      _log.w(
+        'Failed to load TTS chapter manifest: $e',
+        error: e,
+        stackTrace: st,
+      );
       return null;
     }
   }
 
   /// Updates last accessed timestamp on manifest for LRU eviction.
-  Future<void> touchChapterAccess(File manifestFile, TtsChapterCacheManifest manifest) async {
+  Future<void> touchChapterAccess(
+    File manifestFile,
+    TtsChapterCacheManifest manifest,
+  ) async {
     try {
       final touched = manifest.touch();
       await saveManifestRaw(manifestFile, touched);
@@ -150,7 +166,10 @@ class TtsChapterCacheService {
   }
 
   /// Atomically writes [manifest] to [manifestFile].
-  Future<void> saveManifestRaw(File manifestFile, TtsChapterCacheManifest manifest) async {
+  Future<void> saveManifestRaw(
+    File manifestFile,
+    TtsChapterCacheManifest manifest,
+  ) async {
     final tmp = File('${manifestFile.path}.tmp');
     final jsonStr = jsonEncode(manifest.toJson());
     await tmp.writeAsString(jsonStr, flush: true);
@@ -198,7 +217,10 @@ class TtsChapterCacheService {
       if (!await root.exists()) return 0;
 
       var total = 0;
-      await for (final entity in root.list(recursive: true, followLinks: false)) {
+      await for (final entity in root.list(
+        recursive: true,
+        followLinks: false,
+      )) {
         if (entity is File) {
           total += await entity.length();
         }
@@ -216,26 +238,36 @@ class TtsChapterCacheService {
       final root = await _pathService.getTtsAudioCacheDirectory();
       if (!await root.exists()) return;
 
-      final limit = maxBytes ??
-          (_settingsService.settings.globalViewSettings.ttsMaxCacheSizeMb * 1024 * 1024);
+      final limit =
+          maxBytes ??
+          (_settingsService.settings.globalViewSettings.ttsMaxCacheSizeMb *
+              1024 *
+              1024);
       if (limit <= 0) return; // Unlimited
 
       var currentSize = await calculateTotalCacheSizeBytes();
       if (currentSize <= limit) return;
 
-      _log.i('TTS cache size ($currentSize bytes) exceeds limit ($limit bytes). Evicting LRU chapters...');
+      _log.i(
+        'TTS cache size ($currentSize bytes) exceeds limit ($limit bytes). Evicting LRU chapters...',
+      );
 
       // Find all chapter directories and their manifests
-      final chapterEntries = <({Directory dir, DateTime lastAccessed, int size})>[];
+      final chapterEntries =
+          <({Directory dir, DateTime lastAccessed, int size})>[];
 
       await for (final bookEntity in root.list(followLinks: false)) {
         if (bookEntity is! Directory) continue;
         await for (final voiceEntity in bookEntity.list(followLinks: false)) {
           if (voiceEntity is! Directory) continue;
-          await for (final chapterEntity in voiceEntity.list(followLinks: false)) {
+          await for (final chapterEntity in voiceEntity.list(
+            followLinks: false,
+          )) {
             if (chapterEntity is! Directory) continue;
 
-            final manifestFile = File(p.join(chapterEntity.path, 'manifest.json'));
+            final manifestFile = File(
+              p.join(chapterEntity.path, 'manifest.json'),
+            );
             DateTime lastAccessed = (await chapterEntity.stat()).modified;
             if (await manifestFile.exists()) {
               try {
@@ -246,7 +278,10 @@ class TtsChapterCacheService {
             }
 
             var dirSize = 0;
-            await for (final f in chapterEntity.list(recursive: true, followLinks: false)) {
+            await for (final f in chapterEntity.list(
+              recursive: true,
+              followLinks: false,
+            )) {
               if (f is File) dirSize += await f.length();
             }
 
@@ -266,7 +301,9 @@ class TtsChapterCacheService {
         if (currentSize <= limit) break;
         await _clearDirectory(entry.dir);
         currentSize -= entry.size;
-        _log.d('Evicted TTS chapter directory: ${entry.dir.path} (${entry.size} bytes)');
+        _log.d(
+          'Evicted TTS chapter directory: ${entry.dir.path} (${entry.size} bytes)',
+        );
       }
     } catch (e, st) {
       _log.w('Failed during TTS cache eviction: $e', error: e, stackTrace: st);

@@ -28,6 +28,10 @@ melos:
   sdkPath: .fvm/flutter_sdk
 
   command:
+    bootstrap:
+      hooks:
+        post: bash scripts/setup_hooks.sh
+
     version:
       # Link commits and PRs to the GitHub repository in generated CHANGELOG.md
       linkToCommits: true
@@ -56,6 +60,10 @@ melos:
     - packages/*
 
   scripts:
+    setup:hooks:
+      run: bash scripts/setup_hooks.sh
+      description: Configure local Git hooks in .githooks directory
+
     analyze:
       run: melos exec --depends-on="flutter" -- dart analyze --fatal-infos
       description: Run dart analyze in all packages

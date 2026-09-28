@@ -16,28 +16,29 @@ sealed class TtsCachedChunk with _$TtsCachedChunk {
   }) = _TtsCachedChunk;
 
   factory TtsCachedChunk.fromJson(Map<String, dynamic> json) => TtsCachedChunk(
-        chunkIndex: (json['chunkIndex'] as num).toInt(),
-        fileName: json['fileName'] as String,
-        startOffset: (json['startOffset'] as num).toInt(),
-        endOffset: (json['endOffset'] as num).toInt(),
-        durationSec: (json['durationSec'] as num).toDouble(),
-        waveform: (json['waveform'] as List<dynamic>?)
-                ?.map((e) => (e as num).toDouble())
-                .toList() ??
-            const [],
-        gapSec: (json['gapSec'] as num?)?.toDouble() ?? 0.0,
-      );
+    chunkIndex: (json['chunkIndex'] as num).toInt(),
+    fileName: json['fileName'] as String,
+    startOffset: (json['startOffset'] as num).toInt(),
+    endOffset: (json['endOffset'] as num).toInt(),
+    durationSec: (json['durationSec'] as num).toDouble(),
+    waveform:
+        (json['waveform'] as List<dynamic>?)
+            ?.map((e) => (e as num).toDouble())
+            .toList() ??
+        const [],
+    gapSec: (json['gapSec'] as num?)?.toDouble() ?? 0.0,
+  );
 
   @override
   Map<String, dynamic> toJson() => {
-        'chunkIndex': chunkIndex,
-        'fileName': fileName,
-        'startOffset': startOffset,
-        'endOffset': endOffset,
-        'durationSec': durationSec,
-        'waveform': waveform,
-        'gapSec': gapSec,
-      };
+    'chunkIndex': chunkIndex,
+    'fileName': fileName,
+    'startOffset': startOffset,
+    'endOffset': endOffset,
+    'durationSec': durationSec,
+    'waveform': waveform,
+    'gapSec': gapSec,
+  };
 }
 
 /// Persistent manifest describing the synthesized TTS audio cache for a specific chapter/section.
@@ -67,35 +68,37 @@ sealed class TtsChapterCacheManifest with _$TtsChapterCacheManifest {
         speakerId: (json['speakerId'] as num?)?.toInt() ?? 0,
         configHash: json['configHash'] as String? ?? '',
         sampleRate: (json['sampleRate'] as num?)?.toInt() ?? 22050,
-        totalDurationSec:
-            (json['totalDurationSec'] as num?)?.toDouble() ?? 0.0,
+        totalDurationSec: (json['totalDurationSec'] as num?)?.toDouble() ?? 0.0,
         isComplete: json['isComplete'] as bool? ?? false,
         createdAt: DateTime.parse(json['createdAt'] as String),
         lastAccessedAt: DateTime.parse(json['lastAccessedAt'] as String),
-        chunks: (json['chunks'] as List<dynamic>?)
-                ?.map((e) => e is TtsCachedChunk
-                    ? e
-                    : TtsCachedChunk.fromJson(
-                        Map<String, dynamic>.from(e as Map),
-                      ))
+        chunks:
+            (json['chunks'] as List<dynamic>?)
+                ?.map(
+                  (e) => e is TtsCachedChunk
+                      ? e
+                      : TtsCachedChunk.fromJson(
+                          Map<String, dynamic>.from(e as Map),
+                        ),
+                )
                 .toList() ??
             const [],
       );
 
   @override
   Map<String, dynamic> toJson() => {
-        'chapterIndex': chapterIndex,
-        'textHash': textHash,
-        'voiceId': voiceId,
-        'speakerId': speakerId,
-        'configHash': configHash,
-        'sampleRate': sampleRate,
-        'totalDurationSec': totalDurationSec,
-        'isComplete': isComplete,
-        'createdAt': createdAt.toIso8601String(),
-        'lastAccessedAt': lastAccessedAt.toIso8601String(),
-        'chunks': chunks.map((c) => c.toJson()).toList(),
-      };
+    'chapterIndex': chapterIndex,
+    'textHash': textHash,
+    'voiceId': voiceId,
+    'speakerId': speakerId,
+    'configHash': configHash,
+    'sampleRate': sampleRate,
+    'totalDurationSec': totalDurationSec,
+    'isComplete': isComplete,
+    'createdAt': createdAt.toIso8601String(),
+    'lastAccessedAt': lastAccessedAt.toIso8601String(),
+    'chunks': chunks.map((c) => c.toJson()).toList(),
+  };
 
   /// Retrieves cached chunk metadata for [index] if present.
   TtsCachedChunk? getChunk(int index) {

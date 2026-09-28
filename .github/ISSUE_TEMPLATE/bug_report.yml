@@ -1,0 +1,110 @@
+name: Bug Report
+description: File a bug report to help us improve ReadAway
+title: "fix: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please provide as much context as possible to help us reproduce and resolve the bug quickly.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Bug Summary
+      description: A clear and concise description of what the bug is.
+      placeholder: e.g., App crashes when opening large EPUB with custom fonts
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target_platform
+    attributes:
+      label: Target Platform / OS
+      description: Which operating system and platform did you experience the bug on?
+      multiple: true
+      options:
+        - Android (APK / Play Store)
+        - Linux (AppImage / Tarball / Native)
+        - Windows
+        - macOS
+        - iOS
+        - Web
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: ReadAway Version
+      description: What version of ReadAway are you running? (Check Settings > About)
+      placeholder: e.g., v1.0.0+1
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to Reproduce
+      description: Exact steps to reproduce the behavior.
+      placeholder: |
+        1. Open ReadAway
+        2. Navigate to Library
+        3. Tap on EPUB title '...'
+        4. Observe crash/error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: e.g., The EPUB should open smoothly into the reader view.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? (Include error messages if visible)
+      placeholder: e.g., The reader view remained black and crashed after 3 seconds.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severely does this bug affect your use of ReadAway?
+      options:
+        - Critical (Crash / Data Loss / Blocker)
+        - Major (Feature unusable)
+        - Minor (Cosmetic / Workaround exists)
+        - Trivial (Typo / Minor glitch)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Stack Trace / Flutter Doctor Output
+      description: Paste relevant logs, terminal output, or stack traces here.
+      render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or Screen Recordings
+      description: Drag and drop screenshots or screen recordings demonstrating the bug.
+
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: Verification Checklist
+      options:
+        - label: I have searched existing issues to make sure this bug has not already been reported.
+          required: true
+        - label: I am using the latest version of ReadAway.
+          required: false

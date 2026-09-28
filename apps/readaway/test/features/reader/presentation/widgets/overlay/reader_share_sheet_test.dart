@@ -32,38 +32,45 @@ void main() {
   }
 
   group('ReaderShareSheet Widget Tests', () {
-    testWidgets('renders non-reflowable options (full file, current page, custom page)', (tester) async {
-      const state = ReaderState(
-        documentPath: '/mock/path/sample.pdf',
-        fileName: 'sample.pdf',
-        bookTitle: 'Sample PDF Book',
-        format: 'pdf',
-        isReflowable: false,
-        pageCount: 15,
-        currentPage: 4,
-      );
+    testWidgets(
+      'renders non-reflowable options (full file, current page, custom page)',
+      (tester) async {
+        const state = ReaderState(
+          documentPath: '/mock/path/sample.pdf',
+          fileName: 'sample.pdf',
+          bookTitle: 'Sample PDF Book',
+          format: 'pdf',
+          isReflowable: false,
+          pageCount: 15,
+          currentPage: 4,
+        );
 
-      final shareService = ShareService.withHandler(
-        shareHandler: (params) async =>
-            const ShareResult('success', ShareResultStatus.success),
-      );
+        final shareService = ShareService.withHandler(
+          shareHandler: (params) async =>
+              const ShareResult('success', ShareResultStatus.success),
+        );
 
-      await tester.pumpWidget(buildTestWidget(state: state, shareService: shareService));
-      await tester.tap(find.text('Open Share Sheet'));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildTestWidget(state: state, shareService: shareService),
+        );
+        await tester.tap(find.text('Open Share Sheet'));
+        await tester.pumpAndSettle();
 
-      // Verify UI elements
-      expect(find.text('Share'), findsOneWidget);
-      expect(find.text('Sample PDF Book'), findsOneWidget);
-      expect(find.text('PDF'), findsOneWidget);
-      expect(find.text('15 pages'), findsOneWidget);
-      expect(find.text('Share Document File'), findsOneWidget);
-      expect(find.text('Share Current Page (5)'), findsOneWidget);
-      expect(find.text('Share Selected Page'), findsOneWidget);
-      expect(find.text('Share Page 5 as Image'), findsOneWidget);
-    });
+        // Verify UI elements
+        expect(find.text('Share'), findsOneWidget);
+        expect(find.text('Sample PDF Book'), findsOneWidget);
+        expect(find.text('PDF'), findsOneWidget);
+        expect(find.text('15 pages'), findsOneWidget);
+        expect(find.text('Share Document File'), findsOneWidget);
+        expect(find.text('Share Current Page (5)'), findsOneWidget);
+        expect(find.text('Share Selected Page'), findsOneWidget);
+        expect(find.text('Share Page 5 as Image'), findsOneWidget);
+      },
+    );
 
-    testWidgets('triggers shareDocumentFile on tapping Share Document File', (tester) async {
+    testWidgets('triggers shareDocumentFile on tapping Share Document File', (
+      tester,
+    ) async {
       const state = ReaderState(
         documentPath: '/mock/path/comic.cbz',
         fileName: 'comic.cbz',
@@ -82,16 +89,23 @@ void main() {
         },
       );
 
-      await tester.pumpWidget(buildTestWidget(state: state, shareService: shareService));
+      await tester.pumpWidget(
+        buildTestWidget(state: state, shareService: shareService),
+      );
       await tester.tap(find.text('Open Share Sheet'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Share Document File'));
       await tester.pump();
-      expect(didShareDoc, isFalse); // Non-existent mock file path fails existence check gracefully
+      expect(
+        didShareDoc,
+        isFalse,
+      ); // Non-existent mock file path fails existence check gracefully
     });
 
-    testWidgets('renders reflowable options without page image buttons', (tester) async {
+    testWidgets('renders reflowable options without page image buttons', (
+      tester,
+    ) async {
       const state = ReaderState(
         documentPath: '/mock/path/novel.epub',
         fileName: 'novel.epub',
@@ -107,7 +121,9 @@ void main() {
             const ShareResult('success', ShareResultStatus.success),
       );
 
-      await tester.pumpWidget(buildTestWidget(state: state, shareService: shareService));
+      await tester.pumpWidget(
+        buildTestWidget(state: state, shareService: shareService),
+      );
       await tester.tap(find.text('Open Share Sheet'));
       await tester.pumpAndSettle();
 

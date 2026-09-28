@@ -81,7 +81,9 @@ void main() {
     test('saves and retrieves chapter manifest correctly', () async {
       const bookPath = '/books/sample.epub';
       const chapterIdx = 1;
-      final textHash = cacheService.computeTextHash('Sample chapter text content');
+      final textHash = cacheService.computeTextHash(
+        'Sample chapter text content',
+      );
       final now = DateTime.now();
 
       final manifest = TtsChapterCacheManifest(
@@ -236,20 +238,23 @@ void main() {
       expect(await file2.exists(), true);
     });
 
-    test('clearBookCache removes all cached chapters for specific book', () async {
-      const bookPath = '/books/target_book.epub';
-      final file = await cacheService.getChunkFile(
-        bookPath: bookPath,
-        chapterIndex: 0,
-        voice: sampleVoice,
-        chunkIndex: 0,
-      );
-      await file.parent.create(recursive: true);
-      await file.writeAsBytes(List.filled(100, 0));
+    test(
+      'clearBookCache removes all cached chapters for specific book',
+      () async {
+        const bookPath = '/books/target_book.epub';
+        final file = await cacheService.getChunkFile(
+          bookPath: bookPath,
+          chapterIndex: 0,
+          voice: sampleVoice,
+          chunkIndex: 0,
+        );
+        await file.parent.create(recursive: true);
+        await file.writeAsBytes(List.filled(100, 0));
 
-      expect(await file.exists(), true);
-      await cacheService.clearBookCache(bookPath);
-      expect(await file.exists(), false);
-    });
+        expect(await file.exists(), true);
+        await cacheService.clearBookCache(bookPath);
+        expect(await file.exists(), false);
+      },
+    );
   });
 }

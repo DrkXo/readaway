@@ -74,7 +74,9 @@ extension _TtsSynthesisPipeline on TtsControllerService {
 
       final bookPath = _currentBookPath ?? 'doc';
       final chapterIndex = _currentSectionIndex ?? _currentPageIndex ?? 0;
-      final fullSpeechText = _masterQueue.map((c) => c.speechContent).join('\n');
+      final fullSpeechText = _masterQueue
+          .map((c) => c.speechContent)
+          .join('\n');
       final textHash = _cacheService.computeTextHash(fullSpeechText);
 
       // Try loading existing chapter manifest or initialize new one
@@ -160,8 +162,9 @@ extension _TtsSynthesisPipeline on TtsControllerService {
               waveform: result.waveform,
               gapSec: _gapForChunk(chunk, i),
             );
-            _currentChapterManifest =
-                _currentChapterManifest?.withChunk(cachedChunk);
+            _currentChapterManifest = _currentChapterManifest?.withChunk(
+              cachedChunk,
+            );
             if (_currentChapterManifest != null) {
               await _cacheService.saveChapterManifest(
                 bookPath: bookPath,
@@ -231,8 +234,9 @@ extension _TtsSynthesisPipeline on TtsControllerService {
         // Entire text was small enough to fit into initial buffer
         _pipelineDone = true;
         if (_currentChapterManifest != null) {
-          _currentChapterManifest =
-              _currentChapterManifest!.copyWith(isComplete: true);
+          _currentChapterManifest = _currentChapterManifest!.copyWith(
+            isComplete: true,
+          );
           await _cacheService.saveChapterManifest(
             bookPath: bookPath,
             chapterIndex: chapterIndex,
@@ -294,8 +298,9 @@ extension _TtsSynthesisPipeline on TtsControllerService {
               waveform: result.waveform,
               gapSec: _gapForChunk(chunk, i),
             );
-            _currentChapterManifest =
-                _currentChapterManifest?.withChunk(cachedChunk);
+            _currentChapterManifest = _currentChapterManifest?.withChunk(
+              cachedChunk,
+            );
             if (_currentChapterManifest != null) {
               await _cacheService.saveChapterManifest(
                 bookPath: bookPath,
@@ -349,8 +354,9 @@ extension _TtsSynthesisPipeline on TtsControllerService {
       if (sessionId == _activeSessionId) {
         _pipelineDone = true;
         if (_currentChapterManifest != null) {
-          _currentChapterManifest =
-              _currentChapterManifest!.copyWith(isComplete: true);
+          _currentChapterManifest = _currentChapterManifest!.copyWith(
+            isComplete: true,
+          );
           await _cacheService.saveChapterManifest(
             bookPath: bookPath,
             chapterIndex: chapterIndex,

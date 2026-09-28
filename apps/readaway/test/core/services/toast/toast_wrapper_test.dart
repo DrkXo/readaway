@@ -34,7 +34,9 @@ void main() {
       expect(find.byType(ToastWidget), findsNothing);
     });
 
-    testWidgets('shows toast over modal bottom sheet and dialog', (tester) async {
+    testWidgets('shows toast over modal bottom sheet and dialog', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           builder: (context, child) => ToastWrapper(

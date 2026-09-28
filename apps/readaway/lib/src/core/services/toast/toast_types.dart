@@ -45,4 +45,3 @@ class ToastEntry {
     this.dismissOnSwipe = true,
   });
 }
-
