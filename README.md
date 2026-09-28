@@ -127,7 +127,3 @@ repackage a Readaway build, ship that file with it**: BSD-3-Clause (Token, PDFiu
 ISC (Lucide) both require their notices to travel with a binary distribution.
 
 ---
-
-<div align="center">
-  <sub>Made with Flutter, Melos, and a lot of late-night reading.</sub>
-</div>
