@@ -95,7 +95,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Cache FVM, Pub & Build Runner Dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.fvm/versions
@@ -198,7 +198,7 @@ jobs:
             curl
 
       - name: Cache FVM, Pub & Build Runner Dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.fvm/versions
