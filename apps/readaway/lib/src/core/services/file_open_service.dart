@@ -16,13 +16,23 @@ class IncomingDocument {
   final String path;
   final String fileName;
 
+  /// True when this document was delivered on cold-start via an external
+  /// intent (Android `getInitialSharedUris`, `getInitialLink`, macOS initial
+  /// file, or CLI args). False when the app was already running and a new
+  /// file arrived while in the foreground (`onSharedUrisReceived`, stream
+  /// links). Used by the router to decide whether closing the reader should
+  /// return to the calling app (`SystemNavigator.pop`) or to the library.
+  final bool fromExternalLaunch;
+
   const IncomingDocument({
     required this.path,
     required this.fileName,
+    this.fromExternalLaunch = false,
   });
 
   @override
-  String toString() => 'IncomingDocument(path: $path, fileName: $fileName)';
+  String toString() =>
+      'IncomingDocument(path: $path, fileName: $fileName, fromExternalLaunch: $fromExternalLaunch)';
 }
 
 /// Captures file/deep-links from the OS ([AppLinks]) and turns them into real
@@ -118,7 +128,11 @@ class FileOpenService {
           final fileName = p.basename(file.path);
           _log.i('Detected CLI argument file: ${file.path}');
           queueDocument(
-            IncomingDocument(path: file.absolute.path, fileName: fileName),
+            IncomingDocument(
+              path: file.absolute.path,
+              fileName: fileName,
+              fromExternalLaunch: true,
+            ),
           );
           break;
         }
@@ -131,12 +145,14 @@ class FileOpenService {
   Future<void> _listenForAppLinks() async {
     if (kIsWeb) return;
     try {
-      _linkSubscription = _appLinks.uriLinkStream.listen(handleUri);
+      _linkSubscription = _appLinks.uriLinkStream.listen(
+        (uri) => handleUri(uri, fromExternalLaunch: true),
+      );
       // Don't block DI: let the router mount first so the initial push lands.
       unawaited(() async {
         final initial = await _appLinks.getInitialLink();
         if (initial != null) {
-          await handleUri(initial);
+          await handleUri(initial, fromExternalLaunch: true);
         }
       }());
     } catch (e, st) {
@@ -158,6 +174,7 @@ class FileOpenService {
                   IncomingDocument(
                     path: path,
                     fileName: (args['fileName'] as String?) ?? p.basename(path),
+                    fromExternalLaunch: true,
                   ),
                 );
               }
@@ -177,6 +194,7 @@ class FileOpenService {
               IncomingDocument(
                 path: path,
                 fileName: (initial['fileName'] as String?) ?? p.basename(path),
+                fromExternalLaunch: true,
               ),
             );
           }
@@ -198,7 +216,7 @@ class FileOpenService {
               if (uriStr is String && uriStr.isNotEmpty) {
                 final uri = Uri.tryParse(uriStr);
                 if (uri != null) {
-                  await handleUri(uri);
+                  await handleUri(uri, fromExternalLaunch: true);
                 }
               }
             }
@@ -215,7 +233,7 @@ class FileOpenService {
             if (uriStr is String && uriStr.isNotEmpty) {
               final uri = Uri.tryParse(uriStr);
               if (uri != null) {
-                await handleUri(uri);
+                await handleUri(uri, fromExternalLaunch: true);
               }
             }
           }
@@ -231,7 +249,11 @@ class FileOpenService {
   }
 
   /// Converts an OS-supplied [uri] into a real path and queues it.
-  Future<void> handleUri(Uri uri) async {
+  ///
+  /// [fromExternalLaunch] should be `true` only when this URI arrived during
+  /// cold-start (initial intent / initial link), so the reader knows to
+  /// finish the Activity on close rather than navigate back to the library.
+  Future<void> handleUri(Uri uri, {bool fromExternalLaunch = false}) async {
     if (_incomingDocumentSubject.isClosed) return;
     String path;
     final String fileName;
@@ -289,7 +311,13 @@ class FileOpenService {
 
     if (path.isEmpty) return;
     _log.i('Opening document: $path');
-    queueDocument(IncomingDocument(path: path, fileName: fileName));
+    queueDocument(
+      IncomingDocument(
+        path: path,
+        fileName: fileName,
+        fromExternalLaunch: fromExternalLaunch,
+      ),
+    );
   }
 
   /// Queues an incoming document and emits it to [incomingDocuments].
@@ -297,8 +325,6 @@ class FileOpenService {
     if (!SupportedDocumentFormats.isSupported(doc.path)) {
       _log.w('Document format not supported for path: ${doc.path}');
     }
-
-    _incomingDocumentSubject.add(doc);
 
     _incomingDocumentSubject.add(doc);
   }

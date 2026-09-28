@@ -49,9 +49,14 @@ jobs:
             TAG="v$RAW_VERSION"
           fi
           
-          # Clean version tag if needed
+          # Clean version tag for title (e.g., readaway-v1.2.0 -> v1.2.0)
+          CLEAN_VERSION="$(echo "$TAG" | sed 's/^readaway-//')"
+          if [[ ! "$CLEAN_VERSION" =~ ^v ]]; then
+            CLEAN_VERSION="v$CLEAN_VERSION"
+          fi
+
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "title=ReadAway $TAG" >> $GITHUB_OUTPUT
+          echo "title=ReadAway $CLEAN_VERSION" >> $GITHUB_OUTPUT
           
           # Check if prerelease
           if [[ "$TAG" =~ (alpha|beta|rc|dev|preview) ]]; then
@@ -68,6 +73,11 @@ jobs:
     needs: resolve-version
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     steps:
       - name: Checkout repository
@@ -125,11 +135,6 @@ jobs:
 
       - name: Setup Android Release Keystore
         if: ${{ env.KEYSTORE_BASE64 != '' }}
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           mkdir -p apps/readaway/android/app
           echo "$KEYSTORE_BASE64" | base64 -d > apps/readaway/android/app/release-keystore.jks

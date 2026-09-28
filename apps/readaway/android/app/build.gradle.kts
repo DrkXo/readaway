@@ -1,3 +1,4 @@
+import java.io.File
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -63,30 +64,25 @@ android {
             val storeFileProp = keystoreProperties.getProperty("storeFile")
 
             if (storeFileProp != null) {
-                val resolvedStoreFile = if (file(storeFileProp).isAbsolute) {
-                    file(storeFileProp)
-                } else {
-                    rootProject.file(storeFileProp)
+                val rawFile = File(storeFileProp)
+                val resolvedStoreFile = when {
+                    rawFile.isAbsolute -> rawFile
+                    rootProject.file(storeFileProp).exists() -> rootProject.file(storeFileProp)
+                    file(storeFileProp).exists() -> file(storeFileProp)
+                    else -> rootProject.file(storeFileProp)
                 }
                 
-                if (resolvedStoreFile.exists() && keyAliasVal != null) {
-                    keyAlias = keyAliasVal
-                    keyPassword = keyPasswordVal ?: storePasswordVal
-                    storeFile = resolvedStoreFile
-                    storePassword = storePasswordVal
-                }
+                keyAlias = keyAliasVal
+                keyPassword = keyPasswordVal ?: storePasswordVal
+                storeFile = resolvedStoreFile
+                storePassword = storePasswordVal
             }
         }
     }
 
     buildTypes {
         release {
-            val releaseConfig = signingConfigs.getByName("release")
-            signingConfig = if (releaseConfig.storeFile != null && releaseConfig.storeFile!!.exists()) {
-                releaseConfig
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
 
             // Enable R8 tree-shaking and resource shrinking for release builds.
             isMinifyEnabled = true
