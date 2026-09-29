@@ -1,6 +1,6 @@
 name: readaway_core
 description: "High-performance pure Dart document reading, formatting, and TTS engine for ReadAway."
-version: 0.1.2
+version: 1.0.0
 resolution: workspace
 
 environment:
