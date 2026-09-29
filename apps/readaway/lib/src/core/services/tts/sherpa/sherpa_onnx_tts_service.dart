@@ -2,8 +2,8 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path/path.dart' as p;
 import 'package:readaway_core/readaway_core.dart';
@@ -15,30 +15,37 @@ import '../../settings_service.dart';
 import '../tts_model_store.dart';
 import '../tts_models.dart';
 import 'sherpa_isolate_worker_service.dart';
-import 'sherpa_tts_model_downloader.dart';
+import 'tts_download_manager.dart';
 
 @lazySingleton
 class SherpaOnnxTtsService {
   final _log = AppLogger.instance.scope('SherpaOnnxTtsService');
   SherpaOnnxTtsService({
-    required SherpaTtsModelDownloaderService downloader,
+    required TtsDownloadManager downloadManager,
     required IsolateService isolateService,
     required AppPathService pathService,
     required TtsModelStore store,
     required SettingsService settingsService,
-  }) : _downloader = downloader,
+  }) : _downloadManager = downloadManager,
        _isolateService = isolateService,
        _pathService = pathService,
        _store = store,
        _settingsService = settingsService;
 
-  final SherpaTtsModelDownloaderService _downloader;
+  /// When true (tests only), native bindings are not initialized; the worker
+  /// isolate is faked so `flutter test` can run without the sherpa-onnx
+  /// native library.
+  @visibleForTesting
+  set skipNativeBindingInit(bool value) => _bindingsInitialized = value;
+
+  final TtsDownloadManager _downloadManager;
   final IsolateService _isolateService;
   final AppPathService _pathService;
   final TtsModelStore _store;
   final SettingsService _settingsService;
 
   SherpaTtsModelInfo? _activeModel;
+  SherpaTtsModelInfo? _previewModel;
   Directory? _modelsRootDir;
   int? _sampleRate;
   int? _speakerCount;
@@ -91,6 +98,12 @@ class SherpaOnnxTtsService {
             'type': 'unload',
           });
         }
+        if (_previewModel != null) {
+          await _isolateService.sendCommand<bool>(sherpaTtsIsolateName, {
+            'id': _nextId(),
+            'type': 'unloadPreview',
+          });
+        }
       } catch (e, st) {
         _log.w(
           'Error unloading model during releaseIsolate: $e',
@@ -101,6 +114,7 @@ class SherpaOnnxTtsService {
       await _isolateService.disposeIsolate(sherpaTtsIsolateName);
     }
     _activeModel = null;
+    _previewModel = null;
     _loadedNarrationStyle = null;
     _sampleRate = null;
     _speakerCount = null;
@@ -126,44 +140,11 @@ class SherpaOnnxTtsService {
   }
 
   Future<List<SherpaTtsModelInfo>> getDownloadedModels() async {
-    await reconcilePendingDownloads();
+    // Pure Hive read — installed state is the single source of truth, and
+    // interrupted downloads are surfaced/resumed through the download manager
+    // (which repairs "archive landed, install unfinished" models in the
+    // background at startup).
     return _store.loadInstalledModelsList();
-  }
-
-  /// Finishes any model downloads that were interrupted after the archive
-  /// transfer completed but before extraction ran (e.g. the app was killed
-  /// mid-download).
-  Future<void> reconcilePendingDownloads() async {
-    final root = _modelsRootDir ?? await _resolveModelsRootDir();
-    _modelsRootDir = root;
-    if (!await root.exists()) return;
-
-    await for (final entity in root.list()) {
-      if (entity is! Directory) continue;
-      final modelId = p.basename(entity.path);
-      final model = _store.byId(modelId);
-      if (model == null) continue;
-
-      final markers = <File>[];
-      await for (final e in entity.list()) {
-        if (e is File && e.path.endsWith('.done')) markers.add(e);
-      }
-      if (markers.isEmpty) continue;
-
-      try {
-        await _downloader.reconcileModel(model, entity);
-        for (final marker in markers) {
-          await marker.delete();
-        }
-        _log.d('Reconciled interrupted TTS download for $modelId');
-      } catch (e, st) {
-        _log.e(
-          'Failed to reconcile TTS download for $modelId',
-          error: e,
-          stackTrace: st,
-        );
-      }
-    }
   }
 
   Future<void> deleteModel(String modelId) async {
@@ -187,27 +168,107 @@ class SherpaOnnxTtsService {
     await _store.removeInstalledModel(modelId);
   }
 
-  Stream<ModelDownloadProgress> downloadModel(SherpaTtsModelInfo model) async* {
-    final dir = await _modelDir(model.id);
-    yield* _downloader.downloadModel(model, dir);
-  }
-
-  Future<void> pauseDownload(String modelId) =>
-      _downloader.pauseDownload(modelId);
-
-  Future<void> resumeDownload(String modelId) =>
-      _downloader.resumeDownload(modelId);
-
-  Future<void> cancelDownload(String modelId) =>
-      _downloader.cancelDownload(modelId);
-
   SherpaTtsModelInfo? get activeModel => _activeModel;
   bool get hasLoadedModel => _sampleRate != null;
+
+  /// Model currently loaded into the dedicated preview engine, if any.
+  SherpaTtsModelInfo? get previewModel => _previewModel;
+  bool get hasPreviewLoaded => _previewModel != null;
 
   Future<void> loadModel(
     String modelId, {
     int numThreads = 2,
     bool debugLogging = false,
+    double? noiseScale,
+    double? noiseScaleW,
+    double? lengthScale,
+    double? silenceScale,
+  }) async {
+    final message = await _buildLoadRequest(
+      modelId,
+      numThreads: numThreads,
+      debugLogging: debugLogging,
+      noiseScale: noiseScale,
+      noiseScaleW: noiseScaleW,
+      lengthScale: lengthScale,
+      silenceScale: silenceScale,
+    );
+
+    final result = await _isolateService.sendCommand<Map>(
+      sherpaTtsIsolateName,
+      message,
+    );
+
+    final model =
+        _store.byId(modelId) ??
+        (throw SherpaTtsException('Unknown model id: $modelId'));
+    _activeModel = model;
+    _loadedNarrationStyle =
+        _settingsService.settings.globalViewSettings.ttsNarrationStyle;
+    _sampleRate = result['sampleRate'] as int;
+    _speakerCount = result['speakerCount'] as int;
+  }
+
+  /// Loads [modelId] into the worker isolate's dedicated preview engine.
+  ///
+  /// The active narration model on the shared engine is left untouched —
+  /// previews must never swap the voice the reader is currently synthesizing
+  /// with (the old swap-in/swap-out approach made active narration switch
+  /// voices for the duration of a preview).
+  Future<void> loadPreviewModel(
+    String modelId, {
+    int numThreads = 2,
+    bool debugLogging = false,
+    double? noiseScale,
+    double? noiseScaleW,
+    double? lengthScale,
+    double? silenceScale,
+  }) async {
+    final message = await _buildLoadRequest(
+      modelId,
+      numThreads: numThreads,
+      debugLogging: debugLogging,
+      noiseScale: noiseScale,
+      noiseScaleW: noiseScaleW,
+      lengthScale: lengthScale,
+      silenceScale: silenceScale,
+    );
+
+    await _isolateService.sendCommand<Map>(
+      sherpaTtsIsolateName,
+      {...message, 'type': 'loadPreview'},
+    );
+
+    _previewModel = _store.byId(modelId);
+  }
+
+  /// Releases the preview engine inside the worker isolate.
+  Future<void> unloadPreviewModel() async {
+    if (_previewModel != null &&
+        _isolateService.isSpawned(sherpaTtsIsolateName)) {
+      try {
+        await _isolateService.sendCommand<bool>(sherpaTtsIsolateName, {
+          'id': _nextId(),
+          'type': 'unloadPreview',
+        });
+      } catch (e, st) {
+        _log.w(
+          'Failed to unload preview model: $e',
+          error: e,
+          stackTrace: st,
+        );
+      }
+    }
+    _previewModel = null;
+  }
+
+  /// Resolves a model on disk, applies current narration-style settings, and
+  /// builds the worker-isolate `loadModel` command. Shared by [loadModel]
+  /// (narration engine) and [loadPreviewModel] (preview engine).
+  Future<Map<String, dynamic>> _buildLoadRequest(
+    String modelId, {
+    required int numThreads,
+    required bool debugLogging,
     double? noiseScale,
     double? noiseScaleW,
     double? lengthScale,
@@ -226,7 +287,7 @@ class SherpaOnnxTtsService {
     final rootDir = _modelsRootDir ?? await _resolveModelsRootDir();
     var files = await model.indexFiles(dir, sharedEspeakDir: rootDir);
     if (model.needsEspeakData && files.espeakDataDir == null) {
-      await _downloader.ensureSharedEspeakData(rootDir);
+      await _downloadManager.ensureSharedEspeakData(rootDir);
       files = await model.indexFiles(dir, sharedEspeakDir: rootDir);
     }
 
@@ -260,7 +321,7 @@ class SherpaOnnxTtsService {
         (gvs.ttsNoiseScaleW != 0.80 ? gvs.ttsNoiseScaleW : styleNoiseScaleW);
     final effectiveLengthScale = lengthScale ?? gvs.ttsLengthScale;
 
-    final message = _buildLoadModelMessage(
+    return _buildLoadModelMessage(
       model,
       files,
       numThreads: numThreads,
@@ -270,16 +331,6 @@ class SherpaOnnxTtsService {
       lengthScale: effectiveLengthScale,
       silenceScale: effectiveSilenceScale,
     );
-
-    final result = await _isolateService.sendCommand<Map>(
-      sherpaTtsIsolateName,
-      message,
-    );
-
-    _activeModel = model;
-    _loadedNarrationStyle = gvs.ttsNarrationStyle;
-    _sampleRate = result['sampleRate'] as int;
-    _speakerCount = result['speakerCount'] as int;
   }
 
   Map<String, dynamic> _buildLoadModelMessage(
@@ -475,6 +526,68 @@ class SherpaOnnxTtsService {
     } catch (e, st) {
       _log.e(
         'Failed to generate WAV file with Sherpa ONNX',
+        error: e,
+        stackTrace: st,
+      );
+      if (e is TtsException) rethrow;
+      throw TtsSynthesisException('Synthesis to file failed: $e', e);
+    }
+  }
+
+  /// Synthesizes [text] to [outputPath] using the dedicated preview engine.
+  ///
+  /// Unlike [generateToFile] this only requires a *preview* model to be
+  /// loaded ([loadPreviewModel]) and never touches the narration engine.
+  Future<({File file, double duration, List<double> waveform})>
+  generatePreviewToFile({
+    required String text,
+    required String outputPath,
+    int speakerId = 0,
+    double speed = 1.0,
+    double gapSec = 0.0,
+    double? silenceScale,
+    int? numSteps,
+  }) async {
+    if (!hasPreviewLoaded) {
+      throw const TtsModelNotLoadedException();
+    }
+    final gvs = _settingsService.settings.globalViewSettings;
+    final effectiveSentenceGap = gvs.ttsSentenceGap;
+    final effectiveSilenceScale = silenceScale ?? gvs.ttsSilenceScale;
+    final effectiveNumSteps = numSteps ?? gvs.ttsNumSteps;
+
+    try {
+      final result = await _isolateService.sendCommand<Map>(
+        sherpaTtsIsolateName,
+        {
+          'id': _nextId(),
+          'type': 'generateToFile',
+          'preview': true,
+          'text': text,
+          'outputPath': outputPath,
+          'speakerId': speakerId,
+          'speed': speed,
+          'gapSec': gapSec,
+          'sentenceGapMs': effectiveSentenceGap,
+          'silenceScale': effectiveSilenceScale,
+          'numSteps': effectiveNumSteps,
+        },
+      );
+      final rawWaveform = result['waveform'] as List<dynamic>?;
+      final waveform =
+          rawWaveform
+              ?.map((e) => (e as num).toDouble())
+              .toList(growable: false) ??
+          const <double>[];
+
+      return (
+        file: File(result['outputPath'] as String),
+        duration: (result['duration'] as num).toDouble(),
+        waveform: waveform,
+      );
+    } catch (e, st) {
+      _log.e(
+        'Failed to generate preview WAV with Sherpa ONNX',
         error: e,
         stackTrace: st,
       );

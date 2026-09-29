@@ -1,5 +1,6 @@
 library;
 
+export 'settings_sheet.dart';
 export 'panels/settings_appearance_panel.dart';
 export 'panels/settings_behavior_panel.dart';
 export 'panels/settings_font_panel.dart';

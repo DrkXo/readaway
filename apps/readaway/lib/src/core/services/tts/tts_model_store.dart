@@ -23,7 +23,6 @@ class TtsModelStore {
 
   final _installedModelsController =
       StreamController<List<SherpaTtsModelInfo>>.broadcast();
-  final _downloadedIdsController = StreamController<Set<String>>.broadcast();
   final _catalogController =
       StreamController<List<SherpaTtsModelInfo>>.broadcast();
 
@@ -32,9 +31,6 @@ class TtsModelStore {
       final installed = loadInstalledModelsList();
       if (!_installedModelsController.isClosed) {
         _installedModelsController.add(installed);
-      }
-      if (!_downloadedIdsController.isClosed) {
-        _downloadedIdsController.add(installed.map((m) => m.id).toSet());
       }
     });
 
@@ -138,9 +134,6 @@ class TtsModelStore {
     if (!_installedModelsController.isClosed) {
       _installedModelsController.add(installed.values.toList());
     }
-    if (!_downloadedIdsController.isClosed) {
-      _downloadedIdsController.add(installed.keys.toSet());
-    }
   }
 
   Future<void> removeInstalledModel(String modelId) async {
@@ -151,9 +144,6 @@ class TtsModelStore {
     await _storage.ttsBox.put(_installedKey, installed);
     if (!_installedModelsController.isClosed) {
       _installedModelsController.add(installed.values.toList());
-    }
-    if (!_downloadedIdsController.isClosed) {
-      _downloadedIdsController.add(installed.keys.toSet());
     }
   }
 
@@ -176,16 +166,9 @@ class TtsModelStore {
     yield* _installedModelsController.stream;
   }
 
-  /// Emits the set of downloaded IDs immediately on subscription, then any updates.
-  Stream<Set<String>> watchDownloadedIds() async* {
-    yield loadDownloadedIds();
-    yield* _downloadedIdsController.stream;
-  }
-
   @disposeMethod
   void dispose() {
     _installedModelsController.close();
-    _downloadedIdsController.close();
     _catalogController.close();
   }
 }

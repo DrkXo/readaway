@@ -16,8 +16,8 @@ import '../core/services/services.dart';
 import '../features/library/presentation/pages/library_page.dart';
 import '../features/reader/presentation/bloc/reader_bloc.dart';
 import '../features/reader/presentation/pages/reader_page.dart';
-import '../features/settings/presentation/pages/settings_custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
+import '../features/settings/presentation/widgets/settings_sheet.dart';
 
 part 'custom_routes.dart';
 
@@ -151,7 +151,11 @@ class AppRouter {
         },
       ),
 
-      // Global Modals overlaid on top of the router
+      // Global Modal overlaid on top of the router.
+      //
+      // One route, one sheet. The sheet hosts its own navigator, so its
+      // sub-pages (voice library, custom fonts) push within the sheet instead
+      // of each opening a second modal on top of it.
       GoRoute(
         name: _appRoutes.settings.name,
         path: _appRoutes.settings.path,
@@ -170,26 +174,14 @@ class AppRouter {
             key: state.pageKey,
             isScrollControlled: true,
             showDragHandle: false,
-            builder: (context) => SettingsPage(
-              initialTab: initialTab,
-              documentPath: documentPath,
+            builder: (context) => SettingsSheet(
+              home: SettingsPage(
+                initialTab: initialTab,
+                documentPath: documentPath,
+              ),
             ),
           );
         },
-        routes: [
-          GoRoute(
-            name: _appRoutes.customFonts.name,
-            path: _appRoutes.customFonts.path,
-            pageBuilder: (context, state) {
-              return ModalPage(
-                key: state.pageKey,
-                isScrollControlled: true,
-                showDragHandle: false,
-                builder: (context) => const SettingsCustomFontsPage(),
-              );
-            },
-          ),
-        ],
       ),
     ],
   );

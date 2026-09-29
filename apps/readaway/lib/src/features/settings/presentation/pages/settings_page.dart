@@ -57,113 +57,70 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final path = widget.documentPath;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.92),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+    return DefaultTabController(
+      length: 5,
+      initialIndex: widget.initialTab.index,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SettingsSheetHeader(
+            title: 'Settings',
+            trailing: const SettingsSheetCloseButton(),
           ),
-          child: DefaultTabController(
-            length: 5,
-            initialIndex: widget.initialTab.index,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Top drag handle
-                const SizedBox(height: 12),
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
 
-                // Header: title & close button
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 8, 4),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Settings',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(LucideIcons.x),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
+          if (path != null)
+            _PerBookOverrideBanner(
+              enabled: _perBookMode,
+              onChanged: _setPerBookMode,
+            ),
+          if (path != null) const Divider(height: 1),
 
-                if (path != null)
-                  _PerBookOverrideBanner(
-                    enabled: _perBookMode,
-                    onChanged: _setPerBookMode,
-                  ),
-                if (path != null) const Divider(height: 1),
+          const TabBar(
+            isScrollable: false,
+            indicatorSize: TabBarIndicatorSize.tab,
+            dividerColor: Colors.transparent,
+            labelPadding: EdgeInsets.symmetric(horizontal: 6),
+            tabs: [
+              Tab(
+                icon: Icon(LucideIcons.type, size: 18),
+                text: 'Font',
+              ),
+              Tab(
+                icon: Icon(LucideIcons.space, size: 18),
+                text: 'Layout',
+              ),
+              Tab(
+                icon: Icon(LucideIcons.hand, size: 18),
+                text: 'Behavior',
+              ),
+              Tab(
+                icon: Icon(LucideIcons.palette, size: 18),
+                text: 'Appearance',
+              ),
+              Tab(
+                icon: Icon(LucideIcons.mic, size: 18),
+                text: 'TTS',
+              ),
+            ],
+          ),
 
-                TabBar(
-                  isScrollable: false,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-                  tabs: const [
-                    Tab(
-                      icon: Icon(LucideIcons.type, size: 18),
-                      text: 'Font',
-                    ),
-                    Tab(
-                      icon: Icon(LucideIcons.space, size: 18),
-                      text: 'Layout',
-                    ),
-                    Tab(
-                      icon: Icon(LucideIcons.hand, size: 18),
-                      text: 'Behavior',
-                    ),
-                    Tab(
-                      icon: Icon(LucideIcons.palette, size: 18),
-                      text: 'Appearance',
-                    ),
-                    Tab(
-                      icon: Icon(LucideIcons.mic, size: 18),
-                      text: 'TTS',
-                    ),
-                  ],
-                ),
-
-                Flexible(
-                  child: ReaderPrefsScope(
-                    documentPath: _perBookMode ? path : null,
-                    child: const TabBarView(
-                      children: [
-                        SettingsFontPanel(),
-                        SettingsLayoutPanel(),
-                        SettingsBehaviorPanel(),
-                        SettingsAppearancePanel(),
-                        SettingsTtsPanel(),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+          Flexible(
+            child: ReaderPrefsScope(
+              documentPath: _perBookMode ? path : null,
+              child: const TabBarView(
+                children: [
+                  SettingsFontPanel(),
+                  SettingsLayoutPanel(),
+                  SettingsBehaviorPanel(),
+                  SettingsAppearancePanel(),
+                  SettingsTtsPanel(),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

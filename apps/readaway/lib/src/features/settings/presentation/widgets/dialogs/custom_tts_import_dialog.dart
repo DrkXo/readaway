@@ -6,7 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/services/tts/importer/custom_tts_model_importer_service.dart';
 import '../../../../../core/services/tts/tts_models.dart';
-import '../../bloc/settings/settings_bloc.dart';
+import '../../bloc/tts_library/tts_library_bloc.dart';
 
 class CustomTtsImportDialog extends StatefulWidget {
   const CustomTtsImportDialog({super.key});
@@ -103,8 +103,8 @@ class _CustomTtsImportDialogState extends State<CustomTtsImportDialog> {
     final inspection = _inspection!;
     _inspection = null; // Ownership transferred to BLoC
 
-    context.read<SettingsBloc>().add(
-      SettingsEvent.importCustomTtsModel(
+    context.read<TtsLibraryBloc>().add(
+      TtsLibraryEvent.importCustomModel(
         inspection: inspection,
         displayName: name,
         languageCode: _langCodeController.text.trim(),
