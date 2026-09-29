@@ -1,3 +1,7 @@
+## 1.1.0-beta.1
+
+ - **REFACTOR**(reader): time the TTS sentence list with a real LRC timeline [WIP]. ([f2ac2b9f](https://github.com/DrkXo/readaway/commit/f2ac2b9ff21725f4dd16ef2080c2acfe88e6470c))
+
 ## 1.1.0-beta.0
 
  - **REFACTOR**(Project): tests now uses mockito. ([7a75f365](https://github.com/DrkXo/readaway/commit/7a75f3654988260d212d6501890094773477e3f1))

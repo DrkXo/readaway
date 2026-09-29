@@ -15,6 +15,32 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`readaway` - `v1.1.0-beta.1`](#readaway---v110-beta1)
+ - [`readaway_core` - `v1.1.0-beta.1`](#readaway_core---v110-beta1)
+
+---
+
+#### `readaway` - `v1.1.0-beta.1`
+
+ - **REFACTOR**(reader): time the TTS sentence list with a real LRC timeline [WIP]. ([f2ac2b9f](https://github.com/DrkXo/readaway/commit/f2ac2b9ff21725f4dd16ef2080c2acfe88e6470c))
+
+#### `readaway_core` - `v1.1.0-beta.1`
+
+ - **REFACTOR**(reader): time the TTS sentence list with a real LRC timeline [WIP]. ([f2ac2b9f](https://github.com/DrkXo/readaway/commit/f2ac2b9ff21725f4dd16ef2080c2acfe88e6470c))
+
+
+## 2026-09-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`readaway` - `v1.1.0-beta.0`](#readaway---v110-beta0)
  - [`readaway_core` - `v1.1.0-beta.0`](#readaway_core---v110-beta0)
  - [`vscode_theme_parser` - `v1.1.0-beta.0`](#vscode_theme_parser---v110-beta0)
