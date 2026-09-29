@@ -3,7 +3,11 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hyper_render/hyper_render.dart'
+    show HyperViewer, RenderHyperBox;
+import 'package:readaway/src/features/reader/presentation/widgets/viewport/reflowable/chapter_text_layout_builder.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/viewport/reflowable/tts_speech_highlight.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 /// The painted result of a highlight, read back as pixels.
 ///
@@ -67,6 +71,21 @@ class _Painted {
       _data.getUint8(i + 2),
     );
   }
+
+  /// The horizontal extent of the ink on each row that has any, keyed by row.
+  ///
+  /// Rounded corners leave the first and last row of a box a little narrower
+  /// than the rest, so this is only comparable across rows when the painter was
+  /// asked for square corners.
+  Map<int, int> rowWidths() {
+    final widths = <int, int>{};
+    for (var y = 0; y < height; y++) {
+      final span = spanAt(y);
+      if (span == null) continue;
+      widths[y] = span.$2 + 1;
+    }
+    return widths;
+  }
 }
 
 Future<_Painted> _render(
@@ -83,6 +102,22 @@ Future<_Painted> _render(
   return _Painted(data!, size.width.toInt(), size.height.toInt());
 }
 
+/// [_render] for use inside a widget test.
+///
+/// Rasterising an image is real asynchronous work on the engine's own schedule,
+/// which a widget test's fake clock never advances — awaiting it in the test
+/// body deadlocks. [WidgetTester.runAsync] steps outside the fake-async zone so
+/// the image can actually arrive.
+Future<_Painted> _renderInTest(
+  WidgetTester tester,
+  TtsSpeechHighlightPainter painter, {
+  Size size = const Size(400, 1000),
+}) async {
+  final painted = await tester.runAsync(() => _render(painter, size: size));
+  expect(painted, isNotNull, reason: 'runAsync returned nothing to assert on');
+  return painted!;
+}
+
 TtsSpeechHighlightPainter _painter({
   required List<Rect> rects,
   double sliceTop = 0,
@@ -94,6 +129,22 @@ TtsSpeechHighlightPainter _painter({
   color: color,
   cornerRadius: cornerRadius,
 );
+
+/// Walks a render subtree for the [RenderHyperBox] holding the laid-out chapter,
+/// the same way `ReflowableVirtualPage` finds it.
+RenderHyperBox? _findHyperBox(RenderObject? root) {
+  if (root == null) return null;
+  if (root is RenderHyperBox) return root;
+  RenderHyperBox? found;
+  root.visitChildren((child) => found ??= _findHyperBox(child));
+  return found;
+}
+
+/// Three sentences in one paragraph, which wraps several times at 300 units.
+const multiSentenceParagraph =
+    '<p>The quick brown fox jumps over the lazy dog. While the reader turns '
+    'another page of a long chapter, nobody pauses to consider what any of it '
+    'was for in the first place. The dog, for its part, keeps running.</p>';
 
 void main() {
   group('placement', () {
@@ -212,6 +263,203 @@ void main() {
       // square box would have filled.
       expect(painted.rowPainted(0) && painted.spanAt(0) != null, isTrue);
       expect(painted.spanAt(0)!.$1, greaterThan(0));
+    });
+  });
+
+  group('a sentence inside a wrapped paragraph', () {
+    // Stage 4, end to end: real HTML through the renderer, through the layout
+    // builder, through the coordinator's speech map, into the painter, and read
+    // back as pixels. Every stage below has its own tests; what this group adds
+    // is that the chain does not lose the sentence on the way through, which is
+    // what the original defect did — a wrapped paragraph produced no spans at
+    // all, so no sentence in it could be highlighted anywhere.
+
+    /// The layout and coordinator for [multiSentenceParagraph], laid out at the
+    /// same size production uses: a 300-unit column and a page a hundred units
+    /// tall, which puts the paragraph on three pages.
+    Future<
+      ({
+        PaginationCoordinator coordinator,
+        ChapterTextLayout layout,
+      })
+    >
+    pump(WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 300,
+              child: HyperViewer(html: multiSentenceParagraph),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final box = _findHyperBox(
+        find.byType(HyperViewer).evaluate().first.renderObject,
+      );
+      expect(box, isNotNull, reason: 'HyperViewer produced no RenderHyperBox');
+
+      final layout = const ChapterTextLayoutBuilder().build(
+        hyperBox: box!,
+        contentHeight: 200,
+        viewportHeight: 100,
+      );
+      final coordinator = PaginationCoordinator()
+        ..initialize(chapterCount: 1, viewportHeight: 100, contentHeight: 200);
+      coordinator.registerChapterLayout(chapterIndex: 0, layout: layout);
+      // The speech side is the flow text here, so the sentence offsets below are
+      // guaranteed to be the right ones and this group is left testing only what
+      // it claims to: that a range becomes per-line runs, at the renderer's own
+      // widths, clipped at each page edge. The two-route case — production's
+      // `HtmlTextExtractor` output against the tokenizer's `flowText`, which
+      // disagree at block boundaries — is gated separately in
+      // `render_hyper_box_geometry_test.dart`, where it is the whole subject.
+      coordinator.attachSpeechText(0, layout.flowText);
+
+      return (coordinator: coordinator, layout: layout);
+    }
+
+    /// The speech offsets of the sentences in [layout], as `(start, end)` pairs.
+    List<(int, int)> sentences(ChapterTextLayout layout) {
+      final stops = <int>[];
+      for (var i = 0; i < layout.flowText.length; i++) {
+        if (layout.flowText[i] == '.') stops.add(i + 1);
+      }
+      var start = 0;
+      return stops.map((stop) {
+        final sentence = (start, stop);
+        start = stop;
+        return sentence;
+      }).toList();
+    }
+
+    testWidgets('paints the lines one sentence covers, and no others', (
+      tester,
+    ) async {
+      final (coordinator: coordinator, layout: layout) = await pump(tester);
+      final (start, end) = sentences(layout).first;
+
+      final sentence = coordinator.rectsForSpeechRange(0, start, end);
+      final whole = coordinator.rectsForSpeechRange(
+        0,
+        0,
+        layout.flowText.length,
+      );
+
+      expect(sentence, isNotEmpty);
+      expect(
+        sentence.length,
+        lessThan(whole.length),
+        reason: 'a sentence is a strict subset of the paragraph it is in',
+      );
+      // One rect per line the sentence covers, each at that line's own height.
+      expect(
+        sentence.map((r) => r.top).toSet().length,
+        sentence.length,
+        reason: 'a run per line, not one box smeared over several',
+      );
+
+      final painted = await _renderInTest(
+        tester,
+        _painter(rects: sentence),
+        size: const Size(400, 224),
+      );
+
+      // The sentence stops well short of the paragraph's last line, which is
+      // the difference between reading along with the speaker and smearing the
+      // whole paragraph on as soon as it starts.
+      final sentenceRows = painted.paintedRows!;
+      final paragraph = await _renderInTest(
+        tester,
+        _painter(rects: whole),
+        size: const Size(400, 224),
+      );
+      expect(paragraph.paintedRows!.$2, greaterThan(sentenceRows.$2));
+    });
+
+    testWidgets('each line is painted at its own width', (tester) async {
+      // The runs are the renderer's measured lines, not a box drawn to the
+      // column width: a line that ends early shows it. Without real geometry
+      // there is nothing to end early, which is why this is worth asserting.
+      //
+      // Square corners, so the row widths are the rect widths and the two sets
+      // can be compared exactly — a rounded corner would make the first and last
+      // row of every run a little narrower than the run itself.
+      final (coordinator: coordinator, layout: layout) = await pump(tester);
+      final (start, end) = sentences(layout).first;
+
+      final rects = coordinator.rectsForSpeechRange(0, start, end);
+      final painted = await _renderInTest(
+        tester,
+        _painter(
+          rects: rects,
+          cornerRadius: 0,
+          color: const Color(0xFF0000FF),
+        ),
+        size: const Size(400, 224),
+      );
+
+      final rectWidths = rects.map((r) => r.width.round()).toSet();
+      expect(rectWidths.length, greaterThan(1), reason: 'the fixture premise');
+      expect(
+        painted.rowWidths().values.toSet(),
+        rectWidths,
+        reason: 'every painted width is a measured line and every one appears',
+      );
+    });
+
+    testWidgets('a sentence crossing a page break paints on neither page twice', (
+      tester,
+    ) async {
+      final (coordinator: coordinator, layout: layout) = await pump(tester);
+      final offsets = coordinator.getChapterPageOffsets(0);
+      final boundary = layout.pageStartChars[1];
+
+      // The sentence holding the page boundary: it starts on the first page and
+      // ends on the second, so its runs have to be split between them.
+      final crossing = sentences(layout).firstWhere(
+        (s) => s.$1 < boundary && s.$2 > boundary,
+        orElse: () => fail('no sentence crosses the page boundary'),
+      );
+
+      final rects = coordinator.rectsForSpeechRange(
+        0,
+        crossing.$1,
+        crossing.$2,
+      );
+      expect(rects.length, greaterThan(1));
+
+      // Each page draws only the runs it can see, at the height it has them.
+      final first = await _renderInTest(
+        tester,
+        _painter(rects: rects, sliceTop: offsets[0]),
+        size: const Size(400, 96),
+      );
+      final second = await _renderInTest(
+        tester,
+        _painter(rects: rects, sliceTop: offsets[1]),
+        size: const Size(400, 96),
+      );
+
+      // The first page starts the sentence mid-column and runs out of page
+      // before it finishes it.
+      expect(first.paintedRows!.$1, greaterThan(0));
+      expect(
+        first.paintedRows!.$2,
+        95,
+        reason: 'clipped at the page edge rather than drawn past it',
+      );
+      // The second picks it up from its own top edge.
+      expect(second.paintedRows!.$1, 0);
+      expect(second.paintedRows!.$2, lessThan(95));
+
+      // And neither page paints the whole sentence: the two bands are disjoint
+      // in chapter coordinates, and together they are not the whole range.
+      final firstSpan = first.spanAt(first.paintedRows!.$2)!;
+      final secondSpan = second.spanAt(second.paintedRows!.$2)!;
+      expect(firstSpan, isNot(secondSpan));
     });
   });
 

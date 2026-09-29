@@ -902,21 +902,23 @@ packages:
     source: hosted
     version: "0.1.0"
   hyper_render:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: hyper_render
-      sha256: "3c98687c227a8fcaa01e6686f4a2f0ce229e2751695b41e33b88d97ef5e4d41d"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.9.1"
+      path: "."
+      ref: "feat/line-fragments"
+      resolved-ref: "752400ce2fbe707549ac0d44ffbbcf4ee1f77c55"
+      url: "https://github.com/DrkXo/hyper_render.git"
+    source: git
+    version: "1.9.2"
   hyper_render_core:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: hyper_render_core
-      sha256: "2c0e28bef320ed974272d22db0a2a219bef7965fc09381ae075c44847fdda558"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.9.0"
+      path: "packages/hyper_render_core"
+      ref: "feat/line-fragments"
+      resolved-ref: "752400ce2fbe707549ac0d44ffbbcf4ee1f77c55"
+      url: "https://github.com/DrkXo/hyper_render.git"
+    source: git
+    version: "1.9.2"
   image:
     dependency: transitive
     description:

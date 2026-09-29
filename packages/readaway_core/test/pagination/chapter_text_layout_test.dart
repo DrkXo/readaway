@@ -13,7 +13,6 @@ TextSpanBox _span(int start, int end, double y) => TextSpanBox(
 
 ChapterTextLayout _layout({
   required List<TextSpanBox> spans,
-  required List<TextBlock> blocks,
   required List<PageSlice> pages,
   int totalCharacterCount = 1000,
   String flowText = '',
@@ -22,7 +21,6 @@ ChapterTextLayout _layout({
   viewportHeight: 800,
   lineBounds: const [],
   spans: spans,
-  blocks: blocks,
   pages: pages,
   totalCharacterCount: totalCharacterCount,
   flowText: flowText,
@@ -40,7 +38,6 @@ void main() {
   group('ChapterTextLayout.pageForChar', () {
     final layout = _layout(
       spans: [_span(0, 250, 0), _span(250, 500, 800), _span(500, 750, 1600)],
-      blocks: const [],
       pages: [_page(0, 0, 0), _page(1, 800, 250), _page(2, 1600, 500)],
     );
 
@@ -72,7 +69,6 @@ void main() {
     test('round-trips with pageForChar at every boundary', () {
       final layout = _layout(
         spans: const [],
-        blocks: const [],
         pages: [_page(0, 0, 0), _page(1, 800, 250), _page(2, 1600, 500)],
       );
       for (var i = 0; i < layout.pages.length; i++) {
@@ -82,11 +78,7 @@ void main() {
     });
 
     test('returns null for out-of-range pages', () {
-      final layout = _layout(
-        spans: const [],
-        blocks: const [],
-        pages: [_page(0, 0, 0)],
-      );
+      final layout = _layout(spans: const [], pages: [_page(0, 0, 0)]);
       expect(layout.charForPage(-1), isNull);
       expect(layout.charForPage(1), isNull);
     });
@@ -95,7 +87,6 @@ void main() {
   group('ChapterTextLayout.rectsForCharRange', () {
     final layout = _layout(
       spans: [_span(0, 250, 0), _span(250, 500, 800), _span(500, 750, 1600)],
-      blocks: const [],
       pages: const [],
     );
 
@@ -125,12 +116,10 @@ void main() {
     test('equal geometry matches', () {
       final a = _layout(
         spans: const [],
-        blocks: const [],
         pages: [_page(0, 0, 0), _page(1, 800, 250)],
       );
       final b = _layout(
         spans: const [],
-        blocks: const [],
         pages: [_page(0, 0, 0), _page(1, 800, 250)],
       );
       expect(a.matches(b), isTrue);
@@ -140,12 +129,10 @@ void main() {
     test('a changed char offset is a change', () {
       final a = _layout(
         spans: const [],
-        blocks: const [],
         pages: [_page(0, 0, 0), _page(1, 800, 250)],
       );
       final b = _layout(
         spans: const [],
-        blocks: const [],
         pages: [_page(0, 0, 0), _page(1, 800, 251)],
       );
       expect(a.matches(b), isFalse);
@@ -154,13 +141,11 @@ void main() {
     test('a changed character count is a change', () {
       final a = _layout(
         spans: const [],
-        blocks: const [],
         pages: const [],
         totalCharacterCount: 100,
       );
       final b = _layout(
         spans: const [],
-        blocks: const [],
         pages: const [],
         totalCharacterCount: 101,
       );
@@ -174,18 +159,15 @@ void main() {
       // the old text would then be silently wrong.
       final geometry = (
         spans: const <TextSpanBox>[],
-        blocks: const <TextBlock>[],
         pages: [_page(0, 0, 0), _page(1, 800, 250)],
       );
       final withMarker = _layout(
         spans: geometry.spans,
-        blocks: geometry.blocks,
         pages: geometry.pages,
         flowText: '1. Alpha Beta',
       );
       final withoutMarker = _layout(
         spans: geometry.spans,
-        blocks: geometry.blocks,
         pages: geometry.pages,
         flowText: 'Alpha Beta',
       );
@@ -204,7 +186,6 @@ void main() {
       );
       expect(layout.hasCharacterMapping, isFalse);
       expect(layout.spans, isEmpty);
-      expect(layout.blocks, isEmpty);
       expect(layout.pages, isEmpty);
       expect(layout.rectsForCharRange(0, 100), isEmpty);
     });

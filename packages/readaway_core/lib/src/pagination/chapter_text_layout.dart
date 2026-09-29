@@ -38,14 +38,6 @@ class LayoutFragment {
     this.nodeTag,
   });
 
-  /// Whether this fragment contributes characters to the flow text.
-  bool get isFlowText {
-    final t = text;
-    if (t == null || t.isEmpty) return false;
-    if (offsetX == null || offsetY == null) return false;
-    return true;
-  }
-
   /// Reads the shape produced by `RenderHyperBox.debugFragments`.
   factory LayoutFragment.fromDebugMap(Map<String, dynamic> map) {
     double? num2double(Object? v) => v is num ? v.toDouble() : null;
@@ -83,6 +75,111 @@ class LayoutLine {
       height: num2double(map['height']),
     );
   }
+}
+
+/// One positioned fragment of a laid-out line, as reported by
+/// `RenderHyperBox.debugLineFragments`.
+///
+/// Unlike [LayoutFragment], which mirrors the renderer's *tokenizer* output and
+/// so reports null geometry for a text node that wrapped, this mirrors the
+/// lines the layout actually produced. Every instance is positioned, and
+/// [charStart] is the renderer's own `globalOffset` rather than a value
+/// re-derived here by prefix sum.
+class LayoutLineFragment {
+  /// Render fragment type name: `text`, `atomic`, `lineBreak` or `ruby`.
+  final String? type;
+
+  /// The fragment's characters, or null/empty for structural fragments.
+  final String? text;
+
+  /// The reading drawn above [text] for a ruby fragment, or null.
+  ///
+  /// This is a different string from [text] in both content and length, so a
+  /// consumer relating drawn text to spoken or translated text needs both.
+  final String? rubyText;
+
+  /// Character offset of the first character, in the renderer's own space.
+  final int charStart;
+
+  /// One past the last character, as the renderer accounts for it.
+  final int charEnd;
+
+  /// How much of [text] actually reached the screen when the fragment was
+  /// truncated, or null when it was not.
+  final int? ellipsisVisibleLength;
+
+  /// Index of the line this fragment was placed on.
+  final int lineIndex;
+
+  /// Left edge in chapter-local coordinates.
+  final double offsetX;
+
+  /// Top edge in chapter-local coordinates.
+  final double offsetY;
+
+  /// Measured width.
+  final double width;
+
+  /// Measured height.
+  final double height;
+
+  /// Id of the source node.
+  final String? nodeId;
+
+  /// Tag name of the source node.
+  final String? nodeTag;
+
+  const LayoutLineFragment({
+    required this.charStart,
+    required this.charEnd,
+    required this.offsetX,
+    required this.offsetY,
+    required this.width,
+    required this.height,
+    required this.lineIndex,
+    this.type,
+    this.text,
+    this.rubyText,
+    this.ellipsisVisibleLength,
+    this.nodeId,
+    this.nodeTag,
+  });
+
+  /// Bounding box in chapter-local coordinates.
+  Rect get rect => Rect.fromLTWH(offsetX, offsetY, width, height);
+
+  /// One past the last character that reached the screen.
+  ///
+  /// Equal to [charEnd] unless the fragment was truncated, in which case the
+  /// characters past this point were never painted and must not be highlighted.
+  int get visibleCharEnd => ellipsisVisibleLength == null
+      ? charEnd
+      : charStart + ellipsisVisibleLength!;
+
+  /// Reads the shape produced by `RenderHyperBox.debugLineFragments`.
+  factory LayoutLineFragment.fromDebugMap(Map<String, dynamic> map) {
+    double num2double(Object? v) => v is num ? v.toDouble() : double.nan;
+    return LayoutLineFragment(
+      type: map['type'] as String?,
+      text: map['text'] as String?,
+      rubyText: map['rubyText'] as String?,
+      charStart: map['charStart'] as int? ?? 0,
+      charEnd: map['charEnd'] as int? ?? 0,
+      ellipsisVisibleLength: map['ellipsisVisibleLength'] as int?,
+      lineIndex: map['lineIndex'] as int? ?? 0,
+      offsetX: num2double(map['offsetX']),
+      offsetY: num2double(map['offsetY']),
+      width: num2double(map['width']),
+      height: num2double(map['height']),
+      nodeId: map['nodeId'] as String?,
+      nodeTag: map['nodeTag'] as String?,
+    );
+  }
+
+  @override
+  String toString() =>
+      'LayoutLineFragment(line $lineIndex, $charStart..$charEnd, '
+      '$nodeTag/$type, $rect)';
 }
 
 /// A single laid-out text fragment in a chapter's canonical character space.
@@ -123,43 +220,6 @@ class TextSpanBox {
   @override
   String toString() =>
       'TextSpanBox($charStart..$charEnd, $nodeTag/$type, $rect)';
-}
-
-/// A block-level grouping of spans (a paragraph, heading, list item, ...).
-///
-/// Blocks are the structural bridge between the rendered chapter and the
-/// extracted speech text: both sides enumerate blocks in document order, so
-/// they can be aligned by index without ever comparing text.
-class TextBlock {
-  /// Position of this block in document order.
-  final int index;
-
-  /// Character offset where this block's flow text begins.
-  final int charStart;
-
-  /// Character offset one past where this block's flow text ends.
-  final int charEnd;
-
-  /// Top of the block in chapter-local coordinates.
-  final double startY;
-
-  /// Bottom of the block in chapter-local coordinates.
-  final double endY;
-
-  /// Tag name of the block element, e.g. `p`, `h2`, `li`.
-  final String tag;
-
-  const TextBlock({
-    required this.index,
-    required this.charStart,
-    required this.charEnd,
-    required this.startY,
-    required this.endY,
-    required this.tag,
-  });
-
-  @override
-  String toString() => 'TextBlock($index, $tag, $charStart..$charEnd)';
 }
 
 /// One screen page of a chapter, expressed in both geometric and character
@@ -209,11 +269,11 @@ class ChapterTextLayout {
   /// Line boxes of the chapter, used by [PageSlicer] to snap page breaks.
   final List<({double top, double bottom})> lineBounds;
 
-  /// Every laid-out fragment, in layout order. Ordered by [TextSpanBox.charStart].
+  /// Every positioned fragment, in layout order. Ordered by
+  /// [TextSpanBox.charStart], one entry per fragment per line, so a range
+  /// covering a sentence resolves to the exact runs of glyphs it covers rather
+  /// than to whole style runs.
   final List<TextSpanBox> spans;
-
-  /// Block-level groupings of [spans], in document order.
-  final List<TextBlock> blocks;
 
   /// Screen pages of the chapter, in order. Empty when measurement failed.
   final List<PageSlice> pages;
@@ -239,7 +299,6 @@ class ChapterTextLayout {
     required this.viewportHeight,
     required this.lineBounds,
     required this.spans,
-    required this.blocks,
     required this.pages,
     required this.flowText,
     required this.totalCharacterCount,
@@ -259,7 +318,6 @@ class ChapterTextLayout {
     viewportHeight: viewportHeight,
     lineBounds: lineBounds,
     spans: const [],
-    blocks: const [],
     pages: const [],
     flowText: '',
     totalCharacterCount: 0,

@@ -186,7 +186,32 @@ class PaginationCoordinator {
       _chapterSpeechMaps.remove(chapterIndex);
       return null;
     }
-    final map = SpeechCharMap.build(speechText, layout.flowText);
+    // Prefer fragment geometry whenever the layout carries any. It is not
+    // chosen for scoring better — it is chosen because it cannot claim a
+    // correspondence it has not verified.
+    //
+    // `fromSpans` places a fragment only by finding its exact text, so every
+    // offset it reports as exact was matched character for character, and text
+    // the speech side skips leaves the next fragment to be found by identity
+    // however long the skipped block was.
+    //
+    // `build` infers instead, and both of its failure modes report themselves as
+    // success. Past its resynchronisation lookahead it walks both strings
+    // forward in step through text with no counterpart; across a list marker it
+    // resynchronises onto the marker's trailing space and accumulates the
+    // wrong offset for the rest of the chapter. Measured on a chapter of
+    // eight marked items, it reported exactFraction 1.0 while being wrong at
+    // every offset past the first. An uncertainty a caller can see is worth
+    // more than a certainty it cannot.
+    //
+    // Its one advantage is a chapter whose fragments are all decorated, where
+    // no fragment is findable and `fromSpans` places nothing. That is recorded
+    // as a limit of the fragment path rather than worked around here, because
+    // the workaround would reintroduce the inference this avoids.
+    final hasFragmentText = layout.spans.any((span) => span.isFlowText);
+    final map = hasFragmentText
+        ? SpeechCharMap.fromSpans(speech: speechText, layout: layout)
+        : SpeechCharMap.build(speechText, layout.flowText);
     _chapterSpeechMaps[chapterIndex] = map;
     return map;
   }

@@ -17,6 +17,27 @@ dev_dependencies:
 
 dependency_overrides:
   cli_util: ^0.5.0
+  # Point at DrkXo/hyper_render for RenderHyperBox.debugLineFragments(), which
+  # reports the per-line fragments that actually got positioned. The app's own
+  # constraint stays a plain `^1.9.1`, so deleting these two entries is a
+  # complete revert to pub.dev.
+  #
+  # hyper_render_core MUST be overridden too, and this is not optional:
+  # `hyper_render` lives at the repo root and reaches core through its own
+  # `dependency_overrides: hyper_render_core: path: packages/hyper_render_core`.
+  # Pub only honours overrides from the root package of a resolution, so that
+  # path is discarded for a git dependency and core would resolve from pub.dev
+  # — the build would succeed and the method would simply be missing at
+  # runtime. See .agents/plans/tts-highlight-geometry.md, risk 1.
+  hyper_render:
+    git:
+      url: https://github.com/DrkXo/hyper_render.git
+      ref: feat/line-fragments
+  hyper_render_core:
+    git:
+      url: https://github.com/DrkXo/hyper_render.git
+      ref: feat/line-fragments
+      path: packages/hyper_render_core
 
 melos:
   ide:

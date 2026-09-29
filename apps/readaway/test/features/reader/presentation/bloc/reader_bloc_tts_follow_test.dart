@@ -43,7 +43,6 @@ ChapterTextLayout _layout({String? flowText}) => ChapterTextLayout(
       type: 'text',
     ),
   ],
-  blocks: const [],
   pages: const [
     PageSlice(index: 0, startY: 0, endY: 1000, startChar: 0, endChar: 250),
     PageSlice(index: 1, startY: 1000, endY: 2000, startChar: 250, endChar: 500),

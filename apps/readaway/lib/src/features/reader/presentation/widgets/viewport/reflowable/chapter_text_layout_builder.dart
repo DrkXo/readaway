@@ -1,73 +1,35 @@
-import 'dart:ui' show Rect;
-
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:hyper_render/hyper_render.dart' show RenderHyperBox;
 import 'package:readaway_core/readaway_core.dart';
 
 /// Builds a [ChapterTextLayout] from a laid-out [RenderHyperBox].
 ///
-/// The render object maintains a canonical character space for text selection
-/// and IME, where the chapter's flow text is the concatenation of every text
-/// and ruby fragment in layout order, a line break contributes one character,
-/// and every other fragment contributes none. [RenderHyperBox.debugFragments]
-/// does not expose those offsets, so they are reconstructed here using the
-/// same accounting rule.
+/// Two different render-object APIs are read, and the distinction is the whole
+/// point:
 ///
-/// The reconstruction is validated against
-/// [RenderHyperBox.totalCharacterCount]. If the two disagree the upstream
-/// accounting rule has changed and the result would be silently wrong, so an
-/// unavailable layout is returned instead and callers fall back to
-/// proportional geometry.
+/// - [RenderHyperBox.debugFragments] reports the *tokenizer* output. When a text
+///   node wraps, the layout splits it into new fragments, positions those, and
+///   never adds them back to that list — so the tokenizer fragment is reported
+///   unpositioned for text that was in fact laid out and painted. It is still
+///   the only complete description of the chapter's character space, because the
+///   renderer counts text that never reaches a line (hidden content, replaced
+///   elements), so it is used to reconstruct [ChapterTextLayout.flowText] and to
+///   validate the total.
+/// - [RenderHyperBox.debugLineFragments] reports the fragments of the lines
+///   that were actually produced, each with the position it was painted at and
+///   the renderer's own `globalOffset`. This is the only source of geometry, and
+///   therefore the only source of [TextSpanBox].
+///
+/// The two must agree. The character offsets are cross-checked against
+/// [ChapterTextLayout.flowText] so that a change in the renderer's accounting
+/// surfaces as a refusal to build a mapping rather than as silently wrong
+/// highlight positions.
 class ChapterTextLayoutBuilder {
   const ChapterTextLayoutBuilder();
 
-  /// Tag names that begin and end a block-level box.
-  ///
-  /// A fragment with empty text whose source tag is one of these is a block
-  /// boundary. Note that [RenderHyperBox.debugFragments] reports block start
-  /// and block end fragments as `type: 'text'` with empty text, exactly like
-  /// inline boundaries, so the tag is the only available discriminator.
-  static const Set<String> blockTags = {
-    'address',
-    'article',
-    'aside',
-    'blockquote',
-    'caption',
-    'dd',
-    'details',
-    'div',
-    'dl',
-    'dt',
-    'fieldset',
-    'figcaption',
-    'figure',
-    'footer',
-    'form',
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'h5',
-    'h6',
-    'header',
-    'hgroup',
-    'li',
-    'main',
-    'nav',
-    'ol',
-    'p',
-    'pre',
-    'section',
-    'summary',
-    'table',
-    'tbody',
-    'td',
-    'tfoot',
-    'th',
-    'thead',
-    'tr',
-    'ul',
-  };
+  /// Matches whitespace runs, so the offset cross-check can ignore differences
+  /// in how much of it sits at a wrap without becoming insensitive to drift.
+  static final RegExp _whitespace = RegExp(r'\s+');
 
   /// Reads the laid-out geometry out of [hyperBox].
   ///
@@ -77,9 +39,10 @@ class ChapterTextLayoutBuilder {
     required double contentHeight,
     required double viewportHeight,
   }) {
-    final fragments = _readFragments(hyperBox);
-    return buildFromFragments(
-      fragments: fragments ?? const <LayoutFragment>[],
+    return buildFromLayout(
+      fragments: _readFragments(hyperBox) ?? const <LayoutFragment>[],
+      lineFragments:
+          _readLineFragments(hyperBox) ?? const <LayoutLineFragment>[],
       lineBounds: _readLineBounds(hyperBox),
       totalCharacterCount: hyperBox.totalCharacterCount,
       contentHeight: contentHeight,
@@ -89,23 +52,28 @@ class ChapterTextLayoutBuilder {
 
   /// Builds a layout from already-extracted fragment data.
   ///
-  /// Separated from [build] so the character accounting can be exercised
-  /// without a live render object.
+  /// Separated from [build] so the character accounting and the offset
+  /// cross-check can be exercised without a live render object.
   ///
   /// [totalCharacterCount] must be the character total the render object
-  /// reports. When the reconstructed total disagrees, the upstream accounting
-  /// rule has changed and an unavailable layout is returned: callers then fall
-  /// back to proportional geometry instead of trusting wrong offsets.
-  ChapterTextLayout buildFromFragments({
+  /// reports, and [fragments] must be its tokenizer output. When the
+  /// reconstructed total disagrees with it, the upstream accounting rule has
+  /// changed; when a line fragment's text does not match the flow text at its
+  /// reported offset, the offsets have drifted. Either way the character
+  /// mapping would be untrustworthy, so an unavailable layout is returned and
+  /// callers fall back to proportional geometry.
+  ChapterTextLayout buildFromLayout({
     required List<LayoutFragment> fragments,
+    required List<LayoutLineFragment> lineFragments,
     required List<({double top, double bottom})>? lineBounds,
     required int totalCharacterCount,
     required double contentHeight,
     required double viewportHeight,
 
-    /// Suppresses the debug assertion raised when the reconstructed character
-    /// total disagrees with [totalCharacterCount]. Only for tests that need to
-    /// observe the unavailable layout that the assertion otherwise guards.
+    /// Suppresses the debug assertions raised when the reconstructed character
+    /// total disagrees with [totalCharacterCount], or when a line fragment's
+    /// text does not match the flow text at its reported offset. Only for tests
+    /// that need to observe the unavailable layout the assertions guard.
     bool suppressCharacterTotalAssertion = false,
   }) {
     final lines = lineBounds;
@@ -118,128 +86,83 @@ class ChapterTextLayoutBuilder {
 
     if (fragments.isEmpty) return fallback;
 
-    final spans = <TextSpanBox>[];
-    final blocks = <TextBlock>[];
-
-    // The chapter's flow text is rebuilt alongside the offsets, so every
-    // offset in the layout indexes directly into this string. It is what the
-    // reader sees and what text selection copies.
+    // ---------------------------------------------------------------------
+    // 1. Reconstruct the chapter's flow text in the renderer's character
+    //    space. This is what the reader sees and what text selection copies,
+    //    and every offset in this layout indexes into it.
+    //
+    //    Mirrors the upstream accounting rule in
+    //    `RenderHyperBox._ensureFragments`: text and ruby contribute their
+    //    length, a line break contributes exactly one character, and every
+    //    other type (atomic boxes, block boundaries) contributes none. Block
+    //    and inline boundaries are reported as type 'text' with empty text, so
+    //    they are covered by the empty-text case.
+    // ---------------------------------------------------------------------
     final flowText = StringBuffer();
-
     var charCursor = 0;
-    var blockStartChar = 0;
-    var blockStartY = double.infinity;
-    var blockEndY = 0.0;
-    var blockTag = '';
-    var blockOpen = false;
-
-    void closeBlock() {
-      if (!blockOpen) return;
-      // Only emit blocks that actually contain flow text. Atomic-only and
-      // spacer blocks carry no characters, so they cannot be aligned against
-      // extracted speech text and would introduce phantom indices.
-      if (charCursor > blockStartChar) {
-        blocks.add(
-          TextBlock(
-            index: blocks.length,
-            charStart: blockStartChar,
-            charEnd: charCursor,
-            startY: blockStartY.isFinite ? blockStartY : 0.0,
-            endY: blockEndY,
-            tag: blockTag,
-          ),
-        );
-      }
-      blockOpen = false;
-      blockStartChar = charCursor;
-    }
 
     for (final fragment in fragments) {
       final type = fragment.type ?? '';
       final text = fragment.text;
-      final nodeTag = (fragment.nodeTag ?? '').toLowerCase();
 
-      // Mirrors the upstream accounting rule in
-      // `RenderHyperBox._ensureFragments`: text and ruby contribute their
-      // length, a line break contributes exactly one character, and every
-      // other type (atomic boxes, block boundaries) contributes nothing.
-      final isLineBreak = type == 'lineBreak';
-      // Block and inline boundaries are reported as type 'text' with empty
-      // text. Upstream counts them as zero characters, so treating them as
-      // boundaries keeps the accounting identical while exposing the tag.
-      final isBoundary = (text == null || text.isEmpty) && !isLineBreak;
-      // Only text and ruby fragments contribute their length. Atomic boxes
-      // (images, replaced elements) contribute nothing regardless of the
-      // text the debug API reports for them.
-      final isFlowText =
-          text != null &&
-          text.isNotEmpty &&
-          !isLineBreak &&
-          (type == 'text' || type == 'ruby');
-
-      if (isBoundary || (!isFlowText && !isLineBreak)) {
-        // A boundary or atomic fragment. Block tags close the current block;
-        // inline tags (a, em, span, ...) are transparent.
-        if (blockTags.contains(nodeTag)) {
-          closeBlock();
-          blockTag = nodeTag;
-          blockStartY = fragment.offsetY ?? double.infinity;
-          blockEndY = fragment.offsetY ?? 0.0;
-          blockOpen = true;
-        }
+      if (type == 'lineBreak') {
+        flowText.write('\n');
+        charCursor += 1;
         continue;
       }
-
-      final charEnd = charCursor + (isLineBreak ? 1 : text!.length);
-      flowText.write(isLineBreak ? '\n' : text);
-
-      if (!blockOpen) {
-        // Text outside any recognised block (e.g. a bare text node at the
-        // root). Open an implicit block so it stays addressable.
-        blockOpen = true;
-        blockTag = nodeTag;
-        blockStartY = fragment.offsetY ?? double.infinity;
-        blockStartChar = charCursor;
-      }
-
-      final offsetY = fragment.offsetY;
-      if (isFlowText && fragment.offsetX != null && offsetY != null) {
-        spans.add(
-          TextSpanBox(
-            charStart: charCursor,
-            charEnd: charEnd,
-            rect: Rect.fromLTWH(
-              fragment.offsetX!,
-              offsetY,
-              fragment.width ?? 0.0,
-              fragment.height ?? 0.0,
-            ),
-            nodeTag: nodeTag,
-            type: type,
-          ),
-        );
-      }
-
-      blockEndY = offsetY ?? blockEndY;
-      charCursor = charEnd;
-
-      if (isLineBreak) {
-        // A line break separates blocks for speech purposes.
-        closeBlock();
-        blockStartY = double.infinity;
-        blockEndY = 0.0;
-      }
+      if (text == null || text.isEmpty) continue;
+      if (type != 'text' && type != 'ruby') continue;
+      flowText.write(text);
+      charCursor += text.length;
     }
-    closeBlock();
 
-    // The reconstructed accounting must agree with the render object, otherwise
-    // every character offset in this layout is untrustworthy.
+    final flow = flowText.toString();
+
     if (charCursor != totalCharacterCount) {
       assert(
         suppressCharacterTotalAssertion,
         'ChapterTextLayoutBuilder: reconstructed $charCursor characters but '
         'RenderHyperBox reports $totalCharacterCount. The upstream fragment '
         'accounting rule has changed; character offsets are unreliable.',
+      );
+      return fallback;
+    }
+
+    // ---------------------------------------------------------------------
+    // 2. Spans come from the positioned line fragments, using the renderer's
+    //    own offsets. A wrapped text node contributes one span per line it
+    //    occupies, which is what makes sentence-level highlighting possible:
+    //    a range resolves to the glyph runs it covers, not to a whole paragraph.
+    // ---------------------------------------------------------------------
+    final spans = <TextSpanBox>[];
+    for (final fragment in lineFragments) {
+      spans.add(
+        TextSpanBox(
+          charStart: fragment.charStart,
+          // Truncated text was never painted past the clamp, so it must not be
+          // highlighted as though it were.
+          charEnd: fragment.visibleCharEnd,
+          rect: fragment.rect,
+          nodeTag: fragment.nodeTag ?? '',
+          type: fragment.type ?? '',
+        ),
+      );
+    }
+
+    // ---------------------------------------------------------------------
+    // 3. Cross-check the renderer's offsets against the reconstructed text.
+    //    Ranges must be in bounds, ascending and non-overlapping, and each
+    //    fragment's text must be the flow text at the offset it claims. Gaps
+    //    are expected and correct — whitespace trimmed at a wrap belongs to no
+    //    fragment — so coverage is deliberately not required.
+    // ---------------------------------------------------------------------
+    if (!_offsetsAgree(lineFragments, flow, totalCharacterCount)) {
+      assert(
+        suppressCharacterTotalAssertion,
+        'ChapterTextLayoutBuilder: a line fragment reports text that does not '
+        'match the flow text at its character offset, or its ranges overlap or '
+        'run past the chapter total. The renderer\'s character accounting has '
+        'changed; character offsets are unreliable.',
       );
       return fallback;
     }
@@ -255,11 +178,52 @@ class ChapterTextLayoutBuilder {
       viewportHeight: viewportHeight,
       lineBounds: lines ?? const <({double top, double bottom})>[],
       spans: spans,
-      blocks: blocks,
-      pages: buildPages(offsets, spans, contentHeight, charCursor),
-      flowText: flowText.toString(),
+      pages: buildPages(offsets, spans, contentHeight, totalCharacterCount),
+      flowText: flow,
       totalCharacterCount: totalCharacterCount,
     );
+  }
+
+  /// Whether every line fragment is in bounds, ascending and non-overlapping,
+  /// and carries the text the flow text actually has at its reported offset.
+  ///
+  /// Gaps are not a failure. Whitespace trimmed at a wrap is counted by the
+  /// renderer but belongs to no fragment, so a range landing in a gap correctly
+  /// has no rect, and a fragment's own range may begin or end inside that
+  /// trimmed whitespace. Completeness is therefore not required — only that what
+  /// *is* reported is consistent — and the text comparison ignores whitespace
+  /// for the same reason.
+  ///
+  /// This is the tripwire for a bad merge of the fork: a change to how the
+  /// renderer derives `globalOffset` would show up here as text that does not
+  /// match at the offset it claims, which is a refusal to build a mapping rather
+  /// than a highlight in the wrong place.
+  static bool _offsetsAgree(
+    List<LayoutLineFragment> fragments,
+    String flow,
+    int totalCharacters,
+  ) {
+    String strip(String s) => s.replaceAll(_whitespace, '');
+    var previousEnd = 0;
+
+    for (final fragment in fragments) {
+      if (fragment.charStart < 0) return false;
+      if (fragment.charEnd > totalCharacters) return false;
+      if (fragment.charStart < previousEnd) return false;
+      if (fragment.charEnd > previousEnd) previousEnd = fragment.charEnd;
+
+      // Only text and ruby carry characters; atomic boxes and line breaks are
+      // positioned but contribute none, and their offsets are structural.
+      final type = fragment.type ?? '';
+      if (type != 'text' && type != 'ruby') continue;
+      final text = fragment.text;
+      if (text == null || text.isEmpty) continue;
+      if (fragment.charEnd <= fragment.charStart) return false;
+
+      final at = flow.substring(fragment.charStart, fragment.charEnd);
+      if (strip(at) != strip(text)) return false;
+    }
+    return true;
   }
 
   /// Converts page-break Y offsets into character ranges.
@@ -322,6 +286,17 @@ class ChapterTextLayoutBuilder {
       return hyperBox
           .debugFragments()
           .map(LayoutFragment.fromDebugMap)
+          .toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<LayoutLineFragment>? _readLineFragments(RenderHyperBox hyperBox) {
+    try {
+      return hyperBox
+          .debugLineFragments()
+          .map(LayoutLineFragment.fromDebugMap)
           .toList();
     } catch (_) {
       return null;

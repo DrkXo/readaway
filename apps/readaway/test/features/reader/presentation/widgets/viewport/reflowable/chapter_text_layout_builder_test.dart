@@ -5,7 +5,7 @@ import 'package:readaway/src/features/reader/presentation/widgets/viewport/reflo
 import 'package:readaway_core/readaway_core.dart';
 
 void main() {
-  group('ChapterTextLayoutBuilder._buildPages', () {
+  group('ChapterTextLayoutBuilder.buildPages', () {
     test('a single page spans the whole chapter', () {
       final pages = _pagesFor(
         offsets: const [0.0],
@@ -117,33 +117,20 @@ void main() {
     });
   });
 
-  group('ChapterTextLayoutBuilder.buildFromFragments accounting', () {
-    ChapterTextLayout build({
-      required List<LayoutFragment> fragments,
-      required int totalCharacterCount,
-      double contentHeight = 500,
-      double viewportHeight = 1000,
-    }) => const ChapterTextLayoutBuilder().buildFromFragments(
-      fragments: fragments,
-      lineBounds: null,
-      totalCharacterCount: totalCharacterCount,
-      contentHeight: contentHeight,
-      viewportHeight: viewportHeight,
-    );
-
+  // The tokenizer fragments and the line fragments answer different questions.
+  // The tokenizer is the only complete account of the chapter's character space
+  // — it includes text that never reaches a line — so it reconstructs the flow
+  // text and reconciles the total. The lines are the only account of where
+  // anything was painted, so they produce the spans. The groups below are split
+  // along that line deliberately: mixing the two is the defect this work fixed.
+  group('flow text is reconstructed from the tokenizer fragments', () {
     test('rejects a layout whose character total disagrees', () {
       // The render object reports 999 characters but the fragments sum to 10.
       // That means the upstream accounting rule changed, so the builder must
       // refuse to emit a mapping rather than emit wrong offsets. Debug builds
       // also assert, which is how this surfaces during development.
       expect(
-        () => build(
-          fragments: [
-            LayoutFragment.fromDebugMap(_frag('text', 'Hello', 'p', 0, 20)),
-            LayoutFragment.fromDebugMap(_frag('text', 'World', 'p', 0, 20)),
-          ],
-          totalCharacterCount: 999,
-        ),
+        () => build(fragments: [_text('Hello'), _text('World')], total: 999),
         throwsA(isA<AssertionError>()),
       );
     });
@@ -151,16 +138,10 @@ void main() {
     test('a rejected layout carries no character mapping', () {
       // The release-mode contract: once the mismatch check fails, callers get
       // an unavailable layout whose page lookups are all safe no-ops.
-      final layout = const ChapterTextLayoutBuilder().buildFromFragments(
-        fragments: [
-          LayoutFragment(type: 'text', text: 'Hello', nodeTag: 'p'),
-        ],
-        lineBounds: null,
-        totalCharacterCount: 999,
-        contentHeight: 500,
-        viewportHeight: 1000,
-        // Bypass the debug assertion to observe the fallback value itself.
-        suppressCharacterTotalAssertion: true,
+      final layout = build(
+        fragments: [_text('Hello')],
+        total: 999,
+        suppress: true,
       );
 
       expect(layout.hasCharacterMapping, isFalse);
@@ -169,40 +150,39 @@ void main() {
       expect(layout.pageForChar(500), 0);
     });
 
-    test('accepts fragments that reconcile with the reported total', () {
-      final layout = build(
-        fragments: [
-          LayoutFragment.fromDebugMap(_frag('text', 'Hello', 'p', 0, 20)),
-          LayoutFragment.fromDebugMap(_frag('text', 'World', 'p', 0, 20)),
-        ],
-        totalCharacterCount: 10,
-      );
-
-      expect(layout.hasCharacterMapping, isTrue);
-      expect(layout.totalCharacterCount, 10);
-      expect(layout.pageForChar(0), 0);
-      expect(layout.pageForChar(10), 0);
-    });
-
     test('empty fragments yield an unavailable layout', () {
-      final layout = build(fragments: const [], totalCharacterCount: 0);
+      final layout = build(fragments: const [], total: 0);
       expect(layout.hasCharacterMapping, isFalse);
+      expect(layout.flowText, isEmpty);
     });
 
-    test('assigns ascending character offsets across fragments', () {
+    test('a line break consumes exactly one character', () {
       final layout = build(
         fragments: [
-          LayoutFragment.fromDebugMap(_frag('text', 'Hello', 'p', 0, 20)),
-          LayoutFragment.fromDebugMap(_frag('text', 'World', 'p', 20, 20)),
-          LayoutFragment.fromDebugMap(_frag('text', 'Again', 'p', 40, 20)),
+          _text('Hello'),
+          const LayoutFragment(type: 'lineBreak', text: '\n', nodeTag: 'br'),
+          _text('World'),
         ],
-        totalCharacterCount: 15,
+        total: 11,
       );
 
-      final starts = layout.spans.map((s) => s.charStart).toList();
-      final ends = layout.spans.map((s) => s.charEnd).toList();
-      expect(starts, [0, 5, 10]);
-      expect(ends, [5, 10, 15]);
+      expect(layout.flowText, 'Hello\nWorld');
+      expect(layout.flowText.length, layout.totalCharacterCount);
+    });
+
+    test('an atomic fragment consumes no characters', () {
+      // The image has non-empty text but is not flow text, so it contributes
+      // nothing to the accounting and gets no span.
+      final layout = build(
+        fragments: [
+          _text('Hello'),
+          const LayoutFragment(type: 'atomic', text: 'ignored', nodeTag: 'img'),
+          _text('World'),
+        ],
+        total: 10,
+      );
+
+      expect(layout.flowText, 'HelloWorld');
     });
 
     test('block boundaries do not consume characters', () {
@@ -210,107 +190,348 @@ void main() {
       // text, exactly like an inline boundary, so it must not shift offsets.
       final layout = build(
         fragments: [
-          LayoutFragment.fromDebugMap(_frag('text', '', 'p', 0, 0)),
-          LayoutFragment.fromDebugMap(_frag('text', 'Hello', 'span', 0, 20)),
-          LayoutFragment.fromDebugMap(_frag('text', '', 'p', 20, 0)),
+          const LayoutFragment(type: 'text', text: '', nodeTag: 'p'),
+          _text('Hello'),
+          const LayoutFragment(type: 'text', text: '', nodeTag: 'p'),
         ],
-        totalCharacterCount: 5,
+        total: 5,
       );
 
-      expect(layout.spans.single.charStart, 0);
-      expect(layout.spans.single.charEnd, 5);
-      expect(layout.blocks.single.tag, 'p');
-    });
-
-    test('a line break consumes exactly one character', () {
-      final layout = build(
-        fragments: [
-          LayoutFragment.fromDebugMap(_frag('text', 'Hello', 'p', 0, 20)),
-          LayoutFragment.fromDebugMap(_frag('lineBreak', '\n', 'br', 20, 0)),
-          LayoutFragment.fromDebugMap(_frag('text', 'World', 'p', 40, 20)),
-        ],
-        totalCharacterCount: 11,
-      );
-
-      expect(layout.spans.map((s) => s.charStart), [0, 6]);
-      expect(layout.spans.map((s) => s.charEnd), [5, 11]);
-      // The break closes the first block, so two blocks are produced.
-      expect(layout.blocks.length, 2);
-    });
-
-    test('an atomic fragment consumes no characters', () {
-      final layout = build(
-        fragments: [
-          LayoutFragment.fromDebugMap(_frag('text', 'Hello', 'p', 0, 20)),
-          LayoutFragment.fromDebugMap(
-            _frag('atomic', 'ignored', 'img', 20, 100),
-          ),
-          LayoutFragment.fromDebugMap(_frag('text', 'World', 'p', 120, 20)),
-        ],
-        totalCharacterCount: 10,
-      );
-
-      // The image has non-empty text but is not flow text, so it contributes
-      // nothing to the accounting and gets no span.
-      expect(layout.spans.length, 2);
-      expect(layout.spans.last.charStart, 5);
-    });
-
-    test('materialises the flow text that the offsets index', () {
-      final layout = build(
-        fragments: [
-          LayoutFragment.fromDebugMap(_frag('text', 'Hello', 'p', 0, 20)),
-          LayoutFragment.fromDebugMap(_frag('lineBreak', '\n', 'br', 20, 0)),
-          LayoutFragment.fromDebugMap(_frag('text', 'World', 'p', 40, 20)),
-        ],
-        totalCharacterCount: 11,
-      );
-
-      // The rendered flow text is what selection copies, so a span's
-      // [charStart]..[charEnd] must slice exactly its own characters out of
-      // it. This is the invariant the speech map is built against.
-      expect(layout.flowText, 'Hello\nWorld');
-      expect(layout.flowText.length, layout.totalCharacterCount);
-      expect(
-        layout.flowText.substring(
-          layout.spans[0].charStart,
-          layout.spans[0].charEnd,
-        ),
-        'Hello',
-      );
-      expect(
-        layout.flowText.substring(
-          layout.spans[1].charStart,
-          layout.spans[1].charEnd,
-        ),
-        'World',
-      );
-    });
-
-    test('an unavailable layout carries no flow text', () {
-      final layout = build(fragments: const [], totalCharacterCount: 0);
-
-      expect(layout.flowText, isEmpty);
-      expect(layout.hasCharacterMapping, isFalse);
+      expect(layout.flowText, 'Hello');
     });
 
     test('unmeasured fragments still advance the character cursor', () {
-      // A fragment with characters but null geometry must count toward the
-      // total, or the reconciliation would reject valid layouts.
+      // This is why the tokenizer walk survives at all. A text fragment with no
+      // geometry is exactly the wrapped-paragraph case — it was laid out and
+      // painted, but the tokenizer reports it unpositioned — and it still counts
+      // toward the total, or the reconciliation would reject every chapter of
+      // ordinary prose.
       final layout = build(
-        fragments: [
-          LayoutFragment.fromDebugMap(_frag('text', 'Hello', 'p', 0, 20)),
-          LayoutFragment(text: 'World', type: 'text', nodeTag: 'p'),
+        fragments: [_text('Hello'), _text('World')],
+        total: 10,
+      );
+
+      expect(layout.flowText, 'HelloWorld');
+      expect(layout.totalCharacterCount, 10);
+    });
+  });
+
+  group('spans come from the positioned line fragments', () {
+    test('a wrapped paragraph yields one span per line', () {
+      // The defect this work fixed: with spans derived from the tokenizer, a
+      // wrapped paragraph produced no spans at all, because the tokenizer's
+      // single unpositioned fragment for it was skipped. One span per line is
+      // what makes a sentence resolve to the runs of glyphs it covers.
+      const text = 'The quick brown fox jumps. It was late.';
+      final layout = build(
+        fragments: [_text(text)],
+        total: text.length,
+        lineFragments: _lines(const [
+          'The quick brown',
+          ' fox jumps.',
+          ' It was',
+          ' late.',
+        ]),
+      );
+
+      expect(layout.spans.length, 4);
+      expect(layout.hasCharacterMapping, isTrue);
+    });
+
+    test('offsets are the renderer\'s, not re-derived by prefix sum', () {
+      // The point of the change. These offsets are deliberately not what a walk
+      // over the tokenizer would produce, and the builder must pass them
+      // through unchanged rather than recomputing them.
+      const text = 'Hello World';
+      final layout = build(
+        fragments: [_text(text)],
+        total: text.length,
+        lineFragments: [
+          _line('Hello', charStart: 0, y: 0, lineIndex: 0),
+          _line('World', charStart: 6, y: 20, lineIndex: 1),
         ],
-        totalCharacterCount: 10,
+      );
+
+      expect(
+        layout.spans.map((s) => (s.charStart, s.charEnd)),
+        [(0, 5), (6, 11)],
+        reason:
+            'index 5 is the space trimmed at the wrap and belongs to no '
+            'fragment, so the second range must start at 6',
+      );
+    });
+
+    test('a sentence spanning a wrap resolves to the runs it covers', () {
+      // The user-visible goal. A sentence crossing a line break used to be
+      // either unhighlightable or smeared across the whole paragraph; here it
+      // resolves to the two fragments that actually hold its glyphs.
+      const text = 'The quick brown fox jumps. It was late.';
+      final first = 'The quick brown fox jumps.';
+      final second = 'It was late.';
+      final layout = build(
+        fragments: [_text(text)],
+        total: text.length,
+        lineFragments: _lines(const [
+          'The quick brown',
+          ' fox jumps.',
+          ' It was',
+          ' late.',
+        ]),
+      );
+
+      final firstRects = layout.rectsForCharRange(
+        text.indexOf(first),
+        text.indexOf(first) + first.length,
+      );
+      final secondRects = layout.rectsForCharRange(
+        text.indexOf(second),
+        text.indexOf(second) + second.length,
+      );
+
+      expect(
+        firstRects.length,
+        2,
+        reason: 'the first sentence straddles lines 0 and 1',
+      );
+      expect(
+        secondRects.length,
+        2,
+        reason: 'the second straddles lines 2 and 3',
+      );
+      expect(
+        firstRects.map((r) => r.top),
+        [0.0, 20.0],
+        reason: 'distinct lines, not one rect covering both',
+      );
+      expect(
+        secondRects.map((r) => r.top),
+        [40.0, 60.0],
+      );
+    });
+
+    test('a range landing in a wrap gap has no rect', () {
+      // Whitespace trimmed at a wrap belongs to no fragment, so highlighting it
+      // correctly produces nothing rather than smearing into a neighbour.
+      const text = 'Hello World';
+      final layout = build(
+        fragments: [_text(text)],
+        total: text.length,
+        lineFragments: [
+          _line('Hello', charStart: 0, y: 0, lineIndex: 0),
+          _line('World', charStart: 6, y: 20, lineIndex: 1),
+        ],
+      );
+
+      expect(layout.rectsForCharRange(5, 6), isEmpty);
+    });
+
+    test('a truncated fragment is not highlighted past the clamp', () {
+      // Only ellipsisVisibleLength characters reached the screen, so the rest
+      // must not be painted as though it were visible.
+      const text = 'Supercalifragilistic';
+      final visible = 6;
+      final layout = build(
+        fragments: [_text(text)],
+        total: text.length,
+        lineFragments: [
+          _line(
+            text,
+            charStart: 0,
+            y: 0,
+            lineIndex: 0,
+            ellipsisVisibleLength: visible,
+          ),
+        ],
+      );
+
+      expect(layout.spans.single.charStart, 0);
+      expect(layout.spans.single.charEnd, visible);
+      expect(layout.rectsForCharRange(visible, text.length), isEmpty);
+    });
+  });
+
+  group('page assignment', () {
+    // The property that makes `pageForChar`'s binary search well-founded. With
+    // no spans, every page claimed to start at the chapter total, so the search
+    // collapsed to page 0 for the whole chapter and the only thing preventing a
+    // visibly wrong page was `hasCharacterMapping` three layers upstream.
+    test('each page round-trips through pageForChar', () {
+      const lines = 25;
+      final pieces = [
+        for (var i = 0; i < lines; i++) 'line$i ',
+      ];
+      final layout = build(
+        fragments: [_text(pieces.join())],
+        total: pieces.join().length,
+        lineFragments: _lines(pieces),
+        contentHeight: 500,
+        viewportHeight: 100,
+      );
+
+      expect(layout.pages.length, 5);
+      expect(
+        layout.pageStartChars.toSet().length,
+        layout.pages.length,
+        reason: 'pages must claim distinct starts, or the search is degenerate',
+      );
+      for (var i = 0; i < layout.pages.length; i++) {
+        expect(
+          layout.pageForChar(layout.pages[i].startChar),
+          i,
+          reason: 'page $i must resolve to itself',
+        );
+      }
+    });
+
+    test('the last character resolves to the last page', () {
+      final pieces = [for (var i = 0; i < 25; i++) 'line$i '];
+      final layout = build(
+        fragments: [_text(pieces.join())],
+        total: pieces.join().length,
+        lineFragments: _lines(pieces),
+        contentHeight: 500,
+        viewportHeight: 100,
+      );
+
+      expect(
+        layout.pageForChar(layout.totalCharacterCount - 1),
+        layout.pages.length - 1,
+      );
+    });
+  });
+
+  group('line fragment offsets are cross-checked against the flow text', () {
+    // The tripwire for a bad merge of the fork. A change in how the renderer
+    // derives globalOffset would surface here as a refusal to build a mapping,
+    // rather than as a highlight in the wrong place.
+    test('rejects a fragment whose text does not match at its offset', () {
+      expect(
+        () => build(
+          fragments: [_text('Hello World')],
+          total: 11,
+          lineFragments: [_line('Goodbye', charStart: 0)],
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('a rejected mismatch carries no character mapping', () {
+      final layout = build(
+        fragments: [_text('Hello World')],
+        total: 11,
+        lineFragments: [_line('Goodbye', charStart: 0)],
+        suppress: true,
+      );
+
+      expect(layout.hasCharacterMapping, isFalse);
+      expect(layout.spans, isEmpty);
+    });
+
+    test('rejects a fragment running past the chapter total', () {
+      expect(
+        () => build(
+          fragments: [_text('Hello')],
+          total: 5,
+          lineFragments: [
+            _line('Hello', charStart: 0, charEnd: 50),
+          ],
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('rejects overlapping fragments', () {
+      expect(
+        () => build(
+          fragments: [_text('HelloWorld')],
+          total: 10,
+          lineFragments: [
+            _line('Hello', charStart: 0, charEnd: 6),
+            _line('World', charStart: 3, charEnd: 10),
+          ],
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('accepts a fragment whose range includes trailing whitespace', () {
+      // The tolerated case, and the reason the comparison ignores whitespace. A
+      // fragment's accounted range can include the space trimmed at the break
+      // that follows it, so the flow text at that range holds one character
+      // more than the fragment's own text. A strict comparison would reject a
+      // perfectly good layout, which would cost the chapter its highlight.
+      const text = 'Hello World';
+      final layout = build(
+        fragments: [_text(text)],
+        total: text.length,
+        lineFragments: [
+          _line('Hello', charStart: 0, charEnd: 6, y: 0, lineIndex: 0),
+          _line('World', charStart: 6, y: 20, lineIndex: 1),
+        ],
       );
 
       expect(layout.hasCharacterMapping, isTrue);
-      expect(layout.spans.length, 1);
-      expect(layout.blocks.single.charEnd, 10);
     });
   });
 }
+
+ChapterTextLayout build({
+  required List<LayoutFragment> fragments,
+  required int total,
+  List<LayoutLineFragment> lineFragments = const [],
+  bool suppress = false,
+  double contentHeight = 500,
+  double viewportHeight = 1000,
+}) => const ChapterTextLayoutBuilder().buildFromLayout(
+  fragments: fragments,
+  lineFragments: lineFragments,
+  lineBounds: null,
+  totalCharacterCount: total,
+  contentHeight: contentHeight,
+  viewportHeight: viewportHeight,
+  suppressCharacterTotalAssertion: suppress,
+);
+
+LayoutFragment _text(String text) =>
+    LayoutFragment(type: 'text', text: text, nodeTag: 'p');
+
+/// Builds line fragments that tile [pieces] contiguously, one per line.
+///
+/// The pieces carry their own leading spaces after the first, mirroring the
+/// renderer, which trims the space at a break and starts the next fragment
+/// after it. Their concatenation is therefore the chapter's flow text.
+List<LayoutLineFragment> _lines(List<String> pieces) {
+  final result = <LayoutLineFragment>[];
+  var cursor = 0;
+  for (var i = 0; i < pieces.length; i++) {
+    result.add(
+      _line(pieces[i], charStart: cursor, y: i * 20.0, lineIndex: i),
+    );
+    cursor += pieces[i].length;
+  }
+  return result;
+}
+
+LayoutLineFragment _line(
+  String piece, {
+  required int charStart,
+  int? charEnd,
+  double y = 0,
+  int lineIndex = 0,
+  int? ellipsisVisibleLength,
+}) => LayoutLineFragment(
+  type: 'text',
+  text: piece,
+  charStart: charStart,
+  charEnd: charEnd ?? charStart + piece.length,
+  offsetX: 0,
+  offsetY: y,
+  width: 400,
+  height: 16,
+  lineIndex: lineIndex,
+  nodeTag: 'p',
+  ellipsisVisibleLength: ellipsisVisibleLength,
+);
 
 TextSpanBox _span(int start, int end, double y) => TextSpanBox(
   charStart: start,
@@ -319,22 +540,6 @@ TextSpanBox _span(int start, int end, double y) => TextSpanBox(
   nodeTag: 'p',
   type: 'text',
 );
-
-Map<String, dynamic> _frag(
-  String type,
-  String text,
-  String tag,
-  double y,
-  double height,
-) => {
-  'type': type,
-  'text': text,
-  'offsetX': 0.0,
-  'offsetY': y,
-  'width': 400.0,
-  'height': height,
-  'nodeTag': tag,
-};
 
 /// Exercises the page-building helper, which is static on the builder.
 List<PageSlice> _pagesFor({

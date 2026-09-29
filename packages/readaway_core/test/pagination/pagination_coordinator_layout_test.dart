@@ -15,14 +15,12 @@ TextSpanBox _span(int start, int end, double y, {double height = 20}) =>
 ChapterTextLayout _layout({
   required List<TextSpanBox> spans,
   required List<PageSlice> pages,
-  List<TextBlock> blocks = const [],
   double contentHeight = 3000,
 }) => ChapterTextLayout(
   contentHeight: contentHeight,
   viewportHeight: 1000,
   lineBounds: const [],
   spans: spans,
-  blocks: blocks,
   pages: pages,
   totalCharacterCount: spans.isEmpty ? 0 : spans.last.charEnd,
   flowText: '',
