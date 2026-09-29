@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-09-30
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`readaway` - `v1.1.0-beta.2`](#readaway---v110-beta2)
+
+---
+
+#### `readaway` - `v1.1.0-beta.2`
+
+ - **REFACTOR**(App): tts management and route. ([a0bff224](https://github.com/DrkXo/readaway/commit/a0bff224a722d14da163f7c8f4c405dab81bb427))
+
+
 ## 2026-09-29
 
 ### Changes

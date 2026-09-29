@@ -1,3 +1,7 @@
+## 1.1.0-beta.2
+
+ - **REFACTOR**(App): tts management and route. ([a0bff224](https://github.com/DrkXo/readaway/commit/a0bff224a722d14da163f7c8f4c405dab81bb427))
+
 ## 1.1.0-beta.1
 
  - **REFACTOR**(reader): time the TTS sentence list with a real LRC timeline [WIP]. ([f2ac2b9f](https://github.com/DrkXo/readaway/commit/f2ac2b9ff21725f4dd16ef2080c2acfe88e6470c))
