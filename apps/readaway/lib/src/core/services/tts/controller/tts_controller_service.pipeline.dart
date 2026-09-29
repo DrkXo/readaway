@@ -27,7 +27,7 @@ extension _TtsSynthesisPipeline on TtsControllerService {
     bool autoPlay = true,
   }) async {
     _pipelineStartIndex = startIndex;
-    _currentIndex = startIndex;
+    _setCurrentIndex(startIndex);
     _lastKnownIndex = startIndex;
     if (!_chunkController.isClosed && startIndex < _masterQueue.length) {
       _chunkController.add(_masterQueue[startIndex]);
@@ -100,6 +100,11 @@ extension _TtsSynthesisPipeline on TtsControllerService {
         lastAccessedAt: DateTime.now(),
       );
 
+      // A manifest loaded from the cache already carries the measured duration
+      // of every previously synthesized chunk, so the axis can be complete
+      // before a single sample is generated this session.
+      _refreshTimeline();
+
       // 1. Pre-buffer: load from cache or synthesize up to 2 initial chunks
       // before starting playback to guarantee the player never starves.
       const lookaheadInitialCount = 2;
@@ -165,6 +170,10 @@ extension _TtsSynthesisPipeline on TtsControllerService {
             _currentChapterManifest = _currentChapterManifest?.withChunk(
               cachedChunk,
             );
+            // This chunk's real duration is now known, so the page-wide axis
+            // can advance past it. Published before the save because the audio
+            // is already written and playing; the save is for durability.
+            _refreshTimeline();
             if (_currentChapterManifest != null) {
               await _cacheService.saveChapterManifest(
                 bookPath: bookPath,
@@ -301,6 +310,10 @@ extension _TtsSynthesisPipeline on TtsControllerService {
             _currentChapterManifest = _currentChapterManifest?.withChunk(
               cachedChunk,
             );
+            // This chunk's real duration is now known, so the page-wide axis
+            // can advance past it. Published before the save because the audio
+            // is already written and playing; the save is for durability.
+            _refreshTimeline();
             if (_currentChapterManifest != null) {
               await _cacheService.saveChapterManifest(
                 bookPath: bookPath,

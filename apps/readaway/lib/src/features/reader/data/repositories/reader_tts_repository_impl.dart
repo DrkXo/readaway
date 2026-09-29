@@ -1,6 +1,7 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:injectable/injectable.dart';
-import 'package:readaway_core/readaway_core.dart' show TtsChunk;
+import 'package:readaway_core/readaway_core.dart' show TtsChunk, TtsTimeline;
+import 'package:rxdart/rxdart.dart' show ValueStream;
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
@@ -28,6 +29,16 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
   @override
   Stream<PositionData> get positionDataStream =>
       _ttsController.positionDataStream;
+
+  @override
+  Stream<Duration> get globalPositionStream =>
+      _ttsController.globalPositionStream;
+
+  @override
+  TtsTimeline? get timeline => _ttsController.timeline;
+
+  @override
+  ValueStream<TtsTimeline?> get timelineStream => _ttsController.timelineStream;
 
   @override
   Stream<List<double>> get currentWaveform => _ttsController.currentWaveform;

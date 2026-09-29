@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/services/services.dart';
 import '../../../../../core/widgets/core_widgets.dart';
+import '../../../../settings/domain/entity/tts_lyric_style.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../dialogs/custom_tts_import_dialog.dart';
 import '../widgets.dart';
@@ -41,6 +42,26 @@ class SettingsTtsPanel extends StatelessWidget {
 class _TtsView extends StatelessWidget {
   const _TtsView();
 
+  /// Writes the whole lyric-view block back as one value.
+  ///
+  /// All four alignments move together and are reset together, so they are
+  /// replaced as a unit rather than merged field by field — the same reason
+  /// they share one entity on the settings side.
+  static void _writeLyricStyle(
+    BuildContext context,
+    SettingsState state,
+    TtsLyricStyle style,
+  ) {
+    final updated = state.appSettings.copyWith(
+      globalViewSettings: state.appSettings.globalViewSettings.copyWith(
+        ttsLyricStyle: style,
+      ),
+    );
+    context.read<SettingsBloc>().add(
+      SettingsEvent.updateAppSettings(updated),
+    );
+  }
+
   static Map<String, List<SherpaTtsModelInfo>> _groupedByLanguage(
     List<SherpaTtsModelInfo> models,
   ) {
@@ -71,6 +92,7 @@ class _TtsView extends StatelessWidget {
         final active = state.ttsAvailableModels
             .where((m) => m.id == state.ttsActiveModelId)
             .firstOrNull;
+        final lyricStyle = state.appSettings.globalViewSettings.ttsLyricStyle;
 
         Widget? previewButton;
         if (active != null) {
@@ -194,6 +216,140 @@ class _TtsView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             SettingsSection(
+              title: 'Lyric view',
+              onReset: () => _writeLyricStyle(
+                context,
+                state,
+                const TtsLyricStyle(),
+              ),
+              rows: [
+                _LyricAlignRow<LyricLineAlign>(
+                  label: 'Line text alignment',
+                  description:
+                      'Aligns a sentence that wraps onto a second line. A '
+                      'sentence that fits on one line has no slack to '
+                      'distribute, so this changes nothing there.',
+                  value: lyricStyle.lineAlign,
+                  segments: const [
+                    ButtonSegment(
+                      value: LyricLineAlign.left,
+                      icon: Icon(Icons.format_align_left),
+                      tooltip: 'Left',
+                    ),
+                    ButtonSegment(
+                      value: LyricLineAlign.center,
+                      icon: Icon(Icons.format_align_center),
+                      tooltip: 'Center',
+                    ),
+                    ButtonSegment(
+                      value: LyricLineAlign.right,
+                      icon: Icon(Icons.format_align_right),
+                      tooltip: 'Right',
+                    ),
+                    ButtonSegment(
+                      value: LyricLineAlign.justify,
+                      icon: Icon(Icons.format_align_justify),
+                      tooltip: 'Justify',
+                    ),
+                  ],
+                  onChanged: (v) => _writeLyricStyle(
+                    context,
+                    state,
+                    lyricStyle.copyWith(lineAlign: v),
+                  ),
+                ),
+                _LyricAlignRow<LyricContentAlign>(
+                  label: 'Content alignment',
+                  description:
+                      'Which edge of the view a sentence sits on. This is the '
+                      'one that moves sentences across the screen.',
+                  value: lyricStyle.contentAlign,
+                  segments: const [
+                    ButtonSegment(
+                      value: LyricContentAlign.start,
+                      icon: Icon(Icons.align_horizontal_left),
+                      tooltip: 'Start',
+                    ),
+                    ButtonSegment(
+                      value: LyricContentAlign.center,
+                      icon: Icon(Icons.align_horizontal_center),
+                      tooltip: 'Center',
+                    ),
+                    ButtonSegment(
+                      value: LyricContentAlign.end,
+                      icon: Icon(Icons.align_horizontal_right),
+                      tooltip: 'End',
+                    ),
+                  ],
+                  onChanged: (v) => _writeLyricStyle(
+                    context,
+                    state,
+                    lyricStyle.copyWith(contentAlign: v),
+                  ),
+                ),
+                _LyricAlignRow<LyricAnchorAlign>(
+                  label: 'Tapped line anchor',
+                  description:
+                      'Which part of a tapped line the view scrolls to. '
+                      'Ignored on a sentence with no rewritten text beneath '
+                      'it.',
+                  value: lyricStyle.selectionAnchorAlign,
+                  segments: const [
+                    ButtonSegment(
+                      value: LyricAnchorAlign.start,
+                      icon: Icon(Icons.vertical_align_top),
+                      tooltip: 'Start',
+                    ),
+                    ButtonSegment(
+                      value: LyricAnchorAlign.center,
+                      icon: Icon(Icons.vertical_align_center),
+                      tooltip: 'Center',
+                    ),
+                    ButtonSegment(
+                      value: LyricAnchorAlign.end,
+                      icon: Icon(Icons.vertical_align_bottom),
+                      tooltip: 'End',
+                    ),
+                  ],
+                  onChanged: (v) => _writeLyricStyle(
+                    context,
+                    state,
+                    lyricStyle.copyWith(selectionAnchorAlign: v),
+                  ),
+                ),
+                _LyricAlignRow<LyricAnchorAlign>(
+                  label: 'Playing line anchor',
+                  description:
+                      'Which part of the line being spoken the highlight '
+                      'parks on. Also ignored where nothing was rewritten.',
+                  value: lyricStyle.activeAnchorAlign,
+                  segments: const [
+                    ButtonSegment(
+                      value: LyricAnchorAlign.start,
+                      icon: Icon(Icons.vertical_align_top),
+                      tooltip: 'Start',
+                    ),
+                    ButtonSegment(
+                      value: LyricAnchorAlign.center,
+                      icon: Icon(Icons.vertical_align_center),
+                      tooltip: 'Center',
+                    ),
+                    ButtonSegment(
+                      value: LyricAnchorAlign.end,
+                      icon: Icon(Icons.vertical_align_bottom),
+                      tooltip: 'End',
+                    ),
+                  ],
+                  onChanged: (v) => _writeLyricStyle(
+                    context,
+                    state,
+                    lyricStyle.copyWith(activeAnchorAlign: v),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SettingsSection(
               title: 'Available voices',
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -245,6 +401,57 @@ class _TtsView extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _LyricAlignRow<T> extends StatelessWidget {
+  const _LyricAlignRow({
+    required this.label,
+    required this.description,
+    required this.value,
+    required this.segments,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String description;
+  final T value;
+  final List<ButtonSegment<T>> segments;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label),
+          const SizedBox(height: 2),
+          Text(
+            description,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SegmentedButton<T>(
+            segments: segments,
+            selected: {value},
+            showSelectedIcon: false,
+            expandedInsets: EdgeInsets.zero,
+            onSelectionChanged: (s) {
+              // A segmented button reports an empty selection when the pressed
+              // segment is tapped again; there is nothing to write in that
+              // case, and acting on it would deselect the row.
+              if (s.isEmpty) return;
+              onChanged(s.first);
+            },
+          ),
+        ],
+      ),
     );
   }
 }

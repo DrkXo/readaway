@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'tts_lyric_style.dart';
+
 part 'settings.freezed.dart';
 part 'settings.g.dart';
 
@@ -58,6 +60,7 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default(-1) int ttsSleepTimerMinutes,
     @Default(500) int ttsMaxCacheSizeMb,
     @Default(true) bool ttsPrecacheNextChapter,
+    @Default(TtsLyricStyle()) TtsLyricStyle ttsLyricStyle,
   }) = _GlobalViewSettings;
 
   factory GlobalViewSettings.fromJson(Map<String, dynamic> json) =>

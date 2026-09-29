@@ -67,7 +67,7 @@ extension TtsPlaybackControl on TtsControllerService {
                 _currentIndex == -1 ||
                 _masterQueue.isEmpty)) {
           // Genuine page-end: all chunks were enqueued and finished playing.
-          _currentIndex = -1;
+          _setCurrentIndex(-1);
           if (!_chunkController.isClosed) _chunkController.add(null);
           if (!_stateController.isClosed) {
             _stateController.add(
@@ -97,7 +97,7 @@ extension TtsPlaybackControl on TtsControllerService {
       if (trackIndex != null && trackIndex >= 0) {
         final masterIndex = _pipelineStartIndex + trackIndex;
         if (masterIndex >= 0 && masterIndex < _masterQueue.length) {
-          _currentIndex = masterIndex;
+          _setCurrentIndex(masterIndex);
           _lastKnownIndex = masterIndex;
           if (!_chunkController.isClosed) {
             _chunkController.add(_masterQueue[masterIndex]);
@@ -195,7 +195,7 @@ extension TtsPlaybackControl on TtsControllerService {
 
     _masterQueue = chunks;
     _baseTag = tag;
-    _currentIndex = -1;
+    _setCurrentIndex(-1);
     int startIndex = startAtChunkIndex.clamp(
       0,
       math.max<int>(0, _masterQueue.length - 1),
@@ -226,6 +226,11 @@ extension TtsPlaybackControl on TtsControllerService {
     }
     _lastKnownIndex = startIndex;
     _pipelineStartIndex = startIndex;
+    // The page is about to change. Drop the old axis now rather than letting
+    // the pipeline swap the manifest out from under it: between here and the
+    // manifest load, [_masterQueue] is the new page while the timeline still
+    // describes the old one.
+    _clearTimeline();
     _chunkWaveforms.clear();
     if (!_waveformController.isClosed) _waveformController.add(const []);
     if (!_chunkController.isClosed && startIndex < _masterQueue.length) {
