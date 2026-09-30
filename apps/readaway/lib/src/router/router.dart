@@ -41,20 +41,6 @@ class GoRouterListenable extends ChangeNotifier {
   }
 }
 
-// ==================================
-// ==== PageTransition Animation ====
-// ==================================
-
-PageTransitionsTheme routerPageTransitionTheme = PageTransitionsTheme(
-  builders: {
-    TargetPlatform.android: const PredictiveBackPageTransitionsBuilder(),
-    TargetPlatform.iOS: const PredictiveBackPageTransitionsBuilder(),
-    TargetPlatform.linux: const PredictiveBackPageTransitionsBuilder(),
-    TargetPlatform.macOS: const PredictiveBackPageTransitionsBuilder(),
-    TargetPlatform.windows: const PredictiveBackPageTransitionsBuilder(),
-  },
-);
-
 // ==================
 // ==== Helpers ====
 // ==================

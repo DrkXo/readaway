@@ -9,6 +9,17 @@ export 'package:readaway_core/readaway_core.dart'
 /// Convenient alias mapping legacy [AppColors] to [VsCodeTheme].
 typedef AppColors = VsCodeTheme;
 
+/// Default page transition animations for the application.
+const PageTransitionsTheme appPageTransitionsTheme = PageTransitionsTheme(
+  builders: {
+    TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+    TargetPlatform.iOS: PredictiveBackPageTransitionsBuilder(),
+    TargetPlatform.linux: PredictiveBackPageTransitionsBuilder(),
+    TargetPlatform.macOS: PredictiveBackPageTransitionsBuilder(),
+    TargetPlatform.windows: PredictiveBackPageTransitionsBuilder(),
+  },
+);
+
 /// Theme extension to attach the active [VsCodeTheme] to Flutter's [ThemeData].
 @immutable
 class VsCodeThemeExtension extends ThemeExtension<VsCodeThemeExtension> {

@@ -59,6 +59,7 @@ class ThemeService {
     final scheme = vsTheme.scheme;
     return ThemeData(
       colorScheme: scheme,
+      pageTransitionsTheme: appPageTransitionsTheme,
       extensions: [VsCodeThemeExtension(vsTheme)],
       useMaterial3: true,
       scaffoldBackgroundColor: vsTheme.readerBackground,
