@@ -363,15 +363,63 @@ class ChapterTextLayout {
   ///
   /// [start] is inclusive, [end] exclusive. Spans are returned in layout
   /// order. An end equal to [start] yields an empty list.
+  ///
+  /// When the strict `[start, end)` range lands entirely in a whitespace gap
+  /// between spans (trimmed at a line-wrap) and yields no results, the method
+  /// returns the rect of the nearest span on either side. That keeps a
+  /// highlight visible even when the speech offset resolves to trimmed
+  /// whitespace rather than to a painted glyph run.
   List<Rect> rectsForCharRange(int start, int end) {
     if (end <= start || spans.isEmpty) return const [];
     final result = <Rect>[];
     for (final span in spans) {
       if (span.charEnd <= start) continue;
       if (span.charStart >= end) break;
-      result.add(span.rect);
+
+      final len = span.charEnd - span.charStart;
+      if (len <= 0) {
+        result.add(span.rect);
+        continue;
+      }
+
+      double left = span.rect.left;
+      double right = span.rect.right;
+
+      if (start > span.charStart) {
+        final fraction = (start - span.charStart) / len;
+        left += span.rect.width * fraction;
+      }
+
+      if (end < span.charEnd) {
+        final fraction = (span.charEnd - end) / len;
+        right -= span.rect.width * fraction;
+      }
+
+      result.add(Rect.fromLTRB(left, span.rect.top, right, span.rect.bottom));
     }
-    return result;
+    if (result.isNotEmpty) return result;
+
+    // Strict range landed in a gap (whitespace trimmed at a wrap). Return the
+    // rect of the nearest span: whichever of the last span ending before
+    // [start] or the first span starting at or after [end] is closer.
+    TextSpanBox? before;
+    TextSpanBox? after;
+    for (final span in spans) {
+      if (span.charEnd <= start) {
+        before = span;
+      } else if (span.charStart >= end && after == null) {
+        after = span;
+        break;
+      }
+    }
+    final chosen = switch ((before, after)) {
+      (final b?, final a?) =>
+        (start - b.charEnd) <= (a.charStart - end) ? b : a,
+      (final b?, null) => b,
+      (null, final a?) => a,
+      _ => null,
+    };
+    return chosen == null ? const [] : [chosen.rect];
   }
 
   /// Whether two layouts describe the same geometry.

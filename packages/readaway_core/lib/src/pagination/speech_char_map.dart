@@ -274,7 +274,7 @@ class SpeechCharMap {
   factory SpeechCharMap.fromSpans({
     required String speech,
     required ChapterTextLayout layout,
-    int maxSearchRun = 4096,
+    // maxSearchRun removed to allow recovering from arbitrarily large gaps
   }) {
     final flow = layout.flowText;
     final anchors = <_Anchor>[];
@@ -304,13 +304,11 @@ class SpeechCharMap {
       if (span.charStart < 0 || span.charEnd > flow.length) continue;
 
       final text = flow.substring(span.charStart, span.charEnd);
-      final windowEnd = cursor + maxSearchRun;
-      final searchEnd = windowEnd < speech.length ? windowEnd : speech.length;
-      if (searchEnd - cursor < text.length) continue;
 
-      final offset = speech.substring(cursor, searchEnd).indexOf(text);
+      final offset = speech.indexOf(text, cursor);
       if (offset < 0) continue;
-      final found = cursor + offset;
+
+      final found = offset;
 
       if (found > cursor) {
         _fillGap(

@@ -524,4 +524,90 @@ void main() {
       expect(onSecondPage.first.top, 1000);
     });
   });
+
+  group('collapsed render range', () {
+    // After many TTS iterations a sentence may map to a zero-width render range
+    // (both its endpoints land in the same fuzzy interpolation span that collapses
+    // to a single point). rectsForSpeechRange must still return a rect rather than
+    // the empty list that a strict [start, end) = [n, n) range would produce.
+
+    test('returns a rect when both speech endpoints map to the same render offset', () {
+      // Build a layout where every span is exactly one character wide so that
+      // the render text is trivially mapped. Then construct a speech text that
+      // differs from the render text only in the middle, producing a fuzzy gap
+      // whose start and end both resolve to the same render offset.
+      //
+      // The gap is produced by giving the speech side 10 characters that don't
+      // appear in the render side (so fromSpans skips them) and then mapping
+      // around it. The simplest way to exercise the collapsed-range path is to
+      // use SpeechCharMap.build with text that forces a zero renderSpan.
+      final flow = _distinct(100); // render text, 100 chars
+      // Speech has 10 extra chars in a block that are not in the render text,
+      // so the 10-char fuzzy gap collapses to render offset 50.
+      final speech = '${flow.substring(0, 50)}XXXXXXXXXX${flow.substring(50)}';
+      final coordinator = _coordinator();
+      coordinator.registerChapterLayout(
+        chapterIndex: 0,
+        layout: _layout(flowText: flow),
+      );
+      coordinator.attachSpeechText(0, speech);
+
+      // Offsets 50-55 of the speech text are inside the fuzzy gap where
+      // renderCharFor may return the same value for both endpoints.
+      final rects = coordinator.rectsForSpeechRange(0, 50, 55);
+      // Must be non-empty: collapsing to nothing after 50 chunks is the bug.
+      expect(
+        rects,
+        isNotEmpty,
+        reason: 'collapsed fuzzy span must still yield a visible highlight',
+      );
+    });
+
+    test('gap fallback returns the nearest span when range lands between spans', () {
+      // Build a layout with two non-adjacent spans: chars 0-10 and chars 20-30,
+      // leaving chars 10-20 as a gap. A speech range that maps to the gap
+      // (say render 12-15) must return the nearest span rather than empty.
+      const lineHeight = 100.0;
+      final text = _distinct(30);
+      final spans = [
+        TextSpanBox(
+          charStart: 0,
+          charEnd: 10,
+          rect: Rect.fromLTWH(0, 0, 400, 20),
+          nodeTag: 'p',
+          type: 'text',
+        ),
+        // Chars 10-20 are intentionally absent (whitespace trimmed at wrap).
+        TextSpanBox(
+          charStart: 20,
+          charEnd: 30,
+          rect: Rect.fromLTWH(0, lineHeight, 400, 20),
+          nodeTag: 'p',
+          type: 'text',
+        ),
+      ];
+      final layout = ChapterTextLayout(
+        contentHeight: 200,
+        viewportHeight: 200,
+        lineBounds: const [],
+        spans: spans,
+        pages: const [
+          PageSlice(index: 0, startY: 0, endY: 200, startChar: 0, endChar: 30),
+        ],
+        flowText: text,
+        totalCharacterCount: text.length,
+      );
+
+      // rectsForCharRange(12, 15) would produce empty with the old code.
+      final rects = layout.rectsForCharRange(12, 15);
+      expect(
+        rects,
+        isNotEmpty,
+        reason: 'gap fallback must return the nearest span',
+      );
+      // The nearest span (distance 2 from charEnd 10 vs distance 5 from charStart 20)
+      // is the first one.
+      expect(rects.first.top, 0);
+    });
+  });
 }

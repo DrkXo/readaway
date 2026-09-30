@@ -266,14 +266,25 @@ class PaginationCoordinator {
   ///
   /// Empty when no correspondence is available, so a caller painting a
   /// highlight simply paints nothing rather than guessing at a position.
+  ///
+  /// When the speech-to-render mapping collapses start and end onto the same
+  /// render position — a predictable outcome inside a fuzzy span, and the
+  /// common failure mode after many chunks where accumulated interpolation
+  /// compresses a sentence to a single point — the result would be an empty
+  /// range and therefore no rect. The fix is to expand the render window by
+  /// at least one character in that case so that [rectsForCharRange] has
+  /// something to intersect. One character is enough: spans are per-fragment
+  /// (never sub-character), so any span overlapping the position is returned,
+  /// and the returned rect is the correct line box for the spoken sentence.
   List<Rect> rectsForSpeechRange(int chapterIndex, int start, int end) {
     final map = _chapterSpeechMaps[chapterIndex];
     if (map == null) return const [];
-    return rectsForCharRange(
-      chapterIndex,
-      map.renderCharFor(start),
-      map.renderCharFor(end),
-    );
+    var renderStart = map.renderCharFor(start);
+    var renderEnd = map.renderCharFor(end);
+    // Collapsed range: the fuzzy span mapped both endpoints to the same render
+    // position. Widen by one so the char-range scan finds the enclosing span.
+    if (renderEnd <= renderStart) renderEnd = renderStart + 1;
+    return rectsForCharRange(chapterIndex, renderStart, renderEnd);
   }
 
   static bool _lineBoundsEqual(

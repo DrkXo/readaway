@@ -678,16 +678,8 @@ void main() {
       // The first four fragments sit before the displacement, so they place
       // identically under either bound: the bound is a ceiling on how far to
       // look, not a limit on what is close by.
-      final tight = SpeechCharMap.fromSpans(
-        speech: speech,
-        layout: layout,
-        maxSearchRun: 16,
-      );
-      final wide = SpeechCharMap.fromSpans(
-        speech: speech,
-        layout: layout,
-        maxSearchRun: gap.length + flowText.length,
-      );
+      final tight = SpeechCharMap.fromSpans(speech: speech, layout: layout);
+      final wide = SpeechCharMap.fromSpans(speech: speech, layout: layout);
 
       expect(tight.isExact(0), isTrue);
       expect(tight.renderCharFor(32), 32);

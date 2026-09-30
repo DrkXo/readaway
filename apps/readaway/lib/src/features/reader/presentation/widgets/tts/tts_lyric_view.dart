@@ -252,7 +252,7 @@ LyricStyle buildTtsLyricStyle(
 
   return base.copyWith(
     textStyle: (textTheme.bodyMedium ?? const TextStyle()).copyWith(
-      color: scheme.onSurface.withValues(alpha: 0.72),
+      color: scheme.onSurface.withValues(alpha: 0.55),
       fontSize: 15,
       height: 1.35,
     ),
@@ -263,7 +263,7 @@ LyricStyle buildTtsLyricStyle(
       height: 1.3,
     ),
     translationStyle: (textTheme.bodySmall ?? const TextStyle()).copyWith(
-      color: scheme.onSurfaceVariant.withValues(alpha: 0.75),
+      color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
       fontSize: 13,
       height: 1.3,
     ),
@@ -285,6 +285,7 @@ LyricStyle buildTtsLyricStyle(
     // off the edge.
     contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
     lineGap: 18,
+    translationLineGap: 6,
     selectedColor: scheme.onSurface,
     selectedTranslationColor: scheme.onSurfaceVariant,
     // The sweep along the active line is the package's own karaoke effect. It
@@ -305,6 +306,47 @@ LyricStyle buildTtsLyricStyle(
     // asked for.
     activeLineOnly: singleLine,
     disableTouchEvent: singleLine,
+    // Smooth line-switch animation in the full view. The single preset already
+    // sets enableSwitchAnimation: false (instant cut on sentence change, which
+    // is right when there is only one visible line). For the full scrolling
+    // view a short fade-in keeps the eye on the new active line without
+    // appearing to jump — still fast enough not to lag behind speech.
+    enableSwitchAnimation: !singleLine,
+    switchEnterDuration: singleLine
+        ? Duration.zero
+        : const Duration(milliseconds: 160),
+    switchExitDuration: singleLine
+        ? Duration.zero
+        : const Duration(milliseconds: 120),
+    // Distance-aware scroll durations: short lines close to the anchor
+    // travel fast (240 ms), but a skip to a distant sentence uses a longer
+    // ease so it does not feel like a teleport. The map keys are pixel
+    // distances and are matched by `>=`, so only two tiers are needed.
+    scrollDurationMap: singleLine
+        ? const {}
+        : {
+            400.0: const Duration(milliseconds: 320),
+            800.0: const Duration(milliseconds: 480),
+          },
+    // Soft fade at top and bottom of the full list, sized for the typical
+    // phone portrait height. Expressed in absolute pixels so it does not
+    // depend on the container height (a relative fade that trims 20 % of a
+    // tall screen clips far too much of the context). Single-line mode has
+    // no list to fade, so the preset's zero-fade is kept as-is.
+    fadeRange: singleLine ? null : FadeRange(top: 48, bottom: 64),
+    // How long after the user stops scrolling before the view snaps back to
+    // the active sentence. 3 s is enough to read the line the user browsed to;
+    // shorter feels like it snatches focus back. The selection resume fires
+    // sooner (1.5 s) to handle accidental drags gracefully.
+    selectLineResumeDuration: singleLine
+        ? null
+        : const Duration(milliseconds: 1500),
+    activeLineResumeDuration: singleLine
+        ? null
+        : const Duration(milliseconds: 3000),
+    selectLineResumeMode: singleLine
+        ? null
+        : SelectionAutoResumeMode.afterSelecting,
   );
 }
 
