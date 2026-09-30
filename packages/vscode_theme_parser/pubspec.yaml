@@ -1,6 +1,6 @@
 name: vscode_theme_parser
 description: "Parser and model for VS Code color themes (JSONC)."
-version: 1.1.1
+version: 1.2.0-dev.0
 publish_to: "none"
 resolution: workspace
 repository: https://github.com/DrkXo/readaway
