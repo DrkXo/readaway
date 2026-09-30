@@ -29,7 +29,7 @@ TARGET_PACKAGER="${3:-all}" # all, deb, or rpm
 mkdir -p "$OUT_DIR"
 
 echo "=================================================="
-echo "Packaging Linux Native (.deb / .rpm) for ReadAway ($VERSION)"
+echo "Packaging Linux Native (.deb / .rpm) for Readaway ($VERSION)"
 echo "Output Directory: $OUT_DIR"
 echo "Target Format(s): $TARGET_PACKAGER"
 echo "=================================================="

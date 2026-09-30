@@ -86,11 +86,11 @@ melos:
       description: Configure local Git hooks in .githooks directory
 
     analyze:
-      run: melos exec --depends-on="flutter" -- dart analyze --fatal-infos
+      run: melos exec -- dart analyze --fatal-infos
       description: Run dart analyze in all packages
 
     format:
-      run: melos exec --depends-on="flutter" -- dart format --set-exit-if-changed .
+      run: melos exec -- dart format --set-exit-if-changed .
       description: Check formatting in all packages
 
     codegen:
@@ -146,11 +146,11 @@ melos:
     # -------------------------------------------------------------
     build:apk:debug:
       run: melos exec -c 1 --category="app" -- "fvm exec flutter build apk --debug"
-      description: Build debug APK for ReadAway app
+      description: Build debug APK for Readaway app
 
     build:apk:release:
       run: melos exec -c 1 --category="app" -- "fvm exec flutter build apk --release"
-      description: Build release APK for ReadAway app
+      description: Build release APK for Readaway app
 
     build:apk:split:
       run: melos exec -c 1 --category="app" -- "fvm exec flutter build apk --release --split-per-abi"
@@ -158,18 +158,18 @@ melos:
 
     build:linux:
       run: melos exec -c 1 --category="app" -- "fvm exec flutter build linux --release"
-      description: Build Linux binary and clean workspace for ReadAway app
+      description: Build Linux binary and clean workspace for Readaway app
 
     build:linux:appimage:
       run: bash scripts/package_linux.sh
-      description: Build Linux AppImage & tarball for ReadAway app
+      description: Build Linux AppImage & tarball for Readaway app
 
     # -------------------------------------------------------------
     # Packaging & Release Artifact Scripts
     # -------------------------------------------------------------
     package:android:
       run: bash scripts/package_android.sh
-      description: Collect, rename, and package all Android release APKs and AAB
+      description: Collect, rename, and package all Android release APKs
 
     package:linux:appimage:
       run: bash scripts/package_linux.sh
@@ -205,14 +205,9 @@ melos:
     # Test Scripts
     # -------------------------------------------------------------
     test:
-      run: melos exec --dir-exists="test" --fail-fast -- "fvm exec flutter test --no-pub --coverage"
-      description: Run Flutter tests for a specific package in this project.
-      select-package:
-        flutter: true
-        dir-exists: test
-    test:coverage:
       run: melos exec --dir-exists="test" --fail-fast -- "fvm exec flutter test --no-pub"
-      description: Run Flutter tests for a specific package in this project.
-      select-package:
-        flutter: true
-        dir-exists: test
+      description: Run tests in packages with a test directory
+
+    test:coverage:
+      run: melos exec --dir-exists="test" --fail-fast -- "fvm exec flutter test --no-pub --coverage"
+      description: Run tests with coverage in packages with a test directory

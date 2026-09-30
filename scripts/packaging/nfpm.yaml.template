@@ -1,4 +1,4 @@
-# nFPM package configuration template for ReadAway
+# nFPM package configuration template for Readaway
 name: "readaway"
 arch: "${ARCH}"
 platform: "linux"

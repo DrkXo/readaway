@@ -1,5 +1,5 @@
 name: readaway
-description: "A new Flutter project."
+description: "Ebook reader for eBooks, comics, HTML, and text with text-to-speech."
 publish_to: "none"
 version: 1.1.1
 resolution: workspace
@@ -13,7 +13,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   package_info_plus: ^10.2.1
-  readaway_core: ^1.1.0-beta.1
+  readaway_core: ^1.1.1
   cacherine: ^2.5.0
   file_picker: ^13.0.0
   html: ^0.15.6
@@ -64,6 +64,7 @@ dependencies:
   pdfrx: ^2.6.5
   share_plus: ^13.3.0
   flutter_lyric: ^3.0.8
+  flutter_single_instance: ^1.7.0
 
 dev_dependencies:
   flutter_test:
@@ -95,4 +96,23 @@ flutter:
         - asset: assets/google_fonts/NotoSerif-Bold.ttf
           weight: 700
         - asset: assets/google_fonts/NotoSerif-Italic.ttf
+          style: italic
+    - family: Noto Sans
+      fonts:
+        - asset: assets/google_fonts/NotoSans-Regular.ttf
+        - asset: assets/google_fonts/NotoSans-Bold.ttf
+          weight: 700
+        - asset: assets/google_fonts/NotoSans-Italic.ttf
+          style: italic
+    - family: Fira Code
+      fonts:
+        - asset: assets/google_fonts/FiraCode-Regular.ttf
+        - asset: assets/google_fonts/FiraCode-Bold.ttf
+          weight: 700
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/google_fonts/JetBrainsMono-Regular.ttf
+        - asset: assets/google_fonts/JetBrainsMono-Bold.ttf
+          weight: 700
+        - asset: assets/google_fonts/JetBrainsMono-Italic.ttf
           style: italic

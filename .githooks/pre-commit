@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ReadAway Git Hook: pre-commit
+# Readaway Git Hook: pre-commit
 # Enforces code formatting on staged Dart files, prevents secret leaks, and blocks conflict markers.
 
 set -e

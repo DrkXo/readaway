@@ -1,6 +1,6 @@
 part of '../core_widgets.dart';
 
-/// Unified adaptive TopBar for ReadAway supporting both Desktop and Mobile.
+/// Unified adaptive TopBar for Readaway supporting both Desktop and Mobile.
 ///
 /// On Desktop:
 /// - Provides frameless window dragging and double-click maximize/restore.

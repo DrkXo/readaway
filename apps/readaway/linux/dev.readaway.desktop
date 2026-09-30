@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=ReadAway
+Name=Readaway
 GenericName=eBook & Document Reader
 Comment=eBook, HTML, Comic, and Text Document Reader
-Exec=readaway %F
+Exec=Readaway %F
 Icon=readaway
 Terminal=false
 Type=Application

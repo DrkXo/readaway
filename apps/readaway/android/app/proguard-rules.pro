@@ -1,5 +1,5 @@
 ## ============================================================================
-## ReadAway — ProGuard / R8 Rules
+## Readaway — ProGuard / R8 Rules
 ## ============================================================================
 ## Generated for tree-shaking with all project-specific packages accounted for.
 ## Plugins that bundle their own consumer-rules.pro (audio_service,

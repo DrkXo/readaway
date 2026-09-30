@@ -5,7 +5,7 @@ import '../models/models.dart';
 import '../readers/plain_text_document_reader.dart';
 
 /// Fluent byte extensions for character encoding detection and text decoding.
-extension ReadAwayBytesEncodingX on Uint8List {
+extension ReadawayBytesEncodingX on Uint8List {
   /// Detects the character encoding of these bytes using BOM checks, UTF-8 validity heuristics,
   /// and CJK multibyte statistics.
   DetectedEncoding detectEncoding() => EncodingDetector.detect(this);
@@ -16,7 +16,7 @@ extension ReadAwayBytesEncodingX on Uint8List {
 }
 
 /// Fluent extensions on float PCM audio samples for speech boundary detection and edge fading.
-extension ReadAwayFloatPcmX on Float32List {
+extension ReadawayFloatPcmX on Float32List {
   /// Locates the voiced speech interval (ignoring leading and trailing silence).
   pcm.SpeechBounds findSpeechBounds(
     int sampleRate, {

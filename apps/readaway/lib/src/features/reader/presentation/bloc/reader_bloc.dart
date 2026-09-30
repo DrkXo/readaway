@@ -155,6 +155,18 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _OpenDocument event,
     Emitter<ReaderState> emit,
   ) async {
+    // If a document was already open, properly flush progress and release its resources first.
+    if (state.hasDocument) {
+      _progressDebounceTimer?.cancel();
+      _progressDebounceTimer = null;
+      _cancelSleepTimer();
+      _flushProgress();
+      _coverUri = null;
+      await ttsRepository.stopPipeline();
+      await ttsRepository.releaseResources();
+      await readerRepository.closeDocument();
+    }
+
     // Reset pagination so a stale anchor from a previous document is never
     // saved while the new document is still loading.
     final coordinator = GetIt.I.isRegistered<PaginationCoordinator>()

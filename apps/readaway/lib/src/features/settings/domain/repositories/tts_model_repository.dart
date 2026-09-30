@@ -45,7 +45,7 @@ abstract interface class TtsModelRepository {
     String sourcePath,
   );
 
-  /// Imports an inspected custom model into ReadAway storage.
+  /// Imports an inspected custom model into Readaway storage.
   Future<Result<SherpaTtsModelInfo>> importCustomModel({
     required CustomModelInspectionResult inspection,
     required String displayName,

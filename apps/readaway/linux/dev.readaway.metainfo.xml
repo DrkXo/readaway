@@ -3,12 +3,12 @@
   <id>dev.readaway.desktop</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
-  <name>ReadAway</name>
-  <summary>Modern eBook, HTML, Comic, and Text Document Reader</summary>
+  <name>Readaway</name>
+  <summary>eBook, Comic, HTML, and Text Reader with Text-to-Speech</summary>
   <description>
     <p>
-      ReadAway is a modern, fast, and feature-rich reader for eBooks (EPUB, PDF),
-      comic book archives (CBZ, CBR, CBT, CB7), and text documents (Markdown, TXT, HTML).
+      Reads eBooks, comic archives, HTML, and text documents aloud with
+      text-to-speech.
     </p>
   </description>
   <developer id="dev.readaway">

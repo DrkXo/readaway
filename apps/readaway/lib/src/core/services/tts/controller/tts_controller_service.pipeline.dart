@@ -197,7 +197,7 @@ extension _TtsSynthesisPipeline on TtsControllerService {
                 ? '${chunk.text.substring(0, 50)}…'
                 : chunk.text,
             album: baseTag?.album ?? 'Audiobook',
-            artist: baseTag?.artist ?? 'ReadAway',
+            artist: baseTag?.artist ?? 'Readaway',
             genre: baseTag?.genre ?? 'Ebook',
             artUri: baseTag?.artUri,
             duration: duration,
@@ -334,7 +334,7 @@ extension _TtsSynthesisPipeline on TtsControllerService {
                 ? '${chunk.text.substring(0, 50)}…'
                 : chunk.text,
             album: baseTag?.album ?? 'Audiobook',
-            artist: baseTag?.artist ?? 'ReadAway',
+            artist: baseTag?.artist ?? 'Readaway',
             genre: baseTag?.genre ?? 'Ebook',
             artUri: baseTag?.artUri,
             duration: duration,

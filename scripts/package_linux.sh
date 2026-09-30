@@ -27,7 +27,7 @@ mkdir -p "$OUT_DIR"
 BUNDLE_DIR="$APP_DIR/build/linux/x64/release/bundle"
 
 echo "=================================================="
-echo "Packaging Linux Artifacts for ReadAway ($VERSION)"
+echo "Packaging Linux Artifacts for Readaway ($VERSION)"
 echo "Output Directory: $OUT_DIR"
 echo "=================================================="
 
@@ -133,7 +133,7 @@ if [ "${1:-}" = "--install" ] || [ "${1:-}" = "--register-desktop" ]; then
   update-desktop-database "$TARGET_APP_DIR" 2>/dev/null || true
   update-mime-database "${XDG_DATA_HOME:-$HOME/.local/share}/mime" 2>/dev/null || true
   gtk-update-icon-cache -t -f "${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor" 2>/dev/null || true
-  echo "[OK] ReadAway successfully integrated with desktop and registered for all document MIME types."
+  echo "[OK] Readaway successfully integrated with desktop and registered for all document MIME types."
   exit 0
 elif [ "${1:-}" = "--uninstall" ] || [ "${1:-}" = "--unregister-desktop" ]; then
   TARGET_APP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
@@ -144,7 +144,7 @@ elif [ "${1:-}" = "--uninstall" ] || [ "${1:-}" = "--unregister-desktop" ]; then
   rm -f "$TARGET_MIME_DIR/dev.readaway.xml"
   update-desktop-database "$TARGET_APP_DIR" 2>/dev/null || true
   update-mime-database "${XDG_DATA_HOME:-$HOME/.local/share}/mime" 2>/dev/null || true
-  echo "[OK] ReadAway desktop integration removed."
+  echo "[OK] Readaway desktop integration removed."
   exit 0
 fi
 

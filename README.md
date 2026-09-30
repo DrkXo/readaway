@@ -3,7 +3,7 @@
 
 # Readaway
 
-**Ebook reader — built with Flutter.**
+**Ebook reader with on-device text-to-speech.**
 
 [![Latest release](https://img.shields.io/github/v/release/DrkXo/readaway?display_name=tag&sort=semver)](https://github.com/DrkXo/readaway/releases/latest)
 [![License](https://img.shields.io/github/license/DrkXo/readaway)](LICENSE)
@@ -18,12 +18,9 @@
 The name **Readaway** is inspired by Bob Acri's _Sleep Away_
 ([listen](https://music.youtube.com/watch?v=lHjXY6EuCc4)).
 
-Readaway is an independent project with no affiliation to or endorsement by the artists
-or creators behind the works it draws on.
-
 ## Features
 
-_Feature's list are on the way._
+_Features are on the way._
 
 ## Screenshots
 
@@ -36,19 +33,22 @@ _Screenshots are on the way._
 
 ## Download
 
-### Stable vs. pre-releases
+Grab a build from the [latest release](https://github.com/DrkXo/readaway/releases/latest).
 
-> **[Download the latest stable release](https://github.com/DrkXo/readaway/releases/latest)**
->
-> `/releases/latest` always resolves to the newest **non-prerelease** tag, so this link
-> is safe to bookmark and share.
+| Platform | File |
+| :--- | :--- |
+| Linux | `.AppImage` — run it, or `chmod +x` then double-click |
+| Linux | `.tar.gz` portable, or `.deb` / `.rpm` to install |
+| Android | `.apk` — use `arm64-v8a` on most phones, `universal` if unsure |
 
-> **[Browse all releases & pre-releases](https://github.com/DrkXo/readaway/releases)**
->
-> Use this only if you want early builds. A release is flagged as a pre-release when its
-> version contains `-alpha`, `-beta`, `-rc`, `-dev`, or `-preview` — tags look like
-> `readaway-v1.3.0-beta.0`. Pre-releases are not covered by the stability promise that
-> comes with a stable tag, so back up anything you care about.
+`sha256sum -c checksums.txt` verifies a download.
+
+On Linux, `./readaway-*.AppImage --install` registers the app for `.epub`,
+`.pdf`, and comic archives, so files open from your file manager.
+
+Pre-releases are tagged `-alpha`, `-beta`, `-rc`, `-dev`, or `-preview` and are
+listed [separately](https://github.com/DrkXo/readaway/releases). They are not
+covered by the stability promise of a stable tag.
 
 ## Build from source
 
@@ -63,8 +63,6 @@ melos bootstrap      # resolve deps for every package in the workspace
 melos run codegen    # freezed / json_serializable / injectable / hive generators
 fvm exec flutter run # from apps/readaway
 ```
-
-Common tasks, all defined as [Melos](https://melos.dev) scripts in `pubspec.yaml`:
 
 ## Contributing
 
@@ -81,7 +79,8 @@ contribute code:
 
 A nod to _Reverend Insanity_ (蛊真人) by **Gu Zhen Ren**.
 
-No affiliation, and no endorsement implied.
+Readaway is an independent project with no affiliation to or endorsement by the
+artists or creators behind the works it draws on.
 
 ## Acknowledgments
 
@@ -89,7 +88,7 @@ No affiliation, and no endorsement implied.
 bug, tested a pre-release build, or sent a patch.
 
 **Built with** — Readaway stands on a great deal of other people's work. Rather than
-list packages here and let it drift out of date, lets point at the manifests:
+list packages here and let it drift out of date, let's point at the manifests:
 
 - [`apps/readaway/pubspec.yaml`](apps/readaway/pubspec.yaml) — app dependencies
 - [`packages/readaway_core/pubspec.yaml`](packages/readaway_core/pubspec.yaml) — document engine dependencies
@@ -98,27 +97,27 @@ list packages here and let it drift out of date, lets point at the manifests:
 
 And the pieces that live outside the package manager:
 
-|                                                                                                          Resource                                                                                                           |                                                        Used for                                                         |
-| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------: |
-|                                                                  [Flutter](https://flutter.dev) / [Dart](https://dart.dev), pinned via [`.fvmrc`](.fvmrc)                                                                   |                                               App framework and language                                                |
-|                                                                                     [Melos](https://melos.dev) / [FVM](https://fvm.app)                                                                                     |                                      Monorepo scripts, versioning, and SDK pinning                                      |
-|                                                                             [Gradle](https://gradle.org) / [Temurin JDK](https://adoptium.net)                                                                              |                                                 Android build toolchain                                                 |
-|                                                                                   [appimagetool](https://github.com/AppImage/AppImageKit)                                                                                   |                             Linux AppImage packaging, fetched by `scripts/package_linux.sh`                             |
-|                                                                              [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) voice models                                                                              | On-device TTS, downloaded on demand from the catalog in [`tts_catalog.json`](apps/readaway/assets/tts/tts_catalog.json) |
-| [Noto Serif](https://fonts.google.com/noto/specimen/Noto+Serif) / [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) / [JetBrains Mono](https://www.jetbrains.com/lp/mono/) / [Fira Code](https://fira-code.org) |                   Bundled typefaces — serif and sans for body text, monospace for code (all OFL-1.1)                    |
-|                                                                                                [Lucide](https://lucide.dev)                                                                                                 |                                                       Icon design                                                       |
-|                                                                                 [Token](https://github.com/ThorstenRhau/token) color themes                                                                                 |                 Bundled light/dark schemes — Light, Dark, Flint, Meridian, Temper, Ultra (BSD-3-Clause)                 |
-|                                                                              [Kanagawa](https://github.com/rebelot/kanagawa.nvim) color themes                                                                              |                                 Bundled light/dark schemes — Wave, Dragon, Lotus (MIT)                                  |
-|                                                                                  [Flexoki](https://github.com/kepano/flexoki) color themes                                                                                  |                            Bundled light/dark schemes — an inky paper-and-ink palette (MIT)                             |
+| Resource | Used for |
+| :--- | :--- |
+| [Flutter](https://flutter.dev) / [Dart](https://dart.dev), pinned via [`.fvmrc`](.fvmrc) | App framework and language |
+| [Melos](https://melos.dev) / [FVM](https://fvm.app) | Monorepo scripts, versioning, and SDK pinning |
+| [Gradle](https://gradle.org) / [Temurin JDK](https://adoptium.net) | Android build toolchain |
+| [appimagetool](https://github.com/AppImage/AppImageKit) | Linux AppImage packaging, fetched by `scripts/package_linux.sh` |
+| [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) voice models | On-device TTS, downloaded on demand from the catalog in [`tts_catalog.json`](apps/readaway/assets/tts/tts_catalog.json) |
+| [Noto Serif](https://fonts.google.com/noto/specimen/Noto+Serif) / [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) / [JetBrains Mono](https://www.jetbrains.com/lp/mono/) / [Fira Code](https://fira-code.org) | Bundled typefaces — serif and sans for body text, monospace for code (all OFL-1.1) |
+| [Lucide](https://lucide.dev) | Icon design |
+| [Token](https://github.com/ThorstenRhau/token) color themes | Bundled light/dark schemes — Light, Dark, Flint, Meridian, Temper, Ultra (BSD-3-Clause) |
+| [Kanagawa](https://github.com/rebelot/kanagawa.nvim) color themes | Bundled light/dark schemes — Wave, Dragon, Lotus (MIT) |
+| [Flexoki](https://github.com/kepano/flexoki) color themes | Bundled light/dark schemes — an inky paper-and-ink palette (MIT) |
 
 Each of these is used under its own license, and every package named in `pubspec.lock`
 belongs to its own maintainers.
 
 ## License
 
-Readaway is released under the [GNU General Public License v3.0](LICENSE). It is
-copyleft: if you distribute a modified build, you must keep it under the GPL and
-publish your source.
+Readaway is released under the [GNU General Public License v3.0 or later](LICENSE).
+It is copyleft: if you distribute a modified build, you must keep it under the
+GPL and publish your source.
 
 Third-party notices — covering the bundled color themes, the Lucide and Feather-derived
 interface icons, the native libraries shipped inside the release binaries, and the

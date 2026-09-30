@@ -91,9 +91,13 @@ class AppRouter {
     _log.i('Navigating to opened document: $route');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // matchedLocation strips query params, so compare against the path only.
-      if (_router.state.matchedLocation == _appRoutes.reader.path) return;
-      if (doc.fromExternalLaunch) {
+      final currentDocPath = _router.state.uri.queryParameters['path'];
+      if (_router.state.matchedLocation == _appRoutes.reader.path &&
+          currentDocPath == doc.path) {
+        return;
+      }
+      if (doc.fromExternalLaunch ||
+          _router.state.matchedLocation == _appRoutes.reader.path) {
         _router.go(route);
       } else {
         _router.push(route);

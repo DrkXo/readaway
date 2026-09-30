@@ -56,7 +56,7 @@ jobs:
           fi
 
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "title=ReadAway $CLEAN_VERSION" >> $GITHUB_OUTPUT
+          echo "title=Readaway $CLEAN_VERSION" >> $GITHUB_OUTPUT
           
           # Check if prerelease
           if [[ "$TAG" =~ (alpha|beta|rc|dev|preview) ]]; then

@@ -92,12 +92,12 @@ void main() {
   });
 
   group('Fluent String & Bytes Extensions Tests', () {
-    test('ReadAwayHtmlStringX extensions work seamlessly', () {
+    test('ReadawayHtmlStringX extensions work seamlessly', () {
       const html = '''
         <html>
           <body>
             <h1>Title Header</h1>
-            <p>Welcome to <em>ReadAway</em> &amp; enjoying books!</p>
+            <p>Welcome to <em>Readaway</em> &amp; enjoying books!</p>
             <aside id="note-1">Footnote 1 text</aside>
           </body>
         </html>
@@ -106,7 +106,7 @@ void main() {
       // 1. extractPageText
       final pageText = html.extractPageText();
       expect(pageText, contains('Title Header'));
-      expect(pageText, contains('Welcome to ReadAway & enjoying books!'));
+      expect(pageText, contains('Welcome to Readaway & enjoying books!'));
 
       // 2. extractSpeechText
       final speechText = html.extractSpeechText();
@@ -126,7 +126,7 @@ void main() {
       );
     });
 
-    test('ReadAwaySpeechStringX extensions work seamlessly', () {
+    test('ReadawaySpeechStringX extensions work seamlessly', () {
       const text = 'Dr. Smith won \$100 on the 1st day (50%).';
 
       // 1. normalizeForSpeech
@@ -163,7 +163,7 @@ void main() {
       expect(chunks, isNotEmpty);
     });
 
-    test('ReadAwayBytesEncodingX extensions work seamlessly', () {
+    test('ReadawayBytesEncodingX extensions work seamlessly', () {
       final utf8Bytes = Uint8List.fromList('Hello Dart 3!'.codeUnits);
 
       final detected = utf8Bytes.detectEncoding();
@@ -173,7 +173,7 @@ void main() {
       expect(decoded, equals('Hello Dart 3!'));
     });
 
-    test('ReadAwayFloatPcmX extensions work seamlessly', () {
+    test('ReadawayFloatPcmX extensions work seamlessly', () {
       final samples = Float32List.fromList([
         0.0, 0.0, 0.0, // silence
         0.5, 0.8, -0.6, // speech

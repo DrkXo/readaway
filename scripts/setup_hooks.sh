@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ReadAway Git Hooks Setup Script
+# Readaway Git Hooks Setup Script
 # Configures Git to use version-controlled hooks from .githooks/
 
 set -e
@@ -8,7 +8,7 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}Configuring ReadAway Git hooks...${NC}"
+echo -e "${BLUE}Configuring Readaway Git hooks...${NC}"
 
 # Ensure hooks directory exists
 if [ ! -d ".githooks" ]; then

@@ -68,7 +68,7 @@ class ComicInfo {
     return creators.isNotEmpty ? creators.join(', ') : null;
   }
 
-  /// Converts parsed ComicInfo into standard ReadAway [DocumentMetadata].
+  /// Converts parsed ComicInfo into standard Readaway [DocumentMetadata].
   DocumentMetadata toDocumentMetadata() {
     return DocumentMetadata(
       title: title ?? (series != null ? '$series #$number' : null),

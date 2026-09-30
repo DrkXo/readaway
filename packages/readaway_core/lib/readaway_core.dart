@@ -1,4 +1,4 @@
-/// High-performance document reading, formatting, and TTS engine for ReadAway.
+/// High-performance document reading, formatting, and TTS engine for Readaway.
 library;
 
 // Abstracts

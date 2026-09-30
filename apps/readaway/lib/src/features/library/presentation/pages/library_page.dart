@@ -109,7 +109,7 @@ class _LibraryViewState extends State<_LibraryView> {
             showBottomBorder: false,
             titleText: state.isSelectMode
                 ? '${state.selectedPaths.length} selected'
-                : 'ReadAway',
+                : 'Readaway',
             leading: state.isSelectMode
                 ? IconButton(
                     icon: const Icon(LucideIcons.x),

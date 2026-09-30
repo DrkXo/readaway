@@ -25,7 +25,7 @@ OUT_DIR="${2:-$ROOT_DIR/build/release}"
 mkdir -p "$OUT_DIR"
 
 echo "=================================================="
-echo "Packaging Android Artifacts for ReadAway ($VERSION)"
+echo "Packaging Android Artifacts for Readaway ($VERSION)"
 echo "Output Directory: $OUT_DIR"
 echo "=================================================="
 
