@@ -56,7 +56,7 @@ class ModalPage<T> extends Page<T> {
 
   @override
   Route<T> createRoute(BuildContext context) {
-    return ModalBottomSheetRoute<T>(
+    return _CustomModalBottomSheetRoute<T>(
       builder: builder,
       settings: this,
       capturedThemes: capturedThemes,
@@ -77,5 +77,47 @@ class ModalPage<T> extends Page<T> {
       sheetAnimationStyle: sheetAnimationStyle,
       anchorPoint: anchorPoint,
     );
+  }
+}
+
+class _CustomModalBottomSheetRoute<T> extends ModalBottomSheetRoute<T> {
+  _CustomModalBottomSheetRoute({
+    required super.builder,
+    required super.isScrollControlled,
+    super.capturedThemes,
+    super.barrierLabel,
+    super.barrierOnTapHint,
+    super.modalBarrierColor,
+    super.isDismissible,
+    super.enableDrag,
+    super.showDragHandle,
+    super.backgroundColor,
+    super.elevation,
+    super.shape,
+    super.clipBehavior,
+    super.constraints,
+    super.transitionAnimationController,
+    super.sheetAnimationStyle,
+    super.anchorPoint,
+    super.useSafeArea,
+    super.settings,
+  });
+
+  ModalPage<T>? get modalPage =>
+      settings is ModalPage<T> ? settings as ModalPage<T> : null;
+
+  @override
+  WidgetBuilder get builder {
+    final page = modalPage;
+    if (page != null) {
+      return (context) => page.builder(context);
+    }
+    return super.builder;
+  }
+
+  @override
+  void changedInternalState() {
+    super.changedInternalState();
+    changedExternalState();
   }
 }

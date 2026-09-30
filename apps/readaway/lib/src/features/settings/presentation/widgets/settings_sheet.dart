@@ -1,29 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// Chrome for the settings bottom sheet, plus a navigator for its pages.
+/// Chrome for the settings bottom sheet.
 ///
-/// The sheet is a single modal. Everything inside it — the tabbed settings
-/// page and any sub-page (voice library, custom fonts) — is a page on the
-/// [Navigator] this widget owns, so opening a sub-page pushes *within* the
-/// sheet instead of stacking a second modal on top of it.
-///
-/// The navigator is pushed imperatively rather than driven by the router on
-/// purpose: a bottom-sheet route caches its content widget (Flutter's
-/// `_ModalScope`), so a route-level page swap inside a sheet never reaches the
-/// widget tree.
-class SettingsSheet extends StatefulWidget {
-  const SettingsSheet({super.key, required this.home});
+/// The sheet is a single modal managed as a GoRouter [ShellRoute]. Everything
+/// inside it — the tabbed settings page and any sub-page (voice library,
+/// custom fonts) — is rendered via the shell's nested [Navigator] passed in
+/// as [child].
+class SettingsSheet extends StatelessWidget {
+  const SettingsSheet({super.key, required this.child});
 
-  /// The sheet's root page, i.e. the tabbed settings page.
-  final Widget home;
-
-  @override
-  State<SettingsSheet> createState() => _SettingsSheetState();
-}
-
-class _SettingsSheetState extends State<SettingsSheet> {
-  final _navigatorKey = GlobalKey<NavigatorState>(debugLabel: 'settings-sheet');
+  /// The ShellRoute's nested navigator.
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -52,59 +40,13 @@ class _SettingsSheetState extends State<SettingsSheet> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              Flexible(
-                child: SettingsSheetScope(
-                  navigatorKey: _navigatorKey,
-                  child: Navigator(
-                    key: _navigatorKey,
-                    onGenerateRoute: (settings) => MaterialPageRoute<void>(
-                      settings: settings,
-                      builder: (context) => widget.home,
-                    ),
-                  ),
-                ),
-              ),
+              Flexible(child: child),
             ],
           ),
         ),
       ),
     );
   }
-}
-
-/// Gives pages inside the [SettingsSheet] access to its navigator.
-class SettingsSheetScope extends InheritedWidget {
-  const SettingsSheetScope({
-    super.key,
-    required this.navigatorKey,
-    required super.child,
-  });
-
-  final GlobalKey<NavigatorState> navigatorKey;
-
-  /// The sheet's navigator, or null when [context] is outside the sheet.
-  static GlobalKey<NavigatorState>? maybeOf(BuildContext context) => context
-      .dependOnInheritedWidgetOfExactType<SettingsSheetScope>()
-      ?.navigatorKey;
-
-  @override
-  bool updateShouldNotify(SettingsSheetScope oldWidget) =>
-      navigatorKey != oldWidget.navigatorKey;
-}
-
-/// Pushes [page] on top of the settings sheet's current page.
-///
-/// Must be called from inside the sheet (from a panel, or anything else the
-/// sheet rendered). [Navigator.pop] on the pushed page — the back arrow, the
-/// system back gesture — returns to the page underneath instead of closing the
-/// sheet.
-void pushSettingsPage(BuildContext context, Widget page) {
-  final navigator = SettingsSheetScope.maybeOf(context)?.currentState;
-  assert(
-    navigator != null,
-    'pushSettingsPage() called outside of the settings sheet',
-  );
-  navigator?.push(MaterialPageRoute<void>(builder: (context) => page));
 }
 
 /// Header row for a page inside the [SettingsSheet]: a title, an optional

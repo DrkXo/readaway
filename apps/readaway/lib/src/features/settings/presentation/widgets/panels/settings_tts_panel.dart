@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../../../../core/routes/routes.dart';
 import '../../../../../core/services/services.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../settings/domain/entity/tts_lyric_style.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../../bloc/tts_library/tts_library_bloc.dart';
-import '../../pages/voice_library_page.dart';
 import '../widgets.dart';
 
 /// TTS settings split into three sub-tabs: the active voice (+ voice library
@@ -166,8 +168,7 @@ class _VoiceTab extends StatelessWidget {
                 SettingsRow(
                   label: 'Manage voices',
                   description: summary,
-                  onTap: () =>
-                      pushSettingsPage(context, const VoiceLibraryPage()),
+                  onTap: () => context.push(appRoutes.settingsVoices.path),
                   trailing: const Icon(LucideIcons.chevronRight, size: 20),
                 ),
               ],

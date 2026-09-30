@@ -16,7 +16,9 @@ import '../core/services/services.dart';
 import '../features/library/presentation/pages/library_page.dart';
 import '../features/reader/presentation/bloc/reader_bloc.dart';
 import '../features/reader/presentation/pages/reader_page.dart';
+import '../features/settings/presentation/pages/settings_custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
+import '../features/settings/presentation/pages/voice_library_page.dart';
 import '../features/settings/presentation/widgets/settings_sheet.dart';
 
 part 'custom_routes.dart';
@@ -71,6 +73,10 @@ class AppRouter {
 
   final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
     debugLabel: 'root',
+  );
+
+  final GlobalKey<NavigatorState> _settingsNavKey = GlobalKey<NavigatorState>(
+    debugLabel: 'settings-sheet',
   );
 
   BuildContext? get context => _rootNavigatorKey.currentContext;
@@ -153,35 +159,53 @@ class AppRouter {
 
       // Global Modal overlaid on top of the router.
       //
-      // One route, one sheet. The sheet hosts its own navigator, so its
-      // sub-pages (voice library, custom fonts) push within the sheet instead
-      // of each opening a second modal on top of it.
-      GoRoute(
-        name: _appRoutes.settings.name,
-        path: _appRoutes.settings.path,
-        pageBuilder: (context, state) {
-          final tabParam = state.uri.queryParameters['tab'];
-          final initialTab = switch (tabParam) {
-            'layout' => SettingsTab.layout,
-            'behavior' => SettingsTab.behavior,
-            'appearance' => SettingsTab.appearance,
-            'tts' => SettingsTab.tts,
-            _ => SettingsTab.font,
-          };
-          final documentPath = state.uri.queryParameters['documentPath'];
+      // The settings sheet is a ShellRoute hosting a nested navigator with a
+      // stable key ('settings-modal'). Sub-pages (voice library, custom fonts)
+      // are child routes that push within the sheet's nested navigator, keeping
+      // the sheet open and bypassing Flutter's _ModalScope caching.
+      ShellRoute(
+        navigatorKey: _settingsNavKey,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state, child) => ModalPage(
+          key: const ValueKey('settings-modal'),
+          isScrollControlled: true,
+          showDragHandle: false,
+          builder: (context) => SettingsSheet(child: child),
+        ),
+        routes: [
+          GoRoute(
+            name: _appRoutes.settings.name,
+            path: _appRoutes.settings.path,
+            builder: (context, state) {
+              final tabParam = state.uri.queryParameters['tab'];
+              final initialTab = switch (tabParam) {
+                'layout' => SettingsTab.layout,
+                'behavior' => SettingsTab.behavior,
+                'appearance' => SettingsTab.appearance,
+                'tts' => SettingsTab.tts,
+                _ => SettingsTab.font,
+              };
+              final documentPath = state.uri.queryParameters['documentPath'];
 
-          return ModalPage(
-            key: state.pageKey,
-            isScrollControlled: true,
-            showDragHandle: false,
-            builder: (context) => SettingsSheet(
-              home: SettingsPage(
+              return SettingsPage(
                 initialTab: initialTab,
                 documentPath: documentPath,
+              );
+            },
+            routes: [
+              GoRoute(
+                name: _appRoutes.settingsVoices.name,
+                path: _appRoutes.settingsVoices.lastSegment,
+                builder: (context, state) => const VoiceLibraryPage(),
               ),
-            ),
-          );
-        },
+              GoRoute(
+                name: _appRoutes.settingsFonts.name,
+                path: _appRoutes.settingsFonts.lastSegment,
+                builder: (context, state) => const SettingsCustomFontsPage(),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );

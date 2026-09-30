@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../../../../core/routes/routes.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../settings/domain/entity/reader_preferences.dart';
 import '../../../../settings/domain/entity/settings.dart';
 import '../../bloc/settings/settings_bloc.dart';
-import '../../pages/settings_custom_fonts_page.dart';
 import '../reader_prefs_scope.dart';
 import '../settings_bloc_x.dart';
 import '../widgets.dart';
@@ -87,8 +89,7 @@ class _ManageCustomFontsRow extends StatelessWidget {
               ? 'Add .ttf or .otf fonts'
               : '$count installed',
           trailing: const Icon(LucideIcons.chevronRight),
-          onTap: () =>
-              pushSettingsPage(context, const SettingsCustomFontsPage()),
+          onTap: () => context.push(appRoutes.settingsFonts.path),
         );
       },
     );
