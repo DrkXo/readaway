@@ -1,6 +1,7 @@
-import 'dart:collection';
 import 'dart:isolate';
 import 'dart:typed_data';
+
+import 'package:cacherine/cacherine.dart';
 
 import '../abstracts/document_reader.dart';
 import '../abstracts/page_document_reader.dart';
@@ -11,34 +12,6 @@ import '../readers/document_reader_factory.dart';
 import '../readers/html_text_extractor.dart';
 import '../transformers/footnote_transformer.dart';
 import 'document_isolate_messages.dart';
-
-/// Lightweight LinkedHashMap-based LRU cache for the document isolate worker.
-class _IsolateLruCache<K, V> {
-  _IsolateLruCache({this.maximumSize = 50});
-
-  final int maximumSize;
-  final LinkedHashMap<K, V> _map = LinkedHashMap<K, V>();
-
-  V? get(K key) {
-    final value = _map.remove(key);
-    if (value != null) {
-      _map[key] = value;
-    }
-    return value;
-  }
-
-  void put(K key, V value) {
-    _map.remove(key);
-    _map[key] = value;
-    if (_map.length > maximumSize) {
-      _map.remove(_map.keys.first);
-    }
-  }
-
-  bool containsKey(K key) => _map.containsKey(key);
-
-  void clear() => _map.clear();
-}
 
 /// Entry point function executed inside the dedicated document isolate.
 void documentIsolateEntryPoint(SendPort hostSendPort) {
@@ -51,11 +24,11 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
   DocumentReader? reader;
 
   // Single-source-of-truth isolate memory caches
-  final htmlCache = _IsolateLruCache<int, String>(maximumSize: 40);
-  final textCache = _IsolateLruCache<int, String>(maximumSize: 40);
-  final speechTextCache = _IsolateLruCache<int, String>(maximumSize: 40);
-  final assetCache = _IsolateLruCache<String, Uint8List>(maximumSize: 60);
-  final pageImageCache = _IsolateLruCache<String, Uint8List>(maximumSize: 30);
+  final htmlCache = SimpleLRUCache<int, String>(40);
+  final textCache = SimpleLRUCache<int, String>(40);
+  final speechTextCache = SimpleLRUCache<int, String>(40);
+  final assetCache = SimpleLRUCache<String, Uint8List>(60);
+  final pageImageCache = SimpleLRUCache<String, Uint8List>(30);
 
   void clearCaches() {
     htmlCache.clear();
@@ -75,7 +48,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
       if (next < sectionCount && !htmlCache.containsKey(next)) {
         try {
           final html = reflow.loadSectionHtml(next);
-          htmlCache.put(next, html);
+          htmlCache.set(next, html);
         } catch (_) {}
       }
 
@@ -83,7 +56,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
       if (prev >= 0 && !htmlCache.containsKey(prev)) {
         try {
           final html = reflow.loadSectionHtml(prev);
-          htmlCache.put(prev, html);
+          htmlCache.set(prev, html);
         } catch (_) {}
       }
     });
@@ -118,7 +91,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
             if (sectionCount > 0 && opened is ReflowableDocumentReader) {
               try {
                 final html = opened.loadSectionHtml(0);
-                htmlCache.put(0, html);
+                htmlCache.set(0, html);
               } catch (_) {}
             }
 
@@ -156,7 +129,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           String? html = htmlCache.get(sectionIndex);
           if (html == null) {
             html = reflow.loadSectionHtml(sectionIndex);
-            htmlCache.put(sectionIndex, html);
+            htmlCache.set(sectionIndex, html);
           }
 
           schedulePrefetch(sectionIndex, reflow.sectionCount);
@@ -172,7 +145,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           String? text = textCache.get(sectionIndex);
           if (text == null) {
             text = reflow.extractSectionText(sectionIndex);
-            textCache.put(sectionIndex, text);
+            textCache.set(sectionIndex, text);
           }
 
           hostSendPort.send(DocumentResponse.sectionText(id: id, text: text));
@@ -186,7 +159,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
           String? speechText = speechTextCache.get(sectionIndex);
           if (speechText == null) {
             speechText = reflow.extractSectionSpeechText(sectionIndex);
-            speechTextCache.put(sectionIndex, speechText);
+            speechTextCache.set(sectionIndex, speechText);
           }
 
           hostSendPort.send(
@@ -231,7 +204,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
             final html =
                 htmlCache.get(targetSectionIndex) ??
                 reflow.loadSectionHtml(targetSectionIndex);
-            htmlCache.put(targetSectionIndex, html);
+            htmlCache.set(targetSectionIndex, html);
             final footnote = FootnoteTransformer.findFootnote(html, anchorId);
             hostSendPort.send(
               DocumentResponse.footnoteResolved(id: id, footnote: footnote),
@@ -261,7 +234,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
               bytes = reader!.loadAsset(assetPath);
             }
             if (bytes != null && bytes.isNotEmpty) {
-              assetCache.put(cacheKey, bytes);
+              assetCache.set(cacheKey, bytes);
             }
           }
 
@@ -289,7 +262,7 @@ void documentIsolateEntryPoint(SendPort hostSendPort) {
               targetHeight: targetHeight,
             );
             if (bytes.isNotEmpty) {
-              pageImageCache.put(cacheKey, bytes);
+              pageImageCache.set(cacheKey, bytes);
             }
           }
 

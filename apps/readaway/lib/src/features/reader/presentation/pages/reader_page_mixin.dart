@@ -77,6 +77,11 @@ mixin ReaderControllerMixin on State<ReaderPage> {
 
   void syncSettings(SettingsState state) {
     wakelockService.setEnabled(state.appSettings.screenWakeLock);
+    // Applied here (not only in the settings panel) so a stored budget takes
+    // effect on launch. `configureBudget` no-ops when unchanged.
+    FixedLayoutImageCache.instance.configureBudget(
+      state.appSettings.globalViewSettings.readerCacheSizeMb * 1024 * 1024,
+    );
   }
 
   void toggleChrome() {

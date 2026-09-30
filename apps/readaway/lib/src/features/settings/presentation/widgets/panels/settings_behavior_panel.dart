@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../domain/entity/reader_preferences.dart';
+import '../../../../reader/presentation/widgets/viewport/fixed_layout/fixed_layout_image_cache.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../reader_prefs_scope.dart';
 import '../settings_bloc_x.dart';
@@ -27,6 +28,22 @@ class SettingsBehaviorPanel extends StatelessWidget {
           nonReflowablePageSnap: true,
         ),
         documentPath: path,
+      );
+    }
+
+    void resetReaderCache() {
+      final settings = bloc.state.appSettings;
+      bloc.add(
+        SettingsEvent.updateAppSettings(
+          settings.copyWith(
+            globalViewSettings: settings.globalViewSettings.copyWith(
+              readerCacheSizeMb: kDefaultReaderCacheSizeMb,
+            ),
+          ),
+        ),
+      );
+      FixedLayoutImageCache.instance.configureBudget(
+        kDefaultReaderCacheSizeMb * 1024 * 1024,
       );
     }
 
@@ -77,6 +94,14 @@ class SettingsBehaviorPanel extends StatelessWidget {
             _NonReflowableScrollDirectionRow(),
             _NonReflowablePageTransitionRow(),
             _NonReflowablePageSnapRow(),
+          ],
+        ),
+        const SizedBox(height: 24),
+        SettingsSection(
+          title: 'Page image memory',
+          onReset: resetReaderCache,
+          rows: const [
+            _ReaderCacheSizeRow(),
           ],
         ),
         const SizedBox(height: 24),
@@ -322,6 +347,50 @@ class _NonReflowablePageSnapRow extends StatelessWidget {
             (p) => p.copyWith(nonReflowablePageSnap: v),
             documentPath: path,
           ),
+        );
+      },
+    );
+  }
+}
+
+class _ReaderCacheSizeRow extends StatelessWidget {
+  const _ReaderCacheSizeRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.appSettings.globalViewSettings.readerCacheSizeMb !=
+          curr.appSettings.globalViewSettings.readerCacheSizeMb,
+      builder: (context, state) {
+        final gvs = state.appSettings.globalViewSettings;
+        return SettingsSelectRow<int>(
+          label: 'Page image cache',
+          description:
+              'Memory used to keep decoded pages cached. Lower it to free RAM, '
+              'raise it for image-heavy books. Minimum $kMinReaderCacheMb MB.',
+          value: gvs.readerCacheSizeMb,
+          entries: const [
+            SettingsSelectEntry(value: 8, label: '8 MB (Default)'),
+            SettingsSelectEntry(value: 16, label: '16 MB'),
+            SettingsSelectEntry(value: 32, label: '32 MB'),
+            SettingsSelectEntry(value: 64, label: '64 MB'),
+            SettingsSelectEntry(value: 128, label: '128 MB'),
+            SettingsSelectEntry(value: 256, label: '256 MB'),
+          ],
+          // Not a per-document pref: this is the process-wide budget, so it
+          // lives in globalViewSettings rather than readerPrefs.
+          onChanged: (mb) {
+            final settings = state.appSettings;
+            context.read<SettingsBloc>().add(
+              SettingsEvent.updateAppSettings(
+                settings.copyWith(
+                  globalViewSettings: gvs.copyWith(readerCacheSizeMb: mb),
+                ),
+              ),
+            );
+            FixedLayoutImageCache.instance.configureBudget(mb * 1024 * 1024);
+          },
         );
       },
     );

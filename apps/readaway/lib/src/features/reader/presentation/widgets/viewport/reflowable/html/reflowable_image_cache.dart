@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:readaway/src/core/utils/lru_cache.dart';
+import 'package:cacherine/cacherine.dart';
 
 /// Page-lifetime image pipeline shared by every rendered instance of a chapter.
 ///
@@ -16,9 +16,18 @@ class ReflowableImageCache {
 
   static final ReflowableImageCache instance = ReflowableImageCache._();
 
-  final LruCache<String, Uint8List> _bytes = LruCache(maximumSize: 40);
+  final SimpleLRUCache<String, Uint8List> _bytes = SimpleLRUCache(40);
+
+  /// Single-flight guards for [resolveBytes] / [decode].
+  ///
+  /// Deliberately plain maps rather than caches: these must be *transient*
+  /// (the entry disappears the moment the load settles, so a failed load can
+  /// be retried) and they wrap slow async work. cacherine's `getOrCompute`
+  /// does the opposite on both counts — it stores the value permanently, and
+  /// holds a per-instance `Lock` across the awaited factory, which would
+  /// serialise every concurrent image load behind the slowest one.
   final Map<String, Future<Uint8List?>> _inFlightBytes = {};
-  final LruCache<String, ui.Image> _decoded = LruCache(maximumSize: 12);
+  final SimpleLRUCache<String, ui.Image> _decoded = SimpleLRUCache(12);
   final Map<String, Future<ui.Image?>> _inFlightDecodes = {};
 
   String _key(String namespace, int chapterIndex, String src) =>
@@ -36,7 +45,7 @@ class ReflowableImageCache {
   }) async {
     final key = _key(namespace, chapterIndex, src);
 
-    final cached = _bytes[key];
+    final cached = _bytes.get(key);
     if (cached != null) return cached;
 
     final inFlight = _inFlightBytes[key];
@@ -46,7 +55,7 @@ class ReflowableImageCache {
       try {
         final bytes = await load();
         if (bytes != null && bytes.isNotEmpty) {
-          _bytes[key] = bytes;
+          _bytes.set(key, bytes);
           return bytes;
         }
         return null;
@@ -58,13 +67,17 @@ class ReflowableImageCache {
     return future;
   }
 
-  /// The decoded frame for this image, if already resident.
+  /// The raw bytes for this image, if already resident.
+  ///
+  /// Reads with [SimpleCache.peek] so a presence check does not count as an
+  /// access — otherwise every repaint would refresh the recency of every
+  /// visible image and flatten the LRU ordering.
   Uint8List? peekBytes(String namespace, int chapterIndex, String src) =>
-      _bytes[_key(namespace, chapterIndex, src)];
+      _bytes.peek(_key(namespace, chapterIndex, src));
 
   /// The decoded frame for this image, if already resident.
   ui.Image? peekDecoded(String namespace, int chapterIndex, String src) =>
-      _decoded[_key(namespace, chapterIndex, src)];
+      _decoded.peek(_key(namespace, chapterIndex, src));
 
   /// Returns a shared decoded frame for [src], decoding it once for all
   /// consumers (widgets and HyperRender's layout pass both read the same
@@ -84,7 +97,7 @@ class ReflowableImageCache {
   }) async {
     final key = _key(namespace, chapterIndex, src);
 
-    final cached = _decoded[key];
+    final cached = _decoded.get(key);
     if (cached != null) return cached;
 
     final inFlight = _inFlightDecodes[key];
@@ -122,7 +135,7 @@ class ReflowableImageCache {
 
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
-      _decoded[key] = frame.image;
+      _decoded.set(key, frame.image);
       return frame.image;
     } finally {
       _inFlightDecodes.remove(key);
@@ -135,7 +148,11 @@ class ReflowableImageCache {
     _bytes.clear();
     _inFlightBytes.clear();
     _inFlightDecodes.clear();
-    final images = _decoded.values.toList();
+    // `onEvict` only yields an `EvictionReason`, never the value, so the
+    // frames have to be snapshotted by hand before the cache is emptied.
+    final images = <ui.Image>[
+      for (final key in _decoded.getKeys()) _decoded.peek(key)!,
+    ];
     _decoded.clear();
     for (final image in images) {
       image.dispose();
