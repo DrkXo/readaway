@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.readaway.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>ReadAway</name>
+  <summary>Modern eBook, HTML, Comic, and Text Document Reader</summary>
+  <description>
+    <p>
+      ReadAway is a modern, fast, and feature-rich reader for eBooks (EPUB, PDF),
+      comic book archives (CBZ, CBR, CBT, CB7), and text documents (Markdown, TXT, HTML).
+    </p>
+  </description>
+  <developer id="dev.readaway">
+    <name>DrkXo</name>
+  </developer>
+  <launchable type="desktop-id">dev.readaway.desktop</launchable>
+  <url type="homepage">https://github.com/DrkXo/readaway</url>
+  <url type="bugtracker">https://github.com/DrkXo/readaway/issues</url>
+  <provides>
+    <mediatype>application/epub+zip</mediatype>
+    <mediatype>application/pdf</mediatype>
+    <mediatype>application/vnd.comicbook+zip</mediatype>
+    <mediatype>application/x-cbz</mediatype>
+    <mediatype>application/vnd.comicbook-rar</mediatype>
+    <mediatype>application/x-cbr</mediatype>
+    <mediatype>application/x-cbt</mediatype>
+    <mediatype>application/x-cb7</mediatype>
+    <mediatype>text/plain</mediatype>
+    <mediatype>text/html</mediatype>
+    <mediatype>application/xhtml+xml</mediatype>
+    <mediatype>text/markdown</mediatype>
+    <mediatype>text/x-markdown</mediatype>
+  </provides>
+  <content_rating type="oars-1.1" />
+</component>

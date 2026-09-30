@@ -241,9 +241,11 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
           melos run build:linux
 
-      - name: Package & Rename Linux Artifacts
+      - name: Package & Rename Linux Artifacts (AppImage, Tarball, DEB, RPM)
         id: package
-        run: bash scripts/package_linux.sh "${{ needs.resolve-version.outputs.tag }}"
+        run: |
+          bash scripts/package_linux.sh "${{ needs.resolve-version.outputs.tag }}"
+          bash scripts/package_deb_rpm.sh "${{ needs.resolve-version.outputs.tag }}"
 
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4

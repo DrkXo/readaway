@@ -65,26 +65,89 @@ mkdir -p "$TEMP_APPDIR"
 # Copy binary & assets
 cp -r "$BUNDLE_DIR"/* "$TEMP_APPDIR/"
 
-# Copy desktop file
+# -------------------------------------------------------------
+# Staging standard Freedesktop directory structure
+# -------------------------------------------------------------
+mkdir -p "$TEMP_APPDIR/usr/share/applications"
+mkdir -p "$TEMP_APPDIR/usr/share/mime/packages"
+mkdir -p "$TEMP_APPDIR/usr/share/icons/hicolor/256x256/apps"
+
+mkdir -p "$TEMP_APPDIR/usr/share/metainfo"
+
+# Copy desktop file to both root and usr/share/applications
 if [ -f "$APP_DIR/linux/dev.readaway.desktop" ]; then
   cp "$APP_DIR/linux/dev.readaway.desktop" "$TEMP_APPDIR/dev.readaway.desktop"
+  cp "$APP_DIR/linux/dev.readaway.desktop" "$TEMP_APPDIR/usr/share/applications/dev.readaway.desktop"
 fi
 
-# Copy icons
+# Copy MIME XML definition
+if [ -f "$APP_DIR/linux/dev.readaway.xml" ]; then
+  cp "$APP_DIR/linux/dev.readaway.xml" "$TEMP_APPDIR/usr/share/mime/packages/dev.readaway.xml"
+fi
+
+# Copy AppStream metadata
+if [ -f "$APP_DIR/linux/dev.readaway.metainfo.xml" ]; then
+  cp "$APP_DIR/linux/dev.readaway.metainfo.xml" "$TEMP_APPDIR/usr/share/metainfo/dev.readaway.metainfo.xml"
+fi
+
+# Create symlink for lowercase executable name
+(cd "$TEMP_APPDIR" && ln -sf Readaway readaway)
+
+# Copy icons (standard, namespaced, and AppDir metadata)
 ICON_SRC="$APP_DIR/assets/logo/foreground.png"
 if [ -f "$ICON_SRC" ]; then
-  mkdir -p "$TEMP_APPDIR/usr/share/icons/hicolor/256x256/apps/"
   cp "$ICON_SRC" "$TEMP_APPDIR/usr/share/icons/hicolor/256x256/apps/readaway.png"
+  cp "$ICON_SRC" "$TEMP_APPDIR/usr/share/icons/hicolor/256x256/apps/dev.readaway.png"
   cp "$ICON_SRC" "$TEMP_APPDIR/readaway.png"
+  cp "$ICON_SRC" "$TEMP_APPDIR/dev.readaway.png"
   cp "$ICON_SRC" "$TEMP_APPDIR/.DirIcon"
 fi
 
-# Create AppRun launcher
+# Create AppRun launcher with self-registration capabilities
 cat << 'EOF' > "$TEMP_APPDIR/AppRun"
 #!/usr/bin/env bash
+set -e
 HERE="$(dirname "$(readlink -f "${0}")")"
 export LD_LIBRARY_PATH="${HERE}/lib:${LD_LIBRARY_PATH:-}"
 export PATH="${HERE}:${PATH}"
+
+# Self-registration handler for desktop integration and MIME associations
+if [ "${1:-}" = "--install" ] || [ "${1:-}" = "--register-desktop" ]; then
+  TARGET_APP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+  TARGET_ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/256x256/apps"
+  TARGET_MIME_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/mime/packages"
+  mkdir -p "$TARGET_APP_DIR" "$TARGET_ICON_DIR" "$TARGET_MIME_DIR"
+
+  APPIMAGE_PATH="${APPIMAGE:-$(readlink -f "$0")}"
+  sed -e "s|^Exec=.*|Exec=\"${APPIMAGE_PATH}\" %F|" \
+      "$HERE/dev.readaway.desktop" > "$TARGET_APP_DIR/dev.readaway.desktop"
+
+  if [ -f "$HERE/readaway.png" ]; then
+    cp "$HERE/readaway.png" "$TARGET_ICON_DIR/readaway.png"
+    cp "$HERE/readaway.png" "$TARGET_ICON_DIR/dev.readaway.png"
+  fi
+  if [ -f "$HERE/usr/share/mime/packages/dev.readaway.xml" ]; then
+    cp "$HERE/usr/share/mime/packages/dev.readaway.xml" "$TARGET_MIME_DIR/dev.readaway.xml"
+  fi
+
+  update-desktop-database "$TARGET_APP_DIR" 2>/dev/null || true
+  update-mime-database "${XDG_DATA_HOME:-$HOME/.local/share}/mime" 2>/dev/null || true
+  gtk-update-icon-cache -t -f "${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor" 2>/dev/null || true
+  echo "[OK] ReadAway successfully integrated with desktop and registered for all document MIME types."
+  exit 0
+elif [ "${1:-}" = "--uninstall" ] || [ "${1:-}" = "--unregister-desktop" ]; then
+  TARGET_APP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+  TARGET_ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/256x256/apps"
+  TARGET_MIME_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/mime/packages"
+  rm -f "$TARGET_APP_DIR/dev.readaway.desktop"
+  rm -f "$TARGET_ICON_DIR/readaway.png" "$TARGET_ICON_DIR/dev.readaway.png"
+  rm -f "$TARGET_MIME_DIR/dev.readaway.xml"
+  update-desktop-database "$TARGET_APP_DIR" 2>/dev/null || true
+  update-mime-database "${XDG_DATA_HOME:-$HOME/.local/share}/mime" 2>/dev/null || true
+  echo "[OK] ReadAway desktop integration removed."
+  exit 0
+fi
+
 exec "${HERE}/Readaway" "$@"
 EOF
 chmod +x "$TEMP_APPDIR/AppRun"

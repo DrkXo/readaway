@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-cbz">
+    <comment>Comic Book ZIP Archive</comment>
+    <glob pattern="*.cbz"/>
+    <sub-class-of type="application/zip"/>
+  </mime-type>
+  <mime-type type="application/x-cbr">
+    <comment>Comic Book RAR Archive</comment>
+    <glob pattern="*.cbr"/>
+  </mime-type>
+  <mime-type type="application/x-cbt">
+    <comment>Comic Book TAR Archive</comment>
+    <glob pattern="*.cbt"/>
+    <sub-class-of type="application/x-tar"/>
+  </mime-type>
+  <mime-type type="application/x-cb7">
+    <comment>Comic Book 7z Archive</comment>
+    <glob pattern="*.cb7"/>
+    <sub-class-of type="application/x-7z-compressed"/>
+  </mime-type>
+</mime-info>

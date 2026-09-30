@@ -28,7 +28,7 @@ dependency_overrides:
   # Pub only honours overrides from the root package of a resolution, so that
   # path is discarded for a git dependency and core would resolve from pub.dev
   # — the build would succeed and the method would simply be missing at
-  # runtime. See .agents/plans/tts-highlight-geometry.md, risk 1.
+  # runtime.
   hyper_render:
     git:
       url: https://github.com/DrkXo/hyper_render.git
@@ -171,9 +171,24 @@ melos:
       run: bash scripts/package_android.sh
       description: Collect, rename, and package all Android release APKs and AAB
 
-    package:linux:
+    package:linux:appimage:
       run: bash scripts/package_linux.sh
       description: Package Linux bundle into tar.gz and AppImage
+
+    package:linux:deb:
+      run: bash scripts/package_deb_rpm.sh "" "" deb
+      description: Package Linux bundle into Debian (.deb) package
+
+    package:linux:rpm:
+      run: bash scripts/package_deb_rpm.sh "" "" rpm
+      description: Package Linux bundle into Red Hat (.rpm) package
+
+    package:linux:
+      steps:
+        - melos run package:linux:appimage
+        - melos run package:linux:deb
+        - melos run package:linux:rpm
+      description: Package Linux bundle into tar.gz, AppImage, deb, and rpm
 
     package:checksums:
       run: bash scripts/generate_checksums.sh
