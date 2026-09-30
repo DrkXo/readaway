@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:readaway/src/core/error/failures.dart';
 import 'package:readaway/src/core/result/result.dart';
+import 'package:readaway/src/core/services/tts/cache/tts_chapter_cache_service.dart';
 import 'package:readaway/src/core/services/tts/catalog/tts_catalog_service.dart';
 import 'package:readaway/src/core/services/tts/importer/custom_tts_model_importer_service.dart';
 import 'package:readaway/src/core/services/tts/sherpa/tts_download_manager.dart';
@@ -217,12 +218,41 @@ class _FakeDownloadManager extends Fake implements TtsDownloadManager {
   Future<void> cancel(String modelId) async => cancelled.add(modelId);
 }
 
+class _FakeTtsChapterCacheService extends Fake
+    implements TtsChapterCacheService {
+  int totalBytes = 1024 * 1024 * 15; // 15 MB
+  int bookBytes = 1024 * 1024 * 5; // 5 MB
+  bool clearedAll = false;
+  final clearedBooks = <String>[];
+
+  @override
+  Future<int> calculateTotalCacheSizeBytes() async => totalBytes;
+
+  @override
+  Future<int> calculateBookCacheSizeBytes(String bookPath) async => bookBytes;
+
+  @override
+  Future<void> clearAllCache() async {
+    clearedAll = true;
+    totalBytes = 0;
+    bookBytes = 0;
+  }
+
+  @override
+  Future<void> clearBookCache(String bookPath) async {
+    clearedBooks.add(bookPath);
+    totalBytes -= bookBytes;
+    bookBytes = 0;
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _FakeTtsModelRepository repo;
   late _FakeSettingsRepository settings;
   late _FakeDownloadManager manager;
+  late _FakeTtsChapterCacheService cacheService;
   late TtsLibraryBloc bloc;
 
   Directory? inspectionDir;
@@ -234,10 +264,12 @@ void main() {
     );
     settings = _FakeSettingsRepository(const Settings());
     manager = _FakeDownloadManager();
+    cacheService = _FakeTtsChapterCacheService();
     bloc = TtsLibraryBloc(
       ttsModelRepository: repo,
       settingsRepository: settings,
       downloadManager: manager,
+      ttsCacheService: cacheService,
     );
   });
 
@@ -556,6 +588,51 @@ void main() {
       expect(repo.stopPreviewCount, 1);
       expect(repo.previewCalls, [_matchaModel.id, _vitsModel.id]);
       expect(bloc.state.busyModelId, _vitsModel.id);
+    });
+
+    test('loadCacheSize calculates total and book cache sizes', () async {
+      bloc.add(
+        const TtsLibraryEvent.loadCacheSize(bookPath: '/books/my_book.epub'),
+      );
+      await pumpEventQueue();
+
+      expect(bloc.state.totalCacheSizeBytes, equals(1024 * 1024 * 15));
+      expect(bloc.state.bookCacheSizeBytes, equals(1024 * 1024 * 5));
+      expect(bloc.state.isLoadingCacheSize, isFalse);
+    });
+
+    test(
+      'clearAllCache deletes all cached audio and emits notification',
+      () async {
+        bloc.add(const TtsLibraryEvent.loadCacheSize());
+        await pumpEventQueue();
+        expect(bloc.state.totalCacheSizeBytes, equals(1024 * 1024 * 15));
+
+        bloc.add(const TtsLibraryEvent.clearAllCache());
+        await pumpEventQueue();
+
+        expect(cacheService.clearedAll, isTrue);
+        expect(bloc.state.totalCacheSizeBytes, equals(0));
+        expect(bloc.state.bookCacheSizeBytes, equals(0));
+        expect(
+          bloc.state.updateNotification,
+          equals('All TTS audio cache cleared'),
+        );
+      },
+    );
+
+    test('clearBookCache deletes book audio and updates cache size', () async {
+      const bookPath = '/books/my_book.epub';
+      bloc.add(const TtsLibraryEvent.loadCacheSize(bookPath: bookPath));
+      await pumpEventQueue();
+
+      bloc.add(const TtsLibraryEvent.clearBookCache(bookPath));
+      await pumpEventQueue();
+
+      expect(cacheService.clearedBooks, contains(bookPath));
+      expect(bloc.state.bookCacheSizeBytes, equals(0));
+      expect(bloc.state.totalCacheSizeBytes, equals(1024 * 1024 * 10));
+      expect(bloc.state.updateNotification, equals('Cleared book audio cache'));
     });
   });
 }

@@ -232,6 +232,30 @@ class TtsChapterCacheService {
     }
   }
 
+  /// Calculates total size of cached TTS audio files for a specific book in bytes.
+  Future<int> calculateBookCacheSizeBytes(String bookPath) async {
+    try {
+      final root = await _pathService.getTtsAudioCacheDirectory();
+      final bookKey = computeBookKey(bookPath);
+      final bookDir = Directory(p.join(root.path, bookKey));
+      if (!await bookDir.exists()) return 0;
+
+      var total = 0;
+      await for (final entity in bookDir.list(
+        recursive: true,
+        followLinks: false,
+      )) {
+        if (entity is File) {
+          total += await entity.length();
+        }
+      }
+      return total;
+    } catch (e) {
+      _log.w('Failed to calculate book TTS cache size: $e');
+      return 0;
+    }
+  }
+
   /// Enforces max storage limit using LRU eviction based on `lastAccessedAt`.
   Future<void> enforceCacheLimit([int? maxBytes]) async {
     try {

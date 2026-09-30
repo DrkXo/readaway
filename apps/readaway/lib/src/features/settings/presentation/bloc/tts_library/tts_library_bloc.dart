@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../../../../core/services/tts/cache/tts_chapter_cache_service.dart';
+import '../../../../../core/services/tts/controller/tts_controller_service.dart';
 import '../../../../../core/services/tts/importer/custom_tts_model_importer_service.dart';
 import '../../../../../core/services/tts/sherpa/tts_download_manager.dart';
 import '../../../../../core/services/tts/tts_download_task.dart';
@@ -31,6 +34,7 @@ class TtsLibraryBloc extends Bloc<TtsLibraryEvent, TtsLibraryState> {
   final TtsModelRepository ttsModelRepository;
   final SettingsRepository settingsRepository;
   final TtsDownloadManager downloadManager;
+  final TtsChapterCacheService ttsCacheService;
 
   StreamSubscription<Settings>? _settingsSub;
   StreamSubscription<List<SherpaTtsModelInfo>>? _catalogSub;
@@ -41,6 +45,7 @@ class TtsLibraryBloc extends Bloc<TtsLibraryEvent, TtsLibraryState> {
     required this.ttsModelRepository,
     required this.settingsRepository,
     required this.downloadManager,
+    required this.ttsCacheService,
   }) : super(const TtsLibraryState()) {
     on<_RefreshCatalog>(_onRefreshCatalog, transformer: concurrent());
     on<_CheckForUpdates>(_onCheckForUpdates, transformer: droppable());
@@ -51,6 +56,9 @@ class TtsLibraryBloc extends Bloc<TtsLibraryEvent, TtsLibraryState> {
     on<_CancelDownload>(_onCancelDownload);
     on<_DeleteModel>(_onDeleteModel);
     on<_Activate>(_onActivate, transformer: droppable());
+    on<_LoadCacheSize>(_onLoadCacheSize, transformer: droppable());
+    on<_ClearAllCache>(_onClearAllCache, transformer: droppable());
+    on<_ClearBookCache>(_onClearBookCache, transformer: droppable());
     // `concurrent()` (not `droppable()`) so a tap on the busy row actually
     // stops the sample: `playPreview` awaits synthesis *and* full playback, so
     // a dropped event would leave the Stop button dead until the sample ends.
@@ -393,6 +401,96 @@ class TtsLibraryBloc extends Bloc<TtsLibraryEvent, TtsLibraryState> {
         );
       },
     );
+  }
+
+  Future<void> _onLoadCacheSize(
+    _LoadCacheSize event,
+    Emitter<TtsLibraryState> emit,
+  ) async {
+    emit(state.copyWith(isLoadingCacheSize: true));
+    try {
+      final totalSize = await ttsCacheService.calculateTotalCacheSizeBytes();
+      int? bookSize;
+      if (event.bookPath != null && event.bookPath!.isNotEmpty) {
+        bookSize = await ttsCacheService.calculateBookCacheSizeBytes(
+          event.bookPath!,
+        );
+      }
+      emit(
+        state.copyWith(
+          isLoadingCacheSize: false,
+          totalCacheSizeBytes: totalSize,
+          bookCacheSizeBytes: bookSize ?? state.bookCacheSizeBytes,
+        ),
+      );
+    } catch (_) {
+      emit(state.copyWith(isLoadingCacheSize: false));
+    }
+  }
+
+  Future<void> _onClearAllCache(
+    _ClearAllCache event,
+    Emitter<TtsLibraryState> emit,
+  ) async {
+    emit(state.copyWith(isClearingCache: true));
+    try {
+      if (GetIt.I.isRegistered<TtsControllerService>()) {
+        final controller = GetIt.I.get<TtsControllerService>();
+        final st = controller.playbackState.value.state;
+        if (st == TtsPlaybackState.playing || st == TtsPlaybackState.loading) {
+          await controller.stop();
+        }
+      }
+      await ttsCacheService.clearAllCache();
+      emit(
+        state.copyWith(
+          isClearingCache: false,
+          totalCacheSizeBytes: 0,
+          bookCacheSizeBytes: 0,
+          updateNotification: 'All TTS audio cache cleared',
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          isClearingCache: false,
+          error: 'Failed to clear TTS cache: $e',
+        ),
+      );
+    }
+  }
+
+  Future<void> _onClearBookCache(
+    _ClearBookCache event,
+    Emitter<TtsLibraryState> emit,
+  ) async {
+    emit(state.copyWith(isClearingCache: true));
+    try {
+      if (GetIt.I.isRegistered<TtsControllerService>()) {
+        final controller = GetIt.I.get<TtsControllerService>();
+        final st = controller.playbackState.value.state;
+        if (st == TtsPlaybackState.playing || st == TtsPlaybackState.loading) {
+          await controller.stop();
+        }
+      }
+      await ttsCacheService.clearBookCache(event.bookPath);
+      final totalSize = await ttsCacheService.calculateTotalCacheSizeBytes();
+      emit(
+        state.copyWith(
+          isClearingCache: false,
+          totalCacheSizeBytes: totalSize,
+          bookCacheSizeBytes: 0,
+          updateNotification: 'Cleared book audio cache',
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          isClearingCache: false,
+          error: 'Failed to clear book cache: $e',
+        ),
+      );
+    }
   }
 
   @override

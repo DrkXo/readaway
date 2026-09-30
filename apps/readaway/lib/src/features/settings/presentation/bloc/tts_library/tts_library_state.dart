@@ -11,6 +11,10 @@ abstract class TtsLibraryState with _$TtsLibraryState {
     String? error,
     @Default(false) bool isCheckingUpdates,
     String? updateNotification,
+    int? totalCacheSizeBytes,
+    int? bookCacheSizeBytes,
+    @Default(false) bool isLoadingCacheSize,
+    @Default(false) bool isClearingCache,
   }) = _TtsLibraryState;
 }
 

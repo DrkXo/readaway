@@ -26,6 +26,11 @@ abstract class TtsLibraryEvent with _$TtsLibraryEvent {
     @Default(0) int speakerCount,
     @Default(22050) int sampleRate,
   }) = _ImportCustomModel;
+  const factory TtsLibraryEvent.loadCacheSize({String? bookPath}) =
+      _LoadCacheSize;
+  const factory TtsLibraryEvent.clearAllCache() = _ClearAllCache;
+  const factory TtsLibraryEvent.clearBookCache(String bookPath) =
+      _ClearBookCache;
 
   // Internal stream events — mirror the live catalog, installed voices, and
   // download-manager snapshots into state.
