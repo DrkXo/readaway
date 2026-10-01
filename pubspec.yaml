@@ -40,6 +40,8 @@ dependency_overrides:
     path: packages/hyper_render
   hyper_render_core:
     path: packages/hyper_render/packages/hyper_render_core
+  hyper_render_devtools:
+    path: packages/hyper_render/packages/hyper_render_devtools
 
 melos:
   ide:
