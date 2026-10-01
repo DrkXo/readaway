@@ -41,18 +41,21 @@ class TtsChunker {
 
     final chunks = <TtsChunk>[];
     var globalChunkIdx = 0;
-    var currentCharOffset = 0;
-
+    var searchCursor = 0;
     for (var paraIdx = 0; paraIdx < paragraphs.length; paraIdx++) {
       final para = paragraphs[paraIdx];
       final paraLen = para.length;
+
+      final paraStart = cleanText.indexOf(para, searchCursor);
+      final effectiveStart = paraStart != -1 ? paraStart : searchCursor;
+      searchCursor = effectiveStart + paraLen;
 
       if (paraLen <= maxParagraphChunkChars) {
         // Whole paragraph fits in a single cohesive natural chunk
         final spoken = SpeechNormalizer.normalizeForSpeech(para);
         final duration = SpeechNormalizer.estimateDurationMs(spoken);
-        final start = currentCharOffset;
-        final end = currentCharOffset + paraLen;
+        final start = effectiveStart;
+        final end = effectiveStart + paraLen;
         final id = '$sectionIndex:$globalChunkIdx:$start';
 
         chunks.add(
@@ -78,8 +81,8 @@ class TtsChunker {
         if (spans.isEmpty) {
           final spoken = SpeechNormalizer.normalizeForSpeech(para);
           final duration = SpeechNormalizer.estimateDurationMs(spoken);
-          final start = currentCharOffset;
-          final end = currentCharOffset + paraLen;
+          final start = effectiveStart;
+          final end = effectiveStart + paraLen;
           final id = '$sectionIndex:$globalChunkIdx:$start';
 
           chunks.add(
@@ -109,11 +112,16 @@ class TtsChunker {
 
             if (currentLen + spanLen > maxParagraphChunkChars &&
                 subSpans.isNotEmpty) {
-              final combinedText = subSpans.map((s) => s.text).join(' ');
+              final firstSpan = subSpans.first;
+              final lastSpan = subSpans.last;
+              final combinedText = para.substring(
+                firstSpan.charStart,
+                lastSpan.charEnd,
+              );
               final spoken = SpeechNormalizer.normalizeForSpeech(combinedText);
               final duration = SpeechNormalizer.estimateDurationMs(spoken);
-              final start = currentCharOffset + subSpans.first.charStart;
-              final end = currentCharOffset + subSpans.last.charEnd;
+              final start = effectiveStart + firstSpan.charStart;
+              final end = effectiveStart + lastSpan.charEnd;
               final id = '$sectionIndex:$globalChunkIdx:$start';
 
               chunks.add(
@@ -141,11 +149,16 @@ class TtsChunker {
             currentLen += spanLen + 1;
 
             if (sIdx == spans.length - 1 && subSpans.isNotEmpty) {
-              final combinedText = subSpans.map((s) => s.text).join(' ');
+              final firstSpan = subSpans.first;
+              final lastSpan = subSpans.last;
+              final combinedText = para.substring(
+                firstSpan.charStart,
+                lastSpan.charEnd,
+              );
               final spoken = SpeechNormalizer.normalizeForSpeech(combinedText);
               final duration = SpeechNormalizer.estimateDurationMs(spoken);
-              final start = currentCharOffset + subSpans.first.charStart;
-              final end = currentCharOffset + subSpans.last.charEnd;
+              final start = effectiveStart + firstSpan.charStart;
+              final end = effectiveStart + lastSpan.charEnd;
               final id = '$sectionIndex:$globalChunkIdx:$start';
 
               chunks.add(
@@ -169,8 +182,6 @@ class TtsChunker {
           }
         }
       }
-
-      currentCharOffset += paraLen + 1;
     }
 
     return chunks;

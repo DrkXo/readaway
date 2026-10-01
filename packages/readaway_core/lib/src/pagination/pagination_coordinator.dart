@@ -277,6 +277,7 @@ class PaginationCoordinator {
   /// (never sub-character), so any span overlapping the position is returned,
   /// and the returned rect is the correct line box for the spoken sentence.
   List<Rect> rectsForSpeechRange(int chapterIndex, int start, int end) {
+    if (end <= start) return const [];
     final map = _chapterSpeechMaps[chapterIndex];
     if (map == null) return const [];
     var renderStart = map.renderCharFor(start);

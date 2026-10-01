@@ -68,5 +68,64 @@ void main() {
       expect(chunks[1].text, contains('Enemies surrounded him'));
       expect(chunks[1].isParagraphEnd, isTrue);
     });
+
+    test('TtsChunker tracks exact character offsets across multiple newlines and spaces', () {
+      const text =
+          'First paragraph with multiple lines.\n\n\n   Second paragraph indented.\r\n\nThird paragraph.';
+      final chunks = TtsChunker.preprocessText(
+        text: text,
+        sectionIndex: 0,
+        language: 'en',
+        isHtml: false,
+      );
+
+      expect(chunks.length, 3);
+
+      for (final chunk in chunks) {
+        // The slice in the original text at [startOffset..endOffset] must exactly equal chunk.text
+        expect(
+          text.substring(chunk.startOffset, chunk.endOffset),
+          equals(chunk.text),
+        );
+
+        // Every word span offset must match the exact word in text
+        for (final word in chunk.words) {
+          expect(
+            text.substring(word.startOffset, word.endOffset),
+            equals(word.word),
+          );
+        }
+      }
+    });
+
+    test(
+      'TtsChunker tracks exact offsets and word spans for oversized paragraphs',
+      () {
+        final para1 = 'Sentence one is short. ' * 15; // > 300 chars
+        final text = '$para1\n\n\nParagraph two.';
+        final chunks = TtsChunker.preprocessText(
+          text: text,
+          sectionIndex: 0,
+          language: 'en',
+          isHtml: false,
+          maxParagraphChunkChars: 150,
+        );
+
+        expect(chunks.length, greaterThan(2));
+
+        for (final chunk in chunks) {
+          expect(
+            text.substring(chunk.startOffset, chunk.endOffset),
+            equals(chunk.text),
+          );
+          for (final word in chunk.words) {
+            expect(
+              text.substring(word.startOffset, word.endOffset),
+              equals(word.word),
+            );
+          }
+        }
+      },
+    );
   });
 }

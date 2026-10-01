@@ -116,6 +116,21 @@ void main() {
       expect(map.renderLength, text.length);
     });
 
+    test('matches non-breaking spaces as equivalent whitespace', () {
+      const speech = 'Chapter 1 has an ordinary space.';
+      const flowText = 'Chapter 1 has an\u00a0ordinary space.';
+      final map = SpeechCharMap.fromSpans(
+        speech: speech,
+        layout: _singleSpanLayout(flowText),
+      );
+
+      expect(map.exactFraction, 1.0);
+      for (var offset = 0; offset < speech.length; offset++) {
+        expect(map.renderCharFor(offset), offset, reason: 'offset $offset');
+        expect(map.isExact(offset), isTrue, reason: 'offset $offset');
+      }
+    });
+
     test('empty text maps to zero and reports no correspondence', () {
       final map = SpeechCharMap.fromSpans(speech: '', layout: _layout(''));
 
@@ -678,8 +693,16 @@ void main() {
       // The first four fragments sit before the displacement, so they place
       // identically under either bound: the bound is a ceiling on how far to
       // look, not a limit on what is close by.
-      final tight = SpeechCharMap.fromSpans(speech: speech, layout: layout);
-      final wide = SpeechCharMap.fromSpans(speech: speech, layout: layout);
+      final tight = SpeechCharMap.fromSpans(
+        speech: speech,
+        layout: layout,
+        maxSearchRun: 16,
+      );
+      final wide = SpeechCharMap.fromSpans(
+        speech: speech,
+        layout: layout,
+        maxSearchRun: gap.length + flowText.length,
+      );
 
       expect(tight.isExact(0), isTrue);
       expect(tight.renderCharFor(32), 32);

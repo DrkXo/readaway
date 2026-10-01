@@ -408,27 +408,30 @@ class ChapterTextLayout {
     }
     if (result.isNotEmpty) return result;
 
-    // Strict range landed in a gap (whitespace trimmed at a wrap). Return the
-    // rect of the nearest span: whichever of the last span ending before
-    // [start] or the first span starting at or after [end] is closer.
-    TextSpanBox? before;
-    TextSpanBox? after;
+    // A range can fall into a trimmed whitespace gap between adjacent measured
+    // spans (for example, a wrap break that trimmed a final character or a line
+    // break with no painted glyphs). In that case, prefer the closest visible
+    // span instead of returning an empty highlight; a reader highlight should
+    // stay on the nearby text rather than disappear.
+    var nearestSpan = spans.first;
+    var nearestDistance = double.infinity;
     for (final span in spans) {
-      if (span.charEnd <= start) {
-        before = span;
-      } else if (span.charStart >= end && after == null) {
-        after = span;
-        break;
+      if (!span.isFlowText) continue;
+      if (end <= span.charStart) {
+        final distance = span.charStart - end;
+        if (distance < nearestDistance) {
+          nearestDistance = distance.toDouble();
+          nearestSpan = span;
+        }
+      } else if (start >= span.charEnd) {
+        final distance = start - span.charEnd;
+        if (distance < nearestDistance) {
+          nearestDistance = distance.toDouble();
+          nearestSpan = span;
+        }
       }
     }
-    final chosen = switch ((before, after)) {
-      (final b?, final a?) =>
-        (start - b.charEnd) <= (a.charStart - end) ? b : a,
-      (final b?, null) => b,
-      (null, final a?) => a,
-      _ => null,
-    };
-    return chosen == null ? const [] : [chosen.rect];
+    return nearestDistance.isFinite ? [nearestSpan.rect] : const [];
   }
 
   /// Whether two layouts describe the same geometry.

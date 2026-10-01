@@ -239,9 +239,10 @@ class SpeechCharMap {
   ///
   /// Each span in [layout] names a render range the renderer actually measured.
   /// The text of that range is looked for in [speech], forward from where the
-  /// previous span ended, and a hit is a correspondence established by
-  /// identity: the same characters in the same order, so the offsets inside the
-  /// span correspond one for one and [isExact] holds throughout it.
+  /// previous span ended. A hit may differ only in same-length whitespace code
+  /// units, such as a non-breaking space versus an ordinary space; offsets
+  /// inside that span still correspond one for one and [isExact] holds
+  /// throughout it.
   ///
   /// A span that is not found is *left unplaced* rather than guessed at. Its
   /// text is one the speech side does not speak — a ruby base, a list marker, a
@@ -274,7 +275,7 @@ class SpeechCharMap {
   factory SpeechCharMap.fromSpans({
     required String speech,
     required ChapterTextLayout layout,
-    // maxSearchRun removed to allow recovering from arbitrarily large gaps
+    int maxSearchRun = 4096,
   }) {
     final flow = layout.flowText;
     final anchors = <_Anchor>[];
@@ -304,11 +305,16 @@ class SpeechCharMap {
       if (span.charStart < 0 || span.charEnd > flow.length) continue;
 
       final text = flow.substring(span.charStart, span.charEnd);
+      final windowEnd = cursor + maxSearchRun;
+      final searchEnd = windowEnd < speech.length ? windowEnd : speech.length;
+      if (searchEnd - cursor < text.length) continue;
 
-      final offset = speech.indexOf(text, cursor);
+      final offset = _indexOfWhitespaceEquivalent(
+        speech.substring(cursor, searchEnd),
+        text,
+      );
       if (offset < 0) continue;
-
-      final found = offset;
+      final found = cursor + offset;
 
       if (found > cursor) {
         _fillGap(
@@ -451,6 +457,68 @@ class SpeechCharMap {
     return index;
   }
 }
+
+int _indexOfWhitespaceEquivalent(String text, String pattern) {
+  final exact = text.indexOf(pattern);
+  if (exact >= 0) return exact;
+
+  var anchorOffset = 0;
+  while (anchorOffset < pattern.length &&
+      _isWhitespaceCodeUnit(pattern.codeUnitAt(anchorOffset))) {
+    anchorOffset++;
+  }
+
+  if (anchorOffset == pattern.length) {
+    for (
+      var candidate = 0;
+      candidate + pattern.length <= text.length;
+      candidate++
+    ) {
+      if (_matchesWhitespaceEquivalent(text, pattern, candidate)) {
+        return candidate;
+      }
+    }
+    return -1;
+  }
+
+  final anchor = String.fromCharCode(pattern.codeUnitAt(anchorOffset));
+  var occurrence = text.indexOf(anchor, anchorOffset);
+  while (occurrence >= 0) {
+    final candidate = occurrence - anchorOffset;
+    if (candidate + pattern.length > text.length) return -1;
+    if (_matchesWhitespaceEquivalent(text, pattern, candidate)) {
+      return candidate;
+    }
+    occurrence = text.indexOf(anchor, occurrence + 1);
+  }
+  return -1;
+}
+
+bool _matchesWhitespaceEquivalent(String text, String pattern, int start) {
+  for (var offset = 0; offset < pattern.length; offset++) {
+    final textUnit = text.codeUnitAt(start + offset);
+    final patternUnit = pattern.codeUnitAt(offset);
+    if (textUnit != patternUnit &&
+        !(_isWhitespaceCodeUnit(textUnit) &&
+            _isWhitespaceCodeUnit(patternUnit))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool _isWhitespaceCodeUnit(int codeUnit) =>
+    (codeUnit >= 0x0009 && codeUnit <= 0x000D) ||
+    codeUnit == 0x0020 ||
+    codeUnit == 0x00A0 ||
+    codeUnit == 0x1680 ||
+    (codeUnit >= 0x2000 && codeUnit <= 0x200A) ||
+    codeUnit == 0x2028 ||
+    codeUnit == 0x2029 ||
+    codeUnit == 0x202F ||
+    codeUnit == 0x205F ||
+    codeUnit == 0x3000 ||
+    codeUnit == 0xFEFF;
 
 /// Appends the anchors and fuzzy span for a run of spans that could not be
 /// placed, between two verified anchors.

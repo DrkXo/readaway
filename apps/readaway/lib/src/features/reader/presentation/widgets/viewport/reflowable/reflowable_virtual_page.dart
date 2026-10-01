@@ -212,7 +212,6 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
       range.start,
       range.end,
     );
-    if (rects.isEmpty) return null;
 
     final wordFocusEnabled = gvs?.ttsHighlightWordFocus ?? true;
     List<Rect>? wordRects;
@@ -226,6 +225,8 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
         );
       }
     }
+
+    if (rects.isEmpty && (wordRects == null || wordRects.isEmpty)) return null;
 
     final style = switch (gvs?.ttsHighlightStyle) {
       'underline' => TtsHighlightStyle.underline,
