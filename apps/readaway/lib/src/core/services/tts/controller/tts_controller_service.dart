@@ -154,6 +154,63 @@ class TtsControllerService {
       _audioPlayer.positionDataStream;
   ValueStream<TtsPlaybackEvent> get playbackState => _stateController.stream;
   Stream<TtsChunk> get currentChunk => _chunkController.stream.whereNotNull();
+
+  /// Real-time progress stream calculating active sentence and word spans as audio plays.
+  Stream<TtsWordProgress?> get wordProgressStream =>
+      Rx.combineLatest2<TtsChunk?, PositionData, TtsWordProgress?>(
+        _chunkController.stream,
+        positionDataStream,
+        (chunk, data) {
+          if (chunk == null) return null;
+          final chapter =
+              _currentSectionIndex ?? _currentPageIndex ?? chunk.sectionIndex;
+          final words = chunk.words;
+
+          ({int start, int end})? wordRange;
+          String? wordText;
+
+          if (words.isNotEmpty) {
+            final durationMs = data.duration.inMilliseconds > 0
+                ? data.duration.inMilliseconds
+                : (chunk.estimatedDurationMs > 0
+                      ? chunk.estimatedDurationMs
+                      : 1);
+            final positionMs = data.position.inMilliseconds.clamp(
+              0,
+              durationMs,
+            );
+
+            final totalChars = words.fold<int>(
+              0,
+              (sum, w) => sum + w.word.length,
+            );
+            if (totalChars > 0) {
+              final targetChar = (positionMs / durationMs * totalChars).clamp(
+                0.0,
+                totalChars.toDouble(),
+              );
+              var accumulated = 0;
+              for (var i = 0; i < words.length; i++) {
+                accumulated += words[i].word.length;
+                if (targetChar <= accumulated || i == words.length - 1) {
+                  final w = words[i];
+                  wordRange = (start: w.startOffset, end: w.endOffset);
+                  wordText = w.word;
+                  break;
+                }
+              }
+            }
+          }
+
+          return TtsWordProgress(
+            chapterIndex: chapter,
+            chunkIndex: chunk.sentenceIndex,
+            sentenceRange: (start: chunk.startOffset, end: chunk.endOffset),
+            wordRange: wordRange,
+            wordText: wordText,
+          );
+        },
+      ).distinct();
   ValueStream<int> get queueVersion => _queueController.stream;
   ValueStream<List<double>> get currentWaveform => _waveformController.stream;
   double get rate => _rate;

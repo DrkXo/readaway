@@ -120,13 +120,19 @@ Future<_Painted> _renderInTest(
 
 TtsSpeechHighlightPainter _painter({
   required List<Rect> rects,
+  List<Rect>? wordRects,
   double sliceTop = 0,
   Color color = const Color(0xFF0000FF),
+  Color? wordColor,
+  TtsHighlightStyle style = TtsHighlightStyle.highlight,
   double cornerRadius = 3,
 }) => TtsSpeechHighlightPainter(
   rects: rects,
+  wordRects: wordRects,
   sliceTop: sliceTop,
   color: color,
+  wordColor: wordColor,
+  style: style,
   cornerRadius: cornerRadius,
 );
 
@@ -517,6 +523,140 @@ void main() {
         ),
         isTrue,
       );
+    });
+
+    test('is true when wordRects changes', () {
+      expect(
+        _painter(
+          rects: rects(),
+          wordRects: const [Rect.fromLTWH(10, 10, 50, 20)],
+        ).shouldRepaint(
+          _painter(
+            rects: rects(),
+            wordRects: const [Rect.fromLTWH(70, 10, 50, 20)],
+          ),
+        ),
+        isTrue,
+      );
+
+      expect(
+        _painter(
+          rects: rects(),
+          wordRects: const [Rect.fromLTWH(10, 10, 50, 20)],
+        ).shouldRepaint(
+          _painter(rects: rects(), wordRects: null),
+        ),
+        isTrue,
+      );
+    });
+
+    test('is true when highlight style changes', () {
+      expect(
+        _painter(
+          rects: rects(),
+          style: TtsHighlightStyle.highlight,
+        ).shouldRepaint(
+          _painter(
+            rects: rects(),
+            style: TtsHighlightStyle.underline,
+          ),
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('dual-focus karaoke word highlighting and styles', () {
+    testWidgets('paints both sentence and active word rects', (tester) async {
+      const sentenceRect = Rect.fromLTWH(0, 10, 200, 30);
+      const wordRect = Rect.fromLTWH(50, 10, 60, 30);
+
+      final painted = await _renderInTest(
+        tester,
+        _painter(
+          rects: const [sentenceRect],
+          wordRects: const [wordRect],
+          color: const Color(0x330000FF),
+          wordColor: const Color(0x880000FF),
+          cornerRadius: 0,
+        ),
+        size: const Size(300, 100),
+      );
+
+      // Verify that the sentence region is painted
+      expect(painted.rowPainted(20), isTrue);
+
+      // Verify that pixel inside the word has higher alpha than pixel outside
+      final sentencePixel = painted.colourAt(10, 20);
+      final wordPixel = painted.colourAt(70, 20);
+      expect(sentencePixel, isNotNull);
+      expect(wordPixel, isNotNull);
+      expect(wordPixel!.a, greaterThan(sentencePixel!.a));
+    });
+
+    testWidgets('renders underline style', (tester) async {
+      const sentenceRect = Rect.fromLTWH(0, 10, 200, 30);
+
+      final painted = await _renderInTest(
+        tester,
+        _painter(
+          rects: const [sentenceRect],
+          style: TtsHighlightStyle.underline,
+          color: const Color(0xFF0000FF),
+        ),
+        size: const Size(300, 100),
+      );
+
+      // Underline should be painted at the bottom of the rect (y around 39)
+      expect(painted.rowPainted(39), isTrue);
+      // But the middle of the rect (y=20) should not be filled
+      expect(painted.rowPainted(20), isFalse);
+    });
+
+    testWidgets('renders squiggly style', (tester) async {
+      const sentenceRect = Rect.fromLTWH(0, 10, 200, 30);
+
+      final painted = await _renderInTest(
+        tester,
+        _painter(
+          rects: const [sentenceRect],
+          style: TtsHighlightStyle.squiggly,
+          color: const Color(0xFF0000FF),
+        ),
+        size: const Size(300, 100),
+      );
+
+      // Squiggly line should be painted near the bottom
+      expect(
+        painted.rowPainted(38) ||
+            painted.rowPainted(39) ||
+            painted.rowPainted(40),
+        isTrue,
+      );
+      // And the middle of the rect should not be filled
+      expect(painted.rowPainted(20), isFalse);
+    });
+
+    testWidgets('renders outline style', (tester) async {
+      const sentenceRect = Rect.fromLTWH(10, 10, 100, 40);
+
+      final painted = await _renderInTest(
+        tester,
+        _painter(
+          rects: const [sentenceRect],
+          style: TtsHighlightStyle.outline,
+          color: const Color(0xFF0000FF),
+          cornerRadius: 0,
+        ),
+        size: const Size(200, 100),
+      );
+
+      // Border should be painted along the top and bottom
+      expect(painted.rowPainted(10), isTrue);
+      expect(painted.rowPainted(50), isTrue);
+      // The interior (e.g. y=30, x=50) should be hollow
+      final centerPixel = painted.colourAt(50, 30);
+      expect(centerPixel?.a ?? 0, 0);
     });
   });
 }

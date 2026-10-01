@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart'
-    show LicenseEntryWithLineBreaks, LicenseRegistry;
+    show LicenseEntryWithLineBreaks, LicenseRegistry, kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:get_it/get_it.dart';
@@ -20,10 +20,12 @@ Future<void> main([List<String> args = const []]) async {
       WidgetsFlutterBinding.ensureInitialized();
 
       // Register DevTools service extensions (debug mode only, no-op in release).
-      assert(() {
-        HyperRenderDevtools.register();
-        return true;
-      }());
+      if (kDebugMode) {
+        assert(() {
+          HyperRenderDevtools.register();
+          return true;
+        }());
+      }
 
       LicenseRegistry.addLicense(() async* {
         for (final family in [

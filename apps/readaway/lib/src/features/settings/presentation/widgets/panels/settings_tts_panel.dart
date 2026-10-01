@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -7,6 +9,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/routes/routes.dart';
 import '../../../../../core/services/services.dart';
 import '../../../../../core/widgets/core_widgets.dart';
+import '../../../../reader/presentation/widgets/viewport/reflowable/tts_speech_highlight.dart';
+import '../../../../settings/domain/entity/settings.dart';
 import '../../../../settings/domain/entity/tts_lyric_style.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../../bloc/tts_library/tts_library_bloc.dart';
@@ -49,7 +53,7 @@ class SettingsTtsPanel extends StatelessWidget {
   }
 }
 
-enum _TtsTab { voice, reading, lyric, cache }
+enum _TtsTab { voice, reading, highlight, lyric, cache }
 
 class _TtsView extends StatefulWidget {
   const _TtsView();
@@ -81,6 +85,11 @@ class _TtsViewState extends State<_TtsView> {
                 icon: Icon(Icons.tune, size: 16),
               ),
               ButtonSegment(
+                value: _TtsTab.highlight,
+                label: Text('Highlight'),
+                icon: Icon(Icons.border_color_outlined, size: 16),
+              ),
+              ButtonSegment(
                 value: _TtsTab.lyric,
                 label: Text('Lyric'),
                 icon: Icon(Icons.music_note, size: 16),
@@ -109,6 +118,7 @@ class _TtsViewState extends State<_TtsView> {
             children: const [
               _VoiceTab(),
               _ReadingTab(),
+              _HighlightTab(),
               _LyricTab(),
               _CacheTab(),
             ],
@@ -294,6 +304,390 @@ class _ReadingTab extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// TTS Speech Highlighting options and live preview.
+class _HighlightTab extends StatelessWidget {
+  const _HighlightTab();
+
+  static void _updateSettings(
+    BuildContext context,
+    SettingsState state,
+    GlobalViewSettings Function(GlobalViewSettings) updater,
+  ) {
+    final gvs = updater(state.appSettings.globalViewSettings);
+    final updated = state.appSettings.copyWith(globalViewSettings: gvs);
+    context.read<SettingsBloc>().add(SettingsEvent.updateAppSettings(updated));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.appSettings.globalViewSettings !=
+          curr.appSettings.globalViewSettings,
+      builder: (context, state) {
+        final gvs = state.appSettings.globalViewSettings;
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          children: [
+            // Live Interactive Preview
+            _HighlightPreviewCard(gvs: gvs),
+            const SizedBox(height: 20),
+
+            // Highlighting Style
+            SettingsSection(
+              title: 'Highlight Style',
+              onReset: () => _updateSettings(
+                context,
+                state,
+                (s) => s.copyWith(
+                  ttsHighlightStyle: 'highlight',
+                  ttsHighlightColor: 'primary',
+                  ttsHighlightWordFocus: true,
+                  ttsHighlightSentenceOpacity: 0.18,
+                  ttsHighlightWordOpacity: 0.38,
+                ),
+              ),
+              rows: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                  child: SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(
+                        value: 'highlight',
+                        icon: Icon(Icons.crop_landscape, size: 18),
+                        label: Text('Filled'),
+                        tooltip: 'Filled rounded rectangle',
+                      ),
+                      ButtonSegment(
+                        value: 'underline',
+                        icon: Icon(Icons.format_underlined, size: 18),
+                        label: Text('Underline'),
+                        tooltip: 'Clean baseline underline',
+                      ),
+                      ButtonSegment(
+                        value: 'squiggly',
+                        icon: Icon(Icons.waves, size: 18),
+                        label: Text('Squiggly'),
+                        tooltip: 'Wavy underline',
+                      ),
+                      ButtonSegment(
+                        value: 'outline',
+                        icon: Icon(Icons.check_box_outline_blank, size: 18),
+                        label: Text('Outline'),
+                        tooltip: 'Border outline',
+                      ),
+                    ],
+                    selected: {gvs.ttsHighlightStyle},
+                    showSelectedIcon: false,
+                    expandedInsets: EdgeInsets.zero,
+                    onSelectionChanged: (s) {
+                      if (s.isEmpty) return;
+                      _updateSettings(
+                        context,
+                        state,
+                        (curr) => curr.copyWith(ttsHighlightStyle: s.first),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Color Accent
+            SettingsSection(
+              title: 'Color Accent',
+              rows: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: _ColorPalettePicker(
+                    selectedKey: gvs.ttsHighlightColor,
+                    onSelected: (key) => _updateSettings(
+                      context,
+                      state,
+                      (curr) => curr.copyWith(ttsHighlightColor: key),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Karaoke Word Focus
+            SettingsSection(
+              title: 'Karaoke Word Focus',
+              rows: [
+                SettingsSwitchRow(
+                  label: 'Active word emphasis',
+                  description:
+                      'Emphasize the currently spoken word with an elevated '
+                      'focus pill over the sentence background.',
+                  value: gvs.ttsHighlightWordFocus,
+                  onChanged: (v) => _updateSettings(
+                    context,
+                    state,
+                    (curr) => curr.copyWith(ttsHighlightWordFocus: v),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Opacity & Intensity
+            SettingsSection(
+              title: 'Opacity & Intensity',
+              rows: [
+                SettingsSliderRow(
+                  label: 'Sentence opacity',
+                  value: gvs.ttsHighlightSentenceOpacity,
+                  min: 0.05,
+                  max: 0.50,
+                  divisions: 9,
+                  format: (v) => '${(v * 100).round()}%',
+                  onChanged: (v) => _updateSettings(
+                    context,
+                    state,
+                    (curr) => curr.copyWith(
+                      ttsHighlightSentenceOpacity: (v * 100).round() / 100.0,
+                    ),
+                  ),
+                ),
+                if (gvs.ttsHighlightWordFocus)
+                  SettingsSliderRow(
+                    label: 'Word focus opacity',
+                    value: gvs.ttsHighlightWordOpacity,
+                    min: 0.20,
+                    max: 0.90,
+                    divisions: 14,
+                    format: (v) => '${(v * 100).round()}%',
+                    onChanged: (v) => _updateSettings(
+                      context,
+                      state,
+                      (curr) => curr.copyWith(
+                        ttsHighlightWordOpacity: (v * 100).round() / 100.0,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _HighlightPreviewCard extends StatelessWidget {
+  const _HighlightPreviewCard({required this.gvs});
+  final GlobalViewSettings gvs;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF1E1E24) : const Color(0xFFF7F7F9);
+    final textColor = isDark ? Colors.white70 : Colors.black87;
+
+    final baseColor = switch (gvs.ttsHighlightColor) {
+      'amber' => const Color(0xFFF59E0B),
+      'emerald' => const Color(0xFF10B981),
+      'sky' => const Color(0xFF0EA5E9),
+      'violet' => const Color(0xFF8B5CF6),
+      'rose' => const Color(0xFFF43F5E),
+      _ => theme.colorScheme.primary,
+    };
+
+    final style = switch (gvs.ttsHighlightStyle) {
+      'underline' => TtsHighlightStyle.underline,
+      'squiggly' => TtsHighlightStyle.squiggly,
+      'outline' => TtsHighlightStyle.outline,
+      _ => TtsHighlightStyle.highlight,
+    };
+
+    const text =
+        'The true journey of discovery consists not in seeking new landscapes, but in having new eyes.';
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.visibility,
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Live Sample Preview',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final textSpan = TextSpan(
+                text: text,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.6,
+                  color: textColor,
+                  fontFamily: 'serif',
+                ),
+              );
+              final textPainter = TextPainter(
+                text: textSpan,
+                textDirection: TextDirection.ltr,
+              )..layout(maxWidth: constraints.maxWidth);
+
+              // Whole sentence boxes
+              final sentenceBoxes = textPainter.getBoxesForSelection(
+                const TextSelection(baseOffset: 0, extentOffset: text.length),
+                boxHeightStyle: ui.BoxHeightStyle.tight,
+              );
+              final rects = sentenceBoxes
+                  .where((b) => b.right > b.left)
+                  .map((b) => Rect.fromLTRB(b.left, b.top, b.right, b.bottom))
+                  .toList();
+
+              // Word "discovery" boxes
+              final wordStart = text.indexOf('discovery');
+              final wordEnd = wordStart + 'discovery'.length;
+              final wordBoxes = textPainter.getBoxesForSelection(
+                TextSelection(baseOffset: wordStart, extentOffset: wordEnd),
+                boxHeightStyle: ui.BoxHeightStyle.tight,
+              );
+              final wordRects = gvs.ttsHighlightWordFocus
+                  ? wordBoxes
+                        .where((b) => b.right > b.left)
+                        .map(
+                          (b) =>
+                              Rect.fromLTRB(b.left, b.top, b.right, b.bottom),
+                        )
+                        .toList()
+                  : null;
+
+              final highlightPainter = TtsSpeechHighlightPainter(
+                rects: rects,
+                wordRects: wordRects,
+                sliceTop: 0.0,
+                color: baseColor.withValues(
+                  alpha: gvs.ttsHighlightSentenceOpacity,
+                ),
+                wordColor: baseColor.withValues(
+                  alpha: gvs.ttsHighlightWordOpacity,
+                ),
+                style: style,
+              );
+
+              return CustomPaint(
+                painter: highlightPainter,
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.6,
+                    color: textColor,
+                    fontFamily: 'serif',
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ColorPalettePicker extends StatelessWidget {
+  const _ColorPalettePicker({
+    required this.selectedKey,
+    required this.onSelected,
+  });
+
+  final String selectedKey;
+  final ValueChanged<String> onSelected;
+
+  static const _palette = [
+    (key: 'primary', label: 'Primary', color: null),
+    (key: 'amber', label: 'Amber', color: Color(0xFFF59E0B)),
+    (key: 'emerald', label: 'Emerald', color: Color(0xFF10B981)),
+    (key: 'sky', label: 'Sky', color: Color(0xFF0EA5E9)),
+    (key: 'violet', label: 'Violet', color: Color(0xFF8B5CF6)),
+    (key: 'rose', label: 'Rose', color: Color(0xFFF43F5E)),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: _palette.map((item) {
+        final isSelected = selectedKey == item.key;
+        final color = item.color ?? theme.colorScheme.primary;
+
+        return InkWell(
+          onTap: () => onSelected(item.key),
+          borderRadius: BorderRadius.circular(20),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? color.withValues(alpha: 0.18)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected ? color : theme.colorScheme.outlineVariant,
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  item.label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: isSelected ? color : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

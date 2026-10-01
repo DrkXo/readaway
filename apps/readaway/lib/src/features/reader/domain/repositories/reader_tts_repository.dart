@@ -1,5 +1,6 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:readaway_core/readaway_core.dart' show TtsChunk, TtsTimeline;
+import 'package:readaway_core/readaway_core.dart'
+    show TtsChunk, TtsTimeline, TtsWordProgress;
 import 'package:rxdart/rxdart.dart' show ValueStream;
 
 import '../../../../core/result/result.dart';
@@ -13,6 +14,9 @@ abstract interface class ReaderTtsRepository {
 
   /// Stream of currently spoken sentence chunk.
   Stream<TtsChunk> get currentChunk;
+
+  /// Real-time progress stream calculating active sentence and word spans as audio plays.
+  Stream<TtsWordProgress?> get wordProgressStream;
 
   /// Stream of all chunks in the current page sentence queue.
   Stream<List<TtsChunk>> get sentenceQueue;

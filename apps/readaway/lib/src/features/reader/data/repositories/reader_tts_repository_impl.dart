@@ -1,6 +1,7 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:injectable/injectable.dart';
-import 'package:readaway_core/readaway_core.dart' show TtsChunk, TtsTimeline;
+import 'package:readaway_core/readaway_core.dart'
+    show TtsChunk, TtsTimeline, TtsWordProgress;
 import 'package:rxdart/rxdart.dart' show ValueStream;
 
 import '../../../../core/error/failures.dart';
@@ -21,6 +22,10 @@ class ReaderTtsRepositoryImpl implements ReaderTtsRepository {
 
   @override
   Stream<TtsChunk> get currentChunk => _ttsController.currentChunk;
+
+  @override
+  Stream<TtsWordProgress?> get wordProgressStream =>
+      _ttsController.wordProgressStream;
 
   @override
   Stream<List<TtsChunk>> get sentenceQueue =>

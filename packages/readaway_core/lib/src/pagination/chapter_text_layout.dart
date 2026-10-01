@@ -302,7 +302,12 @@ class ChapterTextLayout {
     required this.pages,
     required this.flowText,
     required this.totalCharacterCount,
+    this.charBoxResolver,
   });
+
+  /// Optional resolver function providing exact glyph-level bounding boxes directly
+  /// from the renderer (e.g. [RenderHyperBox.getBoxesForCharRange]).
+  final List<Rect> Function(int start, int end)? charBoxResolver;
 
   /// A layout carrying no usable geometry, produced when measurement fails or
   /// when reconstructed offsets failed validation.
@@ -371,6 +376,10 @@ class ChapterTextLayout {
   /// whitespace rather than to a painted glyph run.
   List<Rect> rectsForCharRange(int start, int end) {
     if (end <= start || spans.isEmpty) return const [];
+    if (charBoxResolver != null) {
+      final exact = charBoxResolver!(start, end);
+      if (exact.isNotEmpty) return exact;
+    }
     final result = <Rect>[];
     for (final span in spans) {
       if (span.charEnd <= start) continue;

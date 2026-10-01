@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/widgets.dart';
 import 'package:hyper_render/hyper_render.dart' show RenderHyperBox;
 import 'package:readaway_core/readaway_core.dart';
 
@@ -47,6 +47,7 @@ class ChapterTextLayoutBuilder {
       totalCharacterCount: hyperBox.totalCharacterCount,
       contentHeight: contentHeight,
       viewportHeight: viewportHeight,
+      charBoxResolver: hyperBox.getBoxesForCharRange,
     );
   }
 
@@ -69,6 +70,7 @@ class ChapterTextLayoutBuilder {
     required int totalCharacterCount,
     required double contentHeight,
     required double viewportHeight,
+    List<Rect> Function(int start, int end)? charBoxResolver,
 
     /// Suppresses the debug assertions raised when the reconstructed character
     /// total disagrees with [totalCharacterCount], or when a line fragment's
@@ -181,6 +183,7 @@ class ChapterTextLayoutBuilder {
       pages: buildPages(offsets, spans, contentHeight, totalCharacterCount),
       flowText: flow,
       totalCharacterCount: totalCharacterCount,
+      charBoxResolver: charBoxResolver,
     );
   }
 

@@ -4,11 +4,15 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:get_it/get_it.dart';
 import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../core/theme/theme.dart';
 import '../../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../../../settings/domain/entity/settings.dart';
+import '../../../../../settings/presentation/bloc/settings/settings_bloc.dart';
+import '../../../../domain/repositories/reader_tts_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../chrome/reader_running_footer.dart';
 import '../../chrome/reader_running_header.dart';
@@ -55,6 +59,9 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   Size? _lastConstraints;
   StreamSubscription<PaginationState>? _coordinatorSubscription;
   List<double>? _lastOffsets;
+  final ValueNotifier<({int start, int end})?> _activeWordNotifier =
+      ValueNotifier(null);
+  StreamSubscription<TtsWordProgress?>? _wordProgressSubscription;
 
   @override
   void initState() {
@@ -65,7 +72,23 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
     _coordinatorSubscription = widget.coordinator.state.listen(
       (_) => _onCoordinatorUpdated(),
     );
+    if (GetIt.I.isRegistered<ReaderTtsRepository>()) {
+      _wordProgressSubscription = GetIt.I<ReaderTtsRepository>()
+          .wordProgressStream
+          .listen(_onWordProgress);
+    }
     _scheduleMeasurement();
+  }
+
+  void _onWordProgress(TtsWordProgress? progress) {
+    if (!mounted) return;
+    if (progress == null || progress.chapterIndex != widget.chapterIndex) {
+      if (_activeWordNotifier.value != null) {
+        _activeWordNotifier.value = null;
+      }
+      return;
+    }
+    _activeWordNotifier.value = progress.wordRange;
   }
 
   void _onCoordinatorUpdated() {
@@ -101,6 +124,7 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
       _lastOffsets = widget.coordinator.getChapterPageOffsets(
         widget.chapterIndex,
       );
+      _activeWordNotifier.value = null;
       _scheduleMeasurement();
     } else if (oldWidget.prefs != widget.prefs ||
         oldWidget.state.pageHtmls?[widget.chapterIndex] !=
@@ -112,6 +136,8 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   @override
   void dispose() {
     _coordinatorSubscription?.cancel();
+    _wordProgressSubscription?.cancel();
+    _activeWordNotifier.dispose();
     super.dispose();
   }
 
@@ -172,7 +198,10 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   /// another chapter, or when this chapter has no character mapping. Each of
   /// those means the same thing: there is no position known well enough to
   /// draw, so nothing is drawn.
-  TtsSpeechHighlightPainter? _buildSpeechHighlight(double sliceTop) {
+  TtsSpeechHighlightPainter? _buildSpeechHighlight(
+    double sliceTop,
+    GlobalViewSettings? gvs,
+  ) {
     final state = widget.state;
     final range = state.ttsSpeechRange;
     if (!state.ttsActive || range == null) return null;
@@ -185,21 +214,62 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
     );
     if (rects.isEmpty) return null;
 
+    final wordFocusEnabled = gvs?.ttsHighlightWordFocus ?? true;
+    List<Rect>? wordRects;
+    if (wordFocusEnabled) {
+      final wordRange = _activeWordNotifier.value;
+      if (wordRange != null) {
+        wordRects = widget.coordinator.rectsForSpeechRange(
+          widget.chapterIndex,
+          wordRange.start,
+          wordRange.end,
+        );
+      }
+    }
+
+    final style = switch (gvs?.ttsHighlightStyle) {
+      'underline' => TtsHighlightStyle.underline,
+      'squiggly' => TtsHighlightStyle.squiggly,
+      'outline' => TtsHighlightStyle.outline,
+      _ => TtsHighlightStyle.highlight,
+    };
+
+    final baseColor = _resolveHighlightColor(context, gvs?.ttsHighlightColor);
+    final sentenceAlpha = gvs?.ttsHighlightSentenceOpacity ?? 0.18;
+    final wordAlpha = gvs?.ttsHighlightWordOpacity ?? 0.38;
+
     return TtsSpeechHighlightPainter(
       rects: rects,
+      wordRects: wordRects,
       sliceTop: sliceTop,
-      color: _highlightColor(context),
+      color: baseColor.withValues(alpha: sentenceAlpha),
+      wordColor: baseColor.withValues(alpha: wordAlpha),
+      style: style,
     );
   }
 
-  /// Highlight colour, kept translucent so the text underneath stays legible.
-  Color _highlightColor(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return scheme.primary.withValues(alpha: 0.22);
+  static Color _resolveHighlightColor(BuildContext context, String? colorKey) {
+    return switch (colorKey) {
+      'amber' => const Color(0xFFF59E0B),
+      'emerald' => const Color(0xFF10B981),
+      'sky' => const Color(0xFF0EA5E9),
+      'violet' => const Color(0xFF8B5CF6),
+      'rose' => const Color(0xFFF43F5E),
+      _ => Theme.of(context).colorScheme.primary,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
+    GlobalViewSettings? gvs;
+    try {
+      gvs = context.select<SettingsBloc, GlobalViewSettings>(
+        (bloc) => bloc.state.appSettings.globalViewSettings,
+      );
+    } catch (_) {
+      gvs = null;
+    }
+
     final html =
         (widget.state.pageHtmls != null &&
             widget.chapterIndex < widget.state.pageHtmls!.length)
@@ -273,7 +343,28 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
               ? (ReaderTtsMiniPlayerBar.height + 16.0)
               : 0.0;
 
-          final highlight = _buildSpeechHighlight(sliceTop);
+          final pageContent = OverflowBox(
+            alignment: Alignment.topCenter,
+            minWidth: availableWidth,
+            maxWidth: availableWidth,
+            minHeight: 0.0,
+            maxHeight: double.infinity,
+            child: Transform.translate(
+              offset: Offset(0.0, -sliceTop),
+              child: KeyedSubtree(
+                key: _contentKey,
+                child: HyperPageContent(
+                  html: html,
+                  prefs: widget.prefs,
+                  chapterIndex: widget.chapterIndex,
+                  cacheNamespace:
+                      widget.state.documentPath ?? widget.state.fileName ?? '',
+                  onResolveAssetBytes: widget.onResolveAssetBytes,
+                  onLinkTap: widget.onLinkTap,
+                ),
+              ),
+            ),
+          );
 
           final contentWidget = Align(
             alignment: Alignment.topLeft,
@@ -281,34 +372,18 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
               width: availableWidth,
               height: sliceHeight,
               child: ClipRect(
-                child: CustomPaint(
-                  // Behind the text, so a highlighted passage reads as marked
-                  // rather than tinted.
-                  painter: highlight,
-                  child: OverflowBox(
-                    alignment: Alignment.topCenter,
-                    minWidth: availableWidth,
-                    maxWidth: availableWidth,
-                    minHeight: 0.0,
-                    maxHeight: double.infinity,
-                    child: Transform.translate(
-                      offset: Offset(0.0, -sliceTop),
-                      child: KeyedSubtree(
-                        key: _contentKey,
-                        child: HyperPageContent(
-                          html: html,
-                          prefs: widget.prefs,
-                          chapterIndex: widget.chapterIndex,
-                          cacheNamespace:
-                              widget.state.documentPath ??
-                              widget.state.fileName ??
-                              '',
-                          onResolveAssetBytes: widget.onResolveAssetBytes,
-                          onLinkTap: widget.onLinkTap,
-                        ),
-                      ),
-                    ),
-                  ),
+                child: ListenableBuilder(
+                  listenable: _activeWordNotifier,
+                  builder: (context, child) {
+                    final highlight = _buildSpeechHighlight(sliceTop, gvs);
+                    return CustomPaint(
+                      // Behind the text, so a highlighted passage reads as marked
+                      // rather than tinted.
+                      painter: highlight,
+                      child: child,
+                    );
+                  },
+                  child: pageContent,
                 ),
               ),
             ),

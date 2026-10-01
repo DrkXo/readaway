@@ -62,6 +62,11 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default(500) int ttsMaxCacheSizeMb,
     @Default(true) bool ttsPrecacheNextChapter,
     @Default(TtsLyricStyle()) TtsLyricStyle ttsLyricStyle,
+    @Default('highlight') String ttsHighlightStyle,
+    @Default('primary') String ttsHighlightColor,
+    @Default(true) bool ttsHighlightWordFocus,
+    @Default(0.18) double ttsHighlightSentenceOpacity,
+    @Default(0.38) double ttsHighlightWordOpacity,
   }) = _GlobalViewSettings;
 
   factory GlobalViewSettings.fromJson(Map<String, dynamic> json) =>

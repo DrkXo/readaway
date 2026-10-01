@@ -128,3 +128,39 @@ sealed class TtsChunk with _$TtsChunk {
     'estimatedDurationMs': estimatedDurationMs,
   };
 }
+
+/// Real-time progress snapshot of the currently spoken chunk and word.
+class TtsWordProgress {
+  final int chapterIndex;
+  final int chunkIndex;
+  final ({int start, int end}) sentenceRange;
+  final ({int start, int end})? wordRange;
+  final String? wordText;
+
+  const TtsWordProgress({
+    required this.chapterIndex,
+    required this.chunkIndex,
+    required this.sentenceRange,
+    this.wordRange,
+    this.wordText,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TtsWordProgress &&
+          runtimeType == other.runtimeType &&
+          chapterIndex == other.chapterIndex &&
+          chunkIndex == other.chunkIndex &&
+          sentenceRange == other.sentenceRange &&
+          wordRange == other.wordRange &&
+          wordText == other.wordText;
+
+  @override
+  int get hashCode =>
+      Object.hash(chapterIndex, chunkIndex, sentenceRange, wordRange, wordText);
+
+  @override
+  String toString() =>
+      'TtsWordProgress(ch: $chapterIndex, chunk: $chunkIndex, sentence: $sentenceRange, word: $wordRange "$wordText")';
+}

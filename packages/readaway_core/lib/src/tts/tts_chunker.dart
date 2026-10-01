@@ -67,6 +67,7 @@ class TtsChunker {
             estimatedDurationMs: duration,
             isParagraphEnd: true,
             paragraphIndex: paraIdx,
+            words: extractWordSpans(para, start),
             language: lang,
           ),
         );
@@ -93,6 +94,7 @@ class TtsChunker {
               estimatedDurationMs: duration,
               isParagraphEnd: true,
               paragraphIndex: paraIdx,
+              words: extractWordSpans(para, start),
               language: lang,
             ),
           );
@@ -126,6 +128,7 @@ class TtsChunker {
                   estimatedDurationMs: duration,
                   isParagraphEnd: false,
                   paragraphIndex: paraIdx,
+                  words: extractWordSpans(combinedText, start),
                   language: lang,
                 ),
               );
@@ -157,6 +160,7 @@ class TtsChunker {
                   estimatedDurationMs: duration,
                   isParagraphEnd: true,
                   paragraphIndex: paraIdx,
+                  words: extractWordSpans(combinedText, start),
                   language: lang,
                 ),
               );
@@ -170,5 +174,29 @@ class TtsChunker {
     }
 
     return chunks;
+  }
+
+  static final RegExp _wordTokenRe = RegExp(
+    r'[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]|[\w\u00C0-\u024F\u1E00-\u1EFF\u0400-\u04FF\u0370-\u03FF\u0600-\u06FF\u0900-\u097F\x27\-]+',
+    unicode: true,
+  );
+
+  /// Extracts word-level spans with speech coordinates.
+  static List<TtsWordSpan> extractWordSpans(String text, int baseOffset) {
+    if (text.isEmpty) return const [];
+    final spans = <TtsWordSpan>[];
+    for (final match in _wordTokenRe.allMatches(text)) {
+      final word = match.group(0)!;
+      final trimmed = word.trim();
+      if (trimmed.isEmpty) continue;
+      spans.add(
+        TtsWordSpan(
+          word: trimmed,
+          startOffset: baseOffset + match.start,
+          endOffset: baseOffset + match.end,
+        ),
+      );
+    }
+    return spans;
   }
 }

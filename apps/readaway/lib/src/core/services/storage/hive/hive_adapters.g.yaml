@@ -175,7 +175,7 @@ types:
         index: 2
   GlobalViewSettings:
     typeId: 16
-    nextIndex: 121
+    nextIndex: 126
     fields:
       volumeKeysToFlip:
         index: 18
@@ -219,6 +219,16 @@ types:
         index: 119
       readerCacheSizeMb:
         index: 120
+      ttsHighlightStyle:
+        index: 121
+      ttsHighlightColor:
+        index: 122
+      ttsHighlightWordFocus:
+        index: 123
+      ttsHighlightSentenceOpacity:
+        index: 124
+      ttsHighlightWordOpacity:
+        index: 125
   SherpaTtsModelInfo:
     typeId: 19
     nextIndex: 21
