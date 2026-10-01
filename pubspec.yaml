@@ -17,27 +17,29 @@ dev_dependencies:
 
 dependency_overrides:
   cli_util: ^0.5.0
-  # Point at DrkXo/hyper_render for RenderHyperBox.debugLineFragments(), which
-  # reports the per-line fragments that actually got positioned. The app's own
-  # constraint stays a plain `^1.9.1`, so deleting these two entries is a
-  # complete revert to pub.dev.
+  # Point at the in-tree DrkXo/hyper_render submodule, which adds
+  # RenderHyperBox.debugLineFragments() — the per-line fragments that actually
+  # got positioned. The submodule is pinned by gitlink to the same commit that
+  # pub.git used before, so this is a source-location swap, not a version bump.
+  #
+  # Why a submodule: edits inside packages/hyper_render are picked up by the
+  # app on the next hot restart with no `pub get`, and `git submodule status`
+  # / a second `git diff` inside the checkout makes local fork changes
+  # reviewable. Melos never sees it (it is absent from the `workspace:` list
+  # below), so it is never versioned or published as a first-party package.
   #
   # hyper_render_core MUST be overridden too, and this is not optional:
-  # `hyper_render` lives at the repo root and reaches core through its own
+  # `hyper_render` reaches core through its own
   # `dependency_overrides: hyper_render_core: path: packages/hyper_render_core`.
   # Pub only honours overrides from the root package of a resolution, so that
-  # path is discarded for a git dependency and core would resolve from pub.dev
-  # — the build would succeed and the method would simply be missing at
-  # runtime.
+  # nested path is discarded and core would resolve from pub.dev — the build
+  # would succeed and the added methods would simply be missing at runtime.
+  #
+  # Requires `git submodule update --init --recursive` after cloning.
   hyper_render:
-    git:
-      url: https://github.com/DrkXo/hyper_render.git
-      ref: feat/line-fragments
+    path: packages/hyper_render
   hyper_render_core:
-    git:
-      url: https://github.com/DrkXo/hyper_render.git
-      ref: feat/line-fragments
-      path: packages/hyper_render_core
+    path: packages/hyper_render/packages/hyper_render_core
 
 melos:
   ide:
@@ -79,6 +81,30 @@ melos:
   packages:
     - apps/*
     - packages/*
+
+  # NOTE: the `packages:` globs above are legacy. Melos 8 derives its package
+  # list exclusively from the pub `workspace:` list at the top of this file —
+  # verified against melos 8.6.0, which never reads `melos.packages`. Adding a
+  # directory to this glob alone does not make melos aware of it.
+  #
+  # `packages/hyper_render` is the DrkXo/hyper_render fork, checked out as a
+  # git submodule. What actually keeps melos out is that it is deliberately
+  # absent from the `workspace:` list above — do not add it. If melos ever
+  # treated it as a first-party workspace package, `melos version` would bump
+  # its version and commit *inside* the submodule (an unpushed commit that
+  # breaks CI's submodule checkout), `melos publish` would try to publish the
+  # fork to pub.dev, and `melos exec -- dart analyze` would lint a third-party
+  # codebase.
+  #
+  # The `ignore:` below is a redundant safety net for that invariant. Note that
+  # melos privacy is driven solely by `publish_to: none` in a package's own
+  # pubspec, which is not an option here: that file lives in the submodule, so
+  # editing it would leave the checkout permanently dirty.
+  #
+  # Consequence: `melos exec` will not run this package's tests. Run them
+  # directly with `cd packages/hyper_render && fvm flutter test`.
+  ignore:
+    - packages/hyper_render
 
   scripts:
     setup:hooks:

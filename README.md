@@ -55,6 +55,9 @@ covered by the stability promise of a stable tag.
 Requires the Flutter version pinned in [`.fvmrc`](.fvmrc). [FVM](https://fvm.app) is the path of least resistance:
 
 ```bash
+git clone --recurse-submodules https://github.com/DrkXo/readaway.git
+cd readaway
+
 fvm install
 fvm use
 dart pub global activate melos
@@ -63,6 +66,38 @@ melos bootstrap      # resolve deps for every package in the workspace
 melos run codegen    # freezed / json_serializable / injectable / hive generators
 fvm exec flutter run # from apps/readaway
 ```
+
+Already cloned without `--recurse-submodules`? Run
+`git submodule update --init --recursive` once. The build fails without it:
+`packages/hyper_render` is a path dependency override, so `pub get` cannot
+resolve while the directory is empty.
+
+### The `hyper_render` submodule
+
+[`packages/hyper_render`](packages/hyper_render) is a git submodule pointing at
+[DrkXo/hyper_render](https://github.com/DrkXo/hyper_render) on branch
+`feat/line-fragments`. It is a fork of the published `hyper_render` package and
+adds `RenderHyperBox.debugLineFragments()`, which reports the per-line fragments
+the renderer actually positioned — the basis for TTS highlighting of wrapped text.
+
+It is vendored as a submodule rather than a hosted dependency so the renderer can
+be edited and debugged in place: change the source and the app picks it up on the
+next hot restart, with no `pub get`.
+
+```bash
+git submodule update --remote          # pull the fork's latest on that branch
+git -C packages/hyper_render log -1    # which commit is currently pinned
+```
+
+Two things to know before editing it:
+
+- Melos does not manage it. It is deliberately absent from the pub `workspace:`
+  list in the root `pubspec.yaml`, so `melos version` never commits inside the
+  submodule and `melos publish` never tries to release the fork. Run its tests
+  directly: `cd packages/hyper_render && fvm flutter test`.
+- Push fork changes to [DrkXo/hyper_render](https://github.com/DrkXo/hyper_render),
+  then bump the gitlink with `git add packages/hyper_render`. A commit that only
+  exists in your local clone will break CI, which checks out the recorded SHA.
 
 ## Contributing
 
@@ -109,6 +144,7 @@ And the pieces that live outside the package manager:
 | [Token](https://github.com/ThorstenRhau/token) color themes | Bundled light/dark schemes — Light, Dark, Flint, Meridian, Temper, Ultra (BSD-3-Clause) |
 | [Kanagawa](https://github.com/rebelot/kanagawa.nvim) color themes | Bundled light/dark schemes — Wave, Dragon, Lotus (MIT) |
 | [Flexoki](https://github.com/kepano/flexoki) color themes | Bundled light/dark schemes — an inky paper-and-ink palette (MIT) |
+| [hyper_render](https://github.com/DrkXo/hyper_render) | HTML/Markdown renderer, vendored as the `packages/hyper_render` submodule and forked from [`brewkits/hyper_render`](https://github.com/brewkits/hyper_render) (MIT) |
 
 Each of these is used under its own license, and every package named in `pubspec.lock`
 belongs to its own maintainers.

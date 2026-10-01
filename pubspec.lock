@@ -968,20 +968,16 @@ packages:
   hyper_render:
     dependency: "direct overridden"
     description:
-      path: "."
-      ref: "feat/line-fragments"
-      resolved-ref: "752400ce2fbe707549ac0d44ffbbcf4ee1f77c55"
-      url: "https://github.com/DrkXo/hyper_render.git"
-    source: git
+      path: "packages/hyper_render"
+      relative: true
+    source: path
     version: "1.9.2"
   hyper_render_core:
     dependency: "direct overridden"
     description:
-      path: "packages/hyper_render_core"
-      ref: "feat/line-fragments"
-      resolved-ref: "752400ce2fbe707549ac0d44ffbbcf4ee1f77c55"
-      url: "https://github.com/DrkXo/hyper_render.git"
-    source: git
+      path: "packages/hyper_render/packages/hyper_render_core"
+      relative: true
+    source: path
     version: "1.9.2"
   image:
     dependency: transitive
