@@ -261,6 +261,20 @@ void main() {
       );
     });
 
+    test('spans retain the source node identity from the renderer', () {
+      const text = 'Hello World';
+      final layout = build(
+        fragments: [_text(text)],
+        total: text.length,
+        lineFragments: [
+          _line('Hello', charStart: 0, y: 0, lineIndex: 0, nodeId: 'node-1'),
+          _line('World', charStart: 6, y: 20, lineIndex: 1, nodeId: 'node-2'),
+        ],
+      );
+
+      expect(layout.spans.map((s) => s.nodeId), ['node-1', 'node-2']);
+    });
+
     test('a sentence spanning a wrap resolves to the runs it covers', () {
       // The user-visible goal. A sentence crossing a line break used to be
       // either unhighlightable or smeared across the whole paragraph; here it
@@ -519,6 +533,7 @@ LayoutLineFragment _line(
   double y = 0,
   int lineIndex = 0,
   int? ellipsisVisibleLength,
+  String? nodeId,
 }) => LayoutLineFragment(
   type: 'text',
   text: piece,
@@ -529,6 +544,7 @@ LayoutLineFragment _line(
   width: 400,
   height: 16,
   lineIndex: lineIndex,
+  nodeId: nodeId,
   nodeTag: 'p',
   ellipsisVisibleLength: ellipsisVisibleLength,
 );

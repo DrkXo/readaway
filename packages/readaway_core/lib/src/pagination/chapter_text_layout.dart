@@ -13,6 +13,9 @@ class LayoutFragment {
   /// block boundaries and atomic boxes.
   final String? text;
 
+  /// Id of the source node that produced this fragment.
+  final String? nodeId;
+
   /// Left edge in chapter-local coordinates.
   final double? offsetX;
 
@@ -31,6 +34,7 @@ class LayoutFragment {
   const LayoutFragment({
     this.type,
     this.text,
+    this.nodeId,
     this.offsetX,
     this.offsetY,
     this.width,
@@ -44,6 +48,7 @@ class LayoutFragment {
     return LayoutFragment(
       type: map['type'] as String?,
       text: map['text'] as String?,
+      nodeId: map['nodeId'] as String?,
       offsetX: num2double(map['offsetX']),
       offsetY: num2double(map['offsetY']),
       width: num2double(map['width']),
@@ -200,6 +205,12 @@ class TextSpanBox {
   /// translation is applied.
   final Rect rect;
 
+  /// Stable identifier of the source node that produced this span.
+  ///
+  /// When present, it allows a consumer to trace a highlight back to the exact
+  /// document node rather than relying on a text-only approximation.
+  final String? nodeId;
+
   /// Tag name of the source node, e.g. `p`, `a`, `span`.
   final String nodeTag;
 
@@ -210,6 +221,7 @@ class TextSpanBox {
     required this.charStart,
     required this.charEnd,
     required this.rect,
+    this.nodeId,
     required this.nodeTag,
     required this.type,
   });
@@ -417,13 +429,13 @@ class ChapterTextLayout {
     var nearestDistance = double.infinity;
     for (final span in spans) {
       if (!span.isFlowText) continue;
-      if (end <= span.charStart) {
+      if (end < span.charStart) {
         final distance = span.charStart - end;
         if (distance < nearestDistance) {
           nearestDistance = distance.toDouble();
           nearestSpan = span;
         }
-      } else if (start >= span.charEnd) {
+      } else if (start > span.charEnd) {
         final distance = start - span.charEnd;
         if (distance < nearestDistance) {
           nearestDistance = distance.toDouble();

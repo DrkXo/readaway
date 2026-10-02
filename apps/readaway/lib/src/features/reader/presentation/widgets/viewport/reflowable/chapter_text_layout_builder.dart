@@ -145,6 +145,7 @@ class ChapterTextLayoutBuilder {
           // highlighted as though it were.
           charEnd: fragment.visibleCharEnd,
           rect: fragment.rect,
+          nodeId: fragment.nodeId,
           nodeTag: fragment.nodeTag ?? '',
           type: fragment.type ?? '',
         ),
