@@ -7,16 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get_it/get_it.dart';
+import 'package:readaway/src/features/reader/presentation/widgets/overlay/reader_footnote_sheet.dart';
 
 import '../../../../../../core/theme/theme.dart';
 import '../../../../../../features/settings/domain/entity/reader_preferences.dart';
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
-import '../../../gestures/reader_gesture_arena.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
-
-import 'package:readaway/src/features/reader/presentation/widgets/overlay/reader_footnote_sheet.dart';
-
 import 'html/hyper_page_content.dart';
 import 'reflowable_scroll_coordinator.dart';
 
@@ -268,7 +265,6 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   }
 
   void _onTapUrl(BuildContext context, String url) async {
-    ReaderGestureArena.suppressNextTap();
     if (url.isEmpty) return;
 
     final match = RegExp(r'^#page=(\d+)$').firstMatch(url);

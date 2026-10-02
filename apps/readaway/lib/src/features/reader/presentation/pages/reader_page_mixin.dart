@@ -152,7 +152,6 @@ mixin ReaderControllerMixin on State<ReaderPage> {
   }
 
   void handleTapAction(ReaderTapAction action) {
-    if (ReaderGestureArena.isTapSuppressed) return;
     switch (action) {
       case ReaderTapAction.toggleChrome:
         toggleChrome();

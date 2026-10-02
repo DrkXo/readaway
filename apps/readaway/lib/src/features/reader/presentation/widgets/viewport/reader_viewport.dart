@@ -88,6 +88,7 @@ class _ReaderViewportState extends State<ReaderViewport> {
   int? _lastInitializedChapterCount;
   double? _lastViewportHeight;
   bool _isPaginationUpdateScheduled = false;
+  String? _lastDocumentPath;
 
   @override
   void initState() {
@@ -213,6 +214,11 @@ class _ReaderViewportState extends State<ReaderViewport> {
     return BlocConsumer<ReaderBloc, ReaderState>(
       listenWhen: ReaderViewport.reactsTo,
       listener: (context, state) {
+        if (_lastDocumentPath != state.documentPath) {
+          _lastDocumentPath = state.documentPath;
+          widget.viewportController.clearPageZoom();
+        }
+
         final isContinuous =
             widget.prefs.effectiveScrollDirection(
                   isReflowable: state.isReflowable,
@@ -426,6 +432,12 @@ class _ReaderViewportState extends State<ReaderViewport> {
         state: state,
         prefs: widget.prefs,
         isContinuous: isContinuous,
+        onZoomChanged: isContinuous
+            ? null
+            : (isZoomed) => widget.viewportController.setPageZoom(
+                index,
+                isZoomed,
+              ),
         onPageChangeRequested: (idx) => _onNavigateRequested(
           context,
           state,

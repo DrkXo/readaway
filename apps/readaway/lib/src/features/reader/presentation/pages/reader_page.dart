@@ -198,6 +198,14 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
               final prefs = settingsState.effectiveReaderPrefs(
                 readerState.documentPath,
               );
+              final isContinuous =
+                  prefs.effectiveScrollDirection(
+                        isReflowable: readerState.isReflowable,
+                      ) ==
+                      ReaderScrollDirection.vertical &&
+                  !prefs.effectivePageSnap(
+                    isReflowable: readerState.isReflowable,
+                  );
 
               return CallbackShortcuts(
                 bindings: {
@@ -240,6 +248,11 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                     prefs.effectivePageSnap(
                                       isReflowable: readerState.isReflowable,
                                     ),
+                                canStartPageDrag: () =>
+                                    !isContinuous &&
+                                    !viewportController.isPageZoomed,
+                                canHandleTapAction: () =>
+                                    !viewportController.isPageZoomed,
                                 isAtScrollBoundary: isAtScrollBoundary,
                                 onPageDragStart:
                                     viewportController.handleDragStart,
