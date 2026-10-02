@@ -1,3 +1,12 @@
+## 1.2.0-dev.1
+
+ - **FIX**(App): Gesture Ownerships accroding to Flowable and Non-Flowable Docs. ([632e24da](https://github.com/DrkXo/readaway/commit/632e24dafe605b9968fd3e024e75038abbe77d8d))
+ - **FIX**(tts): sync character offsets and align line bounding boxes. ([b04a129c](https://github.com/DrkXo/readaway/commit/b04a129cecfa5e3c3146504a2c6beb527896348b))
+ - **FIX**(core): bridge inter-word gaps and preserve internal spaces in getBoxesForCharRange. ([b663785e](https://github.com/DrkXo/readaway/commit/b663785efe9dc13f36db6f650209645da568b671))
+ - **FIX**(App): random tts highligh fixes. ([9c0aacb2](https://github.com/DrkXo/readaway/commit/9c0aacb28ca5fad7224495da25b9b1fd1a92b905))
+ - **FEAT**(App): TTS Highlight [WIP]. ([9ec49c10](https://github.com/DrkXo/readaway/commit/9ec49c1087149122a66a2b9b18fa9ce5c9eeeb48))
+ - **FEAT**(devtools): integrate hyper_render_devtools extension. ([cc406f29](https://github.com/DrkXo/readaway/commit/cc406f29157cba2c04e28b9162419788e6657482))
+
 ## 1.2.0-dev.0
 
  - **REFACTOR**(App): Refactoring Reader. ([8fa583bb](https://github.com/DrkXo/readaway/commit/8fa583bbff76924a49a920cc670b50d29ddfeb62))
