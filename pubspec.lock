@@ -971,21 +971,21 @@ packages:
       path: "packages/hyper_render"
       relative: true
     source: path
-    version: "1.10.0"
+    version: "1.9.1"
   hyper_render_core:
     dependency: "direct overridden"
     description:
       path: "packages/hyper_render/packages/hyper_render_core"
       relative: true
     source: path
-    version: "1.10.0"
+    version: "1.9.0"
   hyper_render_devtools:
     dependency: "direct overridden"
     description:
       path: "packages/hyper_render/packages/hyper_render_devtools"
       relative: true
     source: path
-    version: "1.8.0"
+    version: "1.7.0"
   image:
     dependency: transitive
     description:
