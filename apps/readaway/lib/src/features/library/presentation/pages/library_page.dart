@@ -41,6 +41,7 @@ class _LibraryView extends StatefulWidget {
 class _LibraryViewState extends State<_LibraryView> {
   final TextEditingController _searchController = TextEditingController();
   bool _areToolsExpanded = false;
+  bool _areActionsExpanded = false;
 
   @override
   void dispose() {
@@ -293,6 +294,10 @@ class _LibraryViewState extends State<_LibraryView> {
               ? null
               : LibraryActionsFab(
                   isLoading: state.isLoading,
+                  isExpanded: _areActionsExpanded,
+                  onToggle: () => setState(
+                    () => _areActionsExpanded = !_areActionsExpanded,
+                  ),
                   onAddBooks: () => bloc.add(
                     const LibraryEvent.addDocuments(),
                   ),

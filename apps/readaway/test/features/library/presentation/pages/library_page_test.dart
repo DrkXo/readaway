@@ -59,6 +59,8 @@ void main() {
         home: Scaffold(
           floatingActionButton: LibraryActionsFab(
             isLoading: true,
+            isExpanded: false,
+            onToggle: () {},
             onAddBooks: () => addCalls++,
             onOpenBook: () => openCalls++,
           ),
@@ -66,14 +68,63 @@ void main() {
       ),
     );
 
+    await tester.pump(const Duration(milliseconds: 250));
     expect(find.text('Adding…'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('library-add-books')));
-    await tester.tap(find.byKey(const ValueKey('library-open-book')));
+    final addButton = find.descendant(
+      of: find.byKey(const ValueKey('library-add-books')),
+      matching: find.byType(FloatingActionButton),
+    );
+    await tester.tap(addButton);
+    await tester.tap(addButton);
     await tester.pump();
 
     expect(addCalls, 0);
     expect(openCalls, 0);
+  });
+
+  testWidgets('library actions expand and invoke both actions', (tester) async {
+    var addCalls = 0;
+    var openCalls = 0;
+    var isExpanded = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) => Scaffold(
+            floatingActionButton: LibraryActionsFab(
+              isLoading: false,
+              isExpanded: isExpanded,
+              onToggle: () => setState(() => isExpanded = !isExpanded),
+              onAddBooks: () => addCalls++,
+              onOpenBook: () => openCalls++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Add Book'), findsNothing);
+    expect(find.byTooltip('Open Book'), findsNothing);
+
+    final toggle = find.byKey(const ValueKey('library-actions-toggle'));
+    final initialRight = tester.getRect(toggle).right;
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Add Book'), findsOneWidget);
+    expect(find.byTooltip('Open Book'), findsOneWidget);
+    expect(tester.getRect(toggle).right, closeTo(initialRight, 0.1));
+
+    await tester.tap(find.byTooltip('Open Book'));
+    await tester.pumpAndSettle();
+    expect(openCalls, 1);
+    expect(addCalls, 0);
+
+    await tester.tap(find.byTooltip('Add Book'));
+    await tester.pumpAndSettle();
+    expect(openCalls, 1);
+    expect(addCalls, 1);
   });
 }

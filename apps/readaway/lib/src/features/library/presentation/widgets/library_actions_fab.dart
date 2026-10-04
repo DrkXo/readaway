@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/theme.dart';
@@ -7,11 +8,15 @@ class LibraryActionsFab extends StatelessWidget {
   const LibraryActionsFab({
     super.key,
     required this.isLoading,
+    required this.isExpanded,
+    required this.onToggle,
     required this.onAddBooks,
     required this.onOpenBook,
   });
 
   final bool isLoading;
+  final bool isExpanded;
+  final VoidCallback onToggle;
   final VoidCallback onAddBooks;
   final VoidCallback onOpenBook;
 
@@ -19,103 +24,116 @@ class LibraryActionsFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final appColors = context.appColors;
 
-    return Material(
-      color: appColors.buttonBackground,
-      elevation: 2,
-      shadowColor: appColors.shadowMd.first.color,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-        side: BorderSide(color: appColors.borderSubtle, width: 0.8),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Tooltip(
-              message: 'Add books to library',
-              child: InkWell(
-                key: const ValueKey('library-add-books'),
-                onTap: isLoading ? null : onAddBooks,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isLoading)
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: appColors.buttonForeground,
-                          ),
-                        )
-                      else
-                        Icon(
-                          LucideIcons.bookPlus,
-                          size: 16,
-                          color: appColors.buttonForeground,
-                        ),
-                      const SizedBox(width: 6),
-                      Text(
-                        isLoading ? 'Adding…' : 'Add Book',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: appColors.buttonForeground,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              indent: 6,
-              endIndent: 6,
-              color: appColors.buttonForeground.withValues(alpha: 0.3),
-            ),
-            Tooltip(
-              message: 'Open book directly without adding to library',
-              child: InkWell(
-                key: const ValueKey('library-open-book'),
-                onTap: isLoading ? null : onOpenBook,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.bookOpen,
-                        size: 16,
-                        color: appColors.buttonForeground,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Open Book',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: appColors.buttonForeground,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        _ActionItem(
+          key: const ValueKey('library-open-book'),
+          label: 'Open Book',
+          icon: LucideIcons.bookOpen,
+          isVisible: isExpanded && !isLoading,
+          onPressed: onOpenBook,
         ),
-      ),
+        if (isExpanded && !isLoading) const SizedBox(height: 8),
+        _ActionItem(
+          key: const ValueKey('library-add-books'),
+          label: isLoading ? 'Adding…' : 'Add Book',
+          icon: isLoading ? null : LucideIcons.bookPlus,
+          isLoading: isLoading,
+          isVisible: isExpanded || isLoading,
+          onPressed: onAddBooks,
+        ),
+        if (isExpanded || isLoading) const SizedBox(height: 8),
+        FloatingActionButton.small(
+          key: const ValueKey('library-actions-toggle'),
+          heroTag: 'library-actions-toggle',
+          tooltip: isExpanded ? 'Close book actions' : 'Show book actions',
+          onPressed: isLoading ? null : onToggle,
+          backgroundColor: appColors.buttonBackground,
+          foregroundColor: appColors.buttonForeground,
+          child: AnimatedRotation(
+            turns: isExpanded ? 0.125 : 0,
+            duration: const Duration(milliseconds: 220),
+            child: const Icon(LucideIcons.plus),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionItem extends StatelessWidget {
+  const _ActionItem({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.isVisible,
+    required this.onPressed,
+    this.isLoading = false,
+  });
+
+  final String label;
+  final IconData? icon;
+  final bool isVisible;
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final appColors = context.appColors;
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      child: isVisible
+          ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Material(
+                      color: appColors.buttonBackground,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: appColors.buttonForeground,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FloatingActionButton.small(
+                      heroTag: label,
+                      tooltip: label,
+                      onPressed: isLoading ? null : onPressed,
+                      backgroundColor: appColors.buttonBackground,
+                      foregroundColor: appColors.buttonForeground,
+                      child: isLoading
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: appColors.buttonForeground,
+                              ),
+                            )
+                          : Icon(icon, size: 18),
+                    ),
+                  ],
+                )
+                .animate()
+                .slideY(
+                  begin: 0.15,
+                  duration: 180.ms,
+                  curve: Curves.easeOutCubic,
+                )
+                .fadeIn(duration: 140.ms)
+          : const SizedBox.shrink(),
     );
   }
 }
