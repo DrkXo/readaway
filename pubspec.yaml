@@ -55,7 +55,7 @@ melos:
   command:
     bootstrap:
       hooks:
-        post: bash scripts/setup_hooks.sh
+        post: bash scripts/setup_hooks.sh && fvm exec melos codegen
 
     version:
       # Link commits and PRs to the GitHub repository in generated CHANGELOG.md
