@@ -175,7 +175,8 @@ class _VoiceTab extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            SettingsSection(
+            ScopedSettingsSection(
+              scopable: false,
               title: 'Voice',
               rows: [
                 SettingsRow(
@@ -213,7 +214,8 @@ class _ReadingTab extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            SettingsSection(
+            ScopedSettingsSection(
+              scopable: false,
               title: 'Reading Prosody & Timing',
               rows: [
                 SettingsSelectRow<String>(
@@ -339,7 +341,8 @@ class _HighlightTab extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Highlighting Style
-            SettingsSection(
+            ScopedSettingsSection(
+              scopable: false,
               title: 'Highlight Style',
               onReset: () => _updateSettings(
                 context,
@@ -400,7 +403,8 @@ class _HighlightTab extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Color Accent
-            SettingsSection(
+            ScopedSettingsSection(
+              scopable: false,
               title: 'Color Accent',
               rows: [
                 Padding(
@@ -419,7 +423,8 @@ class _HighlightTab extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Karaoke Word Focus
-            SettingsSection(
+            ScopedSettingsSection(
+              scopable: false,
               title: 'Karaoke Word Focus',
               rows: [
                 SettingsSwitchRow(
@@ -439,7 +444,8 @@ class _HighlightTab extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Opacity & Intensity
-            SettingsSection(
+            ScopedSettingsSection(
+              scopable: false,
               title: 'Opacity & Intensity',
               rows: [
                 SettingsSliderRow(
@@ -727,7 +733,8 @@ class _LyricTab extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            SettingsSection(
+            ScopedSettingsSection(
+              scopable: false,
               title: 'Lyric view',
               onReset: () => _writeLyricStyle(
                 context,
@@ -1075,7 +1082,8 @@ class _CacheTabState extends State<_CacheTab> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
-                SettingsSection(
+                ScopedSettingsSection(
+                  scopable: false,
                   title: 'Audio Cache',
                   rows: [
                     SettingsRow(
@@ -1141,7 +1149,8 @@ class _CacheTabState extends State<_CacheTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                SettingsSection(
+                ScopedSettingsSection(
+                  scopable: false,
                   title: 'Cache Policy',
                   rows: [
                     SettingsSelectRow<int>(

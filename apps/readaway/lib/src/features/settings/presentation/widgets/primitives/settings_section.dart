@@ -55,14 +55,18 @@ class SettingsSection extends StatelessWidget {
                 Expanded(
                   child: Row(
                     children: [
-                      Text(
-                        title!.toUpperCase(),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: scheme.onSurfaceVariant.withValues(
-                            alpha: 0.8,
+                      Flexible(
+                        child: Text(
+                          title!.toUpperCase(),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: scheme.onSurfaceVariant.withValues(
+                              alpha: 0.8,
+                            ),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.6,
                           ),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.6,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ),
                       if (scope != null) ...[
@@ -118,21 +122,33 @@ class _ScopeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final label = switch (scope) {
-      SettingsScope.global => 'All books',
-      SettingsScope.perBook => 'This book',
-    };
+    final scheme = theme.colorScheme;
+    final isPerBook = scope == SettingsScope.perBook;
+    final label = isPerBook ? 'This book' : 'All books';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: theme.colorScheme.secondary.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(3),
+        color: isPerBook
+            ? scheme.secondaryContainer
+            : scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isPerBook
+              ? scheme.secondary.withValues(alpha: 0.35)
+              : scheme.outlineVariant.withValues(alpha: 0.4),
+          width: 0.8,
+        ),
       ),
       child: Text(
         label,
         style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSecondary,
+          color: isPerBook
+              ? scheme.onSecondaryContainer
+              : scheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
+          fontSize: 10,
+          letterSpacing: 0.2,
         ),
       ),
     );

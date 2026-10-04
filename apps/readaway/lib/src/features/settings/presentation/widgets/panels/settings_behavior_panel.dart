@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/widgets/core_widgets.dart';
-import '../../../domain/entity/reader_preferences.dart';
 import '../../../../reader/presentation/widgets/viewport/fixed_layout/fixed_layout_image_cache.dart';
+import '../../../domain/entity/reader_preferences.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../reader_prefs_scope.dart';
 import '../settings_bloc_x.dart';
@@ -61,13 +61,16 @@ class SettingsBehaviorPanel extends StatelessWidget {
       );
     }
 
-    void resetSystem() {
+    void resetKeepScreenOn() {
       final settings = bloc.state.appSettings;
       bloc.add(
         SettingsEvent.updateAppSettings(
           settings.copyWith(screenWakeLock: false),
         ),
       );
+    }
+
+    void resetStatusBar() {
       bloc.updateReaderPrefs(
         (p) => p.copyWith(showStatusBar: true),
         documentPath: path,
@@ -77,7 +80,7 @@ class SettingsBehaviorPanel extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Reflowable books (EPUB, TXT)',
           onReset: resetPageTurning,
           rows: const [
@@ -87,7 +90,7 @@ class SettingsBehaviorPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Fixed layout & documents (PDF, CBZ, CBR)',
           onReset: resetPageTurning,
           rows: const [
@@ -97,7 +100,8 @@ class SettingsBehaviorPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
+        ScopedSettingsSection(
+          scopable: false,
           title: 'Page image memory',
           onReset: resetReaderCache,
           rows: const [
@@ -105,7 +109,8 @@ class SettingsBehaviorPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
+        ScopedSettingsSection(
+          scopable: false,
           title: 'Navigation',
           onReset: resetNavigation,
           rows: const [
@@ -113,11 +118,19 @@ class SettingsBehaviorPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
-          title: 'System',
-          onReset: resetSystem,
+        ScopedSettingsSection(
+          scopable: false,
+          title: 'Keep screen on',
+          onReset: resetKeepScreenOn,
           rows: const [
             _KeepScreenOnRow(),
+          ],
+        ),
+        const SizedBox(height: 24),
+        ScopedSettingsSection(
+          title: 'Status bar',
+          onReset: resetStatusBar,
+          rows: const [
             _ShowStatusBarRow(),
           ],
         ),

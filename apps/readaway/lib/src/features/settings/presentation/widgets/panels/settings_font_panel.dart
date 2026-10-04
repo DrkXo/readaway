@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
-
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/routes/routes.dart';
 import '../../../../../core/widgets/core_widgets.dart';
@@ -22,7 +21,7 @@ class SettingsFontPanel extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Typeface',
           onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(
@@ -39,7 +38,7 @@ class SettingsFontPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Typography',
           onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(
@@ -64,7 +63,8 @@ class SettingsFontPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        const SettingsSection(
+        const ScopedSettingsSection(
+          scopable: false,
           title: 'Custom fonts',
           rows: [_ManageCustomFontsRow()],
         ),

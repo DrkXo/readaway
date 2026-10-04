@@ -1,10 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/services/settings_service.dart';
 import 'package:readaway/src/core/services/storage/hive/app_storage_service.dart';
-import 'package:readaway/src/features/settings/domain/entity/settings.dart';
 import 'package:readaway/src/core/services/storage/hive/hive_boxes.dart';
 import 'package:readaway/src/core/services/storage/hive/hive_config_service.dart';
 import 'package:readaway/src/core/services/tts/tts_model_store.dart';
@@ -13,6 +14,7 @@ import 'package:readaway/src/features/library/data/datasources/library_local_dat
 import 'package:readaway/src/features/library/domain/entity/recent_document.dart';
 import 'package:readaway/src/features/reader/data/repositories/reader_preferences_repository_impl.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
+import 'package:readaway/src/features/settings/domain/entity/settings.dart';
 
 import '../../../../helpers/test_mocks.dart';
 
@@ -135,6 +137,106 @@ void main() {
         28.0,
       );
     });
+
+    test(
+      'reader preferences stay isolated per book and clear to fallback',
+      () async {
+        final repo = ReaderPreferencesRepositoryImpl(storageService);
+        const globalPrefs = ReaderPreferences(fontSize: 18);
+        const firstBookPrefs = ReaderPreferences(fontSize: 24);
+        const secondBookPrefs = ReaderPreferences(fontSize: 30);
+
+        await repo.saveGlobalPreferences(globalPrefs);
+        await repo.saveDocumentPreferences('/books/first.epub', firstBookPrefs);
+        await repo.saveDocumentPreferences(
+          '/books/second.epub',
+          secondBookPrefs,
+        );
+
+        expect(
+          (await repo.getDocumentPreferences('/books/first.epub')).dataOrNull,
+          firstBookPrefs,
+        );
+        expect(
+          (await repo.getDocumentPreferences('/books/second.epub')).dataOrNull,
+          secondBookPrefs,
+        );
+        expect(
+          (await repo.getDocumentPreferences('/books/missing.epub')).dataOrNull,
+          isNull,
+        );
+
+        await repo.clearDocumentPreferences('/books/first.epub');
+
+        expect(
+          (await repo.getDocumentPreferences('/books/first.epub')).dataOrNull,
+          isNull,
+        );
+        expect(
+          (await repo.getDocumentPreferences('/books/second.epub')).dataOrNull,
+          secondBookPrefs,
+        );
+        expect(
+          (await repo.getGlobalPreferences()).dataOrNull,
+          globalPrefs,
+        );
+      },
+    );
+
+    test('reader preferences follow identical content at a new path', () async {
+      final repo = ReaderPreferencesRepositoryImpl(storageService);
+      final first = File('${tempDir.path}/first.epub');
+      final renamed = File('${tempDir.path}/renamed.epub');
+      await first.writeAsString('same book bytes');
+      await renamed.writeAsString('same book bytes');
+      const prefs = ReaderPreferences(fontSize: 25);
+
+      await repo.saveDocumentPreferences(first.path, prefs);
+
+      expect(
+        (await repo.getDocumentPreferences(renamed.path)).dataOrNull,
+        prefs,
+      );
+      expect(
+        storageService.readerBox.containsKey(
+          'reader_doc_sha256_'
+          '${sha256.convert(utf8.encode('same book bytes'))}',
+        ),
+        isTrue,
+      );
+    });
+
+    test('changed document content does not reuse the old override', () async {
+      final repo = ReaderPreferencesRepositoryImpl(storageService);
+      final file = File('${tempDir.path}/changed.epub');
+      await file.writeAsString('original content');
+      await repo.saveDocumentPreferences(
+        file.path,
+        const ReaderPreferences(fontSize: 25),
+      );
+
+      await file.writeAsString('changed content with a different size');
+
+      expect((await repo.getDocumentPreferences(file.path)).dataOrNull, isNull);
+    });
+
+    test(
+      'recent document JSON round-trip preserves library data',
+      () {
+        final doc = RecentDocument(
+          path: '/books/legacy.epub',
+          fileName: 'legacy.epub',
+          title: 'Legacy',
+          dateAdded: DateTime(2025),
+          lastOpened: DateTime(2025),
+          fileSize: 42,
+          format: 'epub',
+        );
+
+        final json = doc.toJson();
+        expect(RecentDocument.fromJson(json), doc);
+      },
+    );
 
     test('tts model store persists in ttsBox', () async {
       final ttsStore = TtsModelStore(storage: storageService);

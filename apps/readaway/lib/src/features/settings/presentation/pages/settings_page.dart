@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/services/services.dart';
 import '../bloc/settings/settings_bloc.dart';
 import '../widgets/reader_prefs_scope.dart';
 import '../widgets/settings_bloc_x.dart';
@@ -27,22 +28,34 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  /// Whether the panels are editing this book's per-book preferences (true)
-  /// or the global preferences (false).
-  late bool _perBookMode;
+  /// Whether the reader-preference groups are editing this book's per-book
+  /// preferences (true) or the global preferences (false).
+  late bool _scoped;
 
   @override
   void initState() {
     super.initState();
     final path = widget.documentPath;
-    _perBookMode =
+    final settingsBloc = context.read<SettingsBloc>();
+    _scoped =
         path != null &&
-        context.read<SettingsBloc>().state.documentReaderPrefs.containsKey(
-          path,
-        );
+        settingsBloc.state.documentReaderPrefs.containsKey(path);
+    if (path != null &&
+        !settingsBloc.state.loadedDocumentPaths.contains(path)) {
+      context.read<SettingsBloc>().add(
+        SettingsEvent.loadDocumentPrefs(path),
+      );
+    }
   }
 
-  void _setPerBookMode(bool enabled) {
+  void _syncScoped(SettingsState state) {
+    final path = widget.documentPath;
+    if (path == null || !state.loadedDocumentPaths.contains(path)) return;
+    final enabled = state.documentReaderPrefs.containsKey(path);
+    if (_scoped != enabled) setState(() => _scoped = enabled);
+  }
+
+  void _setScoped(bool enabled) {
     final path = widget.documentPath;
     if (path == null) return;
     final bloc = context.read<SettingsBloc>();
@@ -52,75 +65,90 @@ class _SettingsPageState extends State<SettingsPage> {
     } else {
       bloc.clearDocumentReaderPrefs(path);
     }
-    setState(() => _perBookMode = enabled);
+    setState(() => _scoped = enabled);
   }
 
   @override
   Widget build(BuildContext context) {
     final path = widget.documentPath;
 
-    return DefaultTabController(
-      length: 5,
-      initialIndex: widget.initialTab.index,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SettingsSheetHeader(
-            title: 'Settings',
-            trailing: const SettingsSheetCloseButton(),
-          ),
+    return BlocListener<SettingsBloc, SettingsState>(
+      listenWhen: (previous, current) =>
+          previous.failure != current.failure ||
+          previous.loadedDocumentPaths != current.loadedDocumentPaths,
+      listener: (context, state) {
+        _syncScoped(state);
+        if (state.failure case final failure?) {
+          context.toasts.showFailure(failure);
+        }
+      },
+      child: SettingsScopeControl(
+        bookPath: path,
+        scoped: _scoped,
+        onScopedChanged: _setScoped,
+        child: DefaultTabController(
+          length: 5,
+          initialIndex: widget.initialTab.index,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SettingsSheetHeader(
+                title: 'Settings',
+                trailing: SettingsSheetCloseButton(),
+              ),
 
-          if (path != null)
-            _PerBookOverrideBanner(
-              enabled: _perBookMode,
-              onChanged: _setPerBookMode,
-            ),
-          if (path != null) const Divider(height: 1),
+              if (path != null)
+                _BookScopeBanner(
+                  scoped: _scoped,
+                  onChanged: _setScoped,
+                ),
 
-          const TabBar(
-            isScrollable: false,
-            indicatorSize: TabBarIndicatorSize.tab,
-            dividerColor: Colors.transparent,
-            labelPadding: EdgeInsets.symmetric(horizontal: 6),
-            tabs: [
-              Tab(
-                icon: Icon(LucideIcons.type, size: 18),
-                text: 'Font',
+              const TabBar(
+                isScrollable: false,
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelPadding: EdgeInsets.symmetric(horizontal: 6),
+                tabs: [
+                  Tab(
+                    icon: Icon(LucideIcons.type, size: 18),
+                    text: 'Font',
+                  ),
+                  Tab(
+                    icon: Icon(LucideIcons.space, size: 18),
+                    text: 'Layout',
+                  ),
+                  Tab(
+                    icon: Icon(LucideIcons.hand, size: 18),
+                    text: 'Behavior',
+                  ),
+                  Tab(
+                    icon: Icon(LucideIcons.palette, size: 18),
+                    text: 'Appearance',
+                  ),
+                  Tab(
+                    icon: Icon(LucideIcons.mic, size: 18),
+                    text: 'TTS',
+                  ),
+                ],
               ),
-              Tab(
-                icon: Icon(LucideIcons.space, size: 18),
-                text: 'Layout',
-              ),
-              Tab(
-                icon: Icon(LucideIcons.hand, size: 18),
-                text: 'Behavior',
-              ),
-              Tab(
-                icon: Icon(LucideIcons.palette, size: 18),
-                text: 'Appearance',
-              ),
-              Tab(
-                icon: Icon(LucideIcons.mic, size: 18),
-                text: 'TTS',
+
+              Flexible(
+                child: ReaderPrefsScope(
+                  documentPath: _scoped ? path : null,
+                  child: const TabBarView(
+                    children: [
+                      SettingsFontPanel(),
+                      SettingsLayoutPanel(),
+                      SettingsBehaviorPanel(),
+                      SettingsAppearancePanel(),
+                      SettingsTtsPanel(),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
-
-          Flexible(
-            child: ReaderPrefsScope(
-              documentPath: _perBookMode ? path : null,
-              child: const TabBarView(
-                children: [
-                  SettingsFontPanel(),
-                  SettingsLayoutPanel(),
-                  SettingsBehaviorPanel(),
-                  SettingsAppearancePanel(),
-                  SettingsTtsPanel(),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -128,12 +156,12 @@ class _SettingsPageState extends State<SettingsPage> {
 
 /// Banner shown when the settings sheet is opened from a reader, letting the
 /// user choose between editing this book's preferences or the global ones.
-class _PerBookOverrideBanner extends StatelessWidget {
-  final bool enabled;
+class _BookScopeBanner extends StatelessWidget {
+  final bool scoped;
   final ValueChanged<bool> onChanged;
 
-  const _PerBookOverrideBanner({
-    required this.enabled,
+  const _BookScopeBanner({
+    required this.scoped,
     required this.onChanged,
   });
 
@@ -141,19 +169,34 @@ class _PerBookOverrideBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: scoped
+            ? scheme.secondaryContainer.withValues(alpha: 0.3)
+            : scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: scoped
+              ? scheme.secondary.withValues(alpha: 0.3)
+              : scheme.outlineVariant.withValues(alpha: 0.4),
+          width: 0.8,
+        ),
+      ),
       child: Row(
         children: [
           Icon(
             LucideIcons.bookOpen,
             size: 18,
-            color: scheme.onSurfaceVariant,
+            color: scoped ? scheme.secondary : scheme.onSurfaceVariant,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Customize this book',
@@ -162,7 +205,7 @@ class _PerBookOverrideBanner extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  enabled
+                  scoped
                       ? 'Settings apply to this book only'
                       : 'Settings apply to all books',
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -172,7 +215,23 @@ class _PerBookOverrideBanner extends StatelessWidget {
               ],
             ),
           ),
-          Switch(value: enabled, onChanged: onChanged),
+          Tooltip(
+            message: scoped
+                ? 'Editing only this book — toggle to edit all books'
+                : 'Editing all books — toggle to edit only this book',
+            child: Transform.scale(
+              scale: 0.8,
+              alignment: Alignment.centerRight,
+              child: Semantics(
+                label: 'Customize settings for this book',
+                child: Switch(
+                  value: scoped,
+                  onChanged: onChanged,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

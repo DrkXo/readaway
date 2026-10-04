@@ -8,6 +8,10 @@ abstract class SettingsState with _$SettingsState {
     @Default({})
     Map<String, ReaderPreferences> documentReaderPrefs,
     @Default(Settings()) Settings appSettings,
+    @JsonKey(includeFromJson: false, includeToJson: false) Failure? failure,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    @Default(<String>{})
+    Set<String> loadedDocumentPaths,
   }) = _SettingsState;
 
   factory SettingsState.fromJson(Map<String, dynamic> json) =>

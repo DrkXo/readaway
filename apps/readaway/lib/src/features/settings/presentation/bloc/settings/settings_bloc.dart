@@ -4,6 +4,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:readaway_core/readaway_core.dart';
 
+import '../../../../../core/error/failures.dart';
 import '../../../../reader/domain/repositories/reader_preferences_repository.dart';
 import '../../../domain/entity/reader_preferences.dart';
 import '../../../domain/entity/settings.dart';
@@ -20,6 +21,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
   final ReaderPreferencesRepository preferencesRepository;
   final SettingsRepository settingsRepository;
+  final Map<String, int> _documentLoadVersions = {};
 
   SettingsBloc({
     required this.preferencesRepository,
@@ -35,17 +37,20 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     // final value: each new event cancels the previous in-flight handler.
     on<_SetGlobalReaderPref>(
       _onSetGlobalReaderPref,
-      transformer: restartable(),
+      transformer: sequential(),
     );
-    on<_LoadDocumentPrefs>(_onLoadDocumentPrefs, transformer: droppable());
+    on<_LoadDocumentPrefs>(_onLoadDocumentPrefs, transformer: concurrent());
     on<_SetDocumentReaderPref>(
       _onSetDocumentReaderPref,
-      transformer: restartable(),
+      transformer: sequential(),
     );
-    on<_ClearDocumentPrefs>(_onClearDocumentPrefs, transformer: droppable());
+    on<_ClearDocumentPrefs>(
+      _onClearDocumentPrefs,
+      transformer: sequential(),
+    );
     on<_ResetAllReaderPrefs>(_onResetAllReaderPrefs, transformer: droppable());
     on<_ImportReaderPrefs>(_onImportReaderPrefs, transformer: droppable());
-    on<_UpdateAppSettings>(_onUpdateAppSettings, transformer: droppable());
+    on<_UpdateAppSettings>(_onUpdateAppSettings, transformer: sequential());
 
     add(const SettingsEvent.loadPrefs());
   }
@@ -58,9 +63,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       event.prefs,
     );
     result.fold(
-      (failure) => _log.e('Failed to set global prefs: $failure'),
+      (failure) {
+        _log.e('Failed to set global prefs: $failure');
+        emit(state.copyWith(failure: failure));
+      },
       (_) {
-        emit(state.copyWith(globalReaderPrefs: event.prefs));
+        emit(state.copyWith(globalReaderPrefs: event.prefs, failure: null));
         _log.d('Global reader prefs updated');
       },
     );
@@ -70,8 +78,18 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _ResetAllReaderPrefs event,
     Emitter<SettingsState> emit,
   ) async {
-    await preferencesRepository.resetAllPreferences();
-    await settingsRepository.resetSettings();
+    final prefsResult = await preferencesRepository.resetAllPreferences();
+    if (prefsResult.isFailure) {
+      _log.e('Failed to reset reader prefs: ${prefsResult.failureOrNull}');
+      emit(state.copyWith(failure: prefsResult.failureOrNull));
+      return;
+    }
+    final settingsResult = await settingsRepository.resetSettings();
+    if (settingsResult.isFailure) {
+      _log.e('Failed to reset app settings: ${settingsResult.failureOrNull}');
+      emit(state.copyWith(failure: settingsResult.failureOrNull));
+      return;
+    }
     emit(
       const SettingsState(
         globalReaderPrefs: ReaderPreferences(),
@@ -85,12 +103,28 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _LoadDocumentPrefs event,
     Emitter<SettingsState> emit,
   ) async {
+    final loadVersion = (_documentLoadVersions[event.path] ?? 0) + 1;
+    _documentLoadVersions[event.path] = loadVersion;
     final result = await preferencesRepository.getDocumentPreferences(
       event.path,
     );
     result.fold(
-      (failure) => _log.e('Failed to load document prefs: $failure'),
+      (failure) {
+        if (_documentLoadVersions[event.path] != loadVersion || emit.isDone) {
+          return;
+        }
+        _log.e('Failed to load document prefs: $failure');
+        emit(
+          state.copyWith(
+            failure: failure,
+            loadedDocumentPaths: {...state.loadedDocumentPaths, event.path},
+          ),
+        );
+      },
       (loaded) {
+        if (_documentLoadVersions[event.path] != loadVersion || emit.isDone) {
+          return;
+        }
         final map = Map<String, ReaderPreferences>.of(
           state.documentReaderPrefs,
         );
@@ -99,7 +133,13 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         } else {
           map[event.path] = loaded;
         }
-        emit(state.copyWith(documentReaderPrefs: map));
+        emit(
+          state.copyWith(
+            documentReaderPrefs: map,
+            loadedDocumentPaths: {...state.loadedDocumentPaths, event.path},
+            failure: null,
+          ),
+        );
         _log.d('Document reader prefs loaded for ${event.path}');
       },
     );
@@ -114,7 +154,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       event.prefs,
     );
     result.fold(
-      (failure) => _log.e('Failed to set document prefs: $failure'),
+      (failure) {
+        _log.e('Failed to set document prefs: $failure');
+        emit(state.copyWith(failure: failure));
+      },
       (_) {
         emit(
           state.copyWith(
@@ -122,6 +165,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
               ...state.documentReaderPrefs,
               event.path: event.prefs,
             },
+            loadedDocumentPaths: {...state.loadedDocumentPaths, event.path},
+            failure: null,
           ),
         );
         _log.d('Document reader prefs updated for ${event.path}');
@@ -137,13 +182,16 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       event.path,
     );
     result.fold(
-      (failure) => _log.e('Failed to clear document prefs: $failure'),
+      (failure) {
+        _log.e('Failed to clear document prefs: $failure');
+        emit(state.copyWith(failure: failure));
+      },
       (_) {
         final map = Map<String, ReaderPreferences>.of(
           state.documentReaderPrefs,
         );
         map.remove(event.path);
-        emit(state.copyWith(documentReaderPrefs: map));
+        emit(state.copyWith(documentReaderPrefs: map, failure: null));
         _log.d('Document reader prefs cleared for ${event.path}');
       },
     );
@@ -156,9 +204,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     final global = event.all['global'] ?? const ReaderPreferences();
     final result = await preferencesRepository.importGlobalPreferences(global);
     result.fold(
-      (failure) => _log.e('Failed to import prefs: $failure'),
+      (failure) {
+        _log.e('Failed to import prefs: $failure');
+        emit(state.copyWith(failure: failure));
+      },
       (_) {
-        emit(state.copyWith(globalReaderPrefs: global));
+        emit(state.copyWith(globalReaderPrefs: global, failure: null));
         _log.d('Reader prefs imported');
       },
     );
@@ -168,9 +219,17 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _UpdateAppSettings event,
     Emitter<SettingsState> emit,
   ) async {
-    await settingsRepository.saveSettings(event.settings);
-    emit(state.copyWith(appSettings: event.settings));
-    _log.d('App settings updated');
+    final result = await settingsRepository.saveSettings(event.settings);
+    result.fold(
+      (failure) {
+        _log.e('Failed to update app settings: $failure');
+        emit(state.copyWith(failure: failure));
+      },
+      (_) {
+        emit(state.copyWith(appSettings: event.settings, failure: null));
+        _log.d('App settings updated');
+      },
+    );
   }
 
   void _onLoadPrefs(
@@ -182,8 +241,15 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
     final prefs = prefsResult.dataOrNull ?? state.globalReaderPrefs;
     final settings = settingsResult.dataOrNull ?? state.appSettings;
+    final failure = prefsResult.failureOrNull ?? settingsResult.failureOrNull;
 
-    emit(state.copyWith(globalReaderPrefs: prefs, appSettings: settings));
+    emit(
+      state.copyWith(
+        globalReaderPrefs: prefs,
+        appSettings: settings,
+        failure: failure,
+      ),
+    );
     _log.d('Settings loaded via event');
   }
 }

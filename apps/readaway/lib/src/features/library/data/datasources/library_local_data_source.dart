@@ -32,6 +32,9 @@ class LibraryLocalDataSource {
 
   Future<void> removeRecentDocument(String path) async {
     await _storage.libraryBox.delete(path);
+    // Legacy path-keyed reader preferences are removed with the document.
+    // Content-keyed preferences are intentionally retained so settings follow
+    // an identical re-import of the same bytes.
     await _storage.readerBox.delete('reader_doc_$path');
   }
 

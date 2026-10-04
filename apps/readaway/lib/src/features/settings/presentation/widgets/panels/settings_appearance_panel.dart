@@ -56,7 +56,8 @@ class SettingsAppearancePanel extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        SettingsSection(
+        ScopedSettingsSection(
+          scopable: false,
           title: 'Theme',
           onReset: resetTheme,
           rows: const [
@@ -65,7 +66,7 @@ class SettingsAppearancePanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Display adjustment',
           onReset: resetDisplayAdjustment,
           rows: const [
@@ -74,7 +75,8 @@ class SettingsAppearancePanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
+        ScopedSettingsSection(
+          scopable: false,
           title: 'Reading',
           onReset: resetReading,
           rows: const [

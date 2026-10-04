@@ -1,6 +1,5 @@
 library;
 
-export 'settings_sheet.dart';
 export 'panels/settings_appearance_panel.dart';
 export 'panels/settings_behavior_panel.dart';
 export 'panels/settings_font_panel.dart';
@@ -9,3 +8,5 @@ export 'panels/settings_tts_panel.dart';
 export 'primitives/settings_section.dart';
 export 'primitives/settings_slider_row.dart';
 export 'primitives/settings_switch_row.dart';
+export 'scoped_settings_section.dart';
+export 'settings_sheet.dart';
