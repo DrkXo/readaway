@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
+import 'package:mockito/mockito.dart';
+import 'package:readaway/src/core/result/result.dart';
 import 'package:readaway/src/features/library/presentation/bloc/library_bloc.dart';
+import 'package:readaway/src/features/library/presentation/pages/library_page.dart';
 import 'package:readaway/src/features/library/presentation/widgets/library_actions_fab.dart';
 import 'package:readaway/src/features/library/presentation/widgets/library_tools_panel.dart';
+import 'package:readaway/src/features/settings/domain/entity/settings.dart';
+
+import '../../../../helpers/test_mocks.dart';
 
 void main() {
+  setUpAll(registerMockitoDummies);
+
   testWidgets('library tools slide into view when opened', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -127,4 +136,61 @@ void main() {
     expect(openCalls, 1);
     expect(addCalls, 1);
   });
+
+  testWidgets(
+    'speed dial closes when tapping outside on barrier or selecting an action',
+    (tester) async {
+      final mockRepo = MockLibraryRepository();
+      final mockSettings = MockSettingsService();
+      when(mockSettings.settings).thenReturn(const Settings());
+      when(mockRepo.watchRecentDocuments())
+          .thenAnswer((_) => Stream.value(const Success([])));
+      when(mockRepo.pickAndAddDocuments())
+          .thenAnswer((_) async => const Success([]));
+      when(mockRepo.pickDocumentWithoutSaving())
+          .thenAnswer((_) async => const Success(null));
+
+      final bloc = LibraryBloc(mockRepo, mockSettings);
+      GetIt.I.registerSingleton<LibraryBloc>(bloc);
+      addTearDown(() => GetIt.I.unregister<LibraryBloc>());
+
+      await tester.pumpWidget(
+        const MaterialApp(home: LibraryPage()),
+      );
+      await tester.pumpAndSettle();
+
+      final toggle = find.byKey(const ValueKey('library-actions-toggle'));
+      expect(find.byTooltip('Add Book'), findsNothing);
+
+      // 1. Open speed dial
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Add Book'), findsOneWidget);
+
+      // 2. Tap outside on the dimming barrier
+      final barrier = find.byKey(const ValueKey('library-speed-dial-barrier'));
+      expect(barrier, findsOneWidget);
+      await tester.tap(barrier);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Add Book'), findsNothing);
+
+      // 3. Open speed dial again and tap "Add Book"
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Add Book'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Add Book'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Add Book'), findsNothing);
+
+      // 4. Open speed dial again and tap "Open Book"
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Open Book'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Open Book'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Open Book'), findsNothing);
+    },
+  );
 }

@@ -70,243 +70,306 @@ class _LibraryViewState extends State<_LibraryView> {
     );
   }
 
+  void _closeActions() {
+    if (_areActionsExpanded) {
+      setState(() => _areActionsExpanded = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return BlocConsumer<LibraryBloc, LibraryState>(
-      listenWhen: (prev, curr) =>
-          (curr.openedDocument != null &&
-              prev.openedDocument != curr.openedDocument) ||
-          (curr.directOpenDocument != null &&
-              prev.directOpenDocument != curr.directOpenDocument) ||
-          (curr.noticeMessage != null &&
-              prev.noticeMessage != curr.noticeMessage),
-      listener: (context, state) {
-        final doc = state.openedDocument;
-        if (doc != null) {
-          context.read<LibraryBloc>().add(const LibraryEvent.clearOpened());
-          _navigateToReader(context, doc.path, doc.fileName);
-        }
-
-        final directDoc = state.directOpenDocument;
-        if (directDoc != null) {
-          context.read<LibraryBloc>().add(const LibraryEvent.clearDirectOpen());
-          _navigateToReader(context, directDoc.path, directDoc.fileName);
-        }
-
-        final notice = state.noticeMessage;
-        if (notice != null) {
-          context.showSuccessToast(notice);
-          context.read<LibraryBloc>().add(const LibraryEvent.clearNotice());
+    return PopScope(
+      canPop: !_areActionsExpanded,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _areActionsExpanded) {
+          _closeActions();
         }
       },
-      builder: (context, state) {
-        final bloc = context.read<LibraryBloc>();
-        final documents = state.filteredDocuments;
+      child: BlocConsumer<LibraryBloc, LibraryState>(
+        listenWhen: (prev, curr) =>
+            (curr.openedDocument != null &&
+                prev.openedDocument != curr.openedDocument) ||
+            (curr.directOpenDocument != null &&
+                prev.directOpenDocument != curr.directOpenDocument) ||
+            (curr.noticeMessage != null &&
+                prev.noticeMessage != curr.noticeMessage),
+        listener: (context, state) {
+          final doc = state.openedDocument;
+          if (doc != null) {
+            _closeActions();
+            context.read<LibraryBloc>().add(const LibraryEvent.clearOpened());
+            _navigateToReader(context, doc.path, doc.fileName);
+          }
 
-        return Scaffold(
-          appBar: AppTopBar(
-            showBottomBorder: false,
-            titleText: state.isSelectMode
-                ? '${state.selectedPaths.length} selected'
-                : 'Library',
-            subtitleText: state.isSelectMode
-                ? null
-                : '${state.recentDocuments.length} books',
-            leading: state.isSelectMode
-                ? IconButton(
-                    icon: const Icon(LucideIcons.x),
-                    tooltip: 'Cancel selection',
-                    onPressed: () => setState(() {
-                      _areToolsExpanded = false;
-                      bloc.add(const LibraryEvent.selectModeToggled());
-                    }),
-                  )
-                : null,
-            actions: [
-              if (state.isSelectMode) ...[
-                TextButton(
-                  onPressed: state.selectedPaths.length == documents.length
-                      ? () => bloc.add(const LibraryEvent.deselectAll())
-                      : () => bloc.add(const LibraryEvent.selectAll()),
-                  child: Text(
-                    state.selectedPaths.length == documents.length
-                        ? 'Deselect All'
-                        : 'Select All',
-                  ),
-                ),
-              ] else ...[
-                IconButton(
-                  key: const ValueKey('library-tools-toggle'),
-                  icon: Icon(
-                    _areToolsExpanded
-                        ? LucideIcons.panelTopClose
-                        : LucideIcons.slidersHorizontal,
-                    size: 20,
-                    color:
-                        state.searchQuery.isNotEmpty ||
-                            state.filterStatus != ReadingStatusFilter.all
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-                  ),
-                  tooltip: _areToolsExpanded
-                      ? 'Hide library tools'
-                      : 'Show library tools',
-                  onPressed: () => setState(
-                    () => _areToolsExpanded = !_areToolsExpanded,
-                  ),
-                ),
-              ],
-            ],
-          ),
-          body: Column(
-            children: [
-              if (state.failure != null)
-                FailureBanner(
-                  failure: state.failure!,
-                  onRetry: () => bloc.add(const LibraryEvent.loadRequested()),
-                  onDismiss: () => bloc.add(const LibraryEvent.loadRequested()),
-                ),
+          final directDoc = state.directOpenDocument;
+          if (directDoc != null) {
+            _closeActions();
+            context.read<LibraryBloc>().add(
+              const LibraryEvent.clearDirectOpen(),
+            );
+            _navigateToReader(context, directDoc.path, directDoc.fileName);
+          }
 
-              if (_areToolsExpanded || state.isSelectMode)
-                LibraryToolsPanel(
-                      key: const ValueKey('library-tools-panel'),
-                      state: state,
-                      searchController: _searchController,
-                      selecting: state.isSelectMode,
-                      onSearchChanged: (query) =>
-                          bloc.add(LibraryEvent.searchQueryChanged(query)),
-                      onFilterChanged: (filter) =>
-                          bloc.add(LibraryEvent.filterChanged(filter)),
-                      onSortChanged: (sort) =>
-                          bloc.add(LibraryEvent.sortByChanged(sort)),
-                      onSortOrderToggled: () =>
-                          bloc.add(const LibraryEvent.sortOrderToggled()),
-                      onViewModeChanged: (mode) =>
-                          bloc.add(LibraryEvent.viewModeChanged(mode)),
-                      onReset: () {
-                        _searchController.clear();
-                        bloc.add(const LibraryEvent.searchQueryChanged(''));
-                        bloc.add(
-                          const LibraryEvent.filterChanged(
-                            ReadingStatusFilter.all,
-                          ),
-                        );
-                      },
-                      onSelectMode: () => setState(() {
+          final notice = state.noticeMessage;
+          if (notice != null) {
+            context.showSuccessToast(notice);
+            context.read<LibraryBloc>().add(const LibraryEvent.clearNotice());
+          }
+        },
+        builder: (context, state) {
+          final bloc = context.read<LibraryBloc>();
+          final documents = state.filteredDocuments;
+
+          return Scaffold(
+            appBar: AppTopBar(
+              showBottomBorder: false,
+              titleText: state.isSelectMode
+                  ? '${state.selectedPaths.length} selected'
+                  : 'Library',
+              subtitleText: state.isSelectMode
+                  ? null
+                  : '${state.recentDocuments.length} books',
+              leading: state.isSelectMode
+                  ? IconButton(
+                      icon: const Icon(LucideIcons.x),
+                      tooltip: 'Cancel selection',
+                      onPressed: () => setState(() {
                         _areToolsExpanded = false;
                         bloc.add(const LibraryEvent.selectModeToggled());
                       }),
                     )
-                    .animate()
-                    .slideY(
-                      begin: -0.12,
-                      duration: 240.ms,
-                      curve: Curves.easeOutCubic,
-                    )
-                    .fadeIn(duration: 180.ms),
+                  : null,
+              actions: [
+                if (state.isSelectMode) ...[
+                  TextButton(
+                    onPressed: state.selectedPaths.length == documents.length
+                        ? () => bloc.add(const LibraryEvent.deselectAll())
+                        : () => bloc.add(const LibraryEvent.selectAll()),
+                    child: Text(
+                      state.selectedPaths.length == documents.length
+                          ? 'Deselect All'
+                          : 'Select All',
+                    ),
+                  ),
+                ] else ...[
+                  IconButton(
+                    key: const ValueKey('library-tools-toggle'),
+                    icon: Icon(
+                      _areToolsExpanded
+                          ? LucideIcons.panelTopClose
+                          : LucideIcons.slidersHorizontal,
+                      size: 20,
+                      color:
+                          state.searchQuery.isNotEmpty ||
+                              state.filterStatus != ReadingStatusFilter.all
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                    tooltip: _areToolsExpanded
+                        ? 'Hide library tools'
+                        : 'Show library tools',
+                    onPressed: () => setState(() {
+                      _closeActions();
+                      _areToolsExpanded = !_areToolsExpanded;
+                    }),
+                  ),
+                ],
+              ],
+            ),
+            body: Stack(
+              children: [
+                Column(
+                  children: [
+                    if (state.failure != null)
+                      FailureBanner(
+                        failure: state.failure!,
+                        onRetry: () =>
+                            bloc.add(const LibraryEvent.loadRequested()),
+                        onDismiss: () =>
+                            bloc.add(const LibraryEvent.loadRequested()),
+                      ),
 
-              // Main Book Content
-              Expanded(
-                child: Builder(
-                  builder: (context) {
-                    if (state.isLoading && state.recentDocuments.isEmpty) {
-                      return const AppLoadingView(label: 'Loading library...');
-                    }
-
-                    if (state.recentDocuments.isEmpty) {
-                      return const AppEmptyView(
-                        icon: LucideIcons.bookOpen,
-                        title: 'Your Library is Empty',
-                        message: 'Add books to your library or open a document directly using the bar below.',
-                      );
-                    }
-
-                    if (documents.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                LucideIcons.filterX,
-                                size: 48,
-                                color: scheme.outline,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No matching books found',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: scheme.onSurface,
+                    if (_areToolsExpanded || state.isSelectMode)
+                      LibraryToolsPanel(
+                            key: const ValueKey('library-tools-panel'),
+                            state: state,
+                            searchController: _searchController,
+                            selecting: state.isSelectMode,
+                            onSearchChanged: (query) => bloc.add(
+                              LibraryEvent.searchQueryChanged(query),
+                            ),
+                            onFilterChanged: (filter) =>
+                                bloc.add(LibraryEvent.filterChanged(filter)),
+                            onSortChanged: (sort) =>
+                                bloc.add(LibraryEvent.sortByChanged(sort)),
+                            onSortOrderToggled: () =>
+                                bloc.add(const LibraryEvent.sortOrderToggled()),
+                            onViewModeChanged: (mode) =>
+                                bloc.add(LibraryEvent.viewModeChanged(mode)),
+                            onReset: () {
+                              _searchController.clear();
+                              bloc.add(
+                                const LibraryEvent.searchQueryChanged(''),
+                              );
+                              bloc.add(
+                                const LibraryEvent.filterChanged(
+                                  ReadingStatusFilter.all,
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Try clearing your search query or changing filters.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              FilledButton.tonal(
-                                onPressed: () {
-                                  _searchController.clear();
-                                  bloc.add(
-                                    const LibraryEvent.searchQueryChanged(''),
-                                  );
-                                  bloc.add(
-                                    const LibraryEvent.filterChanged(
-                                      ReadingStatusFilter.all,
+                              );
+                            },
+                            onSelectMode: () => setState(() {
+                              _areToolsExpanded = false;
+                              bloc.add(const LibraryEvent.selectModeToggled());
+                            }),
+                          )
+                          .animate()
+                          .slideY(
+                            begin: -0.12,
+                            duration: 240.ms,
+                            curve: Curves.easeOutCubic,
+                          )
+                          .fadeIn(duration: 180.ms),
+
+                    // Main Book Content
+                    Expanded(
+                      child: Builder(
+                        builder: (context) {
+                          if (state.isLoading &&
+                              state.recentDocuments.isEmpty) {
+                            return const AppLoadingView(
+                              label: 'Loading library...',
+                            );
+                          }
+
+                          if (state.recentDocuments.isEmpty) {
+                            return const AppEmptyView(
+                              icon: LucideIcons.bookOpen,
+                              title: 'Your Library is Empty',
+                              message: 'Add books to your library or open a document directly using the bar below.',
+                            );
+                          }
+
+                          if (documents.isEmpty) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(32.0),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      LucideIcons.filterX,
+                                      size: 48,
+                                      color: scheme.outline,
                                     ),
-                                  );
-                                },
-                                child: const Text('Reset Filters'),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No matching books found',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: scheme.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Try clearing your search query or changing filters.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: scheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    FilledButton.tonal(
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        bloc.add(
+                                          const LibraryEvent.searchQueryChanged(
+                                            '',
+                                          ),
+                                        );
+                                        bloc.add(
+                                          const LibraryEvent.filterChanged(
+                                            ReadingStatusFilter.all,
+                                          ),
+                                        );
+                                      },
+                                      child: const Text('Reset Filters'),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
+                            );
+                          }
 
-                    // Render Grid View
-                    if (state.viewMode == LibraryViewMode.grid) {
-                      return _buildGridView(context, documents, state, bloc);
-                    }
+                          // Render Grid View
+                          if (state.viewMode == LibraryViewMode.grid) {
+                            return _buildGridView(
+                              context,
+                              documents,
+                              state,
+                              bloc,
+                            );
+                          }
 
-                    // Render List View
-                    return _buildListView(context, documents, state, bloc);
-                  },
+                          // Render List View
+                          return _buildListView(
+                            context,
+                            documents,
+                            state,
+                            bloc,
+                          );
+                        },
+                      ),
+                    ),
+
+                    // Select Mode Bottom Action Bar
+                    if (state.isSelectMode && state.selectedPaths.isNotEmpty)
+                      _buildSelectModeBar(context, state, bloc),
+                  ],
                 ),
-              ),
 
-              // Select Mode Bottom Action Bar
-              if (state.isSelectMode && state.selectedPaths.isNotEmpty)
-                _buildSelectModeBar(context, state, bloc),
-            ],
-          ),
-          floatingActionButton: state.isSelectMode
-              ? null
-              : LibraryActionsFab(
-                  isLoading: state.isLoading,
-                  isExpanded: _areActionsExpanded,
-                  onToggle: () => setState(
-                    () => _areActionsExpanded = !_areActionsExpanded,
-                  ),
-                  onAddBooks: () => bloc.add(
-                    const LibraryEvent.addDocuments(),
-                  ),
-                  onOpenBook: () => bloc.add(
-                    const LibraryEvent.openDirectly(),
+                // Dismiss barrier when speed dial is open
+                IgnorePointer(
+                  ignoring: !_areActionsExpanded,
+                  child: AnimatedOpacity(
+                    opacity: _areActionsExpanded ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    child: GestureDetector(
+                      key: const ValueKey('library-speed-dial-barrier'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _closeActions,
+                      child: Container(
+                        color: scheme.scrim.withValues(alpha: 0.32),
+                      ),
+                    ),
                   ),
                 ),
-        );
-      },
+              ],
+            ),
+            floatingActionButton: state.isSelectMode
+                ? null
+                : LibraryActionsFab(
+                    isLoading: state.isLoading,
+                    isExpanded: _areActionsExpanded,
+                    onToggle: () => setState(
+                      () => _areActionsExpanded = !_areActionsExpanded,
+                    ),
+                    onAddBooks: () {
+                      _closeActions();
+                      bloc.add(const LibraryEvent.addDocuments());
+                    },
+                    onOpenBook: () {
+                      _closeActions();
+                      bloc.add(const LibraryEvent.openDirectly());
+                    },
+                  ),
+          );
+        },
+      ),
     );
   }
 
