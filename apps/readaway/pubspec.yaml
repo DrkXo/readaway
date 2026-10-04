@@ -1,7 +1,7 @@
 name: readaway
 description: "Ebook reader for eBooks, comics, HTML, and text with text-to-speech."
 publish_to: "none"
-version: 1.2.0-dev.1
+version: 1.2.0-dev.2
 resolution: workspace
 
 environment:

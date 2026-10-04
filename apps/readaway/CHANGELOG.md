@@ -1,3 +1,11 @@
+## 1.2.0-dev.2
+
+ - **FIX**(App): The reader still uses Scaffold.drawer; the TTS player now renders in the Scaffold body instead of an OverlayPortal, so the drawer can appear above it while playback continues. ([1841e65a](https://github.com/DrkXo/readaway/commit/1841e65ad09bc8b4cd39586a914ae34ab10d2c75))
+ - **FEAT**(library): auto-dismiss speed dial on outside tap, back gesture, or action selection. ([d02497e2](https://github.com/DrkXo/readaway/commit/d02497e23c962c694b9b1eb8f6f89265af7f0bc2))
+ - **FEAT**(settings): unify per-book scope control and refine switch controls. ([f1546bbb](https://github.com/DrkXo/readaway/commit/f1546bbbfd4234e3513c54f4ce39094aeec96576))
+ - **FEAT**(App): Library Speed Dial. ([cc579682](https://github.com/DrkXo/readaway/commit/cc579682a7533c463aefb96ec230b3c495453547))
+ - **FEAT**(App): Library UI Enhanchments. ([f3e2e54f](https://github.com/DrkXo/readaway/commit/f3e2e54f3186e6dc72b6bf82e99597f8ee034a21))
+
 ## 1.2.0-dev.1
 
  - **FIX**(App): Gesture Ownerships accroding to Flowable and Non-Flowable Docs. ([632e24da](https://github.com/DrkXo/readaway/commit/632e24dafe605b9968fd3e024e75038abbe77d8d))
