@@ -20,6 +20,10 @@ abstract class Settings with _$Settings {
     @Default(false) bool screenWakeLock,
     @Default([]) List<CustomFont> customFonts,
     @Default(GlobalViewSettings()) GlobalViewSettings globalViewSettings,
+    @Default('grid') String libraryViewMode,
+    @Default('dateOpened') String librarySortBy,
+    @Default(false) bool librarySortAscending,
+    @Default('all') String libraryFilterStatus,
   }) = _Settings;
 
   factory Settings.fromJson(Map<String, dynamic> json) =>

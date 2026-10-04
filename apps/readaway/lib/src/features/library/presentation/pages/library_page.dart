@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
@@ -14,8 +15,8 @@ import '../bloc/library_bloc.dart';
 import '../widgets/book_details_sheet.dart';
 import '../widgets/book_grid_card.dart';
 import '../widgets/book_list_tile.dart';
-import '../widgets/library_filter_bar.dart';
-import '../widgets/library_sort_sheet.dart';
+import '../widgets/library_actions_fab.dart';
+import '../widgets/library_tools_panel.dart';
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -39,8 +40,7 @@ class _LibraryView extends StatefulWidget {
 
 class _LibraryViewState extends State<_LibraryView> {
   final TextEditingController _searchController = TextEditingController();
-  bool _isSearchVisible = false;
-  bool _isFilterVisible = false;
+  bool _areToolsExpanded = false;
 
   @override
   void dispose() {
@@ -109,13 +109,18 @@ class _LibraryViewState extends State<_LibraryView> {
             showBottomBorder: false,
             titleText: state.isSelectMode
                 ? '${state.selectedPaths.length} selected'
-                : 'Readaway',
+                : 'Library',
+            subtitleText: state.isSelectMode
+                ? null
+                : '${state.recentDocuments.length} books',
             leading: state.isSelectMode
                 ? IconButton(
                     icon: const Icon(LucideIcons.x),
                     tooltip: 'Cancel selection',
-                    onPressed: () =>
-                        bloc.add(const LibraryEvent.selectModeToggled()),
+                    onPressed: () => setState(() {
+                      _areToolsExpanded = false;
+                      bloc.add(const LibraryEvent.selectModeToggled());
+                    }),
                   )
                 : null,
             actions: [
@@ -131,90 +136,26 @@ class _LibraryViewState extends State<_LibraryView> {
                   ),
                 ),
               ] else ...[
-                // Search toggle
                 IconButton(
+                  key: const ValueKey('library-tools-toggle'),
                   icon: Icon(
-                    _isSearchVisible ? LucideIcons.searchX : LucideIcons.search,
+                    _areToolsExpanded
+                        ? LucideIcons.panelTopClose
+                        : LucideIcons.slidersHorizontal,
                     size: 20,
-                  ),
-                  tooltip: 'Search books',
-                  onPressed: () {
-                    setState(() {
-                      _isSearchVisible = !_isSearchVisible;
-                      if (!_isSearchVisible) {
-                        _searchController.clear();
-                        bloc.add(const LibraryEvent.searchQueryChanged(''));
-                      }
-                    });
-                  },
-                ),
-                // Filter toggle
-                IconButton(
-                  icon: Icon(
-                    _isFilterVisible ? LucideIcons.filterX : LucideIcons.filter,
-                    size: 20,
-                    color: state.filterStatus != ReadingStatusFilter.all
+                    color:
+                        state.searchQuery.isNotEmpty ||
+                            state.filterStatus != ReadingStatusFilter.all
                         ? Theme.of(context).colorScheme.primary
                         : null,
                   ),
-                  tooltip: 'Filter books',
-                  onPressed: () {
-                    setState(() {
-                      _isFilterVisible = !_isFilterVisible;
-                      if (!_isFilterVisible &&
-                          state.filterStatus != ReadingStatusFilter.all) {
-                        bloc.add(
-                          const LibraryEvent.filterChanged(
-                            ReadingStatusFilter.all,
-                          ),
-                        );
-                      }
-                    });
-                  },
-                ),
-                // Sort Menu
-                IconButton(
-                  icon: const Icon(LucideIcons.arrowDownUp, size: 20),
-                  tooltip: 'Sort library',
-                  onPressed: () => LibrarySortSheet.show(
-                    context,
-                    currentSortBy: state.sortBy,
-                    sortAscending: state.sortAscending,
-                    onSortChanged: (sort) =>
-                        bloc.add(LibraryEvent.sortByChanged(sort)),
-                    onToggleAscending: () =>
-                        bloc.add(const LibraryEvent.sortOrderToggled()),
+                  tooltip: _areToolsExpanded
+                      ? 'Hide library tools'
+                      : 'Show library tools',
+                  onPressed: () => setState(
+                    () => _areToolsExpanded = !_areToolsExpanded,
                   ),
                 ),
-                // View Mode switcher
-                IconButton(
-                  icon: Icon(
-                    state.viewMode == LibraryViewMode.grid
-                        ? LucideIcons.layoutList
-                        : LucideIcons.layoutGrid,
-                    size: 20,
-                  ),
-                  tooltip: state.viewMode == LibraryViewMode.grid
-                      ? 'Switch to List view'
-                      : 'Switch to Grid view',
-                  onPressed: () {
-                    bloc.add(
-                      LibraryEvent.viewModeChanged(
-                        state.viewMode == LibraryViewMode.grid
-                            ? LibraryViewMode.list
-                            : LibraryViewMode.grid,
-                      ),
-                    );
-                  },
-                ),
-                // Select mode button
-                if (state.recentDocuments.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(LucideIcons.checkSquare, size: 20),
-                    tooltip: 'Select books',
-                    onPressed: () =>
-                        bloc.add(const LibraryEvent.selectModeToggled()),
-                  ),
               ],
             ],
           ),
@@ -227,86 +168,43 @@ class _LibraryViewState extends State<_LibraryView> {
                   onDismiss: () => bloc.add(const LibraryEvent.loadRequested()),
                 ),
 
-              // Search Bar (expandable)
-              if (_isSearchVisible)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    autofocus: true,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.appColors.inputForeground,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Search by title, author, or format...',
-                      hintStyle: TextStyle(
-                        fontSize: 13,
-                        color: context.appColors.inputPlaceholderForeground,
-                      ),
-                      prefixIcon: Icon(
-                        LucideIcons.search,
-                        size: 16,
-                        color: context.appColors.inputPlaceholderForeground,
-                      ),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: Icon(
-                                LucideIcons.x,
-                                size: 14,
-                                color: context.appColors.inputForeground,
-                              ),
-                              onPressed: () {
-                                _searchController.clear();
-                                bloc.add(
-                                  const LibraryEvent.searchQueryChanged(''),
-                                );
-                              },
-                            )
-                          : null,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      filled: true,
-                      fillColor: context.appColors.inputBackground,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        borderSide: BorderSide(
-                          color: context.appColors.inputBorder,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        borderSide: BorderSide(
-                          color: context.appColors.inputBorder,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        borderSide: BorderSide(
-                          color: context.appColors.focusBorder,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                    onChanged: (val) =>
-                        bloc.add(LibraryEvent.searchQueryChanged(val)),
-                  ),
-                ),
-
-              // Filter Chips Bar (expandable)
-              if (_isFilterVisible && state.recentDocuments.isNotEmpty)
-                LibraryFilterBar(
-                  selectedFilter: state.filterStatus,
-                  state: state,
-                  onSelectFilter: (filter) =>
-                      bloc.add(LibraryEvent.filterChanged(filter)),
-                ),
+              if (_areToolsExpanded || state.isSelectMode)
+                LibraryToolsPanel(
+                      key: const ValueKey('library-tools-panel'),
+                      state: state,
+                      searchController: _searchController,
+                      selecting: state.isSelectMode,
+                      onSearchChanged: (query) =>
+                          bloc.add(LibraryEvent.searchQueryChanged(query)),
+                      onFilterChanged: (filter) =>
+                          bloc.add(LibraryEvent.filterChanged(filter)),
+                      onSortChanged: (sort) =>
+                          bloc.add(LibraryEvent.sortByChanged(sort)),
+                      onSortOrderToggled: () =>
+                          bloc.add(const LibraryEvent.sortOrderToggled()),
+                      onViewModeChanged: (mode) =>
+                          bloc.add(LibraryEvent.viewModeChanged(mode)),
+                      onReset: () {
+                        _searchController.clear();
+                        bloc.add(const LibraryEvent.searchQueryChanged(''));
+                        bloc.add(
+                          const LibraryEvent.filterChanged(
+                            ReadingStatusFilter.all,
+                          ),
+                        );
+                      },
+                      onSelectMode: () => setState(() {
+                        _areToolsExpanded = false;
+                        bloc.add(const LibraryEvent.selectModeToggled());
+                      }),
+                    )
+                    .animate()
+                    .slideY(
+                      begin: -0.12,
+                      duration: 240.ms,
+                      curve: Curves.easeOutCubic,
+                    )
+                    .fadeIn(duration: 180.ms),
 
               // Main Book Content
               Expanded(
@@ -393,105 +291,17 @@ class _LibraryViewState extends State<_LibraryView> {
           ),
           floatingActionButton: state.isSelectMode
               ? null
-              : _buildFabBar(context, bloc),
+              : LibraryActionsFab(
+                  isLoading: state.isLoading,
+                  onAddBooks: () => bloc.add(
+                    const LibraryEvent.addDocuments(),
+                  ),
+                  onOpenBook: () => bloc.add(
+                    const LibraryEvent.openDirectly(),
+                  ),
+                ),
         );
       },
-    );
-  }
-
-  Widget _buildFabBar(BuildContext context, LibraryBloc bloc) {
-    final appColors = context.appColors;
-
-    return Material(
-      color: appColors.buttonBackground,
-      elevation: 2,
-      shadowColor: appColors.shadowMd.first.color,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-        side: BorderSide(
-          color: appColors.borderSubtle,
-          width: 0.8,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Add Book to Library
-            Tooltip(
-              message: 'Add books to library',
-              child: InkWell(
-                onTap: () => bloc.add(const LibraryEvent.addDocuments()),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.bookPlus,
-                        size: 16,
-                        color: appColors.buttonForeground,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Add Book',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: appColors.buttonForeground,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              indent: 6,
-              endIndent: 6,
-              color: appColors.buttonForeground.withValues(alpha: 0.3),
-            ),
-            // Open Book directly without adding to library
-            Tooltip(
-              message: 'Open book directly without adding to library',
-              child: InkWell(
-                onTap: () => bloc.add(const LibraryEvent.openDirectly()),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.bookOpen,
-                        size: 16,
-                        color: appColors.buttonForeground,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Open Book',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: appColors.buttonForeground,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -506,22 +316,19 @@ class _LibraryViewState extends State<_LibraryView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        // Responsive columns: 2 on phone (<450), 3-4 on tablet (450-1000), 5-6 on desktop (>1000)
-        final crossAxisCount = width < 450
-            ? 2
-            : width < 700
-            ? 3
-            : width < 1000
-            ? 4
-            : width < 1300
-            ? 5
-            : 6;
+        final crossAxisCount = (width / 184).floor().clamp(2, 6);
+        final gutter = breakpointFromWidth(width).resolve(
+          compact: 12.0,
+          medium: 20.0,
+          expanded: 28.0,
+          wide: 40.0,
+        );
 
         return GridView.builder(
-          padding: EdgeInsets.fromLTRB(14, 8, 14, bottomInset),
+          padding: EdgeInsets.fromLTRB(gutter, 8, gutter, bottomInset),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            childAspectRatio: 0.56,
+            childAspectRatio: width < 380 ? 0.52 : 0.56,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
           ),

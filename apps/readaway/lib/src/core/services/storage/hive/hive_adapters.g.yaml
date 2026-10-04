@@ -149,7 +149,7 @@ types:
         index: 44
   Settings:
     typeId: 4
-    nextIndex: 58
+    nextIndex: 62
     fields:
       schemaVersion:
         index: 0
@@ -163,6 +163,14 @@ types:
         index: 43
       globalViewSettings:
         index: 57
+      libraryViewMode:
+        index: 58
+      librarySortBy:
+        index: 59
+      librarySortAscending:
+        index: 60
+      libraryFilterStatus:
+        index: 61
   CustomFont:
     typeId: 7
     nextIndex: 3

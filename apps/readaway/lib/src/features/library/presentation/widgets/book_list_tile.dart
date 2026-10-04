@@ -49,192 +49,217 @@ class BookListTile extends StatelessWidget {
         onTap: onTap,
         onLongPress: onLongPress,
         hoverColor: appColors.listHoverBackground,
-        child: Container(
-          decoration: isSelected
-              ? BoxDecoration(
-                  border: Border(
-                    left: BorderSide(
-                      color:
-                          appColors.badgeBackground ?? appColors.scheme.primary,
-                      width: 3.5,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 400;
+            final coverWidth = compact
+                ? 56.0
+                : constraints.maxWidth >= 700
+                ? 72.0
+                : 64.0;
+            final coverHeight = coverWidth * 1.5;
+            const actionSize = 48.0;
+
+            return Container(
+              decoration: isSelected
+                  ? BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: appColors.badgeBackground ?? scheme.primary,
+                          width: 3.5,
+                        ),
+                      ),
+                    )
+                  : null,
+              padding: EdgeInsets.fromLTRB(isSelected ? 13 : 16, 10, 12, 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Scale covers with available row width while preserving book proportions.
+                  SizedBox(
+                    width: coverWidth,
+                    height: coverHeight,
+                    child: BookCoverWidget(
+                      coverPath: document.coverPath,
+                      title: document.displayTitle,
+                      author: document.displayAuthor,
+                      format: document.format,
+                      progressPercent: document.progressPercent,
                     ),
                   ),
-                )
-              : null,
-          padding: EdgeInsets.fromLTRB(isSelected ? 13 : 16, 12, 16, 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Cover thumbnail (modern reader standard 64x96)
-              SizedBox(
-                width: 64,
-                height: 96,
-                child: BookCoverWidget(
-                  coverPath: document.coverPath,
-                  title: document.displayTitle,
-                  author: document.displayAuthor,
-                  format: document.format,
-                  progressPercent: document.progressPercent,
-                ),
-              ),
 
-              const SizedBox(width: 16),
+                  SizedBox(width: compact ? 10 : 16),
 
-              // Content details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      document.displayTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        height: 1.25,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                    if (document.displayAuthor != null) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        document.displayAuthor!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.2,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    Row(
+                  // Content details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Format pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: scheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            document.formatBadge,
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
-                              color: scheme.onSurfaceVariant,
-                            ),
+                        Text(
+                          document.displayTitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            height: 1.25,
+                            color: scheme.onSurface,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        // Progress / Status text
-                        Expanded(
-                          child: Text(
-                            progressText,
+                        if (document.displayAuthor != null) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            document.displayAuthor!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 12,
-                              color: document.isFinished
-                                  ? appColors.success
-                                  : document.readingStatus ==
-                                        ReadingStatus.abandoned
-                                  ? appColors.warning
-                                  : scheme.onSurfaceVariant,
-                              fontWeight:
-                                  document.isFinished ||
-                                      document.readingStatus ==
-                                          ReadingStatus.reading
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
+                              fontSize: 13,
+                              height: 1.2,
+                              color: scheme.onSurfaceVariant,
                             ),
                           ),
+                        ],
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            // Format pill
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: scheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                document.formatBadge,
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.4,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Progress / Status text
+                            Expanded(
+                              child: Text(
+                                progressText,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: document.isFinished
+                                      ? appColors.success
+                                      : document.readingStatus ==
+                                            ReadingStatus.abandoned
+                                      ? appColors.warning
+                                      : scheme.onSurfaceVariant,
+                                  fontWeight:
+                                      document.isFinished ||
+                                          document.readingStatus ==
+                                              ReadingStatus.reading
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                            if (document.formattedFileSize.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Text(
+                                document.formattedFileSize,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: scheme.outline,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                        if (document.formattedFileSize.isNotEmpty) ...[
-                          const SizedBox(width: 6),
-                          Text(
-                            document.formattedFileSize,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: scheme.outline,
+                        if (document.progressPercent > 0 &&
+                            !document.isFinished) ...[
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: LinearProgressIndicator(
+                              value: document.progressPercent,
+                              minHeight: 3.5,
+                              backgroundColor: scheme.surfaceContainerHighest,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                scheme.primary,
+                              ),
                             ),
                           ),
                         ],
                       ],
                     ),
-                    if (document.progressPercent > 0 &&
-                        !document.isFinished) ...[
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: LinearProgressIndicator(
-                          value: document.progressPercent,
-                          minHeight: 3.5,
-                          backgroundColor: scheme.surfaceContainerHighest,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            scheme.primary,
-                          ),
-                        ),
+                  ),
+
+                  SizedBox(width: compact ? 2 : 8),
+
+                  // Trailing actions or selection checkbox
+                  if (isSelectMode)
+                    Container(
+                      width: 24,
+                      height: 24,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isSelected ? scheme.primary : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: isSelected
+                            ? null
+                            : Border.all(color: scheme.outline, width: 1.5),
                       ),
-                    ],
+                      child: isSelected
+                          ? Icon(
+                              LucideIcons.check,
+                              size: 14,
+                              color: scheme.onPrimary,
+                            )
+                          : null,
+                    )
+                  else ...[
+                    if (!compact && onToggleFavorite != null)
+                      IconButton(
+                        constraints: BoxConstraints.tightFor(
+                          width: actionSize,
+                          height: actionSize,
+                        ),
+                        padding: EdgeInsets.zero,
+                        icon: Icon(
+                          LucideIcons.star,
+                          size: 19,
+                          color: document.isFavorite
+                              ? appColors.warning
+                              : scheme.outline,
+                        ),
+                        tooltip: document.isFavorite
+                            ? 'Remove from favorites'
+                            : 'Mark as favorite',
+                        onPressed: onToggleFavorite,
+                      ),
+                    if (onOpenDetails != null)
+                      IconButton(
+                        constraints: BoxConstraints.tightFor(
+                          width: actionSize,
+                          height: actionSize,
+                        ),
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(
+                          LucideIcons.ellipsisVertical,
+                          size: 19,
+                        ),
+                        tooltip: 'Book details & actions',
+                        onPressed: onOpenDetails,
+                      ),
                   ],
-                ),
+                ],
               ),
-
-              const SizedBox(width: 12),
-
-              // Trailing actions or selection checkbox
-              if (isSelectMode)
-                Container(
-                  width: 24,
-                  height: 24,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isSelected ? scheme.primary : Colors.transparent,
-                    shape: BoxShape.circle,
-                    border: isSelected
-                        ? null
-                        : Border.all(color: scheme.outline, width: 1.5),
-                  ),
-                  child: isSelected
-                      ? Icon(
-                          LucideIcons.check,
-                          size: 14,
-                          color: scheme.onPrimary,
-                        )
-                      : null,
-                )
-              else ...[
-                if (onToggleFavorite != null)
-                  IconButton(
-                    icon: Icon(
-                      LucideIcons.star,
-                      size: 19,
-                      color: document.isFavorite
-                          ? appColors.warning
-                          : scheme.outline,
-                    ),
-                    tooltip: document.isFavorite
-                        ? 'Remove from favorites'
-                        : 'Mark as favorite',
-                    onPressed: onToggleFavorite,
-                  ),
-                if (onOpenDetails != null)
-                  IconButton(
-                    icon: const Icon(LucideIcons.ellipsisVertical, size: 19),
-                    tooltip: 'Book details & actions',
-                    onPressed: onOpenDetails,
-                  ),
-              ],
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
