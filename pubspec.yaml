@@ -58,18 +58,11 @@ melos:
         post: bash scripts/setup_hooks.sh && fvm exec melos codegen
 
     version:
-      # Link commits and PRs to the GitHub repository in generated CHANGELOG.md
-      linkToCommits: true
+      changelog: false
       # Print GitHub Release draft creation URLs after versioning
       releaseUrl: true
       # Update dependency version constraints of packages in the workspace
       updateGitTagRefs: true
-      # Generate a root CHANGELOG.md aggregating changes across all packages
-      workspaceChangelog: true
-      # Include scopes in changelog entries (e.g., - **app**: commit message)
-      includeScopes: true
-      # Include commit SHAs in changelog entries
-      includeCommitId: true
 
       hooks:
         preCommit: bash scripts/check_branch.sh
