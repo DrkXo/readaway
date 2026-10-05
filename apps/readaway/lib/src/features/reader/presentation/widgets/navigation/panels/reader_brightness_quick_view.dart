@@ -21,7 +21,7 @@ class ReaderBrightnessQuickView extends StatelessWidget {
     BuildContext context,
     double newBrightness,
   ) {
-    context.read<SettingsBloc>().updateReaderPrefs(
+    context.read<SettingsBloc>().updateReaderPrefsWithinScope(
       (p) => p.copyWith(brightnessOverlay: newBrightness),
       documentPath: documentPath,
     );

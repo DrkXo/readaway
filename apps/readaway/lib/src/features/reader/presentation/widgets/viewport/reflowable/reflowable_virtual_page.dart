@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../core/theme/theme.dart';
+import '../../../../../../core/theme/tts_highlight_palette.dart';
 import '../../../../../settings/domain/entity/reader_preferences.dart';
 import '../../../../../settings/domain/entity/settings.dart';
 import '../../../../../settings/presentation/bloc/settings/settings_bloc.dart';
@@ -200,7 +201,10 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
       _ => TtsHighlightStyle.highlight,
     };
 
-    final baseColor = _resolveHighlightColor(context, gvs?.ttsHighlightColor);
+    final baseColor = resolveTtsHighlightColor(
+      gvs?.ttsHighlightColor,
+      Theme.of(context).colorScheme,
+    );
     final sentenceAlpha = gvs?.ttsHighlightSentenceOpacity ?? 0.18;
     final wordAlpha = gvs?.ttsHighlightWordOpacity ?? 0.38;
 
@@ -212,17 +216,6 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
       wordColor: baseColor.withValues(alpha: wordAlpha),
       style: style,
     );
-  }
-
-  static Color _resolveHighlightColor(BuildContext context, String? colorKey) {
-    return switch (colorKey) {
-      'amber' => const Color(0xFFF59E0B),
-      'emerald' => const Color(0xFF10B981),
-      'sky' => const Color(0xFF0EA5E9),
-      'violet' => const Color(0xFF8B5CF6),
-      'rose' => const Color(0xFFF43F5E),
-      _ => Theme.of(context).colorScheme.primary,
-    };
   }
 
   @override

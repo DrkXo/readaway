@@ -22,7 +22,7 @@ class ReaderFontSizeQuickView extends StatelessWidget {
     BuildContext context,
     double newSize,
   ) {
-    context.read<SettingsBloc>().updateReaderPrefs(
+    context.read<SettingsBloc>().updateReaderPrefsWithinScope(
       (p) => p.copyWith(fontSize: newSize),
       documentPath: documentPath,
     );
@@ -34,12 +34,18 @@ class ReaderFontSizeQuickView extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.effectiveReaderPrefs(documentPath).fontSize !=
-          curr.effectiveReaderPrefs(documentPath).fontSize,
+      buildWhen: (prev, curr) {
+        final before = prev.effectiveReaderPrefs(documentPath);
+        final after = curr.effectiveReaderPrefs(documentPath);
+        return before.fontSize != after.fontSize ||
+            before.overrideLayout != after.overrideLayout;
+      },
       builder: (context, settingsState) {
         final prefs = settingsState.effectiveReaderPrefs(documentPath);
         final fontSize = prefs.fontSize;
+        // Mirrors the Font tab: the size only overrides the book while
+        // "Override book layout" is on.
+        final enabled = prefs.overrideLayout;
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -69,10 +75,12 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                       ),
-                      onPressed: () => _updateFontSize(
-                        context,
-                        defaultFontSize,
-                      ),
+                      onPressed: enabled
+                          ? () => _updateFontSize(
+                              context,
+                              defaultFontSize,
+                            )
+                          : null,
                       child: const Text('Reset'),
                     ),
                   Text(
@@ -100,7 +108,7 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                     icon: LucideIcons.minus,
                     tooltip: 'Decrease font size',
                     size: AppIconButtonSize.small,
-                    onPressed: fontSize > 10
+                    onPressed: enabled && fontSize > 10
                         ? () => _updateFontSize(
                             context,
                             fontSize - 1,
@@ -114,6 +122,7 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                       max: 32,
                       divisions: 22,
                       compact: true,
+                      enabled: enabled,
                       onChanged: (v) => _updateFontSize(
                         context,
                         v,
@@ -124,7 +133,7 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                     icon: LucideIcons.plus,
                     tooltip: 'Increase font size',
                     size: AppIconButtonSize.small,
-                    onPressed: fontSize < 32
+                    onPressed: enabled && fontSize < 32
                         ? () => _updateFontSize(
                             context,
                             fontSize + 1,
@@ -144,10 +153,12 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                     label: Text('${size.round()} px'),
                     selected: isSelected,
                     visualDensity: VisualDensity.compact,
-                    onSelected: (_) => _updateFontSize(
-                      context,
-                      size,
-                    ),
+                    onSelected: enabled
+                        ? (_) => _updateFontSize(
+                            context,
+                            size,
+                          )
+                        : null,
                   );
                 }).toList(),
               ),

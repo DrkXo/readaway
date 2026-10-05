@@ -53,7 +53,9 @@ class SettingsSliderRow extends StatelessWidget {
                 Text(
                   format(value),
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
+                    color: enabled
+                        ? scheme.onSurfaceVariant
+                        : scheme.onSurfaceVariant.withValues(alpha: 0.38),
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),

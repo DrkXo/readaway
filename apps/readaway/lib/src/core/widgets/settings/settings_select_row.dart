@@ -10,6 +10,8 @@ class SettingsSelectEntry<T> {
 
 /// Row with a chromeless trailing dropdown. Uses [PopupMenuButton] so
 /// nullable values (e.g. "System" font) work as selections.
+///
+/// When [enabled] is false the row is dimmed and the dropdown cannot open.
 class SettingsSelectRow<T> extends StatelessWidget {
   const SettingsSelectRow({
     super.key,
@@ -18,6 +20,7 @@ class SettingsSelectRow<T> extends StatelessWidget {
     required this.value,
     required this.entries,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final String label;
@@ -25,6 +28,7 @@ class SettingsSelectRow<T> extends StatelessWidget {
   final T value;
   final List<SettingsSelectEntry<T>> entries;
   final ValueChanged<T> onChanged;
+  final bool enabled;
 
   String get _currentLabel => entries
       .firstWhere((e) => e.value == value, orElse: () => entries.first)
@@ -38,8 +42,10 @@ class SettingsSelectRow<T> extends StatelessWidget {
     return SettingsRow(
       label: label,
       description: description,
+      enabled: enabled,
       trailing: PopupMenuButton<T>(
         initialValue: value,
+        enabled: enabled,
         onSelected: onChanged,
         position: PopupMenuPosition.under,
         itemBuilder: (context) => [
