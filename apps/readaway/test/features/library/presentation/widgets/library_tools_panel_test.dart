@@ -166,4 +166,122 @@ void main() {
     expect(find.byTooltip('Mark as favorite'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  group('single-line chip rows', () {
+    Future<void> pumpPanelAtCompactWidth(
+      WidgetTester tester, {
+      ValueChanged<ReadingStatusFilter>? onFilterChanged,
+    }) async {
+      tester.view.physicalSize = const Size(320, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: LibraryToolsPanel(
+                state: LibraryState(recentDocuments: [document]),
+                searchController: TextEditingController(),
+                selecting: false,
+                onSearchChanged: (_) {},
+                onFilterChanged: onFilterChanged ?? (_) {},
+                onSortChanged: (_) {},
+                onSortOrderToggled: () {},
+                onViewModeChanged: (_) {},
+                onReset: () {},
+                onSelectMode: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('filter chips never reflow onto a second row', (
+      tester,
+    ) async {
+      await pumpPanelAtCompactWidth(tester);
+
+      final centres = <double>[];
+      for (final filter in ReadingStatusFilter.values) {
+        final chip = tester.getRect(
+          find.byKey(ValueKey('library-filter-${filter.name}')),
+        );
+        centres.add(chip.center.dy);
+      }
+
+      expect(centres, isNotEmpty);
+      expect(
+        centres.toSet().length,
+        1,
+        reason: 'every filter chip must share one horizontal line',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sort and view chips never reflow onto a second row', (
+      tester,
+    ) async {
+      await pumpPanelAtCompactWidth(tester);
+
+      for (final group in [
+        LibrarySortBy.values
+            .map((sort) => ValueKey('library-sort-${sort.name}'))
+            .toList(),
+        LibraryViewMode.values
+            .map((mode) => ValueKey('library-view-${mode.name}'))
+            .toList(),
+      ]) {
+        final centres = group
+            .map(
+              (key) => tester.getRect(find.byKey(key)).center.dy,
+            )
+            .toSet();
+        expect(centres.length, 1, reason: 'chips in a group share one line');
+      }
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('chips past the edge stay reachable by horizontal scroll', (
+      tester,
+    ) async {
+      var selectedFilter = ReadingStatusFilter.all;
+      await pumpPanelAtCompactWidth(
+        tester,
+        onFilterChanged: (filter) => selectedFilter = filter,
+      );
+
+      final favorites = find.byKey(const ValueKey('library-filter-favorites'));
+      final horizontalStrip = find
+          .ancestor(
+            of: favorites,
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      expect(
+        tester.widget<Scrollable>(horizontalStrip).axisDirection,
+        AxisDirection.right,
+      );
+
+      final viewport = tester.getRect(horizontalStrip);
+      expect(tester.getRect(favorites).right, greaterThan(viewport.right));
+
+      await tester.drag(horizontalStrip, const Offset(-1000, 0));
+      await tester.pumpAndSettle();
+
+      final revealedFavorites = tester.getRect(favorites);
+      expect(viewport.contains(revealedFavorites.center), isTrue);
+      expect(
+        tester.state<ScrollableState>(horizontalStrip).position.pixels,
+        greaterThan(0),
+      );
+
+      await tester.tap(favorites);
+      await tester.pump();
+      expect(selectedFilter, ReadingStatusFilter.favorites);
+    });
+  });
 }

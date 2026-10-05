@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/core_widgets.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
 import 'book_cover_widget.dart';
@@ -25,6 +26,27 @@ class BookListTile extends StatelessWidget {
   final VoidCallback? onOpenDetails;
   final bool isSelectMode;
   final bool isSelected;
+
+  /// Cover width for a row rendered at [width] logical pixels.
+  static double coverWidthFor(double width) {
+    return breakpointFromWidth(width).resolve(
+      compact: 68.0,
+      medium: 72.0,
+      expanded: 76.0,
+      wide: 80.0,
+    );
+  }
+
+  /// Horizontal gap between the cover and the content block.
+  static double contentGapFor(double width) {
+    return breakpointFromWidth(width) == AppBreakpoint.compact ? 12.0 : 16.0;
+  }
+
+  /// Distance from the tile's left edge to the title text. Used by the list
+  /// page to align the separator divider with the content.
+  static double contentIndentFor(double width) {
+    return 16.0 + coverWidthFor(width) + contentGapFor(width);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,12 +73,9 @@ class BookListTile extends StatelessWidget {
         hoverColor: appColors.listHoverBackground,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < 400;
-            final coverWidth = compact
-                ? 56.0
-                : constraints.maxWidth >= 700
-                ? 72.0
-                : 64.0;
+            final width = constraints.maxWidth;
+            final compact = breakpointFromWidth(width) == AppBreakpoint.compact;
+            final coverWidth = BookListTile.coverWidthFor(width);
             final coverHeight = coverWidth * 1.5;
             const actionSize = 48.0;
 
@@ -71,7 +90,7 @@ class BookListTile extends StatelessWidget {
                       ),
                     )
                   : null,
-              padding: EdgeInsets.fromLTRB(isSelected ? 13 : 16, 10, 12, 10),
+              padding: EdgeInsets.fromLTRB(isSelected ? 13 : 16, 14, 12, 14),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -88,7 +107,7 @@ class BookListTile extends StatelessWidget {
                     ),
                   ),
 
-                  SizedBox(width: compact ? 10 : 16),
+                  SizedBox(width: contentGapFor(width)),
 
                   // Content details
                   Expanded(
@@ -101,7 +120,7 @@ class BookListTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                             height: 1.25,
                             color: scheme.onSurface,
@@ -114,7 +133,7 @@ class BookListTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 14,
                               height: 1.2,
                               color: scheme.onSurfaceVariant,
                             ),
@@ -136,7 +155,7 @@ class BookListTile extends StatelessWidget {
                               child: Text(
                                 document.formatBadge,
                                 style: TextStyle(
-                                  fontSize: 9.5,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.4,
                                   color: scheme.onSurfaceVariant,
@@ -151,7 +170,7 @@ class BookListTile extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 13,
                                   color: document.isFinished
                                       ? appColors.success
                                       : document.readingStatus ==

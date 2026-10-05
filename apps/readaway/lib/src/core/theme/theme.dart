@@ -42,6 +42,46 @@ class VsCodeThemeExtension extends ThemeExtension<VsCodeThemeExtension> {
   }
 }
 
+/// Shared motion tokens for transitions and micro-interactions.
+///
+/// Durations are sized by the distance and complexity of the change they cover
+/// rather than copied from transition to transition, and the whole set
+/// collapses to [Duration.zero] when the platform "reduce motion"
+/// accessibility setting is enabled.
+@immutable
+class AppMotion {
+  const AppMotion({
+    required this.fast,
+    required this.standard,
+    required this.enter,
+  });
+
+  /// Immediate feedback for small state changes, such as a chip press.
+  final Duration fast;
+
+  /// Layout-level change, such as expanding or collapsing a panel.
+  final Duration standard;
+
+  /// Decelerating curve for content arriving on screen.
+  final Curve enter;
+
+  /// The default token set, or an all-zero set when motion is disabled.
+  factory AppMotion.resolve({required bool disableAnimations}) {
+    if (disableAnimations) {
+      return const AppMotion(
+        fast: Duration.zero,
+        standard: Duration.zero,
+        enter: Curves.linear,
+      );
+    }
+    return const AppMotion(
+      fast: Duration(milliseconds: 140),
+      standard: Duration(milliseconds: 240),
+      enter: Curves.easeOutCubic,
+    );
+  }
+}
+
 /// Convenience extensions on [BuildContext] for accessing the active [VsCodeTheme].
 extension ThemeExtensions on BuildContext {
   /// The active [VsCodeTheme] in the current widget tree.
@@ -54,4 +94,9 @@ extension ThemeExtensions on BuildContext {
 
   /// Whether the active theme is dark.
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+
+  /// Shared motion tokens, resolved against the active motion preference.
+  AppMotion get appMotion => AppMotion.resolve(
+    disableAnimations: MediaQuery.disableAnimationsOf(this),
+  );
 }

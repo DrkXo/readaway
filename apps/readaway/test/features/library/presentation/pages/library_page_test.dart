@@ -15,6 +15,82 @@ import '../../../../helpers/test_mocks.dart';
 void main() {
   setUpAll(registerMockitoDummies);
 
+  testWidgets('library tools expand with the sliver app bar', (tester) async {
+    tester.view.physicalSize = const Size(360, 420);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final mockRepo = MockLibraryRepository();
+    final mockSettings = MockSettingsService();
+    when(mockSettings.settings).thenReturn(const Settings());
+    when(mockRepo.watchRecentDocuments())
+        .thenAnswer((_) => Stream.value(const Success([])));
+
+    final bloc = LibraryBloc(mockRepo, mockSettings);
+    GetIt.I.registerSingleton<LibraryBloc>(bloc);
+    addTearDown(() => GetIt.I.unregister<LibraryBloc>());
+
+    await tester.pumpWidget(const MaterialApp(home: LibraryPage()));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CustomScrollView), findsOneWidget);
+    expect(find.byType(SliverAppBar), findsOneWidget);
+    expect(find.byType(LibraryToolsPanel), findsNothing);
+    final initialAppBar = tester.widget<SliverAppBar>(
+      find.byType(SliverAppBar),
+    );
+    expect(initialAppBar.pinned, isTrue);
+    expect(
+      initialAppBar.expandedHeight,
+      closeTo(initialAppBar.toolbarHeight, 1),
+    );
+    expect(find.text('Library'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('library-tools-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.byType(LibraryToolsPanel), findsOneWidget);
+    final expandedAppBar = tester.widget<SliverAppBar>(
+      find.byType(SliverAppBar),
+    );
+    expect(
+      expandedAppBar.expandedHeight,
+      greaterThan(expandedAppBar.toolbarHeight),
+    );
+
+    final scrollView = tester.widget<CustomScrollView>(
+      find.byType(CustomScrollView),
+    );
+    final scrollController = scrollView.controller!;
+    expect(scrollController.hasClients, isTrue);
+
+    await tester.drag(
+      find.byType(CustomScrollView),
+      const Offset(0, -180),
+    );
+    await tester.pumpAndSettle();
+    expect(scrollController.offset, greaterThan(0));
+
+    await tester.tap(find.byKey(const ValueKey('library-tools-toggle')));
+    await tester.pumpAndSettle();
+    expect(scrollController.offset, closeTo(0, 1));
+
+    await tester.tap(find.byKey(const ValueKey('library-tools-toggle')));
+    await tester.pumpAndSettle();
+    final collapsedAppBar = tester.widget<SliverAppBar>(
+      find.byType(SliverAppBar),
+    );
+    expect(
+      collapsedAppBar.expandedHeight,
+      closeTo(expandedAppBar.toolbarHeight, 1),
+    );
+    expect(find.byType(LibraryToolsPanel), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('library-tools-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.byType(LibraryToolsPanel), findsOneWidget);
+  });
+
   testWidgets('library tools slide into view when opened', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
