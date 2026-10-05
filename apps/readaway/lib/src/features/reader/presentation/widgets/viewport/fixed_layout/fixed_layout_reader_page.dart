@@ -23,6 +23,7 @@ class FixedLayoutReaderPage extends StatefulWidget {
     required this.prefs,
     this.isContinuous = false,
     this.onPageChangeRequested,
+    this.onZoomChanged,
   });
 
   final int index;
@@ -30,6 +31,7 @@ class FixedLayoutReaderPage extends StatefulWidget {
   final ReaderPreferences prefs;
   final bool isContinuous;
   final ValueChanged<int>? onPageChangeRequested;
+  final ValueChanged<bool>? onZoomChanged;
 
   @override
   State<FixedLayoutReaderPage> createState() => _FixedLayoutReaderPageState();
@@ -50,6 +52,7 @@ class _FixedLayoutReaderPageState extends State<FixedLayoutReaderPage>
   @override
   void initState() {
     super.initState();
+    _transformationController.addListener(_reportZoomState);
     _animationController =
         AnimationController(
           vsync: this,
@@ -74,8 +77,15 @@ class _FixedLayoutReaderPageState extends State<FixedLayoutReaderPage>
   @override
   void didUpdateWidget(FixedLayoutReaderPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.index != widget.index ||
-        oldWidget.state.documentPath != widget.state.documentPath) {
+    final pageChanged =
+        oldWidget.index != widget.index ||
+        oldWidget.state.documentPath != widget.state.documentPath;
+    if (pageChanged || oldWidget.isContinuous != widget.isContinuous) {
+      _transformationController.value = Matrix4.identity();
+      _reportZoomState();
+    }
+
+    if (pageChanged) {
       final docPath = widget.state.documentPath;
       if (docPath != null) {
         final cache = FixedLayoutImageCache.instance;
@@ -99,9 +109,16 @@ class _FixedLayoutReaderPageState extends State<FixedLayoutReaderPage>
 
   @override
   void dispose() {
+    _transformationController.removeListener(_reportZoomState);
     _animationController.dispose();
     _transformationController.dispose();
     super.dispose();
+  }
+
+  void _reportZoomState() {
+    widget.onZoomChanged?.call(
+      _transformationController.value.getMaxScaleOnAxis() > 1.01,
+    );
   }
 
   Future<void> _loadPageData() async {

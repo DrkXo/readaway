@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ReadAway Git Hook: pre-push
+# Readaway Git Hook: pre-push
 # Lightweight gate: performs fast static analysis and branch protection checks before push.
 
 set -e

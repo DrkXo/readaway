@@ -5,6 +5,7 @@ import '../../../../features/library/domain/entity/reading_status.dart';
 import '../../../../features/library/domain/entity/recent_document.dart';
 import '../../../../features/settings/domain/entity/reader_preferences.dart';
 import '../../../../features/settings/domain/entity/settings.dart';
+import '../../../../features/settings/domain/entity/tts_lyric_style.dart';
 import '../../tts/tts_models.dart';
 
 part 'hive_adapters.g.dart';
@@ -28,6 +29,12 @@ part 'hive_adapters.g.dart';
   AdapterSpec<Settings>(),
   AdapterSpec<CustomFont>(),
   AdapterSpec<GlobalViewSettings>(),
+
+  // TTS Lyric View
+  AdapterSpec<TtsLyricStyle>(),
+  AdapterSpec<LyricLineAlign>(),
+  AdapterSpec<LyricContentAlign>(),
+  AdapterSpec<LyricAnchorAlign>(),
 
   // TTS Catalog
   AdapterSpec<SherpaTtsModelInfo>(),

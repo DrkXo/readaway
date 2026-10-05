@@ -5,7 +5,7 @@ import '../tts/speech_normalizer.dart';
 import '../tts/tts_chunker.dart';
 
 /// Fluent string extensions for HTML parsing, text extraction, and entity decoding.
-extension ReadAwayHtmlStringX on String {
+extension ReadawayHtmlStringX on String {
   /// Extracts clean display or spoken text from this HTML/XHTML string.
   ///
   /// When [forSpeech], [filterFootnotes], or [swapRubyForSpeech] is true:
@@ -36,7 +36,7 @@ extension ReadAwayHtmlStringX on String {
 }
 
 /// Fluent string extensions for speech normalization, TTS tokenization, and sentence segmentation.
-extension ReadAwaySpeechStringX on String {
+extension ReadawaySpeechStringX on String {
   /// Fully normalizes this text for speech synthesis (expanding currency, percentages,
   /// ordinals, abbreviations, and numbers).
   String normalizeForSpeech() => SpeechNormalizer.normalizeForSpeech(this);

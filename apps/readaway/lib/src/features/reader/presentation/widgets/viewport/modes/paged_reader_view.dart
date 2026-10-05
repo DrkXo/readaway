@@ -181,7 +181,10 @@ class _PagedReaderViewState extends State<PagedReaderView>
           label: 'Page ${currentPage + 1} of ${widget.pageCount}',
           child: Listener(
             behavior: HitTestBehavior.translucent,
-            onPointerSignal: _transitionController.handlePointerSignal,
+            onPointerSignal: (event) {
+              if (widget.controller?.isPageZoomed ?? false) return;
+              _transitionController.handlePointerSignal(event);
+            },
             child: ColoredBox(
               color: effectiveBackground,
               child: ClipRect(child: content),

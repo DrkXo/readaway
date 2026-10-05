@@ -7,16 +7,17 @@ import 'package:get_it/get_it.dart';
 import '../flavors.dart';
 import 'core/services/services.dart';
 import 'features/settings/presentation/bloc/settings/settings_bloc.dart';
+import 'features/settings/presentation/bloc/tts_library/tts_library_bloc.dart';
 import 'router/router.dart';
 
-class ReadAway extends StatefulWidget {
-  const ReadAway({super.key});
+class Readaway extends StatefulWidget {
+  const Readaway({super.key});
 
   @override
-  State<ReadAway> createState() => _ReadAwayState();
+  State<Readaway> createState() => _ReadawayState();
 }
 
-class _ReadAwayState extends State<ReadAway> {
+class _ReadawayState extends State<Readaway> {
   late final AppLifecycleListener _lifecycleListener;
 
   Future<AppExitResponse> _onExitRequested() async {
@@ -52,6 +53,9 @@ class _ReadAwayState extends State<ReadAway> {
         BlocProvider(
           create: (context) =>
               GetIt.I.get<SettingsBloc>()..add(const SettingsEvent.loadPrefs()),
+        ),
+        BlocProvider(
+          create: (context) => GetIt.I.get<TtsLibraryBloc>(),
         ),
       ],
       child: BlocBuilder<SettingsBloc, SettingsState>(

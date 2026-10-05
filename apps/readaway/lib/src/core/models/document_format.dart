@@ -30,7 +30,7 @@ class DocumentFormatInfo {
   bool get isFixedLayout => !isReflowable;
 }
 
-/// Central registry of all formats supported by ReadAway.
+/// Central registry of all formats supported by Readaway.
 class SupportedDocumentFormats {
   SupportedDocumentFormats._();
 

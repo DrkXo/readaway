@@ -4,17 +4,23 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:get_it/get_it.dart';
 import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../core/theme/theme.dart';
 import '../../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../../../settings/domain/entity/settings.dart';
+import '../../../../../settings/presentation/bloc/settings/settings_bloc.dart';
+import '../../../../domain/repositories/reader_tts_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../chrome/reader_running_footer.dart';
 import '../../chrome/reader_running_header.dart';
 import '../../toc/reader_toc_content.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
+import 'chapter_text_layout_builder.dart';
 import 'html/hyper_page_content.dart';
+import 'tts_speech_highlight.dart';
 
 /// Renders a single discrete virtual screen page of a reflowable chapter.
 ///
@@ -53,6 +59,9 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   Size? _lastConstraints;
   StreamSubscription<PaginationState>? _coordinatorSubscription;
   List<double>? _lastOffsets;
+  final ValueNotifier<({int start, int end})?> _activeWordNotifier =
+      ValueNotifier(null);
+  StreamSubscription<TtsWordProgress?>? _wordProgressSubscription;
 
   @override
   void initState() {
@@ -63,7 +72,23 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
     _coordinatorSubscription = widget.coordinator.state.listen(
       (_) => _onCoordinatorUpdated(),
     );
+    if (GetIt.I.isRegistered<ReaderTtsRepository>()) {
+      _wordProgressSubscription = GetIt.I<ReaderTtsRepository>()
+          .wordProgressStream
+          .listen(_onWordProgress);
+    }
     _scheduleMeasurement();
+  }
+
+  void _onWordProgress(TtsWordProgress? progress) {
+    if (!mounted) return;
+    if (progress == null || progress.chapterIndex != widget.chapterIndex) {
+      if (_activeWordNotifier.value != null) {
+        _activeWordNotifier.value = null;
+      }
+      return;
+    }
+    _activeWordNotifier.value = progress.wordRange;
   }
 
   void _onCoordinatorUpdated() {
@@ -99,6 +124,7 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
       _lastOffsets = widget.coordinator.getChapterPageOffsets(
         widget.chapterIndex,
       );
+      _activeWordNotifier.value = null;
       _scheduleMeasurement();
     } else if (oldWidget.prefs != widget.prefs ||
         oldWidget.state.pageHtmls?[widget.chapterIndex] !=
@@ -110,6 +136,8 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   @override
   void dispose() {
     _coordinatorSubscription?.cancel();
+    _wordProgressSubscription?.cancel();
+    _activeWordNotifier.dispose();
     super.dispose();
   }
 
@@ -130,27 +158,26 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
     final contentHeight = renderObject.size.height;
     if (contentHeight <= 0.0) return;
 
-    // Search for RenderHyperBox in the render subtree to extract exact line bounds
+    // Search for RenderHyperBox in the render subtree. It owns the chapter's
+    // laid-out geometry and the canonical character space used for selection.
     final hyperBox = _findHyperBox(renderObject);
-    List<({double top, double bottom})>? lineBounds;
-
-    if (hyperBox != null) {
-      try {
-        final debugLines = hyperBox.debugLines();
-        if (debugLines.isNotEmpty) {
-          lineBounds = debugLines.map((l) {
-            final top = (l['top'] as num).toDouble();
-            final height = (l['height'] as num).toDouble();
-            return (top: top, bottom: top + height);
-          }).toList();
-        }
-      } catch (_) {}
+    if (hyperBox == null) {
+      widget.coordinator.registerChapterHeight(
+        chapterIndex: widget.chapterIndex,
+        contentHeight: contentHeight,
+      );
+      return;
     }
 
-    widget.coordinator.registerChapterHeight(
-      chapterIndex: widget.chapterIndex,
+    final layout = const ChapterTextLayoutBuilder().build(
+      hyperBox: hyperBox,
       contentHeight: contentHeight,
-      lineBounds: lineBounds,
+      viewportHeight: widget.coordinator.currentState.viewportHeight,
+    );
+
+    widget.coordinator.registerChapterLayout(
+      chapterIndex: widget.chapterIndex,
+      layout: layout,
     );
   }
 
@@ -165,8 +192,85 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
     return found;
   }
 
+  /// The highlight for the text being read aloud on this page, or null.
+  ///
+  /// Returns null when nothing is being read, when the spoken range belongs to
+  /// another chapter, or when this chapter has no character mapping. Each of
+  /// those means the same thing: there is no position known well enough to
+  /// draw, so nothing is drawn.
+  TtsSpeechHighlightPainter? _buildSpeechHighlight(
+    double sliceTop,
+    GlobalViewSettings? gvs,
+  ) {
+    final state = widget.state;
+    final range = state.ttsSpeechRange;
+    if (!state.ttsActive || range == null) return null;
+    if (state.ttsChapterIndex != widget.chapterIndex) return null;
+
+    final rects = widget.coordinator.rectsForSpeechRange(
+      widget.chapterIndex,
+      range.start,
+      range.end,
+    );
+
+    final wordFocusEnabled = gvs?.ttsHighlightWordFocus ?? true;
+    List<Rect>? wordRects;
+    if (wordFocusEnabled) {
+      final wordRange = _activeWordNotifier.value;
+      if (wordRange != null) {
+        wordRects = widget.coordinator.rectsForSpeechRange(
+          widget.chapterIndex,
+          wordRange.start,
+          wordRange.end,
+        );
+      }
+    }
+
+    if (rects.isEmpty && (wordRects == null || wordRects.isEmpty)) return null;
+
+    final style = switch (gvs?.ttsHighlightStyle) {
+      'underline' => TtsHighlightStyle.underline,
+      'squiggly' => TtsHighlightStyle.squiggly,
+      'outline' => TtsHighlightStyle.outline,
+      _ => TtsHighlightStyle.highlight,
+    };
+
+    final baseColor = _resolveHighlightColor(context, gvs?.ttsHighlightColor);
+    final sentenceAlpha = gvs?.ttsHighlightSentenceOpacity ?? 0.18;
+    final wordAlpha = gvs?.ttsHighlightWordOpacity ?? 0.38;
+
+    return TtsSpeechHighlightPainter(
+      rects: rects,
+      wordRects: wordRects,
+      sliceTop: sliceTop,
+      color: baseColor.withValues(alpha: sentenceAlpha),
+      wordColor: baseColor.withValues(alpha: wordAlpha),
+      style: style,
+    );
+  }
+
+  static Color _resolveHighlightColor(BuildContext context, String? colorKey) {
+    return switch (colorKey) {
+      'amber' => const Color(0xFFF59E0B),
+      'emerald' => const Color(0xFF10B981),
+      'sky' => const Color(0xFF0EA5E9),
+      'violet' => const Color(0xFF8B5CF6),
+      'rose' => const Color(0xFFF43F5E),
+      _ => Theme.of(context).colorScheme.primary,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
+    GlobalViewSettings? gvs;
+    try {
+      gvs = context.select<SettingsBloc, GlobalViewSettings>(
+        (bloc) => bloc.state.appSettings.globalViewSettings,
+      );
+    } catch (_) {
+      gvs = null;
+    }
+
     final html =
         (widget.state.pageHtmls != null &&
             widget.chapterIndex < widget.state.pageHtmls!.length)
@@ -240,35 +344,47 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
               ? (ReaderTtsMiniPlayerBar.height + 16.0)
               : 0.0;
 
+          final pageContent = OverflowBox(
+            alignment: Alignment.topCenter,
+            minWidth: availableWidth,
+            maxWidth: availableWidth,
+            minHeight: 0.0,
+            maxHeight: double.infinity,
+            child: Transform.translate(
+              offset: Offset(0.0, -sliceTop),
+              child: KeyedSubtree(
+                key: _contentKey,
+                child: HyperPageContent(
+                  html: html,
+                  prefs: widget.prefs,
+                  chapterIndex: widget.chapterIndex,
+                  cacheNamespace:
+                      widget.state.documentPath ?? widget.state.fileName ?? '',
+                  onResolveAssetBytes: widget.onResolveAssetBytes,
+                  onLinkTap: widget.onLinkTap,
+                ),
+              ),
+            ),
+          );
+
           final contentWidget = Align(
             alignment: Alignment.topLeft,
             child: SizedBox(
               width: availableWidth,
               height: sliceHeight,
               child: ClipRect(
-                child: OverflowBox(
-                  alignment: Alignment.topCenter,
-                  minWidth: availableWidth,
-                  maxWidth: availableWidth,
-                  minHeight: 0.0,
-                  maxHeight: double.infinity,
-                  child: Transform.translate(
-                    offset: Offset(0.0, -sliceTop),
-                    child: KeyedSubtree(
-                      key: _contentKey,
-                      child: HyperPageContent(
-                        html: html,
-                        prefs: widget.prefs,
-                        chapterIndex: widget.chapterIndex,
-                        cacheNamespace:
-                            widget.state.documentPath ??
-                            widget.state.fileName ??
-                            '',
-                        onResolveAssetBytes: widget.onResolveAssetBytes,
-                        onLinkTap: widget.onLinkTap,
-                      ),
-                    ),
-                  ),
+                child: ListenableBuilder(
+                  listenable: _activeWordNotifier,
+                  builder: (context, child) {
+                    final highlight = _buildSpeechHighlight(sliceTop, gvs);
+                    return CustomPaint(
+                      // Behind the text, so a highlighted passage reads as marked
+                      // rather than tinted.
+                      painter: highlight,
+                      child: child,
+                    );
+                  },
+                  child: pageContent,
                 ),
               ),
             ),

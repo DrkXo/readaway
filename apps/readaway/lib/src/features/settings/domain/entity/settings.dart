@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'tts_lyric_style.dart';
+
 part 'settings.freezed.dart';
 part 'settings.g.dart';
 
@@ -18,6 +20,10 @@ abstract class Settings with _$Settings {
     @Default(false) bool screenWakeLock,
     @Default([]) List<CustomFont> customFonts,
     @Default(GlobalViewSettings()) GlobalViewSettings globalViewSettings,
+    @Default('grid') String libraryViewMode,
+    @Default('dateOpened') String librarySortBy,
+    @Default(false) bool librarySortAscending,
+    @Default('all') String libraryFilterStatus,
   }) = _Settings;
 
   factory Settings.fromJson(Map<String, dynamic> json) =>
@@ -56,8 +62,15 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default(1.0) double ttsLengthScale,
     @Default(5) int ttsNumSteps,
     @Default(-1) int ttsSleepTimerMinutes,
+    @Default(8) int readerCacheSizeMb,
     @Default(500) int ttsMaxCacheSizeMb,
     @Default(true) bool ttsPrecacheNextChapter,
+    @Default(TtsLyricStyle()) TtsLyricStyle ttsLyricStyle,
+    @Default('highlight') String ttsHighlightStyle,
+    @Default('primary') String ttsHighlightColor,
+    @Default(true) bool ttsHighlightWordFocus,
+    @Default(0.18) double ttsHighlightSentenceOpacity,
+    @Default(0.38) double ttsHighlightWordOpacity,
   }) = _GlobalViewSettings;
 
   factory GlobalViewSettings.fromJson(Map<String, dynamic> json) =>

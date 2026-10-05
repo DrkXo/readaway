@@ -29,9 +29,9 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
   static const _presenceDuration = Duration(milliseconds: 320);
 
   late final AnimationController _presence;
-  late final OverlayPortalController _portalController;
 
   bool _active = false;
+  bool _playerVisible = false;
 
   @override
   void initState() {
@@ -40,16 +40,11 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
       vsync: this,
       duration: _presenceDuration,
     );
-    _portalController = OverlayPortalController();
     final active = context.read<ReaderBloc>().state.ttsActive;
     _active = active;
+    _playerVisible = active;
     if (active) {
       _presence.value = 1;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _active && !_portalController.isShowing) {
-          _portalController.show();
-        }
-      });
     }
   }
 
@@ -62,17 +57,15 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
   void _syncWithActive(bool active) {
     setState(() {
       _active = active;
+      _playerVisible = true;
     });
 
     if (active) {
-      if (!_portalController.isShowing) {
-        _portalController.show();
-      }
       _presence.forward();
     } else {
       _presence.reverse().whenCompleteOrCancel(() {
         if (mounted && _presence.isDismissed && !_active) {
-          _portalController.hide();
+          setState(() => _playerVisible = false);
         }
       });
     }
@@ -83,21 +76,22 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
     return BlocListener<ReaderBloc, ReaderState>(
       listenWhen: (prev, curr) => prev.ttsActive != curr.ttsActive,
       listener: (context, state) => _syncWithActive(state.ttsActive),
-      child: OverlayPortal(
-        controller: _portalController,
-        overlayChildBuilder: (context) {
-          return Positioned.fill(
-            child: IgnorePointer(
-              ignoring: !_active,
-              child: _ReaderTtsExpandableSheet(
-                key: const ValueKey('tts_sheet'),
-                presence: _presence,
-                isChromeVisible: widget.isChromeVisible,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          widget.child ?? const SizedBox.shrink(),
+          if (_playerVisible)
+            Positioned.fill(
+              child: IgnorePointer(
+                ignoring: !_active,
+                child: _ReaderTtsExpandableSheet(
+                  key: const ValueKey('tts_sheet'),
+                  presence: _presence,
+                  isChromeVisible: widget.isChromeVisible,
+                ),
               ),
             ),
-          );
-        },
-        child: widget.child ?? const SizedBox.shrink(),
+        ],
       ),
     );
   }

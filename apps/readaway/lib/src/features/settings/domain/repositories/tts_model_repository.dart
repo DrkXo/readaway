@@ -3,7 +3,11 @@ import '../../../../core/services/tts/catalog/tts_catalog_service.dart';
 import '../../../../core/services/tts/importer/custom_tts_model_importer_service.dart';
 import '../../../../core/services/tts/tts_models.dart';
 
-/// Contract for discovering, downloading, activating, previewing, and importing TTS models.
+/// Contract for discovering, activating, previewing, and importing TTS models.
+///
+/// Downloading is *not* here: `TtsDownloadManager` is the single owner of the
+/// install pipeline and the only writer of installed state, so callers observe
+/// it through its `snapshots` stream instead of a repository method.
 abstract interface class TtsModelRepository {
   /// Fetches the model catalog. When [forceRefresh] is false, returns the cached
   /// or bundled catalog from local storage without network latency.
@@ -18,14 +22,8 @@ abstract interface class TtsModelRepository {
   /// Streams the list of installed (downloaded + custom) models reactively.
   Stream<List<SherpaTtsModelInfo>> watchInstalledModels();
 
-  /// Streams the set of downloaded model IDs reactively.
-  Stream<Set<String>> watchDownloadedModelIds();
-
   /// All catalog models currently in local storage.
   List<SherpaTtsModelInfo> get availableModels;
-
-  /// IDs of models currently downloaded and available offline.
-  Future<Result<Set<String>>> getDownloadedModelIds();
 
   /// Full list of installed (downloaded and custom) models.
   Future<Result<List<SherpaTtsModelInfo>>> getInstalledModels();
@@ -35,18 +33,6 @@ abstract interface class TtsModelRepository {
 
   /// Loads and activates a model by [modelId].
   Future<Result<void>> activateModel(String modelId);
-
-  /// Downloads and extracts a model, emitting progress updates.
-  Stream<ModelDownloadProgress> downloadModel(SherpaTtsModelInfo model);
-
-  /// Pauses an in-progress download of [modelId].
-  Future<void> pauseDownload(String modelId);
-
-  /// Resumes a paused download of [modelId].
-  Future<void> resumeDownload(String modelId);
-
-  /// Cancels an in-progress download of [modelId].
-  Future<void> cancelDownload(String modelId);
 
   /// Deletes a downloaded model from disk and updates storage.
   Future<Result<void>> deleteModel(String modelId);
@@ -59,7 +45,7 @@ abstract interface class TtsModelRepository {
     String sourcePath,
   );
 
-  /// Imports an inspected custom model into ReadAway storage.
+  /// Imports an inspected custom model into Readaway storage.
   Future<Result<SherpaTtsModelInfo>> importCustomModel({
     required CustomModelInspectionResult inspection,
     required String displayName,

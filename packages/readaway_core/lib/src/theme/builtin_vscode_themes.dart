@@ -1,6 +1,6 @@
 import 'package:vscode_theme_parser/vscode_theme_parser.dart';
 
-/// Built-in pre-compiled VS Code themes for ReadAway.
+/// Built-in pre-compiled VS Code themes for Readaway.
 abstract final class BuiltinVsCodeThemes {
   /// Flexoki-Dark-color-theme.json
   static final VsCodeTheme flexokiDark = VsCodeTheme.parse(

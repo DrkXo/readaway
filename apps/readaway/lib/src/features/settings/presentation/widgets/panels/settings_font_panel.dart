@@ -21,7 +21,7 @@ class SettingsFontPanel extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Typeface',
           onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(
@@ -38,7 +38,7 @@ class SettingsFontPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Typography',
           onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(
@@ -63,7 +63,8 @@ class SettingsFontPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        const SettingsSection(
+        const ScopedSettingsSection(
+          scopable: false,
           title: 'Custom fonts',
           rows: [_ManageCustomFontsRow()],
         ),
@@ -88,7 +89,7 @@ class _ManageCustomFontsRow extends StatelessWidget {
               ? 'Add .ttf or .otf fonts'
               : '$count installed',
           trailing: const Icon(LucideIcons.chevronRight),
-          onTap: () => context.pushNamed(appRoutes.customFonts.name),
+          onTap: () => context.push(appRoutes.settingsFonts.path),
         );
       },
     );

@@ -1,22 +1,19 @@
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:cacherine/cacherine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get_it/get_it.dart';
+import 'package:readaway/src/features/reader/presentation/widgets/overlay/reader_footnote_sheet.dart';
 
 import '../../../../../../core/theme/theme.dart';
-import '../../../../../../core/utils/lru_cache.dart';
 import '../../../../../../features/settings/domain/entity/reader_preferences.dart';
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
-import '../../../gestures/reader_gesture_arena.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
-
-import 'package:readaway/src/features/reader/presentation/widgets/overlay/reader_footnote_sheet.dart';
-
 import 'html/hyper_page_content.dart';
 import 'reflowable_scroll_coordinator.dart';
 
@@ -59,9 +56,14 @@ class ReflowableReaderPage extends StatefulWidget {
 class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   late final ScrollController _scrollController;
   late final ReflowableScrollCoordinator _scrollCoordinator;
-  final LruCache<String, List<int>> _assetCache = LruCache<String, List<int>>(
-    maximumSize: 30,
-  );
+  final SimpleLRUCache<String, List<int>> _assetCache = SimpleLRUCache(30);
+
+  /// Single-flight guard for [_resolveAssetBytes].
+  ///
+  /// Plain map by design — entries are transient by definition (they vanish
+  /// when the request settles) and they wrap slow async work, which
+  /// cacherine's `getOrCompute` would serialise behind a per-instance lock
+  /// while also caching the result permanently.
   final Map<String, Future<List<int>?>> _inFlightAssetRequests = {};
 
   @override
@@ -205,9 +207,8 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   Future<List<int>?> _resolveAssetBytes(String src) async {
     if (src.isEmpty) return null;
 
-    if (_assetCache.containsKey(src)) {
-      return _assetCache[src];
-    }
+    final cached = _assetCache.get(src);
+    if (cached != null) return cached;
 
     // 1. Inline data URI (e.g. data:image/png;base64,...)
     if (src.startsWith('data:')) {
@@ -215,7 +216,7 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
       if (commaIndex != -1) {
         try {
           final decoded = base64Decode(src.substring(commaIndex + 1));
-          _assetCache[src] = decoded;
+          _assetCache.set(src, decoded);
           return decoded;
         } catch (_) {}
       }
@@ -237,7 +238,7 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
     try {
       final bytes = await future;
       if (bytes != null && bytes.isNotEmpty) {
-        _assetCache[src] = bytes;
+        _assetCache.set(src, bytes);
       }
       return bytes;
     } finally {
@@ -264,7 +265,6 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   }
 
   void _onTapUrl(BuildContext context, String url) async {
-    ReaderGestureArena.suppressNextTap();
     if (url.isEmpty) return;
 
     final match = RegExp(r'^#page=(\d+)$').firstMatch(url);

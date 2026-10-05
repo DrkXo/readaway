@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cacherine/cacherine.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 
@@ -22,33 +23,9 @@ typedef _CacheKey = (
   int? targetHeight,
 );
 
-final class _LruPageCache {
-  final int maxSize;
-  final _entries = <_CacheKey, Uint8List>{};
-
-  _LruPageCache(this.maxSize);
-
-  Uint8List? get(_CacheKey key) {
-    final v = _entries.remove(key);
-    if (v != null) {
-      _entries[key] = v;
-    }
-    return v;
-  }
-
-  void put(_CacheKey key, Uint8List value) {
-    _entries.remove(key);
-    while (_entries.length >= maxSize && _entries.isNotEmpty) {
-      _entries.remove(_entries.keys.first);
-    }
-    _entries[key] = value;
-  }
-
-  Uint8List? getDefaultRender(int pageIndex) =>
-      get((pageIndex, 1.0, null, null));
-
-  void clear() => _entries.clear();
-}
+/// The cache key for a page rendered at its natural size — the "default"
+/// render used for covers and for `getCachedPageImage`.
+_CacheKey _defaultRenderKey(int pageIndex) => (pageIndex, 1.0, null, null);
 
 /// High-performance PDF reader backed by pdfrx / PDFium.
 class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
@@ -58,7 +35,7 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
   final DocumentMetadata? _metadata;
   final List<OutlineItem> _outline;
 
-  final _LruPageCache _pageCache;
+  final SimpleLRUCache<_CacheKey, Uint8List> _pageCache;
   final Map<int, PageSize> _pageSizeCache;
   Uint8List? _coverBytes;
 
@@ -70,7 +47,12 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
     this._title,
     this._metadata,
     List<OutlineItem> outline = const [],
-  }) : _pageCache = _LruPageCache(imageCacheSize),
+  }) : _pageCache = SimpleLRUCache<_CacheKey, Uint8List>(
+         // cacherine rejects a non-positive cap outright, whereas the old
+         // hand-rolled cache quietly held a single entry for `0`. Clamp so this
+         // public parameter keeps behaving for existing callers.
+         imageCacheSize < 1 ? 1 : imageCacheSize,
+       ),
        _outline = List.unmodifiable(outline);
 
   static String? Function()? _buildPasswordProvider(String? password) {
@@ -294,12 +276,12 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
   Uint8List? loadAsset(String assetPath) {
     if (isDisposed) return null;
     if (assetPath == 'page:0' || assetPath == 'cover') {
-      return _coverBytes ?? _pageCache.getDefaultRender(0);
+      return _coverBytes ?? _pageCache.get(_defaultRenderKey(0));
     }
     if (assetPath.startsWith('page:')) {
       final pageIndex = int.tryParse(assetPath.substring(5));
       if (pageIndex != null) {
-        return _pageCache.getDefaultRender(pageIndex);
+        return _pageCache.get(_defaultRenderKey(pageIndex));
       }
     }
     return null;
@@ -352,7 +334,7 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
     );
     pdfImage.dispose();
 
-    _pageCache.put(cacheKey, bytes);
+    _pageCache.set(cacheKey, bytes);
     if (pageIndex == 0 &&
         scale == 1.0 &&
         targetWidth == null &&
@@ -364,7 +346,7 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
 
   @override
   Uint8List? getCachedPageImage(int pageIndex) =>
-      _pageCache.getDefaultRender(pageIndex);
+      _pageCache.peek(_defaultRenderKey(pageIndex));
 
   @override
   Future<void> dispose() async {

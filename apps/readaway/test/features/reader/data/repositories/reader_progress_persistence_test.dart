@@ -105,5 +105,22 @@ void main() {
         expect(storedDoc.readingStatus, ReadingStatus.finished);
       },
     );
+
+    test(
+      'does not mark the document finished upon entering the last chapter',
+      () async {
+        await repository.updateReadingProgress(
+          path: '/tmp/book.epub',
+          page: 9,
+          pageCount: 10,
+          anchor: const ReadingAnchor(
+            chapterIndex: 9,
+            progressionInChapter: 0.0,
+          ),
+        );
+
+        expect(storedDoc.readingStatus, ReadingStatus.reading);
+      },
+    );
   });
 }

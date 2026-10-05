@@ -1,0 +1,58 @@
+# nFPM package configuration template for Readaway
+name: "readaway"
+arch: "${ARCH}"
+platform: "linux"
+version: "${VERSION_CLEAN}"
+section: "utils"
+priority: "optional"
+maintainer: "DrkXo <https://github.com/DrkXo/readaway>"
+description: "Modern eBook, HTML, Comic, and Text Document Reader"
+vendor: "DrkXo"
+homepage: "https://github.com/DrkXo/readaway"
+license: "GPL-3.0-or-later"
+
+scripts:
+  postinstall: "${SCRIPTS_DIR}/packaging/postinstall.sh"
+  postremove: "${SCRIPTS_DIR}/packaging/postremove.sh"
+
+overrides:
+  deb:
+    depends:
+      - libgtk-3-0
+      - libmpv2 | libmpv1
+      - liblzma5
+  rpm:
+    depends:
+      - gtk3
+      - mpv-libs
+      - xz-libs
+
+contents:
+  - src: "${BUNDLE_DIR}/"
+    dst: "/opt/readaway"
+  - src: "${APP_DIR}/linux/dev.readaway.desktop"
+    dst: "/usr/share/applications/dev.readaway.desktop"
+    file_info:
+      mode: 0644
+  - src: "${APP_DIR}/linux/dev.readaway.xml"
+    dst: "/usr/share/mime/packages/dev.readaway.xml"
+    file_info:
+      mode: 0644
+  - src: "${APP_DIR}/linux/dev.readaway.metainfo.xml"
+    dst: "/usr/share/metainfo/dev.readaway.metainfo.xml"
+    file_info:
+      mode: 0644
+  - src: "${APP_DIR}/assets/logo/foreground.png"
+    dst: "/usr/share/icons/hicolor/256x256/apps/readaway.png"
+    file_info:
+      mode: 0644
+  - src: "${APP_DIR}/assets/logo/foreground.png"
+    dst: "/usr/share/icons/hicolor/256x256/apps/dev.readaway.png"
+    file_info:
+      mode: 0644
+  - type: "symlink"
+    src: "/opt/readaway/Readaway"
+    dst: "/usr/bin/readaway"
+  - type: "symlink"
+    src: "/opt/readaway/Readaway"
+    dst: "/usr/bin/Readaway"

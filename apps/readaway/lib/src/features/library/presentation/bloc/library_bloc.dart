@@ -8,6 +8,7 @@ import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
+import '../../../../core/services/settings_service.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
 import '../../domain/repositories/library_repository.dart';
@@ -20,10 +21,12 @@ part 'library_state.dart';
 class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
   final _log = AppLogger.instance.scope('LibraryBloc');
   final LibraryRepository _repository;
+  final SettingsService _settingsService;
 
   final Set<String> _attemptedCoverPaths = {};
 
-  LibraryBloc(this._repository) : super(const LibraryState()) {
+  LibraryBloc(this._repository, this._settingsService)
+    : super(_stateFromSettings(_settingsService)) {
     on<_LoadRequested>(_onLoadRequested, transformer: restartable());
     on<_AddDocuments>(_onAddDocuments, transformer: droppable());
     on<_OpenDirectly>(_onOpenDirectly, transformer: droppable());
@@ -327,8 +330,10 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     _ViewModeChanged event,
     Emitter<LibraryState> emit,
   ) {
-    if (state.viewMode != event.viewMode) {
-      emit(state.copyWith(viewMode: event.viewMode));
+    if (!state.isSelectMode && state.viewMode != event.viewMode) {
+      final next = state.copyWith(viewMode: event.viewMode);
+      emit(next);
+      _persistPreferences(next);
     }
   }
 
@@ -336,35 +341,55 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     _SortByChanged event,
     Emitter<LibraryState> emit,
   ) {
-    emit(
-      state.copyWith(
-        sortBy: event.sortBy,
-        sortAscending: event.ascending ?? event.sortBy.defaultAscending,
-      ),
+    if (state.isSelectMode) return;
+    final next = state.copyWith(
+      sortBy: event.sortBy,
+      sortAscending: event.ascending ?? event.sortBy.defaultAscending,
     );
+    emit(next);
+    _persistPreferences(next);
   }
 
   void _onSortOrderToggled(
     _SortOrderToggled event,
     Emitter<LibraryState> emit,
   ) {
-    emit(state.copyWith(sortAscending: !state.sortAscending));
+    if (!state.isSelectMode) {
+      final next = state.copyWith(sortAscending: !state.sortAscending);
+      emit(next);
+      _persistPreferences(next);
+    }
   }
 
   void _onFilterChanged(
     _FilterChanged event,
     Emitter<LibraryState> emit,
   ) {
-    if (state.filterStatus != event.filter) {
-      emit(state.copyWith(filterStatus: event.filter));
+    if (!state.isSelectMode && state.filterStatus != event.filter) {
+      final next = state.copyWith(filterStatus: event.filter);
+      emit(next);
+      _persistPreferences(next);
     }
+  }
+
+  void _persistPreferences(LibraryState state) {
+    _settingsService.scheduleSave(
+      _settingsService.settings.copyWith(
+        libraryViewMode: state.viewMode.name,
+        librarySortBy: state.sortBy.name,
+        librarySortAscending: state.sortAscending,
+        libraryFilterStatus: state.filterStatus.name,
+      ),
+    );
   }
 
   void _onSearchQueryChanged(
     _SearchQueryChanged event,
     Emitter<LibraryState> emit,
   ) {
-    emit(state.copyWith(searchQuery: event.query));
+    if (!state.isSelectMode) {
+      emit(state.copyWith(searchQuery: event.query));
+    }
   }
 
   void _onSelectModeToggled(
@@ -468,4 +493,23 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
   ) {
     emit(state.copyWith(noticeMessage: null));
   }
+}
+
+LibraryState _stateFromSettings(SettingsService settingsService) {
+  final settings = settingsService.settings;
+  return LibraryState(
+    viewMode: LibraryViewMode.values.firstWhere(
+      (value) => value.name == settings.libraryViewMode,
+      orElse: () => LibraryViewMode.grid,
+    ),
+    sortBy: LibrarySortBy.values.firstWhere(
+      (value) => value.name == settings.librarySortBy,
+      orElse: () => LibrarySortBy.dateOpened,
+    ),
+    sortAscending: settings.librarySortAscending,
+    filterStatus: ReadingStatusFilter.values.firstWhere(
+      (value) => value.name == settings.libraryFilterStatus,
+      orElse: () => ReadingStatusFilter.all,
+    ),
+  );
 }

@@ -171,7 +171,11 @@ class _MiniPlayerText extends StatelessWidget {
     return BlocBuilder<ReaderBloc, ReaderState>(
       buildWhen: (prev, curr) =>
           prev.ttsCurrentPage != curr.ttsCurrentPage ||
-          prev.currentPage != curr.currentPage,
+          prev.currentPage != curr.currentPage ||
+          // The "reader has looked away" badge follows the placed page, which
+          // moves as the speech does and as the reader does.
+          prev.ttsTargetVirtualPage != curr.ttsTargetVirtualPage ||
+          prev.currentVirtualPage != curr.currentVirtualPage,
       builder: (context, readerState) {
         final ttsPage = readerState.ttsCurrentPage;
         final isOtherPage = readerState.canJumpToTtsPage;

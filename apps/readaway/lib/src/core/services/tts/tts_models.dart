@@ -287,26 +287,9 @@ abstract class SherpaTtsModelInfo with _$SherpaTtsModelInfo {
   }
 }
 
-@freezed
-abstract class ModelDownloadProgress with _$ModelDownloadProgress {
-  const factory ModelDownloadProgress({
-    required String modelId,
-    required ModelDownloadStage stage,
-    required double fraction,
-
-    /// Current download speed in bytes/second, when known.
-    double? speedBytesPerSec,
-
-    /// Estimated time remaining, when known.
-    Duration? timeRemaining,
-  }) = _ModelDownloadProgress;
-}
-
-enum ModelDownloadStage { downloading, paused, extracting, done, failed }
-
 /// Deterministic background_downloader task id for a TTS model's archive
-/// download. Shared by the downloader service (which creates the transfer)
-/// and the settings bloc (which pauses/resumes/cancels it).
+/// download. Derived by the download manager and the TTS service so a transfer
+/// reattaches across process restarts.
 String ttsModelTaskId(String modelId) => 'tts-model-$modelId';
 
 class TtsAudio {

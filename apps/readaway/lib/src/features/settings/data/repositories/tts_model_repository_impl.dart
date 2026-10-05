@@ -57,9 +57,6 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
       _store.watchInstalledModels();
 
   @override
-  Stream<Set<String>> watchDownloadedModelIds() => _store.watchDownloadedIds();
-
-  @override
   String? get activeModelId => _activeModelId ?? _ttsService.activeModel?.id;
 
   @override
@@ -93,18 +90,6 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
       onError: (error, stack) => ServerFailure(
         null,
         'Failed to check for model updates: $error',
-        cause: error,
-        stackTrace: stack,
-      ),
-    );
-  }
-
-  @override
-  Future<Result<Set<String>>> getDownloadedModelIds() {
-    return guard(
-      () async => _store.loadDownloadedIds(),
-      onError: (error, stack) => TtsSynthesisFailure(
-        'Failed to fetch downloaded models: $error',
         cause: error,
         stackTrace: stack,
       ),
@@ -187,23 +172,6 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
   }
 
   @override
-  Stream<ModelDownloadProgress> downloadModel(SherpaTtsModelInfo model) {
-    return _ttsService.downloadModel(model);
-  }
-
-  @override
-  Future<void> pauseDownload(String modelId) =>
-      _ttsService.pauseDownload(modelId);
-
-  @override
-  Future<void> resumeDownload(String modelId) =>
-      _ttsService.resumeDownload(modelId);
-
-  @override
-  Future<void> cancelDownload(String modelId) =>
-      _ttsService.cancelDownload(modelId);
-
-  @override
   Future<Result<void>> deleteModel(String modelId) {
     return guard(
       () async {
@@ -248,16 +216,19 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
           }
         }
 
-        // 3. Fallback for downloaded models when offline
+        // 3. Fallback for downloaded models when offline. Synthesize with the
+        // dedicated preview engine — never swap the shared narration engine
+        // (the old swap-in/swap-out made active reading switch voices for the
+        // duration of the preview).
         final isDownloaded = await _ttsService.isModelDownloaded(modelId);
         if (isDownloaded) {
-          final previousActive = activeModelId;
-          if (_ttsService.activeModel?.id != modelId) {
-            await _ttsService.loadModel(modelId);
+          if (!_ttsService.hasPreviewLoaded ||
+              _ttsService.previewModel?.id != modelId) {
+            await _ttsService.loadPreviewModel(modelId);
           }
 
           final previewWavPath = p.join(cacheDir.path, 'preview_$modelId.wav');
-          final result = await _ttsService.generateToFile(
+          final result = await _ttsService.generatePreviewToFile(
             text: 'Hello. This is what this voice sounds like while reading.',
             outputPath: previewWavPath,
             speakerId: 0,
@@ -265,11 +236,6 @@ class TtsModelRepositoryImpl implements TtsModelRepository {
           );
 
           await _audioPlayer.playPreviewFile(result.file.path);
-
-          if (previousActive != null && previousActive != modelId) {
-            await _ttsService.loadModel(previousActive);
-          }
-
           return;
         }
 

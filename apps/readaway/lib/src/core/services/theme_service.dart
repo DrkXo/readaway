@@ -59,6 +59,7 @@ class ThemeService {
     final scheme = vsTheme.scheme;
     return ThemeData(
       colorScheme: scheme,
+      pageTransitionsTheme: appPageTransitionsTheme,
       extensions: [VsCodeThemeExtension(vsTheme)],
       useMaterial3: true,
       scaffoldBackgroundColor: vsTheme.readerBackground,
@@ -176,6 +177,8 @@ class ThemeService {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       ),
       switchTheme: SwitchThemeData(
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        splashRadius: 18,
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return vsTheme.buttonForeground;

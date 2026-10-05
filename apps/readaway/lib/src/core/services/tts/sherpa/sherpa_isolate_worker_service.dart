@@ -16,6 +16,13 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
   mainSendPort.send(commandPort.sendPort);
 
   sherpa.OfflineTts? tts;
+  // Dedicated engine for voice previews. Loading a preview must NEVER swap
+  // [tts] — the reader synthesizes narration on that engine, so swapping
+  // would make active narration switch voices mid-book.
+  sherpa.OfflineTts? previewTts;
+
+  sherpa.OfflineTts? selectEngine(Map message) =>
+      message['preview'] == true ? previewTts : tts;
 
   void reply(dynamic id, {Object? result, String? error}) {
     mainSendPort.send({
@@ -34,20 +41,7 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
         case 'loadModel':
           tts?.free();
           tts = null;
-
-          final modelConfig = buildSherpaConfigFromMessage(message);
-          final ruleFsts = message['ruleFsts'] as String? ?? '';
-          final ruleFars = message['ruleFars'] as String? ?? '';
-          final silenceScale =
-              (message['silenceScale'] as num?)?.toDouble() ?? 0.2;
-          final config = sherpa.OfflineTtsConfig(
-            model: modelConfig,
-            ruleFsts: ruleFsts,
-            ruleFars: ruleFars,
-            silenceScale: silenceScale,
-            maxNumSenetences: 1,
-          );
-          final newTts = sherpa.OfflineTts(config);
+          final newTts = buildOfflineTtsFromMessage(message);
           tts = newTts;
           reply(
             id,
@@ -58,8 +52,22 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
           );
           break;
 
+        case 'loadPreview':
+          previewTts?.free();
+          previewTts = null;
+          final previewEngine = buildOfflineTtsFromMessage(message);
+          previewTts = previewEngine;
+          reply(
+            id,
+            result: {
+              'sampleRate': previewEngine.sampleRate,
+              'speakerCount': previewEngine.numSpeakers,
+            },
+          );
+          break;
+
         case 'generate':
-          final engine = tts;
+          final engine = selectEngine(message);
           if (engine == null) {
             reply(id, error: 'No model loaded in TTS isolate.');
             break;
@@ -97,7 +105,7 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
           break;
 
         case 'generateToFile':
-          final engine = tts;
+          final engine = selectEngine(message);
           if (engine == null) {
             reply(id, error: 'No model loaded in TTS isolate.');
             break;
@@ -151,7 +159,7 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
           break;
 
         case 'generateToBytes':
-          final engine = tts;
+          final engine = selectEngine(message);
           if (engine == null) {
             reply(id, error: 'No model loaded in TTS isolate.');
             break;
@@ -196,7 +204,7 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
           break;
 
         case 'generateStream':
-          final engine = tts;
+          final engine = selectEngine(message);
           if (engine == null) {
             reply(id, error: 'No model loaded in TTS isolate.');
             break;
@@ -218,6 +226,12 @@ void sherpaTtsIsolateEntryPoint(SendPort mainSendPort) {
         case 'unload':
           tts?.free();
           tts = null;
+          reply(id, result: true);
+          break;
+
+        case 'unloadPreview':
+          previewTts?.free();
+          previewTts = null;
           reply(id, result: true);
           break;
 
@@ -245,6 +259,22 @@ sherpa.OfflineTtsGenerationConfig buildGenerationConfigFromMessage(
     silenceScale: silenceScale,
     numSteps: numSteps,
   );
+}
+
+@visibleForTesting
+sherpa.OfflineTts buildOfflineTtsFromMessage(Map message) {
+  final modelConfig = buildSherpaConfigFromMessage(message);
+  final ruleFsts = message['ruleFsts'] as String? ?? '';
+  final ruleFars = message['ruleFars'] as String? ?? '';
+  final silenceScale = (message['silenceScale'] as num?)?.toDouble() ?? 0.2;
+  final config = sherpa.OfflineTtsConfig(
+    model: modelConfig,
+    ruleFsts: ruleFsts,
+    ruleFars: ruleFars,
+    silenceScale: silenceScale,
+    maxNumSenetences: 1,
+  );
+  return sherpa.OfflineTts(config);
 }
 
 @visibleForTesting

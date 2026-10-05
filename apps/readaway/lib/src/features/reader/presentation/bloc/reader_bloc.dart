@@ -32,6 +32,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   Uri? get coverUri => _coverUri;
 
   StreamSubscription<TtsPlaybackEvent>? _ttsStateSub;
+  StreamSubscription<TtsChunk>? _chunkSub;
 
   /// Guards against re-entrant auto-advance while the next page's TTS is
   /// being spun up (extract text + playText are async).
@@ -52,6 +53,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_TtsErrorOccurred>(_onTtsErrorOccurred);
     on<_JumpToTtsPage>(_onJumpToTtsPage);
     on<_TtsPageAdvanced>(_onTtsPageAdvanced);
+    on<_TtsChunkAdvanced>(_onTtsChunkAdvanced);
     on<_SetSleepTimer>(_onSetSleepTimer);
     on<_TtsSleepTimerFired>(_onTtsSleepTimerFired);
     on<_TtsSleepTimerTick>(_onTtsSleepTimerTick);
@@ -69,6 +71,28 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
           ),
         );
       }
+    });
+
+    // Resolve each spoken chunk to a page as it is read. The chunk's offsets
+    // index the chapter's speech text, which the coordinator holds a
+    // correspondence for. Without this the follow target is never set, so the
+    // page never turns and the reader is never offered a way back.
+    //
+    // The chapter comes from this bloc rather than from the chunk: the chunker
+    // is invoked without a section index, so every chunk reports section 0
+    // regardless of which chapter is playing. `ttsCurrentPage` is the chapter
+    // playback was actually started on.
+    _chunkSub = ttsRepository.currentChunk.listen((chunk) {
+      if (isClosed) return;
+      final chapter = state.ttsCurrentPage;
+      if (chapter == null) return;
+      add(
+        ReaderEvent.ttsChunkAdvanced(
+          chapterIndex: chapter,
+          startOffset: chunk.startOffset,
+          endOffset: chunk.endOffset,
+        ),
+      );
     });
   }
 
@@ -119,6 +143,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _cancelSleepTimer();
     _flushProgress();
     await _ttsStateSub?.cancel();
+    await _chunkSub?.cancel();
     await ttsRepository.stopPipeline();
     await ttsRepository.releaseResources();
     await readerRepository.closeDocument();
@@ -130,6 +155,18 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     _OpenDocument event,
     Emitter<ReaderState> emit,
   ) async {
+    // If a document was already open, properly flush progress and release its resources first.
+    if (state.hasDocument) {
+      _progressDebounceTimer?.cancel();
+      _progressDebounceTimer = null;
+      _cancelSleepTimer();
+      _flushProgress();
+      _coverUri = null;
+      await ttsRepository.stopPipeline();
+      await ttsRepository.releaseResources();
+      await readerRepository.closeDocument();
+    }
+
     // Reset pagination so a stale anchor from a previous document is never
     // saved while the new document is still loading.
     final coordinator = GetIt.I.isRegistered<PaginationCoordinator>()
@@ -475,6 +512,15 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
       add(ReaderEvent.ttsPageAdvanced(pageIndex: pageIndex));
     }
 
+    // Hand the speech text to the pagination coordinator so it can align this
+    // chapter's spoken text against the text the renderer laid out. The same
+    // string is what the chunker will produce offsets into, which is what makes
+    // the resulting page lookup exact rather than approximate.
+    //
+    // Safe to attach before the page has been measured: the coordinator keeps
+    // the text and aligns it when the layout arrives.
+    _paginationCoordinatorOrNull?.attachSpeechText(pageIndex, text);
+
     ttsRepository.start();
     final docPath = state.documentPath ?? state.fileName ?? 'doc';
     final playResult = await ttsRepository.playText(
@@ -564,16 +610,89 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     emit(state.copyWith(ttsCurrentPage: event.pageIndex));
   }
 
-  void _onJumpToTtsPage(
-    _JumpToTtsPage event,
+  /// Resolves the chunk being spoken to a page and a highlight range.
+  ///
+  /// The chunk's offsets index the chapter's speech text, and the pagination
+  /// coordinator holds the correspondence from that text to what the renderer
+  /// laid out. Both the page and the highlight therefore come from one lookup
+  /// into that correspondence, with no comparing of spoken words against
+  /// on-screen text.
+  ///
+  /// Nothing is emitted when the chapter has no correspondence yet. The page is
+  /// measured on the UI thread while this arrives from the speech engine, so
+  /// the first chunks routinely land before the mapping exists. Emitting a
+  /// guess would scroll the reader to page zero, which is worse than not
+  /// following for a moment.
+  void _onTtsChunkAdvanced(
+    _TtsChunkAdvanced event,
     Emitter<ReaderState> emit,
   ) {
-    final target = state.ttsCurrentPage;
-    if (target != null && target >= 0 && target < state.pageCount) {
-      emit(state.copyWith(currentPage: target));
-      _precachePages(target);
-      _scheduleProgressSync(target);
+    final chapter = event.chapterIndex;
+    final coordinator = _paginationCoordinatorOrNull;
+    if (coordinator == null) return;
+    if (coordinator.speechMapFor(chapter) == null) return;
+
+    final targetPage = coordinator.globalPageForSpeechOffset(
+      chapter,
+      event.startOffset,
+    );
+
+    emit(
+      state.copyWith(
+        ttsSpeechRange: (start: event.startOffset, end: event.endOffset),
+        ttsTargetVirtualPage: targetPage ?? state.ttsTargetVirtualPage,
+      ),
+    );
+
+    if (targetPage != null && targetPage != state.ttsTargetVirtualPage) {
+      _precachePages(chapter);
     }
+  }
+
+  /// Drops the follow target and highlight once they can no longer be trusted.
+  ///
+  /// Left in place they would pin the viewport to a page the reader chose to
+  /// leave, and would paint a highlight over text nobody is reading aloud.
+  void _clearTtsFollowState(Emitter<ReaderState> emit) {
+    if (state.ttsSpeechRange == null && state.ttsTargetVirtualPage == null) {
+      return;
+    }
+    emit(state.copyWith(ttsSpeechRange: null, ttsTargetVirtualPage: null));
+  }
+
+  PaginationCoordinator? get _paginationCoordinatorOrNull =>
+      GetIt.I.isRegistered<PaginationCoordinator>()
+      ? GetIt.I<PaginationCoordinator>()
+      : null;
+
+  /// Returns the reader to the text being read aloud.
+  ///
+  /// Moves to the page the speech was last placed on rather than to the start
+  /// of its chapter, since the reader who looked ahead wants the passage being
+  /// read, not the top of the section. Falls back to the chapter when nothing
+  /// has been placed, which is the case for a document with no character
+  /// mapping.
+  ///
+  /// Dropping the follow target on the way makes the viewport scroll once, to
+  /// the reader's own page, instead of applying a target it has just reached.
+  /// The next chunk restores it, so following resumes from where the speech
+  /// actually is rather than from the start of the chapter.
+  void _onJumpToTtsPage(_JumpToTtsPage event, Emitter<ReaderState> emit) {
+    final chapter = state.ttsCurrentPage;
+    if (chapter == null || chapter < 0 || chapter >= state.pageCount) return;
+
+    final follow = state.ttsTargetVirtualPage;
+    emit(
+      state.copyWith(
+        currentPage: chapter,
+        // Preserved when nothing was placed: a null follow page means the
+        // chapter was never measured, not that the reader has no page.
+        currentVirtualPage: follow ?? state.currentVirtualPage,
+        ttsTargetVirtualPage: null,
+      ),
+    );
+    _precachePages(chapter);
+    _scheduleProgressSync(follow ?? chapter);
   }
 
   /// Stops playback, terminates worker isolates, and hides the TTS player.
@@ -584,6 +703,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     await ttsRepository.releaseResources();
     _cancelSleepTimer();
     emit(state.copyWith(ttsActive: false, ttsCurrentPage: null));
+    _clearTtsFollowState(emit);
   }
 
   void _onSetSleepTimer(

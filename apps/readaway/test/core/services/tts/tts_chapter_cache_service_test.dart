@@ -256,5 +256,43 @@ void main() {
         expect(await file.exists(), false);
       },
     );
+
+    test('calculateBookCacheSizeBytes computes accurate byte count for specific book', () async {
+      const bookPath1 = '/books/book1.epub';
+      const bookPath2 = '/books/book2.epub';
+
+      final file1 = await cacheService.getChunkFile(
+        bookPath: bookPath1,
+        chapterIndex: 0,
+        voice: sampleVoice,
+        chunkIndex: 0,
+      );
+      final file2 = await cacheService.getChunkFile(
+        bookPath: bookPath2,
+        chapterIndex: 0,
+        voice: sampleVoice,
+        chunkIndex: 0,
+      );
+
+      await file1.parent.create(recursive: true);
+      await file2.parent.create(recursive: true);
+
+      await file1.writeAsBytes(List.filled(150 * 1024, 1));
+      await file2.writeAsBytes(List.filled(300 * 1024, 2));
+
+      final sizeBook1 = await cacheService.calculateBookCacheSizeBytes(
+        bookPath1,
+      );
+      final sizeBook2 = await cacheService.calculateBookCacheSizeBytes(
+        bookPath2,
+      );
+      final sizeNonExistent = await cacheService.calculateBookCacheSizeBytes(
+        '/books/none.epub',
+      );
+
+      expect(sizeBook1, equals(150 * 1024));
+      expect(sizeBook2, equals(300 * 1024));
+      expect(sizeNonExistent, equals(0));
+    });
   });
 }

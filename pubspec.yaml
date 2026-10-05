@@ -17,6 +17,31 @@ dev_dependencies:
 
 dependency_overrides:
   cli_util: ^0.5.0
+  # Point at the in-tree DrkXo/hyper_render submodule, which adds
+  # RenderHyperBox.debugLineFragments() — the per-line fragments that actually
+  # got positioned. The submodule is pinned by gitlink to the same commit that
+  # pub.git used before, so this is a source-location swap, not a version bump.
+  #
+  # Why a submodule: edits inside packages/hyper_render are picked up by the
+  # app on the next hot restart with no `pub get`, and `git submodule status`
+  # / a second `git diff` inside the checkout makes local fork changes
+  # reviewable. Melos never sees it (it is absent from the `workspace:` list
+  # below), so it is never versioned or published as a first-party package.
+  #
+  # hyper_render_core MUST be overridden too, and this is not optional:
+  # `hyper_render` reaches core through its own
+  # `dependency_overrides: hyper_render_core: path: packages/hyper_render_core`.
+  # Pub only honours overrides from the root package of a resolution, so that
+  # nested path is discarded and core would resolve from pub.dev — the build
+  # would succeed and the added methods would simply be missing at runtime.
+  #
+  # Requires `git submodule update --init --recursive` after cloning.
+  hyper_render:
+    path: packages/hyper_render
+  hyper_render_core:
+    path: packages/hyper_render/packages/hyper_render_core
+  hyper_render_devtools:
+    path: packages/hyper_render/packages/hyper_render_devtools
 
 melos:
   ide:
@@ -30,7 +55,7 @@ melos:
   command:
     bootstrap:
       hooks:
-        post: bash scripts/setup_hooks.sh
+        post: bash scripts/setup_hooks.sh && fvm exec melos codegen
 
     version:
       # Link commits and PRs to the GitHub repository in generated CHANGELOG.md
@@ -59,17 +84,41 @@ melos:
     - apps/*
     - packages/*
 
+  # NOTE: the `packages:` globs above are legacy. Melos 8 derives its package
+  # list exclusively from the pub `workspace:` list at the top of this file —
+  # verified against melos 8.6.0, which never reads `melos.packages`. Adding a
+  # directory to this glob alone does not make melos aware of it.
+  #
+  # `packages/hyper_render` is the DrkXo/hyper_render fork, checked out as a
+  # git submodule. What actually keeps melos out is that it is deliberately
+  # absent from the `workspace:` list above — do not add it. If melos ever
+  # treated it as a first-party workspace package, `melos version` would bump
+  # its version and commit *inside* the submodule (an unpushed commit that
+  # breaks CI's submodule checkout), `melos publish` would try to publish the
+  # fork to pub.dev, and `melos exec -- dart analyze` would lint a third-party
+  # codebase.
+  #
+  # The `ignore:` below is a redundant safety net for that invariant. Note that
+  # melos privacy is driven solely by `publish_to: none` in a package's own
+  # pubspec, which is not an option here: that file lives in the submodule, so
+  # editing it would leave the checkout permanently dirty.
+  #
+  # Consequence: `melos exec` will not run this package's tests. Run them
+  # directly with `cd packages/hyper_render && fvm flutter test`.
+  ignore:
+    - packages/hyper_render
+
   scripts:
     setup:hooks:
       run: bash scripts/setup_hooks.sh
       description: Configure local Git hooks in .githooks directory
 
     analyze:
-      run: melos exec --depends-on="flutter" -- dart analyze --fatal-infos
+      run: melos exec -- dart analyze --fatal-infos
       description: Run dart analyze in all packages
 
     format:
-      run: melos exec --depends-on="flutter" -- dart format --set-exit-if-changed .
+      run: melos exec -- dart format --set-exit-if-changed .
       description: Check formatting in all packages
 
     codegen:
@@ -125,11 +174,11 @@ melos:
     # -------------------------------------------------------------
     build:apk:debug:
       run: melos exec -c 1 --category="app" -- "fvm exec flutter build apk --debug"
-      description: Build debug APK for ReadAway app
+      description: Build debug APK for Readaway app
 
     build:apk:release:
       run: melos exec -c 1 --category="app" -- "fvm exec flutter build apk --release"
-      description: Build release APK for ReadAway app
+      description: Build release APK for Readaway app
 
     build:apk:split:
       run: melos exec -c 1 --category="app" -- "fvm exec flutter build apk --release --split-per-abi"
@@ -137,22 +186,37 @@ melos:
 
     build:linux:
       run: melos exec -c 1 --category="app" -- "fvm exec flutter build linux --release"
-      description: Build Linux binary and clean workspace for ReadAway app
+      description: Build Linux binary and clean workspace for Readaway app
 
     build:linux:appimage:
       run: bash scripts/package_linux.sh
-      description: Build Linux AppImage & tarball for ReadAway app
+      description: Build Linux AppImage & tarball for Readaway app
 
     # -------------------------------------------------------------
     # Packaging & Release Artifact Scripts
     # -------------------------------------------------------------
     package:android:
       run: bash scripts/package_android.sh
-      description: Collect, rename, and package all Android release APKs and AAB
+      description: Collect, rename, and package all Android release APKs
 
-    package:linux:
+    package:linux:appimage:
       run: bash scripts/package_linux.sh
       description: Package Linux bundle into tar.gz and AppImage
+
+    package:linux:deb:
+      run: bash scripts/package_deb_rpm.sh "" "" deb
+      description: Package Linux bundle into Debian (.deb) package
+
+    package:linux:rpm:
+      run: bash scripts/package_deb_rpm.sh "" "" rpm
+      description: Package Linux bundle into Red Hat (.rpm) package
+
+    package:linux:
+      steps:
+        - melos run package:linux:appimage
+        - melos run package:linux:deb
+        - melos run package:linux:rpm
+      description: Package Linux bundle into tar.gz, AppImage, deb, and rpm
 
     package:checksums:
       run: bash scripts/generate_checksums.sh
@@ -169,14 +233,9 @@ melos:
     # Test Scripts
     # -------------------------------------------------------------
     test:
-      run: melos exec --dir-exists="test" --fail-fast -- "fvm exec flutter test --no-pub --coverage"
-      description: Run Flutter tests for a specific package in this project.
-      select-package:
-        flutter: true
-        dir-exists: test
-    test:coverage:
       run: melos exec --dir-exists="test" --fail-fast -- "fvm exec flutter test --no-pub"
-      description: Run Flutter tests for a specific package in this project.
-      select-package:
-        flutter: true
-        dir-exists: test
+      description: Run tests in packages with a test directory
+
+    test:coverage:
+      run: melos exec --dir-exists="test" --fail-fast -- "fvm exec flutter test --no-pub --coverage"
+      description: Run tests with coverage in packages with a test directory

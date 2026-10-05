@@ -72,105 +72,62 @@ class SettingsCustomFontsPage extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.92),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top drag handle
-              const SizedBox(height: 12),
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SettingsSheetHeader(
+          title: 'Custom fonts',
+          leading: SettingsSheetBackButton(),
+        ),
+        Flexible(
+          child: BlocBuilder<SettingsBloc, SettingsState>(
+            buildWhen: (prev, curr) =>
+                prev.appSettings.customFonts != curr.appSettings.customFonts,
+            builder: (context, state) {
+              final fonts = state.appSettings.customFonts;
 
-              // Header: title & close button
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 8, 4),
-                child: Row(
-                  children: [
-                    Text(
-                      'Custom fonts',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(LucideIcons.x),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-
-              Flexible(
-                child: BlocBuilder<SettingsBloc, SettingsState>(
-                  buildWhen: (prev, curr) =>
-                      prev.appSettings.customFonts !=
-                      curr.appSettings.customFonts,
-                  builder: (context, state) {
-                    final fonts = state.appSettings.customFonts;
-
-                    return ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                      children: [
-                        SettingsSection(
-                          title: 'Installed fonts',
-                          rows: [
-                            if (fonts.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Text(
-                                  'No custom fonts yet. Add a .ttf or .otf '
-                                  'file to use it in the reader.',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: scheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              )
-                            else
-                              for (final font in fonts)
-                                SettingsRow(
-                                  label: font.name,
-                                  description: font.path,
-                                  trailing: IconButton(
-                                    icon: const Icon(LucideIcons.trash2),
-                                    tooltip: 'Remove font',
-                                    onPressed: () => _removeFont(context, font),
-                                  ),
-                                ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        FilledButton.icon(
-                          onPressed: () => _addFont(context),
-                          icon: const Icon(LucideIcons.plus),
-                          label: const Text('Add font'),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  SettingsSection(
+                    title: 'Installed fonts',
+                    rows: [
+                      if (fonts.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            'No custom fonts yet. Add a .ttf or .otf '
+                            'file to use it in the reader.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        )
+                      else
+                        for (final font in fonts)
+                          SettingsRow(
+                            label: font.name,
+                            description: font.path,
+                            trailing: IconButton(
+                              icon: const Icon(LucideIcons.trash2),
+                              tooltip: 'Remove font',
+                              onPressed: () => _removeFont(context, font),
+                            ),
+                          ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () => _addFont(context),
+                    icon: const Icon(LucideIcons.plus),
+                    label: const Text('Add font'),
+                  ),
+                ],
+              );
+            },
           ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -65,6 +65,38 @@ class BackGroundDownloaderService {
 
   final Map<String, Transfer> _activeTransfers = {};
 
+  /// Whether a notification permission prompt was already shown this process.
+  /// User-initiated downloads ask once, lazily; repeated/background traffic
+  /// never re-prompts.
+  bool _notificationPermissionRequested = false;
+
+  Future<void> _maybeRequestNotificationPermission({
+    required bool userInitiated,
+  }) async {
+    if (!userInitiated || _notificationPermissionRequested) return;
+    _notificationPermissionRequested = true;
+    try {
+      await _ensurePermission(PermissionType.notifications);
+    } catch (e, st) {
+      _log.w(
+        'Notification permission request failed',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
+  /// Registers [transfer] as active and evicts it when it reaches a final
+  /// status, so [_activeTransfers] never accumulates finished transfers.
+  void _trackTransfer(Transfer transfer) {
+    _activeTransfers[transfer.task.taskId] = transfer;
+    transfer.statusNotifier.addListener(() {
+      if (transfer.statusNotifier.value.isFinalState) {
+        _activeTransfers.remove(transfer.task.taskId);
+      }
+    });
+  }
+
   // ---------------------------------------------------------------------
   // Initialization
   // ---------------------------------------------------------------------
@@ -93,11 +125,18 @@ class BackGroundDownloaderService {
       // Make sure the app's managed downloads folder exists up front.
       await downloadsDirectory;
 
-      // Activates persistent DB tracking + reconciles tasks that finished
-      // or were interrupted while the app was suspended/terminated.
-
-      ///TODO: need to figure out if app should automatically start downloads during app start
-      // await _downloader.start(autoCleanDatabase: autoCleanDatabase);
+      // Activates persistent DB tracking + rehydration of transfers that
+      // finished or were interrupted while the app was suspended/terminated.
+      //
+      // Rescheduling of killed tasks is intentionally OFF: TTS voice
+      // downloads rehydrate as pausable "interrupted" tasks that the user
+      // resumes manually from the UI, instead of silently restarting in the
+      // background at every app launch.
+      await _downloader.start(
+        doTrackTasks: true,
+        doRescheduleKilledTasks: false,
+        autoCleanDatabase: autoCleanDatabase,
+      );
 
       _downloader.configureNotification(
         running: const TaskNotification('Downloading', '{filename}'),
@@ -260,7 +299,7 @@ class BackGroundDownloaderService {
     OnTaskFinishedCallback? onTaskFinished,
   }) async {
     await ensureInitialized();
-    await _ensurePermission(PermissionType.notifications);
+    await _maybeRequestNotificationPermission(userInitiated: userInitiated);
 
     final resolvedOptions =
         options ??
@@ -326,7 +365,7 @@ class BackGroundDownloaderService {
     // getOrStart avoids duplicate enqueues if this is called again for the
     // same logical download (e.g. on a screen rebuild).
     final transfer = await _downloader.transfers.getOrStart(task);
-    _activeTransfers[transfer.task.taskId] = transfer;
+    _trackTransfer(transfer);
 
     if (onProgress != null) {
       transfer.progressNotifier.addListener(() {
@@ -406,13 +445,13 @@ class BackGroundDownloaderService {
     void Function(int succeeded, int failed)? onProgress,
   }) async {
     await ensureInitialized();
-    await _ensurePermission(PermissionType.notifications);
+    await _maybeRequestNotificationPermission(userInitiated: true);
     final transfers = await _downloader.transfers.startAll(
       tasks,
       onProgress: onProgress,
     );
     for (final t in transfers) {
-      _activeTransfers[t.task.taskId] = t;
+      _trackTransfer(t);
     }
     return transfers;
   }
@@ -496,7 +535,7 @@ class BackGroundDownloaderService {
     );
 
     final transfer = await _downloader.transfers.start(task);
-    _activeTransfers[transfer.task.taskId] = transfer;
+    _trackTransfer(transfer);
     return transfer;
   }
 
@@ -575,6 +614,30 @@ class BackGroundDownloaderService {
   List<Transfer> all() => _downloader.transfers.all();
   List<Transfer> active() => _downloader.transfers.active();
   List<Transfer> completed() => _downloader.transfers.completed();
+
+  /// All transfers in [group] that are still active (in-memory or
+  /// rehydrated), including those rehydrated from the database after an app
+  /// restart.
+  List<Transfer> allInGroup(String group) => _downloader.transfers.all(
+    group: group,
+  );
+
+  /// Active (non-final) transfers belonging to [group].
+  List<Transfer> activeForGroup(String group) => _downloader.transfers.active(
+    group: group,
+  );
+
+  /// Resumes every non-final transfer in [group]. Safe for both
+  /// user-paused transfers and tasks that died with the process and were
+  /// rehydrated as `running`/`paused` — `Transfer.resume()` either resumes
+  /// from saved resume data or re-enqueues the task.
+  Future<void> resumeAllInGroup(String group) async {
+    final targets = _downloader.transfers
+        .all(group: group)
+        .where((t) => !t.status.isFinalState)
+        .toList();
+    await Future.wait(targets.map((t) => t.resume()));
+  }
 
   Transfer? forId(String taskId) => _downloader.transfers.forId(taskId);
   Transfer? forUrl(String url) => _downloader.transfers.forUrl(url);

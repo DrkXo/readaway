@@ -1,5 +1,7 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:readaway_core/readaway_core.dart' show TtsChunk;
+import 'package:readaway_core/readaway_core.dart'
+    show TtsChunk, TtsTimeline, TtsWordProgress;
+import 'package:rxdart/rxdart.dart' show ValueStream;
 
 import '../../../../core/result/result.dart';
 import '../../../../core/services/audio/audio_player_service.dart';
@@ -13,11 +15,29 @@ abstract interface class ReaderTtsRepository {
   /// Stream of currently spoken sentence chunk.
   Stream<TtsChunk> get currentChunk;
 
+  /// Real-time progress stream calculating active sentence and word spans as audio plays.
+  Stream<TtsWordProgress?> get wordProgressStream;
+
   /// Stream of all chunks in the current page sentence queue.
   Stream<List<TtsChunk>> get sentenceQueue;
 
   /// Stream of intra-chunk audio position data.
   Stream<PositionData> get positionDataStream;
+
+  /// Playback position on the page-wide axis: the current chunk's start time
+  /// plus the offset within it.
+  ///
+  /// [positionDataStream] restarts at zero for every sentence, because each one
+  /// is a separate track. This does not, so it is the position a lyric view or
+  /// a page scrubber should read.
+  Stream<Duration> get globalPositionStream;
+
+  /// Page-wide timing axis over the audio synthesized so far, or null when no
+  /// chunk has a measured duration yet.
+  TtsTimeline? get timeline;
+
+  /// Emits whenever [timeline] is rebuilt as synthesis measures more chunks.
+  ValueStream<TtsTimeline?> get timelineStream;
 
   /// Stream of current waveform amplitude samples.
   Stream<List<double>> get currentWaveform;

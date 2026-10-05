@@ -1,7 +1,10 @@
 name: readaway_core
-description: "High-performance pure Dart document reading, formatting, and TTS engine for ReadAway."
-version: 0.1.2
+description: "Document reading, formatting, and text-to-speech engine for Readaway."
+version: 1.2.0-dev.1
+publish_to: "none"
 resolution: workspace
+repository: https://github.com/DrkXo/readaway
+issue_tracker: https://github.com/DrkXo/readaway/issues
 
 environment:
   sdk: ^3.13.0
@@ -10,6 +13,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cacherine: ^2.5.0
   collection: ^1.19.0
   meta: ^1.16.0
   path: ^1.9.1
@@ -23,7 +27,7 @@ dependencies:
   markdown: ^7.3.1
   diacritic: ^0.1.6
   jsonc: ^0.0.3
-  vscode_theme_parser: ^0.1.2
+  vscode_theme_parser: ^1.2.0-dev.0
   pdfrx: ^2.6.0
   image: ^4.10.1
 

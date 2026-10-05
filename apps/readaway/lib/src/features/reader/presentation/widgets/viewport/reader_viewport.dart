@@ -16,9 +16,9 @@ import '../../controllers/reader_viewport_controller.dart';
 import '../common/reader_error_view.dart';
 import '../overlay/reader_footnote_sheet.dart';
 import '../tts/reader_tts_mini_player_bar.dart';
+import 'fixed_layout/fixed_layout.dart';
 import 'modes/continuous_reader_view.dart';
 import 'modes/paged_reader_view.dart';
-import 'fixed_layout/fixed_layout.dart';
 import 'reflowable/reflowable_reader_page.dart';
 import 'reflowable/reflowable_virtual_page.dart';
 
@@ -43,16 +43,52 @@ class ReaderViewport extends StatefulWidget {
 
   @override
   State<ReaderViewport> createState() => _ReaderViewportState();
+
+  /// Whether a state change is one the viewport has to react to.
+  ///
+  /// Used for both the listener and the builder on purpose. The listener
+  /// records the page to turn to, but the page is read again during build and
+  /// handed to [PagedReaderView], which is what actually turns. Maintaining two
+  /// predicates lets a field reach one and not the other, and the symptom is
+  /// silent: the state says the speech moved on, the listener updates the
+  /// field, no rebuild happens, and the reader stays where they were.
+  ///
+  /// Reacting more often than strictly needed is harmless. Every call the
+  /// listener makes is a no-op when nothing has actually changed.
+  static bool reactsTo(ReaderState prev, ReaderState curr) =>
+      prev.loading != curr.loading ||
+      prev.error != curr.error ||
+      prev.hasDocument != curr.hasDocument ||
+      prev.pageCount != curr.pageCount ||
+      prev.currentPage != curr.currentPage ||
+      prev.currentVirtualPage != curr.currentVirtualPage ||
+      prev.virtualPageCount != curr.virtualPageCount ||
+      prev.pageHtmls != curr.pageHtmls ||
+      prev.ttsActive != curr.ttsActive ||
+      prev.ttsSpeechRange != curr.ttsSpeechRange ||
+      prev.ttsChapterIndex != curr.ttsChapterIndex ||
+      // The follow target is the only field that moves the page without the
+      // reader having moved it, so it has to reach the builder.
+      prev.ttsTargetVirtualPage != curr.ttsTargetVirtualPage ||
+      prev.isReflowable != curr.isReflowable ||
+      prev.documentPath != curr.documentPath;
 }
 
 class _ReaderViewportState extends State<ReaderViewport> {
   late final PaginationCoordinator _paginationCoordinator;
   StreamSubscription<PaginationState>? _paginationSubscription;
   int _currentGlobalPage = 0;
+
+  /// The last follow target acted on, so the same target is not re-applied.
+  ///
+  /// Null when nothing is being followed. Reset whenever playback stops, which
+  /// [ReaderState.ttsTargetVirtualPage] going null already signals.
+  int? _lastTtsTarget;
   int _lastReportedTotalPages = 0;
   int? _lastInitializedChapterCount;
   double? _lastViewportHeight;
   bool _isPaginationUpdateScheduled = false;
+  String? _lastDocumentPath;
 
   @override
   void initState() {
@@ -176,13 +212,13 @@ class _ReaderViewportState extends State<ReaderViewport> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ReaderBloc, ReaderState>(
-      listenWhen: (prev, curr) =>
-          prev.currentPage != curr.currentPage ||
-          prev.pageCount != curr.pageCount ||
-          prev.currentVirtualPage != curr.currentVirtualPage ||
-          prev.virtualPageCount != curr.virtualPageCount ||
-          prev.isReflowable != curr.isReflowable,
+      listenWhen: ReaderViewport.reactsTo,
       listener: (context, state) {
+        if (_lastDocumentPath != state.documentPath) {
+          _lastDocumentPath = state.documentPath;
+          widget.viewportController.clearPageZoom();
+        }
+
         final isContinuous =
             widget.prefs.effectiveScrollDirection(
                   isReflowable: state.isReflowable,
@@ -197,7 +233,17 @@ class _ReaderViewportState extends State<ReaderViewport> {
         }
 
         if (!isContinuous) {
-          final targetPage = state.currentVirtualPage ?? _currentGlobalPage;
+          final ttsTarget = state.ttsTargetVirtualPage;
+          // Act on the follow target only when the spoken text has moved to a
+          // different page. Treating it as a standing preference would undo
+          // every scroll the reader makes, since a scroll reports itself as a
+          // page change and would immediately be overridden.
+          final ttsMoved = ttsTarget != null && ttsTarget != _lastTtsTarget;
+          _lastTtsTarget = ttsTarget;
+
+          final targetPage = ttsMoved
+              ? ttsTarget
+              : (state.currentVirtualPage ?? _currentGlobalPage);
           _currentGlobalPage = targetPage;
           widget.viewportController.updatePageCount(
             _paginationCoordinator.currentState.totalPages,
@@ -208,18 +254,7 @@ class _ReaderViewportState extends State<ReaderViewport> {
           widget.viewportController.setCurrentPage(state.currentPage);
         }
       },
-      buildWhen: (prev, curr) =>
-          prev.loading != curr.loading ||
-          prev.error != curr.error ||
-          prev.hasDocument != curr.hasDocument ||
-          prev.pageCount != curr.pageCount ||
-          prev.currentPage != curr.currentPage ||
-          prev.currentVirtualPage != curr.currentVirtualPage ||
-          prev.virtualPageCount != curr.virtualPageCount ||
-          prev.pageHtmls != curr.pageHtmls ||
-          prev.ttsActive != curr.ttsActive ||
-          prev.isReflowable != curr.isReflowable ||
-          prev.documentPath != curr.documentPath,
+      buildWhen: ReaderViewport.reactsTo,
       builder: (context, state) {
         if (state.loading) {
           return const AppLoadingView(label: 'Opening document...');
@@ -397,6 +432,12 @@ class _ReaderViewportState extends State<ReaderViewport> {
         state: state,
         prefs: widget.prefs,
         isContinuous: isContinuous,
+        onZoomChanged: isContinuous
+            ? null
+            : (isZoomed) => widget.viewportController.setPageZoom(
+                index,
+                isZoomed,
+              ),
         onPageChangeRequested: (idx) => _onNavigateRequested(
           context,
           state,

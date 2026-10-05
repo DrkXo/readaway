@@ -15,6 +15,7 @@ import '../../services.dart';
 part 'tts_controller_service.cleanup.dart';
 part 'tts_controller_service.pipeline.dart';
 part 'tts_controller_service.playback.dart';
+part 'tts_controller_service.timeline.dart';
 part 'tts_controller_service.voice.dart';
 
 /// Manages the TTS playback pipeline: sentence chunking, lookahead synthesis,
@@ -27,6 +28,7 @@ part 'tts_controller_service.voice.dart';
 ///  - `tts_controller_service.voice.dart`    — voice/rate/pitch selection & settings sync
 ///  - `tts_controller_service.pipeline.dart` — lookahead synthesis pipeline
 ///  - `tts_controller_service.playback.dart` — transport controls (play/pause/seek/skip)
+///  - `tts_controller_service.timeline.dart` — page-wide timing axis over measured audio
 ///  - `tts_controller_service.cleanup.dart`  — temp file & playback-state cleanup
 @lazySingleton
 class TtsControllerService {
@@ -94,6 +96,47 @@ class TtsControllerService {
   );
   final _chunkController = BehaviorSubject<TtsChunk?>();
 
+  /// Mirrors [_currentIndex] as a stream.
+  ///
+  /// Kept in step by [_setCurrentIndex] rather than derived from
+  /// [currentChunk], because resolving a chunk back to its index is a linear
+  /// scan and this emits on every position tick.
+  final _currentIndexController = BehaviorSubject<int>.seeded(-1);
+  ValueStream<int> get currentIndexStream => _currentIndexController.stream;
+
+  /// Page-wide timing axis over the audio synthesized so far, or null before
+  /// the first chunk has a measured duration.
+  ///
+  /// Null is a real state, not a placeholder: the lookahead pipeline synthesizes
+  /// chunks in the background, so for the first second or two of a page there
+  /// is no measured boundary to report. [TtsTimeline.length] is the number of
+  /// leading chunks it covers, which is how a caller tells "nothing measured
+  /// yet" apart from "measured, and that is all of it".
+  TtsTimeline? _timeline;
+  final _timelineController = BehaviorSubject<TtsTimeline?>.seeded(null);
+  TtsTimeline? get timeline => _timeline;
+  ValueStream<TtsTimeline?> get timelineStream => _timelineController.stream;
+
+  /// Playback position on the page-wide axis: the current chunk's start plus the
+  /// offset within it.
+  ///
+  /// This is what a lyric view needs, and what a scrubber over a whole page
+  /// would need. [positionDataStream] alone is not enough — it restarts at zero
+  /// for every chunk, because each sentence is a separate track in the playlist.
+  ///
+  /// Cold: each listener subscribes to the underlying streams independently.
+  /// Emits [Duration.zero] while the timeline is still unmeasured, since there
+  /// is no honest position to report before the first boundary exists.
+  Stream<Duration> get globalPositionStream =>
+      Rx.combineLatest3<TtsTimeline?, int, PositionData, Duration>(
+        _timelineController.stream,
+        _currentIndexController.stream,
+        positionDataStream,
+        (timeline, index, data) => timeline == null
+            ? Duration.zero
+            : timeline.startOf(index) + data.position,
+      );
+
   /// Bumped whenever [_masterQueue] is (re)built so UI can rebuild its sentence list.
   final _queueController = BehaviorSubject<int>.seeded(0);
   late final BehaviorSubject<double> _rateController;
@@ -111,6 +154,63 @@ class TtsControllerService {
       _audioPlayer.positionDataStream;
   ValueStream<TtsPlaybackEvent> get playbackState => _stateController.stream;
   Stream<TtsChunk> get currentChunk => _chunkController.stream.whereNotNull();
+
+  /// Real-time progress stream calculating active sentence and word spans as audio plays.
+  Stream<TtsWordProgress?> get wordProgressStream =>
+      Rx.combineLatest2<TtsChunk?, PositionData, TtsWordProgress?>(
+        _chunkController.stream,
+        positionDataStream,
+        (chunk, data) {
+          if (chunk == null) return null;
+          final chapter =
+              _currentSectionIndex ?? _currentPageIndex ?? chunk.sectionIndex;
+          final words = chunk.words;
+
+          ({int start, int end})? wordRange;
+          String? wordText;
+
+          if (words.isNotEmpty) {
+            final durationMs = data.duration.inMilliseconds > 0
+                ? data.duration.inMilliseconds
+                : (chunk.estimatedDurationMs > 0
+                      ? chunk.estimatedDurationMs
+                      : 1);
+            final positionMs = data.position.inMilliseconds.clamp(
+              0,
+              durationMs,
+            );
+
+            final totalChars = words.fold<int>(
+              0,
+              (sum, w) => sum + w.word.length,
+            );
+            if (totalChars > 0) {
+              final targetChar = (positionMs / durationMs * totalChars).clamp(
+                0.0,
+                totalChars.toDouble(),
+              );
+              var accumulated = 0;
+              for (var i = 0; i < words.length; i++) {
+                accumulated += words[i].word.length;
+                if (targetChar <= accumulated || i == words.length - 1) {
+                  final w = words[i];
+                  wordRange = (start: w.startOffset, end: w.endOffset);
+                  wordText = w.word;
+                  break;
+                }
+              }
+            }
+          }
+
+          return TtsWordProgress(
+            chapterIndex: chapter,
+            chunkIndex: chunk.sentenceIndex,
+            sentenceRange: (start: chunk.startOffset, end: chunk.endOffset),
+            wordRange: wordRange,
+            wordText: wordText,
+          );
+        },
+      ).distinct();
   ValueStream<int> get queueVersion => _queueController.stream;
   ValueStream<List<double>> get currentWaveform => _waveformController.stream;
   double get rate => _rate;
@@ -126,6 +226,18 @@ class TtsControllerService {
                 _lastKnownIndex < _masterQueue.length
             ? _lastKnownIndex
             : null);
+
+  /// Assigns [_currentIndex] and republishes it to [currentIndexStream].
+  ///
+  /// Every write goes through here. Writing the field directly would leave
+  /// [globalPositionStream] reading a stale index, which shows up as a lyric
+  /// highlight that stops following the voice — a bug that only appears on the
+  /// sentence after a skip, and is correspondingly hard to trace back here.
+  void _setCurrentIndex(int index) {
+    _currentIndex = index;
+    if (!_currentIndexController.isClosed) _currentIndexController.add(index);
+  }
+
   TtsVoiceOption? get currentVoice => _voice;
   List<TtsVoiceOption> _cachedInstalledVoices = const [];
   List<TtsVoiceOption> get availableVoices => _voicesController.value.isNotEmpty
@@ -166,5 +278,7 @@ class TtsControllerService {
     await _pitchController.close();
     await _waveformController.close();
     await _pageIndexController.close();
+    await _currentIndexController.close();
+    await _timelineController.close();
   }
 }

@@ -3,7 +3,11 @@ import 'dart:io';
 import 'package:test/test.dart';
 import 'package:vscode_theme_parser/vscode_theme_parser.dart';
 
-const _themesDir = 'test/fixtures/vscode_themes';
+final _themesDir =
+    Directory('packages/vscode_theme_parser/test/fixtures/vscode_themes')
+        .existsSync()
+    ? 'packages/vscode_theme_parser/test/fixtures/vscode_themes'
+    : 'test/fixtures/vscode_themes';
 
 void main() {
   group('JSONC parsing in VsCodeTheme.parse', () {

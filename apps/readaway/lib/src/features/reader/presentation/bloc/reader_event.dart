@@ -21,6 +21,16 @@ abstract class ReaderEvent with _$ReaderEvent {
   const factory ReaderEvent.jumpToTtsPage() = _JumpToTtsPage;
   const factory ReaderEvent.ttsPageAdvanced({required int pageIndex}) =
       _TtsPageAdvanced;
+
+  /// The speech engine began reading a new chunk.
+  ///
+  /// [startOffset] and [endOffset] index the chapter's speech text, the same
+  /// space the pagination coordinator holds a correspondence for.
+  const factory ReaderEvent.ttsChunkAdvanced({
+    required int chapterIndex,
+    required int startOffset,
+    required int endOffset,
+  }) = _TtsChunkAdvanced;
   const factory ReaderEvent.setSleepTimer(Duration duration) = _SetSleepTimer;
   const factory ReaderEvent.ttsSleepTimerFired() = _TtsSleepTimerFired;
   const factory ReaderEvent.ttsSleepTimerTick() = _TtsSleepTimerTick;

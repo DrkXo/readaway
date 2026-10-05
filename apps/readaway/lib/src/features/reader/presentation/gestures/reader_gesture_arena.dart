@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
@@ -18,21 +16,6 @@ enum _ClaimedGesture {
 /// 2. Horizontal/Vertical page drag -> Interactive 1:1 page turning.
 /// 3. Tap -> 3-zone tap actions (Prev, Chrome toggle, Next).
 class ReaderGestureArena extends StatefulWidget {
-  /// Timestamp of the last tap handled by an inner widget (e.g. link).
-  static DateTime _lastSuppressedTapTime = DateTime.fromMillisecondsSinceEpoch(
-    0,
-  );
-
-  /// Call this when an inner widget (such as a link) handles a tap,
-  /// suppressing the arena's own tap action (chrome toggle / page turn).
-  static void suppressNextTap() {
-    _lastSuppressedTapTime = DateTime.now();
-  }
-
-  /// Whether a tap was recently handled by an inner child.
-  static bool get isTapSuppressed =>
-      DateTime.now().difference(_lastSuppressedTapTime).inMilliseconds < 450;
-
   ReaderGestureArena({
     super.key,
     required this.child,
@@ -41,6 +24,8 @@ class ReaderGestureArena extends StatefulWidget {
     this.onPageDragUpdate,
     this.onPageDragEnd,
     this.onPageDragCancel,
+    this.canStartPageDrag,
+    this.canHandleTapAction,
     this.isVerticalPaging = false,
     this.isRtl = false,
     this.swapClickArea = false,
@@ -70,6 +55,12 @@ class ReaderGestureArena extends StatefulWidget {
   onPageDragUpdate;
   final void Function(double velocity)? onPageDragEnd;
   final VoidCallback? onPageDragCancel;
+
+  /// Whether a pointer drag may be claimed for page navigation.
+  final bool Function()? canStartPageDrag;
+
+  /// Whether a pointer tap may trigger a reader tap-zone action.
+  final bool Function()? canHandleTapAction;
 
   /// Paging configuration.
   final bool isVerticalPaging;
@@ -170,7 +161,8 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
 
     if (primaryDelta.abs() >= widget.constants.activationThresholdPx &&
         primaryDelta.abs() >
-            crossDelta.abs() * widget.constants.directionDominanceMultiplier) {
+            crossDelta.abs() * widget.constants.directionDominanceMultiplier &&
+        (widget.canStartPageDrag?.call() ?? true)) {
       // In vertical paging mode, only claim when the inner scroll view is already
       // at its boundary in the drag direction. A negative primaryDelta (drag upward)
       // means going forward (atEnd = true); positive means going backward (atEnd = false).
@@ -196,41 +188,33 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
 
     if (event.pointer != _trackingPointerId) return;
 
-    final renderBox = context.findRenderObject() as RenderBox?;
-    final size = renderBox?.size ?? Size.zero;
-
     switch (_claimed) {
       case _ClaimedGesture.pageDrag:
         widget.onPageDragEnd?.call(_lastVelocity);
         break;
       case _ClaimedGesture.none:
-        // No drag claimed -> evaluate tap
-        final deltaX = (event.localPosition.dx - _startPosition.dx).abs();
-        final deltaY = (event.localPosition.dy - _startPosition.dy).abs();
-        final elapsed = DateTime.now().difference(_startTime).inMilliseconds;
-
-        if (deltaX < 18.0 && deltaY < 18.0 && elapsed < 400 && size.width > 0) {
-          final localX = event.localPosition.dx;
-          final width = size.width;
-          // Defer to microtask so inner recognizers (like link taps in TextSpan)
-          // running during pointer resolution can claim the tap and suppress arena action.
-          scheduleMicrotask(() {
-            if (!mounted) return;
-            if (ReaderGestureArena.isTapSuppressed) return;
-
-            final action = widget.tapZonePolicy.resolveTapAction(
-              localX,
-              width,
-              isRtl: widget.isRtl,
-              swapClickArea: widget.swapClickArea,
-            );
-            widget.onTapAction(action);
-          });
-        }
         break;
     }
 
     _resetGesture();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    if (!widget.enabled) return;
+    if (!(widget.canHandleTapAction?.call() ?? true)) return;
+
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final width = renderBox?.size.width ?? 0.0;
+    if (width <= 0.0) return;
+
+    widget.onTapAction(
+      widget.tapZonePolicy.resolveTapAction(
+        details.localPosition.dx,
+        width,
+        isRtl: widget.isRtl,
+        swapClickArea: widget.swapClickArea,
+      ),
+    );
   }
 
   void _onPointerCancel(PointerCancelEvent event) {
@@ -258,13 +242,17 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
+    return GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onPointerDown: _onPointerDown,
-      onPointerMove: _onPointerMove,
-      onPointerUp: _onPointerUp,
-      onPointerCancel: _onPointerCancel,
-      child: widget.child,
+      onTapUp: _onTapUp,
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: _onPointerDown,
+        onPointerMove: _onPointerMove,
+        onPointerUp: _onPointerUp,
+        onPointerCancel: _onPointerCancel,
+        child: widget.child,
+      ),
     );
   }
 }

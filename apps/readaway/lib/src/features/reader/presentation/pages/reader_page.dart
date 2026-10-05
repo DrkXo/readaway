@@ -198,6 +198,14 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
               final prefs = settingsState.effectiveReaderPrefs(
                 readerState.documentPath,
               );
+              final isContinuous =
+                  prefs.effectiveScrollDirection(
+                        isReflowable: readerState.isReflowable,
+                      ) ==
+                      ReaderScrollDirection.vertical &&
+                  !prefs.effectivePageSnap(
+                    isReflowable: readerState.isReflowable,
+                  );
 
               return CallbackShortcuts(
                 bindings: {
@@ -218,7 +226,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                   autofocus: true,
                   child: Scaffold(
                     key: _scaffoldKey,
-                    drawer: ReaderDrawer(onJumpToPage: jumpToPage),
+                    drawer: ReaderDrawer(onJumpToPage: jumpToChapter),
                     backgroundColor: context.appColors.readerBackground,
                     body: ReaderTtsPlayerOverlay(
                       isChromeVisible: isChromeVisibleNotifier,
@@ -240,6 +248,11 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                     prefs.effectivePageSnap(
                                       isReflowable: readerState.isReflowable,
                                     ),
+                                canStartPageDrag: () =>
+                                    !isContinuous &&
+                                    !viewportController.isPageZoomed,
+                                canHandleTapAction: () =>
+                                    !viewportController.isPageZoomed,
                                 isAtScrollBoundary: isAtScrollBoundary,
                                 onPageDragStart:
                                     viewportController.handleDragStart,
@@ -279,7 +292,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                               onPin: () => setState(
                                                 () => _tocPinned = true,
                                               ),
-                                              onJumpToPage: jumpToPage,
+                                              onJumpToPage: jumpToChapter,
                                             ),
                                         ],
                                       ),
@@ -294,7 +307,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                             onUnpin: () => setState(
                                               () => _tocPinned = false,
                                             ),
-                                            onJumpToPage: jumpToPage,
+                                            onJumpToPage: jumpToChapter,
                                           ),
                                         Expanded(child: bodyContent),
                                       ],
@@ -306,7 +319,6 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                               // 3b. Floating Back-to-TTS Jump Pill
                               ReaderBackToTtsPill(
                                 topOffset: isChromeVisible ? 76.0 : 24.0,
-                                onJumpToTtsPage: jumpToPage,
                               ),
 
                               // 4. Floating Top Bar (Animated Slide + Fade)

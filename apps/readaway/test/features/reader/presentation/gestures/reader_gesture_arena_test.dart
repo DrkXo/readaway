@@ -1,5 +1,7 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:readaway/src/features/reader/domain/gestures/reader_gestures.dart';
 import 'package:readaway/src/features/reader/presentation/gestures/reader_gesture_arena.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 
@@ -137,5 +139,173 @@ void main() {
         await tester.pump();
       },
     );
+
+    testWidgets('does not claim page drag when the child owns the gesture', (
+      tester,
+    ) async {
+      var dragStarted = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 800,
+              child: ReaderGestureArena(
+                isVerticalPaging: false,
+                canStartPageDrag: () => false,
+                onTapAction: (_) {},
+                onPageDragStart: () => dragStarted = true,
+                child: Container(color: Colors.blue),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(ReaderGestureArena)),
+      );
+      await gesture.moveBy(const Offset(-60, 0));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+
+      expect(dragStarted, isFalse);
+    });
+
+    testWidgets('does not trigger tap zones when the child owns the tap', (
+      tester,
+    ) async {
+      var tapActions = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 800,
+              child: ReaderGestureArena(
+                isVerticalPaging: false,
+                canHandleTapAction: () => false,
+                onTapAction: (_) => tapActions++,
+                child: Container(color: Colors.blue),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tapAt(tester.getCenter(find.byType(ReaderGestureArena)));
+      await tester.pump();
+
+      expect(tapActions, 0);
+    });
+
+    testWidgets('child tap is not duplicated as a reader tap-zone action', (
+      tester,
+    ) async {
+      var childActions = 0;
+      var tapActions = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 800,
+              child: ReaderGestureArena(
+                onTapAction: (_) => tapActions++,
+                child: GestureDetector(
+                  onTap: () => childActions++,
+                  child: const ColoredBox(color: Colors.blue),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tapAt(
+        tester.getTopRight(find.byType(ReaderGestureArena)) -
+            const Offset(20, -400),
+      );
+      await tester.pump();
+
+      expect(childActions, 1);
+      expect(tapActions, 0);
+    });
+
+    testWidgets('double tap does not also trigger reader tap zones', (
+      tester,
+    ) async {
+      var tapActions = 0;
+      var doubleTapRecognized = false;
+      const size = Size(400, 800);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: ReaderGestureArena(
+                onTapAction: (_) => tapActions++,
+                child: GestureDetector(
+                  onDoubleTap: () => doubleTapRecognized = true,
+                  child: const ColoredBox(color: Colors.blue),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final point =
+          tester.getTopRight(find.byType(ReaderGestureArena)) -
+          const Offset(20, -400);
+      await tester.tapAt(point);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tapAt(point);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(doubleTapRecognized, isTrue);
+      expect(tapActions, 0);
+    });
+
+    testWidgets('single page-zone tap fires after the double-tap window', (
+      tester,
+    ) async {
+      final tapActions = <ReaderTapAction>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 800,
+              child: ReaderGestureArena(
+                onTapAction: tapActions.add,
+                child: GestureDetector(
+                  onDoubleTap: () {},
+                  child: const ColoredBox(color: Colors.blue),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final point =
+          tester.getTopRight(find.byType(ReaderGestureArena)) -
+          const Offset(20, -400);
+      await tester.tapAt(point);
+      await tester.pump();
+      expect(tapActions, isEmpty);
+
+      await tester.pump(kDoubleTapTimeout);
+      expect(tapActions, [ReaderTapAction.nextPage]);
+    });
   });
 }

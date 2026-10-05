@@ -29,7 +29,14 @@ void main() {
 
     setUp(() {
       repo = MockReaderRepository();
-      cache = FixedLayoutImageCache(maxEntries: 3);
+      // Page images are byte-budgeted, not count-bounded. The 4-byte pages
+      // below fit the budget easily, so this instance's eviction is driven by
+      // the 3-entry ceiling; the weight-bound behaviour gets its own test
+      // further down.
+      cache = FixedLayoutImageCache(
+        budgetBytes: 1024,
+        maxEntries: 3,
+      );
     });
 
     test('caches and returns page image bytes and dimensions', () async {
@@ -86,6 +93,99 @@ void main() {
 
       verify(repo.loadPageImage(any, scale: anyNamed('scale'))).called(3);
     });
+
+    test('evicts by byte weight once the budget is exceeded', () async {
+      // 4 x 8-byte pages = 32 bytes, so the fourth write overflows a 24-byte
+      // budget and page 0 must be dropped even though it is only the 4th entry
+      // — the count ceiling is far above.
+      final weighted = FixedLayoutImageCache(
+        budgetBytes: 24,
+        maxEntries: 100,
+      );
+      when(repo.loadPageImage(any, scale: anyNamed('scale'))).thenAnswer(
+        (_) async => Success(Uint8List(8)),
+      );
+
+      await weighted.getOrLoadImage(repo, '/test.pdf', 0);
+      await weighted.getOrLoadImage(repo, '/test.pdf', 1);
+      await weighted.getOrLoadImage(repo, '/test.pdf', 2);
+      expect(weighted.getCachedImage('/test.pdf', 0), isNotNull);
+
+      await weighted.getOrLoadImage(repo, '/test.pdf', 3); // evicts page 0
+
+      expect(weighted.getCachedImage('/test.pdf', 0), isNull);
+      expect(weighted.getCachedImage('/test.pdf', 1), isNotNull);
+      expect(weighted.getCachedImage('/test.pdf', 2), isNotNull);
+      expect(weighted.getCachedImage('/test.pdf', 3), isNotNull);
+    });
+
+    test('refuses to cache a page larger than the whole budget', () async {
+      // cacherine silently declines to store an entry whose own weight exceeds
+      // maxWeight. A single oversized page must therefore not be cached at
+      // all — and must not wipe out the pages that already fit.
+      final tiny = FixedLayoutImageCache(budgetBytes: 16, maxEntries: 100);
+      when(repo.loadPageImage(0, scale: anyNamed('scale'))).thenAnswer(
+        (_) async => Success(Uint8List(8)),
+      );
+      when(repo.loadPageImage(1, scale: anyNamed('scale'))).thenAnswer(
+        (_) async => Success(Uint8List(64)),
+      );
+
+      await tiny.getOrLoadImage(repo, '/test.pdf', 0);
+      await tiny.getOrLoadImage(repo, '/test.pdf', 1); // 64 > 16, rejected
+
+      expect(tiny.getCachedImage('/test.pdf', 0), isNotNull);
+      expect(tiny.getCachedImage('/test.pdf', 1), isNull);
+    });
+
+    test('configureBudget clamps to the fixed minimum', () {
+      final cache = FixedLayoutImageCache();
+      expect(
+        cache.budgetBytes,
+        kDefaultReaderCacheBytes,
+        reason: 'constructor takes the budget verbatim',
+      );
+
+      cache.configureBudget(1);
+      expect(
+        cache.budgetBytes,
+        kMinReaderCacheBytes,
+        reason: 'a 1-byte pick must not be able to starve the reader',
+      );
+
+      cache.configureBudget(64 * 1024 * 1024);
+      expect(
+        cache.budgetBytes,
+        64 * 1024 * 1024,
+        reason: 'a pick above the floor is honoured as-is',
+      );
+
+      cache.configureBudget(2);
+      expect(
+        cache.budgetBytes,
+        kMinReaderCacheBytes,
+        reason: 'clamping back down to the floor is still a change',
+      );
+    });
+
+    test(
+      'configureBudget discards pages cached under the old budget',
+      () async {
+        when(repo.loadPageImage(any, scale: anyNamed('scale'))).thenAnswer(
+          (_) async => Success(Uint8List(8)),
+        );
+
+        final reconfigurable = FixedLayoutImageCache(
+          budgetBytes: 1024 * 1024,
+          maxEntries: 100,
+        );
+        await reconfigurable.getOrLoadImage(repo, '/test.pdf', 0);
+        expect(reconfigurable.getCachedImage('/test.pdf', 0), isNotNull);
+
+        reconfigurable.configureBudget(32 * 1024 * 1024);
+        expect(reconfigurable.getCachedImage('/test.pdf', 0), isNull);
+      },
+    );
   });
 
   group('ReaderPasswordDialog Widget Tests', () {

@@ -17,6 +17,7 @@ class ReaderViewportController extends ChangeNotifier {
 
   int _currentPage;
   int _pageCount;
+  int? _zoomedPage;
   bool _isAnimating = false;
   bool _isDragging = false;
   double _dragProgress = 0.0;
@@ -47,6 +48,9 @@ class ReaderViewportController extends ChangeNotifier {
   /// Total number of pages in the document.
   int get pageCount => _pageCount;
 
+  /// Whether the active fixed-layout page is zoomed.
+  bool get isPageZoomed => _zoomedPage == _currentPage;
+
   /// Whether an automated transition animation is currently running.
   bool get isAnimating => _isAnimating;
 
@@ -67,6 +71,23 @@ class ReaderViewportController extends ChangeNotifier {
   void setCurrentPage(int index) {
     if (_currentPage == index) return;
     _currentPage = index;
+    _zoomedPage = null;
+    notifyListeners();
+  }
+
+  /// Records zoom only for the currently active page.
+  void setPageZoom(int pageIndex, bool isZoomed) {
+    if (pageIndex != _currentPage) return;
+    final zoomedPage = isZoomed ? pageIndex : null;
+    if (_zoomedPage == zoomedPage) return;
+    _zoomedPage = zoomedPage;
+    notifyListeners();
+  }
+
+  /// Clears zoom ownership when the active document changes.
+  void clearPageZoom() {
+    if (_zoomedPage == null) return;
+    _zoomedPage = null;
     notifyListeners();
   }
 

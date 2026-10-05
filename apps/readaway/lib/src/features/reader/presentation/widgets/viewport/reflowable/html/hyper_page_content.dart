@@ -1,13 +1,13 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:cacherine/cacherine.dart';
 import 'package:flutter/material.dart';
 import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_extensions.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../../core/theme/theme.dart';
-import '../../../../../../../core/utils/lru_cache.dart';
 import '../../../../../../settings/domain/entity/reader_preferences.dart';
 import 'reader_style_resolver.dart';
 import 'reflowable_image_cache.dart';
@@ -82,15 +82,15 @@ class HyperPageContent extends StatefulWidget {
 }
 
 class _HyperPageContentState extends State<HyperPageContent> {
-  static final LruCache<String, String> _transformedHtmlCache =
-      LruCache<String, String>(maximumSize: 40);
+  static final SimpleLRUCache<String, String> _transformedHtmlCache =
+      SimpleLRUCache(40);
 
   /// Cache of fully parsed, CSS-resolved, preference-styled documents.
   /// Multiple page instances of the same chapter (page transitions, adjacent
   /// virtual pages, continuous-scroll chapters) share one immutable
   /// [DocumentNode]; HyperRender only reads the tree during build/layout.
-  static final LruCache<String, DocumentNode> _documentCache =
-      LruCache<String, DocumentNode>(maximumSize: 40);
+  static final SimpleLRUCache<String, DocumentNode> _documentCache =
+      SimpleLRUCache(40);
 
   String _buildDocumentCacheKey() {
     // prefs.hashCode is value-based (freezed). prefs.toJson().hashCode was
@@ -162,7 +162,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
 
   DocumentNode _parseDocument() {
     final cacheKey = _buildDocumentCacheKey();
-    final cached = _documentCache[cacheKey];
+    final cached = _documentCache.get(cacheKey);
     if (cached != null) return cached;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -177,7 +177,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
 
     final cachedKey =
         '${widget.html.length}:${widget.html.hashCode}_${widget.prefs.overrideLayout}';
-    var processedHtml = _transformedHtmlCache[cachedKey];
+    var processedHtml = _transformedHtmlCache.get(cachedKey);
     if (processedHtml == null) {
       // Pre-process HTML to convert SVG image wrappers (commonly used for EPUB covers) into <img> tags
       final preprocessedHtml = _preprocessHtml(widget.html);
@@ -190,7 +190,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
       processedHtml = TextTransformPipeline.defaultPipeline.transform(
         transformCtx,
       );
-      _transformedHtmlCache[cachedKey] = processedHtml;
+      _transformedHtmlCache.set(cachedKey, processedHtml);
     }
 
     // 1. Parse HTML into DocumentNode
@@ -226,7 +226,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
       cacheNamespace: widget.cacheNamespace,
       chapterIndex: widget.chapterIndex,
     );
-    _documentCache[cacheKey] = document;
+    _documentCache.set(cacheKey, document);
     return document;
   }
 

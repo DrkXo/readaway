@@ -1,9 +1,12 @@
 [Desktop Entry]
-Name=ReadAway
-Comment=Modern eBook, HTML, and Text Document Reader
-Exec=Readaway %U
+Name=Readaway
+GenericName=eBook & Document Reader
+Comment=eBook, HTML, Comic, and Text Document Reader
+Exec=Readaway %F
 Icon=readaway
 Terminal=false
 Type=Application
 Categories=Office;Viewer;
-MimeType=application/epub+zip;application/vnd.comicbook+zip;application/x-cbz;application/vnd.comicbook-rar;application/x-cbr;text/plain;text/html;application/xhtml+xml;text/markdown;text/x-markdown;
+StartupNotify=true
+StartupWMClass=dev.readaway
+MimeType=application/epub+zip;application/pdf;application/vnd.comicbook+zip;application/x-cbz;application/vnd.comicbook-rar;application/x-cbr;application/x-cbt;application/x-cb7;text/plain;text/html;application/xhtml+xml;text/markdown;text/x-markdown;

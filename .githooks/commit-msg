@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ReadAway Git Hook: commit-msg
+# Readaway Git Hook: commit-msg
 # Enforces Conventional Commits standard aligned with Melos changelog and semantic versioning.
 
 set -e

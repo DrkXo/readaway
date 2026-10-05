@@ -526,14 +526,14 @@ class EpubDocumentReader
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     _log.d('Disposing EpubDocumentReader for: $filePath');
     super.dispose();
     _sectionHtmlCache.clear();
     _assetCache.clear();
     _cssCache.clear();
     _entriesByName.clear();
-    _inputStream?.close();
+    await _inputStream?.close();
   }
 
   static Uint8List _extractBytes(ArchiveFile file) {

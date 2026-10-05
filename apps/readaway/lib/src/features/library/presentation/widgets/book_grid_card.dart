@@ -5,6 +5,7 @@ import '../../../../core/theme/theme.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
 import 'book_cover_widget.dart';
+import 'book_favorite_badge.dart';
 
 class BookGridCard extends StatelessWidget {
   const BookGridCard({
@@ -29,12 +30,43 @@ class BookGridCard extends StatelessWidget {
     final appColors = context.appColors;
     final scheme = appColors.scheme;
 
+    final String statusLabel;
+    final TextStyle statusStyle;
+    if (document.isFinished) {
+      statusLabel = 'Finished';
+      statusStyle = TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: appColors.success,
+      );
+    } else if (document.readingStatus == ReadingStatus.abandoned) {
+      statusLabel = 'On Hold';
+      statusStyle = TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: appColors.warning,
+      );
+    } else if (document.progressPercent > 0) {
+      statusLabel = document.progressFormatted;
+      statusStyle = TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: scheme.primary,
+      );
+    } else {
+      statusLabel = 'Unread';
+      statusStyle = TextStyle(
+        fontSize: 12,
+        color: scheme.outline,
+      );
+    }
+
     return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.all(6.0),
+        padding: const EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -68,7 +100,7 @@ class BookGridCard extends StatelessWidget {
                         document.formatBadge,
                         style: TextStyle(
                           color: scheme.onInverseSurface,
-                          fontSize: 9,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.4,
                         ),
@@ -98,61 +130,15 @@ class BookGridCard extends StatelessWidget {
                         ),
                       ),
                     )
-                  else ...[
-                    if (document.isFavorite)
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: scheme.inverseSurface.withValues(
-                              alpha: 0.75,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            LucideIcons.star,
-                            size: 13,
-                            color: appColors.warning,
-                          ),
-                        ),
-                      )
-                    else if (document.isFinished)
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: appColors.success,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                LucideIcons.check,
-                                size: 10,
-                                color: appColors.onSuccess,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                'Done',
-                                style: TextStyle(
-                                  color: appColors.onSuccess,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                  else if (onToggleFavorite != null)
+                    Positioned(
+                      top: 2,
+                      right: 2,
+                      child: BookFavoriteBadge(
+                        isFavorite: document.isFavorite,
+                        onToggleFavorite: onToggleFavorite!,
                       ),
-                  ],
+                    ),
                 ],
               ),
             ),
@@ -165,7 +151,7 @@ class BookGridCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 height: 1.2,
                 color: scheme.onSurface,
@@ -173,58 +159,32 @@ class BookGridCard extends StatelessWidget {
             ),
 
             if (document.displayAuthor != null) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
                 document.displayAuthor!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
                 ),
               ),
             ],
 
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
 
             // Progress / Status indicator text
             Row(
               children: [
-                if (document.isFinished)
-                  Text(
-                    'Finished',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: appColors.success,
-                    ),
-                  )
-                else if (document.readingStatus == ReadingStatus.abandoned)
-                  Text(
-                    'On Hold',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: appColors.warning,
-                    ),
-                  )
-                else if (document.progressPercent > 0)
-                  Text(
-                    document.progressFormatted,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: scheme.primary,
-                    ),
-                  )
-                else
-                  Text(
-                    'Unread',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: scheme.outline,
-                    ),
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: Text(
+                    statusLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: statusStyle,
                   ),
+                ),
                 if (document.formattedFileSize.isNotEmpty) ...[
                   Text(
                     ' · ',

@@ -16,7 +16,7 @@ class SettingsLayoutPanel extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Page margins',
           onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(
@@ -32,7 +32,7 @@ class SettingsLayoutPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Paragraph',
           onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(
@@ -51,7 +51,7 @@ class SettingsLayoutPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Text',
           onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(
@@ -68,7 +68,7 @@ class SettingsLayoutPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        SettingsSection(
+        ScopedSettingsSection(
           title: 'Header & Footer',
           onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(

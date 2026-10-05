@@ -273,6 +273,26 @@ at the canonical sources linked in the table above rather than duplicated here:
 If you repackage Readaway and want a fully self-contained notice bundle, copy the
 license files from those repositories alongside this one.
 
+## Vendored Dart package: hyper_render
+
+Unlike the rest of the Dart dependency tree, `hyper_render` is not resolved from a
+package registry. It is checked into this repository as a git submodule at
+[`packages/hyper_render`](packages/hyper_render), pointing at
+[DrkXo/hyper_render](https://github.com/DrkXo/hyper_render) on branch
+`feat/line-fragments`. That fork is itself based on
+[brewkits/hyper_render](https://github.com/brewkits/hyper_render).
+
+| Package | Upstream | License |
+| :--- | :--- | :--- |
+| `hyper_render` | [DrkXo/hyper_render](https://github.com/DrkXo/hyper_render) (fork of [brewkits/hyper_render](https://github.com/brewkits/hyper_render)) | MIT |
+| `hyper_render_core` | same repository, `packages/hyper_render_core` | MIT |
+
+Both are MIT, which is GPL-3.0 compatible, so the combination may be redistributed
+under the GPL-3.0. The full license texts are already committed inside the submodule
+as `packages/hyper_render/LICENSE` and
+`packages/hyper_render/packages/hyper_render_core/LICENSE`, so no action is needed
+beyond keeping those files in place when redistributing.
+
 ## Fonts
 
 Four font families are bundled under

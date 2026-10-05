@@ -24,7 +24,15 @@ class SettingsSwitchRow extends StatelessWidget {
       label: label,
       description: description,
       onTap: onChanged == null ? null : () => onChanged!(!value),
-      trailing: Switch(value: value, onChanged: onChanged),
+      trailing: Transform.scale(
+        scale: 0.8,
+        alignment: Alignment.centerRight,
+        child: Switch(
+          value: value,
+          onChanged: onChanged,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ),
     );
   }
 }

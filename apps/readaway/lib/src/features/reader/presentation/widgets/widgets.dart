@@ -28,8 +28,8 @@ export 'tts/reader_tts_full_player_view.dart';
 export 'tts/reader_tts_mini_player_bar.dart';
 export 'tts/reader_tts_player_overlay.dart';
 export 'tts/tts_bottom_player_controls.dart';
+export 'tts/tts_lyric_view.dart';
 export 'tts/tts_pitch_control_panel.dart';
-export 'tts/tts_sentence_queue_list.dart';
 export 'tts/tts_speed_control_panel.dart';
 export 'tts/waveform_scrubber.dart';
 // Viewport

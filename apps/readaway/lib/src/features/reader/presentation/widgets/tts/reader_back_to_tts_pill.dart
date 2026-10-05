@@ -7,16 +7,11 @@ import '../../bloc/reader_bloc.dart';
 /// A floating pill banner shown when the user has navigated away from the page
 /// actively being read aloud by TTS.
 ///
-/// Tapping the pill navigates the viewport directly to the active TTS page.
+/// Tapping the pill dispatches the jump; the viewport performs the scroll from
+/// the resulting state, so there is a single navigation and one place that
+/// decides where the reader lands.
 class ReaderBackToTtsPill extends StatefulWidget {
-  const ReaderBackToTtsPill({
-    super.key,
-    required this.onJumpToTtsPage,
-    this.topOffset = 76.0,
-  });
-
-  /// Callback executed when the user taps to return to the active TTS playback page.
-  final void Function(int pageIndex) onJumpToTtsPage;
+  const ReaderBackToTtsPill({super.key, this.topOffset = 76.0});
 
   /// Top position in logical pixels.
   final double topOffset;
@@ -90,8 +85,8 @@ class _ReaderBackToTtsPillState extends State<ReaderBackToTtsPill>
           prev.canJumpToTtsPage != curr.canJumpToTtsPage ||
           prev.ttsCurrentPage != curr.ttsCurrentPage,
       builder: (context, state) {
-        final ttsPage = state.ttsCurrentPage;
-        final visible = state.canJumpToTtsPage && ttsPage != null;
+        final pageLabel = state.ttsPageLabel;
+        final visible = state.canJumpToTtsPage && pageLabel != null;
 
         return Positioned(
           top: widget.topOffset,
@@ -111,12 +106,9 @@ class _ReaderBackToTtsPillState extends State<ReaderBackToTtsPill>
                     shadowColor: Colors.black.withValues(alpha: 0.25),
                     child: InkWell(
                       onTap: visible
-                          ? () {
-                              context.read<ReaderBloc>().add(
-                                const ReaderEvent.jumpToTtsPage(),
-                              );
-                              widget.onJumpToTtsPage(ttsPage);
-                            }
+                          ? () => context.read<ReaderBloc>().add(
+                              const ReaderEvent.jumpToTtsPage(),
+                            )
                           : null,
                       borderRadius: BorderRadius.circular(24),
                       child: Container(
@@ -151,7 +143,7 @@ class _ReaderBackToTtsPillState extends State<ReaderBackToTtsPill>
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Back to Audio • Page ${(ttsPage ?? 0) + 1}',
+                              'Back to Audio • Page $pageLabel',
                               style: theme.textTheme.labelMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: scheme.onSurface,

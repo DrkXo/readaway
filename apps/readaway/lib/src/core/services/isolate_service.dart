@@ -109,15 +109,17 @@ class IsolateService {
 
     final id = command['id'];
 
-    instance.sendPort!.send(command);
-
-    final response = await instance.responseSubject.stream
+    final responseFuture = instance.responseSubject.stream
         .whereType<Map<String, dynamic>>()
         .firstWhere(
           (msg) => msg['id'] == id,
           orElse: () =>
               throw IsolateCommandException('No response received for id: $id'),
         );
+
+    instance.sendPort!.send(command);
+
+    final response = await responseFuture;
 
     if (response.containsKey('error')) {
       throw IsolateCommandException(response['error'].toString());
