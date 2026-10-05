@@ -70,46 +70,58 @@ class _TtsViewState extends State<_TtsView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: SegmentedButton<_TtsTab>(
-            segments: const [
-              ButtonSegment(
-                value: _TtsTab.voice,
-                label: Text('Voice'),
-                icon: Icon(Icons.mic, size: 16),
-              ),
-              ButtonSegment(
-                value: _TtsTab.reading,
-                label: Text('Reading'),
-                icon: Icon(Icons.tune, size: 16),
-              ),
-              ButtonSegment(
-                value: _TtsTab.highlight,
-                label: Text('Highlight'),
-                icon: Icon(Icons.border_color_outlined, size: 16),
-              ),
-              ButtonSegment(
-                value: _TtsTab.lyric,
-                label: Text('Lyric'),
-                icon: Icon(Icons.music_note, size: 16),
-              ),
-              ButtonSegment(
-                value: _TtsTab.cache,
-                label: Text('Cache'),
-                icon: Icon(LucideIcons.hardDrive, size: 16),
-              ),
-            ],
-            selected: {_tab},
-            showSelectedIcon: false,
-            expandedInsets: EdgeInsets.zero,
-            onSelectionChanged: (s) {
-              // A segmented button reports an empty selection when the pressed
-              // segment is tapped again; there is nothing to switch to.
-              if (s.isEmpty) return;
-              setState(() => _tab = s.first);
-            },
-          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 600;
+            final selector = SegmentedButton<_TtsTab>(
+              segments: const [
+                ButtonSegment(
+                  value: _TtsTab.voice,
+                  label: Text('Voice'),
+                  icon: Icon(Icons.mic, size: 16),
+                ),
+                ButtonSegment(
+                  value: _TtsTab.reading,
+                  label: Text('Reading'),
+                  icon: Icon(Icons.tune, size: 16),
+                ),
+                ButtonSegment(
+                  value: _TtsTab.highlight,
+                  label: Text('Highlight'),
+                  icon: Icon(Icons.border_color_outlined, size: 16),
+                ),
+                ButtonSegment(
+                  value: _TtsTab.lyric,
+                  label: Text('Lyric'),
+                  icon: Icon(Icons.music_note, size: 16),
+                ),
+                ButtonSegment(
+                  value: _TtsTab.cache,
+                  label: Text('Cache'),
+                  icon: Icon(LucideIcons.hardDrive, size: 16),
+                ),
+              ],
+              selected: {_tab},
+              showSelectedIcon: false,
+              expandedInsets: isNarrow ? null : EdgeInsets.zero,
+              onSelectionChanged: (s) {
+                // A segmented button reports an empty selection when the pressed
+                // segment is tapped again; there is nothing to switch to.
+                if (s.isEmpty) return;
+                setState(() => _tab = s.first);
+              },
+            );
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: isNarrow
+                  ? SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: selector,
+                    )
+                  : selector,
+            );
+          },
         ),
         const Divider(height: 1),
         Expanded(

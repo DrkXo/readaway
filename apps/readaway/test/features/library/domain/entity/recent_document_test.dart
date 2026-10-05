@@ -66,9 +66,14 @@ void main() {
   });
 
   group('RecentDocument isFinished', () {
-    test('is finished when the anchor chapter reaches the last chapter', () {
-      final d = doc(lastReadChapter: 9);
+    test('is finished at the end of the last anchor chapter', () {
+      final d = doc(lastReadChapter: 9, lastReadProgression: 1.0);
       expect(d.isFinished, isTrue);
+    });
+
+    test('is not finished at the start of the last anchor chapter', () {
+      final d = doc(lastReadChapter: 9);
+      expect(d.isFinished, isFalse);
     });
 
     test('is not finished mid-book with an anchor', () {

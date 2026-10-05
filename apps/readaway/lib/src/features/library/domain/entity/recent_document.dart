@@ -61,7 +61,9 @@ abstract class RecentDocument with _$RecentDocument {
     if (readingStatus == ReadingStatus.unread) return false;
     if (pageCount <= 0) return false;
     final hasAnchor = lastReadChapter > 0 || lastReadProgression > 0.0;
-    if (hasAnchor) return lastReadChapter >= pageCount - 1;
+    if (hasAnchor) {
+      return lastReadChapter >= pageCount - 1 && lastReadProgression >= 1.0;
+    }
     return lastReadPage >= pageCount - 1;
   }
 

@@ -462,8 +462,12 @@ class ReaderRepositoryImpl implements ReaderRepository {
         final docs = docsResult.dataOrNull ?? [];
         final doc = docs.where((d) => d.path == path).firstOrNull;
         if (doc != null) {
-          final chapter = anchor?.chapterIndex ?? page;
-          final isFinished = pageCount > 0 && chapter >= pageCount - 1;
+          final isFinished =
+              pageCount > 0 &&
+              (anchor != null
+                  ? anchor.chapterIndex >= pageCount - 1 &&
+                        anchor.progressionInChapter >= 1.0
+                  : page >= pageCount - 1);
           final updated = doc.copyWith(
             lastReadPage: page,
             pageCount: pageCount,

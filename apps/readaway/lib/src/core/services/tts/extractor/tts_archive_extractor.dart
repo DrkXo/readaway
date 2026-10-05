@@ -59,6 +59,19 @@ class TtsArchiveExtractor {
     if (firstSlash == -1) return normalized;
     return normalized.substring(firstSlash + 1);
   }
+
+  static String? safeRelativePath(String entryName) {
+    final normalized = p.posix.normalize(entryName.replaceAll('\\', '/'));
+    if (normalized.isEmpty ||
+        normalized == '.' ||
+        p.posix.isAbsolute(normalized) ||
+        RegExp(r'^[a-zA-Z]:').hasMatch(normalized) ||
+        normalized == '..' ||
+        normalized.startsWith('../')) {
+      return null;
+    }
+    return normalized;
+  }
 }
 
 Future<void> extractModelArchiveWorker(
@@ -70,8 +83,10 @@ Future<void> extractModelArchiveWorker(
   );
   for (final entry in archive.files) {
     if (!entry.isFile) continue;
-    final relative = TtsArchiveExtractor.stripTopLevelDir(entry.name);
-    if (relative.isEmpty) continue;
+    final relative = TtsArchiveExtractor.safeRelativePath(
+      TtsArchiveExtractor.stripTopLevelDir(entry.name),
+    );
+    if (relative == null) continue;
     final outFile = File(p.join(args.destPath, relative));
     await outFile.parent.create(recursive: true);
     await outFile.writeAsBytes(entry.content as List<int>);
@@ -93,11 +108,17 @@ Future<void> extractEspeakArchiveWorker(
   );
   final files = archive.files.where((e) => e.isFile).toList();
   final hasTopLevelDir = files.any(
-    (e) => e.name.replaceAll('\\', '/').startsWith('espeak-ng-data/'),
+    (e) =>
+        TtsArchiveExtractor.safeRelativePath(e.name)?.startsWith(
+          'espeak-ng-data/',
+        ) ??
+        false,
   );
   final basePath = hasTopLevelDir ? args.modelDirPath : args.espeakDirPath;
   for (final entry in files) {
-    final outFile = File(p.join(basePath, entry.name));
+    final relative = TtsArchiveExtractor.safeRelativePath(entry.name);
+    if (relative == null) continue;
+    final outFile = File(p.join(basePath, relative));
     await outFile.parent.create(recursive: true);
     await outFile.writeAsBytes(entry.content as List<int>);
   }
