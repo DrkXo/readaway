@@ -3,13 +3,13 @@ name: Release Build & Publish
 on:
   push:
     tags:
-      - 'readaway-v*'
+      - "readaway-v*"
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Release Tag Name (e.g. readaway-v1.1.0 or v1.1.0)'
+        description: "Release Tag Name (e.g. readaway-v1.1.0 or v1.1.0)"
         required: false
-        default: ''
+        default: ""
 
 concurrency:
   group: release-${{ github.workflow }}-${{ github.ref }}
@@ -43,7 +43,7 @@ jobs:
         run: |
           INPUT_TAG="${{ github.event.inputs.tag_name }}"
           REF_NAME="${{ github.ref_name }}"
-          
+
           if [ -n "$INPUT_TAG" ]; then
             TAG="$INPUT_TAG"
           elif [ "${{ github.ref_type }}" = "tag" ]; then
@@ -52,7 +52,7 @@ jobs:
             RAW_VERSION=$(grep "^version:" apps/readaway/pubspec.yaml | head -n 1 | awk '{print $2}' | cut -d'+' -f1 | tr -d '"' | tr -d "'")
             TAG="v$RAW_VERSION"
           fi
-          
+
           # Clean version tag for title (e.g., readaway-v1.2.0 -> v1.2.0)
           CLEAN_VERSION="$(echo "$TAG" | sed 's/^readaway-//')"
           if [[ ! "$CLEAN_VERSION" =~ ^v ]]; then
@@ -61,7 +61,7 @@ jobs:
 
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "title=Readaway $CLEAN_VERSION" >> $GITHUB_OUTPUT
-          
+
           # Check if prerelease
           if [[ "$TAG" =~ (alpha|beta|rc|dev|preview) ]]; then
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
@@ -93,8 +93,8 @@ jobs:
       - name: Setup Java (JDK 21)
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
 
       - name: Setup Gradle Cache
         uses: gradle/actions/setup-gradle@v3
@@ -132,11 +132,6 @@ jobs:
           dart pub global activate melos
           echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
           melos bootstrap
-
-      - name: Generate Code (Codegen)
-        run: |
-          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
-          melos run codegen
 
       - name: Setup Android Release Keystore
         if: ${{ env.KEYSTORE_BASE64 != '' }}
@@ -236,11 +231,6 @@ jobs:
           dart pub global activate melos
           echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
           melos bootstrap
-
-      - name: Generate Code (Codegen)
-        run: |
-          export PATH="$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin:$GITHUB_WORKSPACE/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$HOME/.pub-cache/bin:$PATH"
-          melos run codegen
 
       - name: Build Linux Release Binary
         run: |
