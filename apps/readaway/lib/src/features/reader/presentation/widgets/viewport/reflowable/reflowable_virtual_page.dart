@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get_it/get_it.dart';
-import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../core/theme/theme.dart';
@@ -18,7 +17,7 @@ import '../../chrome/reader_running_footer.dart';
 import '../../chrome/reader_running_header.dart';
 import '../../toc/reader_toc_content.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
-import 'chapter_text_layout_builder.dart';
+import 'chapter_layout_measurement.dart';
 import 'html/hyper_page_content.dart';
 import 'tts_speech_highlight.dart';
 
@@ -149,47 +148,13 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   }
 
   void _measureAndRegister() {
-    final context = _contentKey.currentContext;
-    if (context == null) return;
-
-    final renderObject = context.findRenderObject();
-    if (renderObject is! RenderBox || !renderObject.hasSize) return;
-
-    final contentHeight = renderObject.size.height;
-    if (contentHeight <= 0.0) return;
-
-    // Search for RenderHyperBox in the render subtree. It owns the chapter's
-    // laid-out geometry and the canonical character space used for selection.
-    final hyperBox = _findHyperBox(renderObject);
-    if (hyperBox == null) {
-      widget.coordinator.registerChapterHeight(
-        chapterIndex: widget.chapterIndex,
-        contentHeight: contentHeight,
-      );
-      return;
-    }
-
-    final layout = const ChapterTextLayoutBuilder().build(
-      hyperBox: hyperBox,
-      contentHeight: contentHeight,
-      viewportHeight: widget.coordinator.currentState.viewportHeight,
-    );
-
-    widget.coordinator.registerChapterLayout(
+    final contentContext = _contentKey.currentContext;
+    if (contentContext == null) return;
+    registerChapterLayoutFromRenderObject(
+      coordinator: widget.coordinator,
       chapterIndex: widget.chapterIndex,
-      layout: layout,
+      root: contentContext.findRenderObject(),
     );
-  }
-
-  RenderHyperBox? _findHyperBox(RenderObject? root) {
-    if (root == null) return null;
-    if (root is RenderHyperBox) return root;
-
-    RenderHyperBox? found;
-    root.visitChildren((child) {
-      found ??= _findHyperBox(child);
-    });
-    return found;
   }
 
   /// The highlight for the text being read aloud on this page, or null.

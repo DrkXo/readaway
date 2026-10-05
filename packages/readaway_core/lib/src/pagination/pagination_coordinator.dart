@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show Rect;
 
@@ -28,6 +29,9 @@ class PaginationCoordinator {
   );
   int _totalPages = 0;
 
+  /// Callers waiting for a chapter's first real measurement, keyed by chapter.
+  final Map<int, List<Completer<void>>> _measurementWaiters = {};
+
   PaginationCoordinator({this._slicer = const PageSlicer()})
     : _stateSubject = BehaviorSubject.seeded(const PaginationState());
 
@@ -36,11 +40,26 @@ class PaginationCoordinator {
   int get chapterCount => _chapterCount;
   ReadingAnchor get currentAnchor => _currentAnchor;
 
+  /// Whether [chapterIndex] has been laid out, so its page count is real.
+  ///
+  /// Unmeasured chapters fall back to a placeholder single page in the global
+  /// page arithmetic below. That placeholder keeps display values defined but
+  /// is never navigation truth: stepping backward off a chapter's first page
+  /// must reach the previous chapter's *last* page, which is unknowable until
+  /// the chapter has been measured.
+  bool isChapterMeasured(int chapterIndex) =>
+      (_chapterHeights[chapterIndex] ?? 0.0) > 0.0;
+
+  /// The measured page count for [chapterIndex], or null when unmeasured.
+  int? measuredPageCount(int chapterIndex) =>
+      isChapterMeasured(chapterIndex) ? _chapterPageCounts[chapterIndex] : null;
+
   void initialize({
     required int chapterCount,
     required double viewportHeight,
     required double contentHeight,
   }) {
+    _completeAllWaiters();
     _chapterCount = chapterCount;
     _viewportHeight = viewportHeight;
     _chapterHeights.clear();
@@ -96,6 +115,7 @@ class PaginationCoordinator {
     _chapterSpeechMaps.remove(chapterIndex);
     _chapterSpeechTexts.remove(chapterIndex);
     _recomputeChapter(chapterIndex);
+    _notifyMeasured(chapterIndex);
     _recomputeTotalPages();
     _emit();
   }
@@ -121,6 +141,7 @@ class PaginationCoordinator {
         ? null
         : layout.lineBounds;
     _recomputeChapter(chapterIndex);
+    _notifyMeasured(chapterIndex);
     _recomputeTotalPages();
     _emit();
   }
@@ -371,6 +392,99 @@ class PaginationCoordinator {
     progressionInChapter: coordinate.progressionInChapter,
   );
 
+  /// The anchor for [globalPage] under the current measurements.
+  ReadingAnchor anchorForGlobalPage(int globalPage) =>
+      createAnchor(coordinateFromGlobalPage(globalPage));
+
+  /// The global page [anchor] resolves to under the current measurements.
+  int globalPageForAnchor(ReadingAnchor anchor) =>
+      coordinateForAnchor(anchor).globalPage;
+
+  /// The anchor one page forward or backward from [current].
+  ///
+  /// Defined in anchor space rather than page-index space, so it stays correct
+  /// while the target chapter is still unmeasured. Stepping backward off a
+  /// chapter's first page yields the previous chapter's end
+  /// (`progressionInChapter == 1.0`) rather than its page 0; that anchor
+  /// resolves to the last page once the chapter has been measured.
+  ///
+  /// Returns [current] unchanged at the document's first or last page.
+  ReadingAnchor anchorForPageStep(
+    ReadingAnchor current, {
+    required bool forward,
+  }) {
+    if (_chapterCount <= 0) return current;
+    final coordinate = coordinateForAnchor(current);
+    final lastChapter = _chapterCount - 1;
+
+    if (forward) {
+      if (coordinate.pageInChapter < coordinate.totalPagesInChapter - 1) {
+        return _anchorForPageInChapter(
+          coordinate.chapterIndex,
+          coordinate.pageInChapter + 1,
+        );
+      }
+      if (coordinate.chapterIndex >= lastChapter) return current;
+      return ReadingAnchor(
+        chapterIndex: coordinate.chapterIndex + 1,
+        progressionInChapter: 0.0,
+      );
+    }
+
+    if (coordinate.pageInChapter > 0) {
+      return _anchorForPageInChapter(
+        coordinate.chapterIndex,
+        coordinate.pageInChapter - 1,
+      );
+    }
+    if (coordinate.chapterIndex <= 0) return current;
+    return ReadingAnchor(
+      chapterIndex: coordinate.chapterIndex - 1,
+      progressionInChapter: 1.0,
+    );
+  }
+
+  ReadingAnchor _anchorForPageInChapter(int chapterIndex, int pageInChapter) {
+    final pages = _chapterPageCounts[chapterIndex] ?? 1;
+    return ReadingAnchor(
+      chapterIndex: chapterIndex,
+      progressionInChapter: pages > 1 ? pageInChapter / (pages - 1) : 0.0,
+    );
+  }
+
+  /// Completes once [chapterIndex] has a real page count.
+  ///
+  /// Returns an already-completed future when the chapter is measured. This is
+  /// how a backward boundary step holds the current page until the previous
+  /// chapter's last page is knowable.
+  ///
+  /// Pending waiters are released on [initialize], [reset], and [dispose], so
+  /// callers must re-check [isChapterMeasured] before acting on the result.
+  Future<void> ensureChapterMeasured(int chapterIndex) {
+    if (isChapterMeasured(chapterIndex)) return Future.value();
+    final completer = Completer<void>();
+    (_measurementWaiters[chapterIndex] ??= <Completer<void>>[]).add(completer);
+    return completer.future;
+  }
+
+  void _notifyMeasured(int chapterIndex) {
+    if (!isChapterMeasured(chapterIndex)) return;
+    final waiters = _measurementWaiters.remove(chapterIndex);
+    if (waiters == null) return;
+    for (final completer in waiters) {
+      if (!completer.isCompleted) completer.complete();
+    }
+  }
+
+  void _completeAllWaiters() {
+    for (final waiters in _measurementWaiters.values) {
+      for (final completer in waiters) {
+        if (!completer.isCompleted) completer.complete();
+      }
+    }
+    _measurementWaiters.clear();
+  }
+
   double? offsetForAnchor(ReadingAnchor anchor) {
     final chapter = anchor.chapterIndex.clamp(
       0,
@@ -399,16 +513,19 @@ class PaginationCoordinator {
     );
   }
 
-  PageCoordinate restoreFromAnchor(ReadingAnchor anchor) {
-    final chapter = math.min(
-      anchor.chapterIndex,
-      math.max(0, _chapterCount - 1),
-    );
+  /// The page [anchor] resolves to under the current measurements.
+  ///
+  /// `progressionInChapter == 1.0` resolves to the chapter's last page once its
+  /// count is known. Before then it resolves to the chapter's single placeholder
+  /// page, so an end-of-chapter anchor is always a valid, if provisional,
+  /// target. That is what lets a backward step hold for the previous chapter's
+  /// real count instead of landing on its first page.
+  PageCoordinate coordinateForAnchor(ReadingAnchor anchor) {
+    final lastChapter = math.max(0, _chapterCount - 1);
+    final chapter = anchor.chapterIndex.clamp(0, lastChapter).toInt();
     final pages = _chapterPageCounts[chapter] ?? 1;
-    final page = math.min(
-      (anchor.progressionInChapter * (pages - 1)).round(),
-      pages - 1,
-    );
+    final progression = anchor.progressionInChapter.clamp(0.0, 1.0);
+    final page = math.min((progression * (pages - 1)).round(), pages - 1);
     return PageCoordinate(
       chapterIndex: chapter,
       pageInChapter: page,
@@ -423,6 +540,9 @@ class PaginationCoordinator {
       ),
     );
   }
+
+  PageCoordinate restoreFromAnchor(ReadingAnchor anchor) =>
+      coordinateForAnchor(anchor);
 
   /// Invalidates measurements that depend on font/layout metrics after a
   /// reader-preference change. Cached [contentHeight] values are retained for
@@ -457,6 +577,7 @@ class PaginationCoordinator {
       progressionInChapter: 0.0,
     );
     _totalPages = 0;
+    _completeAllWaiters();
     _emit();
   }
 
@@ -468,6 +589,7 @@ class PaginationCoordinator {
     _chapterLayouts.clear();
     _chapterSpeechMaps.clear();
     _chapterSpeechTexts.clear();
+    _completeAllWaiters();
     _stateSubject.close();
   }
 

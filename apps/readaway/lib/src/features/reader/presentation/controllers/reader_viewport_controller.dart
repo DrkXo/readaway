@@ -29,6 +29,14 @@ class ReaderViewportController extends ChangeNotifier {
   /// Delegate for instantaneous jump provided by the active viewport widget.
   void Function(int targetPage)? jumpToPageDelegate;
 
+  /// Handles a page step in the owner's navigation space.
+  ///
+  /// Set by the reader viewport for reflowable documents, where a step is
+  /// expressed as a reading anchor rather than an adjacent page index. When
+  /// present the owner decides whether the step turns immediately or holds
+  /// until a not-yet-measured chapter's last page is knowable.
+  Future<void> Function({required bool forward})? stepDelegate;
+
   /// Delegates for interactive page dragging provided by the active viewport widget.
   void Function()? dragStartDelegate;
   void Function(double primaryDelta, double normalizedDelta)?
@@ -141,6 +149,11 @@ class ReaderViewportController extends ChangeNotifier {
 
   /// Navigates to the next page.
   Future<void> nextPage({Duration? duration, Curve? curve}) async {
+    final step = stepDelegate;
+    if (step != null) {
+      await step(forward: true);
+      return;
+    }
     final next = _currentPage + 1;
     if (_pageCount > 0 && next >= _pageCount) return;
     await goToPage(next, duration: duration, curve: curve);
@@ -148,6 +161,11 @@ class ReaderViewportController extends ChangeNotifier {
 
   /// Navigates to the previous page.
   Future<void> previousPage({Duration? duration, Curve? curve}) async {
+    final step = stepDelegate;
+    if (step != null) {
+      await step(forward: false);
+      return;
+    }
     final prev = _currentPage - 1;
     if (prev < 0) return;
     await goToPage(prev, duration: duration, curve: curve);
@@ -199,6 +217,7 @@ class ReaderViewportController extends ChangeNotifier {
   void dispose() {
     animateToPageDelegate = null;
     jumpToPageDelegate = null;
+    stepDelegate = null;
     dragStartDelegate = null;
     dragUpdateDelegate = null;
     dragEndDelegate = null;

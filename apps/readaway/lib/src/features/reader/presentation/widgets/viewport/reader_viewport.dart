@@ -19,6 +19,7 @@ import '../tts/reader_tts_mini_player_bar.dart';
 import 'fixed_layout/fixed_layout.dart';
 import 'modes/continuous_reader_view.dart';
 import 'modes/paged_reader_view.dart';
+import 'reflowable/chapter_layout_probe.dart';
 import 'reflowable/reflowable_reader_page.dart';
 import 'reflowable/reflowable_virtual_page.dart';
 
@@ -90,6 +91,12 @@ class _ReaderViewportState extends State<ReaderViewport> {
   bool _isPaginationUpdateScheduled = false;
   String? _lastDocumentPath;
 
+  /// Anchor a backward step is waiting on, or null when no step is held.
+  ReadingAnchor? _heldStep;
+
+  /// Chapter currently being laid out offscreen to satisfy a held step.
+  int? _measurementRequest;
+
   @override
   void initState() {
     super.initState();
@@ -99,10 +106,13 @@ class _ReaderViewportState extends State<ReaderViewport> {
     _paginationSubscription = _paginationCoordinator.state.listen(
       (_) => _onPaginationUpdated(),
     );
+    widget.viewportController.stepDelegate = _stepPage;
   }
 
   void _onPaginationUpdated() {
     if (!mounted) return;
+    // A held step owns the position until its chapter has been measured.
+    if (_heldStep != null) return;
     if (!context.read<ReaderBloc>().state.isReflowable) return;
     if (_isPaginationUpdateScheduled) return;
     _isPaginationUpdateScheduled = true;
@@ -205,6 +215,9 @@ class _ReaderViewportState extends State<ReaderViewport> {
 
   @override
   void dispose() {
+    if (widget.viewportController.stepDelegate == _stepPage) {
+      widget.viewportController.stepDelegate = null;
+    }
     _paginationSubscription?.cancel();
     super.dispose();
   }
@@ -393,6 +406,10 @@ class _ReaderViewportState extends State<ReaderViewport> {
                 ),
                 controller: widget.viewportController,
                 backgroundColor: context.appColors.readerBackground,
+                stepTargetResolver: _resolveStepTarget,
+                onStepRequested: ({required bool forward}) {
+                  unawaited(_stepPage(forward: forward));
+                },
                 itemBuilder: (ctx, idx) => _buildPageItem(
                   ctx,
                   state,
@@ -407,9 +424,44 @@ class _ReaderViewportState extends State<ReaderViewport> {
               );
             }
 
-            return ScrollConfiguration(
-              behavior: scrollConfig,
-              child: view,
+            final measureChapter = _measurementRequest;
+            final pages = state.pageHtmls;
+            final measureHtml =
+                (measureChapter != null &&
+                    pages != null &&
+                    measureChapter < pages.length)
+                ? pages[measureChapter]
+                : null;
+
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                ScrollConfiguration(behavior: scrollConfig, child: view),
+                // A held step lays the target chapter out here, offstage, to
+                // learn its page count before turning to it.
+                if (measureHtml != null)
+                  Offstage(
+                    offstage: true,
+                    child: OffscreenChapterMeasurer(
+                      chapterIndex: measureChapter!,
+                      html: measureHtml,
+                      prefs: widget.prefs,
+                      coordinator: _paginationCoordinator,
+                      viewportWidth: constraints.maxWidth,
+                      cacheNamespace:
+                          state.documentPath ?? state.fileName ?? '',
+                      onResolveAssetBytes: (src) =>
+                          _resolveAssetBytes(measureChapter, src),
+                    ),
+                  ),
+                if (_heldStep != null)
+                  const Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 32.0,
+                    child: IgnorePointer(child: _HoldIndicator()),
+                  ),
+              ],
             );
           },
         );
@@ -625,6 +677,154 @@ class _ReaderViewportState extends State<ReaderViewport> {
     }
   }
 
+  /// Moves one page in anchor space.
+  ///
+  /// The step is expressed as a reading anchor, so a backward step off a
+  /// chapter's first page targets the previous chapter's *end* rather than its
+  /// first page. When that chapter has not been measured yet its last page is
+  /// unknowable, so the current page is held until an offscreen measurement
+  /// resolves it; the reader then lands on the last page directly.
+  Future<void> _stepPage({required bool forward}) async {
+    if (!mounted) return;
+    final state = context.read<ReaderBloc>().state;
+
+    final isContinuous =
+        widget.prefs.effectiveScrollDirection(
+              isReflowable: state.isReflowable,
+            ) ==
+            ReaderScrollDirection.vertical &&
+        !widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
+
+    if (!state.isReflowable || isContinuous || state.pageCount <= 0) {
+      final controller = widget.viewportController;
+      final target = forward
+          ? controller.currentPage + 1
+          : controller.currentPage - 1;
+      await controller.goToPage(target);
+      return;
+    }
+
+    final coordinator = _paginationCoordinator;
+    if (coordinator.chapterCount <= 0) return;
+
+    if (_heldStep != null) {
+      // Coalesce repeated backward steps while holding; a forward step releases
+      // the hold and proceeds from the page the reader is actually on.
+      if (!forward) return;
+      _clearHeldStep();
+    }
+
+    final current = coordinator.currentAnchor;
+    final target = coordinator.anchorForPageStep(current, forward: forward);
+    if (target == current) return;
+
+    final crossesChapter = target.chapterIndex != current.chapterIndex;
+    if (crossesChapter &&
+        !forward &&
+        !coordinator.isChapterMeasured(target.chapterIndex)) {
+      await _holdForChapterEnd(target);
+      return;
+    }
+
+    await widget.viewportController.goToPage(
+      coordinator.globalPageForAnchor(target),
+    );
+  }
+
+  /// The page a step would reveal, or null when it cannot be shown yet.
+  ///
+  /// A forward step into an unmeasured chapter is always revealable, because
+  /// page 0 is known without measuring. A backward step is only revealable once
+  /// the previous chapter has been measured, because only then is its last page
+  /// known; until then the drag is clamped and the step holds.
+  int? _resolveStepTarget({required bool forward}) {
+    final state = context.read<ReaderBloc>().state;
+    final isContinuous =
+        widget.prefs.effectiveScrollDirection(
+              isReflowable: state.isReflowable,
+            ) ==
+            ReaderScrollDirection.vertical &&
+        !widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
+
+    if (!state.isReflowable || isContinuous || state.pageCount <= 0) {
+      final controller = widget.viewportController;
+      final target = forward
+          ? controller.currentPage + 1
+          : controller.currentPage - 1;
+      if (target < 0 || target >= controller.pageCount) return null;
+      return target;
+    }
+
+    final coordinator = _paginationCoordinator;
+    if (coordinator.chapterCount <= 0) return null;
+
+    final current = coordinator.currentAnchor;
+    final target = coordinator.anchorForPageStep(current, forward: forward);
+    if (target == current) return null;
+
+    final crossesChapter = target.chapterIndex != current.chapterIndex;
+    if (crossesChapter &&
+        !forward &&
+        !coordinator.isChapterMeasured(target.chapterIndex)) {
+      return null;
+    }
+    return coordinator.globalPageForAnchor(target);
+  }
+
+  /// Holds the current page while [target]'s chapter is measured offscreen.
+  ///
+  /// The previous chapter's last page cannot be known before it has been laid
+  /// out, and the visible page only measures itself once it is already on
+  /// screen. Measuring it offscreen first lets the reader land on the last page
+  /// directly instead of turning to the first page and being corrected.
+  Future<void> _holdForChapterEnd(ReadingAnchor target) async {
+    final bloc = context.read<ReaderBloc>();
+    final chapterIndex = target.chapterIndex;
+    final documentPath = bloc.state.documentPath;
+
+    setState(() {
+      _heldStep = target;
+      _measurementRequest = chapterIndex;
+    });
+
+    // Offscreen layout needs the chapter's HTML; request it when precaching
+    // has not already loaded it.
+    final pages = bloc.state.pageHtmls;
+    if (pages != null &&
+        chapterIndex < pages.length &&
+        pages[chapterIndex] == null) {
+      bloc.add(ReaderEvent.loadPage(index: chapterIndex));
+    }
+
+    try {
+      await _paginationCoordinator
+          .ensureChapterMeasured(chapterIndex)
+          .timeout(const Duration(seconds: 2));
+    } on TimeoutException {
+      // Fall through with whatever geometry exists: the provisional end anchor
+      // resolves to the chapter's first page, and the visible page refines the
+      // count as soon as it mounts.
+    }
+
+    if (!mounted || bloc.isClosed) return;
+    if (!identical(_heldStep, target)) return;
+    if (bloc.state.documentPath != documentPath) return;
+
+    _clearHeldStep();
+    _paginationCoordinator.setCurrentAnchor(target);
+    final globalPage = _paginationCoordinator.currentState.globalPage;
+    _currentGlobalPage = globalPage;
+    widget.viewportController.jumpToPage(globalPage);
+  }
+
+  void _clearHeldStep() {
+    if (_heldStep == null && _measurementRequest == null) return;
+    setState(() {
+      _heldStep = null;
+      _measurementRequest = null;
+    });
+  }
+
   void _onPageCommitted(
     BuildContext context,
     ReaderState state,
@@ -664,5 +864,47 @@ class _ReaderViewportState extends State<ReaderViewport> {
       }
       widget.viewportController.setCurrentPage(clamped);
     }
+  }
+}
+
+/// Shown while a backward step waits for the previous chapter to be measured.
+class _HoldIndicator extends StatelessWidget {
+  const _HoldIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: const [
+            BoxShadow(color: Color(0x22000000), blurRadius: 8),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Loading previous chapter…',
+                style: theme.textTheme.labelMedium,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
