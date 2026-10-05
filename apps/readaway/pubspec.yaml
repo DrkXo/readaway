@@ -1,7 +1,7 @@
 name: readaway
 description: "Ebook reader for eBooks, comics, HTML, and text with text-to-speech."
 publish_to: "none"
-version: 1.2.1
+version: 1.3.0-dev.0
 resolution: workspace
 
 environment:
@@ -13,7 +13,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   package_info_plus: ^10.2.1
-  readaway_core: ^1.2.1
+  readaway_core: ^1.3.0-dev.0
   cacherine: ^2.5.0
   file_picker: ^13.0.0
   html: ^0.15.6
