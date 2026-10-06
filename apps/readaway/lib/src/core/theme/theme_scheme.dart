@@ -41,42 +41,6 @@ abstract final class ThemeSchemes {
     dark: BuiltinVsCodeThemes.tokenDark,
   );
 
-  /// Token Flint palette.
-  static final tokenFlint = ThemeScheme(
-    id: 'tokenFlint',
-    name: 'Token Flint',
-    originalRepoLink: 'https://github.com/ThorstenRhau/token',
-    light: BuiltinVsCodeThemes.tokenFlintLight,
-    dark: BuiltinVsCodeThemes.tokenFlintDark,
-  );
-
-  /// Token Meridian palette.
-  static final tokenMeridian = ThemeScheme(
-    id: 'tokenMeridian',
-    name: 'Token Meridian',
-    originalRepoLink: 'https://github.com/ThorstenRhau/token',
-    light: BuiltinVsCodeThemes.tokenMeridianLight,
-    dark: BuiltinVsCodeThemes.tokenMeridianDark,
-  );
-
-  /// Token Temper palette.
-  static final tokenTemper = ThemeScheme(
-    id: 'tokenTemper',
-    name: 'Token Temper',
-    originalRepoLink: 'https://github.com/ThorstenRhau/token',
-    light: BuiltinVsCodeThemes.tokenTemperLight,
-    dark: BuiltinVsCodeThemes.tokenTemperDark,
-  );
-
-  /// Token Ultra palette.
-  static final tokenUltra = ThemeScheme(
-    id: 'tokenUltra',
-    name: 'Token Ultra',
-    originalRepoLink: 'https://github.com/ThorstenRhau/token',
-    light: BuiltinVsCodeThemes.tokenUltraLight,
-    dark: BuiltinVsCodeThemes.tokenUltraDark,
-  );
-
   /// Paper-and-ink scheme, named "Flexoki".
   static final flexoki = ThemeScheme(
     id: 'flexoki',
@@ -116,10 +80,6 @@ abstract final class ThemeSchemes {
   /// All available schemes, in display order.
   static final all = <ThemeScheme>[
     token,
-    tokenFlint,
-    tokenMeridian,
-    tokenTemper,
-    tokenUltra,
     flexoki,
     kanagawaDragon,
     kanagawaWave,

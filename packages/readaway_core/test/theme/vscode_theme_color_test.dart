@@ -4,8 +4,8 @@ import 'package:readaway_core/readaway_core.dart';
 
 void main() {
   group('BuiltinVsCodeThemes registry', () {
-    test('contains all 15 pre-compiled themes and finds them by name', () {
-      expect(BuiltinVsCodeThemes.all.length, 15);
+    test('contains all 7 pre-compiled themes and finds them by name', () {
+      expect(BuiltinVsCodeThemes.all.length, 7);
       expect(BuiltinVsCodeThemes.kanagawaDragon.name, 'Kanagawa Dragon');
       expect(BuiltinVsCodeThemes.kanagawaDragon.isDark, isTrue);
       expect(
@@ -78,7 +78,7 @@ void main() {
       expect(theme.scrollbarBackground, isNotNull);
     });
 
-    test('all 15 built-in themes resolve workbench tokens without error', () {
+    test('all 7 built-in themes resolve workbench tokens without error', () {
       for (final theme in BuiltinVsCodeThemes.all) {
         expect(theme.readerBackground, isNotNull);
         expect(theme.readerForeground, isNotNull);
