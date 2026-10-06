@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-10-06
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`readaway` - `v1.3.0`](#readaway---v130)
+ - [`readaway_core` - `v1.3.0`](#readaway_core---v130)
+
+Packages graduated to a stable release (see pre-releases prior to the stable version for changelog entries):
+
+ - `vscode_theme_parser` - `v1.3.0`
+
+---
+
+#### `readaway` - `v1.3.0`
+
+ - **FIX**(App): update built in themes. ([46a95c9b](https://github.com/DrkXo/readaway/commit/46a95c9bbaab38670adf4e86b911d43c978aeb3f))
+ - **FEAT**(readaway): add Madimi One as configurable app UI font. ([809116ea](https://github.com/DrkXo/readaway/commit/809116ea0ee1e05e3c0ed3d5421618e0d141686e))
+ - **FEAT**(App): added search bar in toc navigation drawer. ([bf0544f8](https://github.com/DrkXo/readaway/commit/bf0544f8cebb7975cc4b85a370b9a9ae29cb8361))
+
+#### `readaway_core` - `v1.3.0`
+
+ - **FIX**(App): update built in themes. ([46a95c9b](https://github.com/DrkXo/readaway/commit/46a95c9bbaab38670adf4e86b911d43c978aeb3f))
+ - **FIX**(App): pdf outline item count fix. ([aa1c73c7](https://github.com/DrkXo/readaway/commit/aa1c73c7b1c70d359af84a7b8d6200e97d78a7f7))
+
+
 ## 2026-10-05
 
 ### Changes

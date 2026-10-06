@@ -1,3 +1,7 @@
+## 1.3.0
+
+ - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.
+
 ## 1.3.0-dev.0
 
  - **REFACTOR**(Project): tests now uses mockito. ([7a75f365](https://github.com/DrkXo/readaway/commit/7a75f3654988260d212d6501890094773477e3f1))

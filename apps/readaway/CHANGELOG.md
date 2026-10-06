@@ -1,3 +1,9 @@
+## 1.3.0
+
+ - **FIX**(App): update built in themes. ([46a95c9b](https://github.com/DrkXo/readaway/commit/46a95c9bbaab38670adf4e86b911d43c978aeb3f))
+ - **FEAT**(readaway): add Madimi One as configurable app UI font. ([809116ea](https://github.com/DrkXo/readaway/commit/809116ea0ee1e05e3c0ed3d5421618e0d141686e))
+ - **FEAT**(App): added search bar in toc navigation drawer. ([bf0544f8](https://github.com/DrkXo/readaway/commit/bf0544f8cebb7975cc4b85a370b9a9ae29cb8361))
+
 ## 1.3.0-dev.0
 
  - **REFACTOR**(App): Refactoring Reader. ([8fa583bb](https://github.com/DrkXo/readaway/commit/8fa583bbff76924a49a920cc670b50d29ddfeb62))

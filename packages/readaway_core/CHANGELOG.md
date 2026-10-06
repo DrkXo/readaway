@@ -1,3 +1,8 @@
+## 1.3.0
+
+ - **FIX**(App): update built in themes. ([46a95c9b](https://github.com/DrkXo/readaway/commit/46a95c9bbaab38670adf4e86b911d43c978aeb3f))
+ - **FIX**(App): pdf outline item count fix. ([aa1c73c7](https://github.com/DrkXo/readaway/commit/aa1c73c7b1c70d359af84a7b8d6200e97d78a7f7))
+
 ## 1.3.0-dev.0
 
  - **REFACTOR**(Package): back to rust i guess :). ([e4961988](https://github.com/DrkXo/readaway/commit/e4961988e822e311829c0665e87f4fe0d8aa21d8))
