@@ -34,6 +34,7 @@ class ReaderBottomBar extends StatefulWidget {
     this.panelMaxWidth = double.infinity,
     this.backgroundColor,
     this.panelBackgroundColor,
+    this.showTopBorder = false,
   });
 
   final VoidCallback onPreviousPage;
@@ -58,6 +59,10 @@ class ReaderBottomBar extends StatefulWidget {
   /// Optional background color for the appearing contextual controls panel.
   /// If omitted, defaults to [backgroundColor] or the bottom bar surface color.
   final Color? panelBackgroundColor;
+
+  /// Whether to draw a 1px top border on the bar.
+  /// Defaults to `false` (flat, no separator line).
+  final bool showTopBorder;
 
   /// Fixed height of the navigation bar.
   static const double height = 56;
@@ -85,12 +90,14 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
         return Container(
           decoration: BoxDecoration(
             color: barBgColor,
-            border: Border(
-              top: BorderSide(
-                color: appColors.bottombarBorder,
-                width: 1.0,
-              ),
-            ),
+            border: widget.showTopBorder
+                ? Border(
+                    top: BorderSide(
+                      color: appColors.bottombarBorder,
+                      width: 1.0,
+                    ),
+                  )
+                : null,
           ),
           child: SafeArea(
             top: false,

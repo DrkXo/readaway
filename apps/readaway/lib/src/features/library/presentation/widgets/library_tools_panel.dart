@@ -50,9 +50,6 @@ class LibraryToolsPanel extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerLow,
-          border: Border(
-            bottom: BorderSide(color: appColors.borderSubtle),
-          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

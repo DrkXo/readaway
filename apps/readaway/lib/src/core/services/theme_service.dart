@@ -77,12 +77,6 @@ class ThemeService {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        shape: Border(
-          bottom: BorderSide(
-            color: vsTheme.topbarBorder,
-            width: 1.0,
-          ),
-        ),
       ),
       drawerTheme: DrawerThemeData(
         backgroundColor: vsTheme.sidebarBackground,
