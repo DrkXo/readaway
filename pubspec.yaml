@@ -15,16 +15,14 @@ dev_dependencies:
 
 dependency_overrides:
   cli_util: ^0.5.0
-  # Point at the in-tree DrkXo/hyper_render submodule, which adds
-  # RenderHyperBox.debugLineFragments() — the per-line fragments that actually
-  # got positioned. The submodule is pinned by gitlink to the same commit that
-  # pub.git used before, so this is a source-location swap, not a version bump.
+  # Point at the DrkXo/hyper_render fork on `fix/get-boxes-for-char-range`,
+  # which adds RenderHyperBox.debugLineFragments() — the per-line fragments
+  # that actually got positioned — and the getBoxesForCharRange fix.
   #
-  # Why a submodule: edits inside packages/hyper_render are picked up by the
-  # app on the next hot restart with no `pub get`, and `git submodule status`
-  # / a second `git diff` inside the checkout makes local fork changes
-  # reviewable. Melos never sees it (it is absent from the `workspace:` list
-  # below), so it is never versioned or published as a first-party package.
+  # Why a git dependency: the fix lives only on the fork's branch, so pub.dev
+  # is not an option. Pub fetches the repository once per `ref` and reads each
+  # package from its subdirectory — `path:` is relative to the repo root, and
+  # is omitted for the root package itself.
   #
   # hyper_render_core MUST be overridden too, and this is not optional:
   # `hyper_render` reaches core through its own
@@ -33,13 +31,25 @@ dependency_overrides:
   # nested path is discarded and core would resolve from pub.dev — the build
   # would succeed and the added methods would simply be missing at runtime.
   #
-  # Requires `git submodule update --init --recursive` after cloning.
+  # `ref` is pinned to the tip of `fix/get-boxes-for-char-range` at the time of
+  # writing, so builds are reproducible and a force-push upstream cannot change
+  # what CI resolves. To pick up new fork commits, bump the SHA — or temporarily
+  # set `ref` back to the branch name, run `flutter pub upgrade hyper_render
+  # hyper_render_core hyper_render_devtools`, then pin the new `resolved-ref`.
   hyper_render:
-    path: packages/hyper_render
+    git:
+      url: https://github.com/DrkXo/hyper_render.git
+      ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681 # fix/get-boxes-for-char-range
   hyper_render_core:
-    path: packages/hyper_render/packages/hyper_render_core
+    git:
+      url: https://github.com/DrkXo/hyper_render.git
+      ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681 # fix/get-boxes-for-char-range
+      path: packages/hyper_render_core
   hyper_render_devtools:
-    path: packages/hyper_render/packages/hyper_render_devtools
+    git:
+      url: https://github.com/DrkXo/hyper_render.git
+      ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681 # fix/get-boxes-for-char-range
+      path: packages/hyper_render_devtools
 
 melos:
   ide:
@@ -80,24 +90,12 @@ melos:
   # verified against melos 8.6.0, which never reads `melos.packages`. Adding a
   # directory to this glob alone does not make melos aware of it.
   #
-  # `packages/hyper_render` is the DrkXo/hyper_render fork, checked out as a
-  # git submodule. What actually keeps melos out is that it is deliberately
-  # absent from the `workspace:` list above — do not add it. If melos ever
-  # treated it as a first-party workspace package, `melos version` would bump
-  # its version and commit *inside* the submodule (an unpushed commit that
-  # breaks CI's submodule checkout), `melos publish` would try to publish the
-  # fork to pub.dev, and `melos exec -- dart analyze` would lint a third-party
-  # codebase.
-  #
-  # The `ignore:` below is a redundant safety net for that invariant. Note that
-  # melos privacy is driven solely by `publish_to: none` in a package's own
-  # pubspec, which is not an option here: that file lives in the submodule, so
-  # editing it would leave the checkout permanently dirty.
-  #
-  # Consequence: `melos exec` will not run this package's tests. Run them
-  # directly with `cd packages/hyper_render && fvm flutter test`.
-  ignore:
-    - packages/hyper_render
+  # hyper_render / hyper_render_core / hyper_render_devtools are the
+  # DrkXo/hyper_render fork, resolved as git dependencies (see
+  # `dependency_overrides` at the top of this file). They have no directory in
+  # this tree and are deliberately absent from the `workspace:` list above, so
+  # melos never versions, publishes, or lints them. To run the fork's tests,
+  # clone it separately.
 
   scripts:
     setup:hooks:

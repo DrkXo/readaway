@@ -1,4 +1,0 @@
-[submodule "packages/hyper_render"]
-	path = packages/hyper_render
-	url = https://github.com/DrkXo/hyper_render.git
-	branch = feat/line-fragments

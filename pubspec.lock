@@ -968,24 +968,30 @@ packages:
   hyper_render:
     dependency: "direct overridden"
     description:
-      path: "packages/hyper_render"
-      relative: true
-    source: path
-    version: "1.9.1"
+      path: "."
+      ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681
+      resolved-ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681
+      url: "https://github.com/DrkXo/hyper_render.git"
+    source: git
+    version: "1.10.0"
   hyper_render_core:
     dependency: "direct overridden"
     description:
-      path: "packages/hyper_render/packages/hyper_render_core"
-      relative: true
-    source: path
-    version: "1.9.0"
+      path: "packages/hyper_render_core"
+      ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681
+      resolved-ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681
+      url: "https://github.com/DrkXo/hyper_render.git"
+    source: git
+    version: "1.10.0"
   hyper_render_devtools:
     dependency: "direct overridden"
     description:
-      path: "packages/hyper_render/packages/hyper_render_devtools"
-      relative: true
-    source: path
-    version: "1.7.0"
+      path: "packages/hyper_render_devtools"
+      ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681
+      resolved-ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681
+      url: "https://github.com/DrkXo/hyper_render.git"
+    source: git
+    version: "1.8.0"
   image:
     dependency: transitive
     description:

@@ -35,11 +35,11 @@ _Screenshots are on the way._
 
 Grab a build from the [latest release](https://github.com/DrkXo/readaway/releases/latest).
 
-| Platform | File |
-| :--- | :--- |
-| Linux | `.AppImage` — run it, or `chmod +x` then double-click |
-| Linux | `.tar.gz` portable, or `.deb` / `.rpm` to install |
-| Android | `.apk` — use `arm64-v8a` on most phones, `universal` if unsure |
+| Platform | File                                                           |
+| :------- | :------------------------------------------------------------- |
+| Linux    | `.AppImage` — run it, or `chmod +x` then double-click          |
+| Linux    | `.tar.gz` portable, or `.deb` / `.rpm` to install              |
+| Android  | `.apk` — use `arm64-v8a` on most phones, `universal` if unsure |
 
 `sha256sum -c checksums.txt` verifies a download.
 
@@ -55,7 +55,7 @@ covered by the stability promise of a stable tag.
 Requires the Flutter version pinned in [`.fvmrc`](.fvmrc). [FVM](https://fvm.app) is the path of least resistance:
 
 ```bash
-git clone --recurse-submodules https://github.com/DrkXo/readaway.git
+git clone https://github.com/DrkXo/readaway.git
 cd readaway
 
 fvm install
@@ -67,37 +67,30 @@ melos run codegen    # freezed / json_serializable / injectable / hive generator
 fvm exec flutter run # from apps/readaway
 ```
 
-Already cloned without `--recurse-submodules`? Run
-`git submodule update --init --recursive` once. The build fails without it:
-`packages/hyper_render` is a path dependency override, so `pub get` cannot
-resolve while the directory is empty.
+### The `hyper_render` fork
 
-### The `hyper_render` submodule
+`hyper_render`, `hyper_render_core`, and `hyper_render_devtools` are resolved as
+git dependencies on [DrkXo/hyper_render](https://github.com/DrkXo/hyper_render)
+branch `fix/get-boxes-for-char-range`, declared in `dependency_overrides` in the
+root [`pubspec.yaml`](pubspec.yaml). The fork is based on the published
+`hyper_render` package and adds `RenderHyperBox.debugLineFragments()`, which
+reports the per-line fragments the renderer actually positioned — the basis for
+TTS highlighting of wrapped text.
 
-[`packages/hyper_render`](packages/hyper_render) is a git submodule pointing at
-[DrkXo/hyper_render](https://github.com/DrkXo/hyper_render) on branch
-`feat/line-fragments`. It is a fork of the published `hyper_render` package and
-adds `RenderHyperBox.debugLineFragments()`, which reports the per-line fragments
-the renderer actually positioned — the basis for TTS highlighting of wrapped text.
+Because it is a git dependency, `melos bootstrap` (or `fvm flutter pub get`)
+fetches and caches it automatically — there is nothing extra to clone.
 
-It is vendored as a submodule rather than a hosted dependency so the renderer can
-be edited and debugged in place: change the source and the app picks it up on the
-next hot restart, with no `pub get`.
+Two things to know:
 
-```bash
-git submodule update --remote          # pull the fork's latest on that branch
-git -C packages/hyper_render log -1    # which commit is currently pinned
-```
-
-Two things to know before editing it:
-
-- Melos does not manage it. It is deliberately absent from the pub `workspace:`
-  list in the root `pubspec.yaml`, so `melos version` never commits inside the
-  submodule and `melos publish` never tries to release the fork. Run its tests
-  directly: `cd packages/hyper_render && fvm flutter test`.
-- Push fork changes to [DrkXo/hyper_render](https://github.com/DrkXo/hyper_render),
-  then bump the gitlink with `git add packages/hyper_render`. A commit that only
-  exists in your local clone will break CI, which checks out the recorded SHA.
+- Melos does not manage it. It has no directory in this tree and is deliberately
+  absent from the pub `workspace:` list in the root `pubspec.yaml`, so
+  `melos version` never bumps it and `melos publish` never tries to release the
+  fork. To run its tests, clone the fork separately:
+  `git clone https://github.com/DrkXo/hyper_render && cd hyper_render && fvm flutter test`.
+- The `ref` is pinned to a commit SHA (`aded2c5`), not a branch, so `pub get`
+  resolves the same code every time. To pick up new fork commits, push to
+  [DrkXo/hyper_render](https://github.com/DrkXo/hyper_render) and bump `ref:`
+  in [`pubspec.yaml`](pubspec.yaml).
 
 ## Contributing
 
@@ -132,19 +125,19 @@ list packages here and let it drift out of date, let's point at the manifests:
 
 And the pieces that live outside the package manager:
 
-| Resource | Used for |
-| :--- | :--- |
-| [Flutter](https://flutter.dev) / [Dart](https://dart.dev), pinned via [`.fvmrc`](.fvmrc) | App framework and language |
-| [Melos](https://melos.dev) / [FVM](https://fvm.app) | Monorepo scripts, versioning, and SDK pinning |
-| [Gradle](https://gradle.org) / [Temurin JDK](https://adoptium.net) | Android build toolchain |
-| [appimagetool](https://github.com/AppImage/AppImageKit) | Linux AppImage packaging, fetched by `scripts/package_linux.sh` |
-| [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) voice models | On-device TTS, downloaded on demand from the catalog in [`tts_catalog.json`](apps/readaway/assets/tts/tts_catalog.json) |
-| [Noto Serif](https://fonts.google.com/noto/specimen/Noto+Serif) / [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) / [JetBrains Mono](https://www.jetbrains.com/lp/mono/) / [Fira Code](https://fira-code.org) | Bundled typefaces — serif and sans for body text, monospace for code (all OFL-1.1) |
-| [Lucide](https://lucide.dev) | Icon design |
-| [Token](https://github.com/ThorstenRhau/token) color themes | Bundled light/dark schemes — Light, Dark, Flint, Meridian, Temper, Ultra (BSD-3-Clause) |
-| [Kanagawa](https://github.com/rebelot/kanagawa.nvim) color themes | Bundled light/dark schemes — Wave, Dragon, Lotus (MIT) |
-| [Flexoki](https://github.com/kepano/flexoki) color themes | Bundled light/dark schemes — an inky paper-and-ink palette (MIT) |
-| [hyper_render](https://github.com/DrkXo/hyper_render) | HTML/Markdown renderer, vendored as the `packages/hyper_render` submodule and forked from [`brewkits/hyper_render`](https://github.com/brewkits/hyper_render) (MIT) |
+| Resource                                                                                                                                                                                                                    | Used for                                                                                                                               |
+| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
+| [Flutter](https://flutter.dev) / [Dart](https://dart.dev), pinned via [`.fvmrc`](.fvmrc)                                                                                                                                    | App framework and language                                                                                                             |
+| [Melos](https://melos.dev) / [FVM](https://fvm.app)                                                                                                                                                                         | Monorepo scripts, versioning, and SDK pinning                                                                                          |
+| [Gradle](https://gradle.org) / [Temurin JDK](https://adoptium.net)                                                                                                                                                          | Android build toolchain                                                                                                                |
+| [appimagetool](https://github.com/AppImage/AppImageKit)                                                                                                                                                                     | Linux AppImage packaging, fetched by `scripts/package_linux.sh`                                                                        |
+| [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) voice models                                                                                                                                                           | On-device TTS, downloaded on demand from the catalog in [`tts_catalog.json`](apps/readaway/assets/tts/tts_catalog.json)                |
+| [Noto Serif](https://fonts.google.com/noto/specimen/Noto+Serif) / [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) / [JetBrains Mono](https://www.jetbrains.com/lp/mono/) / [Fira Code](https://fira-code.org) | Bundled typefaces — serif and sans for body text, monospace for code (all OFL-1.1)                                                     |
+| [Lucide](https://lucide.dev)                                                                                                                                                                                                | Icon design                                                                                                                            |
+| [Token](https://github.com/ThorstenRhau/token) color themes                                                                                                                                                                 | Bundled light/dark schemes — Light, Dark, Flint, Meridian, Temper, Ultra (BSD-3-Clause)                                                |
+| [Kanagawa](https://github.com/rebelot/kanagawa.nvim) color themes                                                                                                                                                           | Bundled light/dark schemes — Wave, Dragon, Lotus (MIT)                                                                                 |
+| [Flexoki](https://github.com/kepano/flexoki) color themes                                                                                                                                                                   | Bundled light/dark schemes — an inky paper-and-ink palette (MIT)                                                                       |
+| [hyper_render](https://github.com/DrkXo/hyper_render)                                                                                                                                                                       | HTML/Markdown renderer, resolved as a git dependency fork of [`brewkits/hyper_render`](https://github.com/brewkits/hyper_render) (MIT) |
 
 Each of these is used under its own license, and every package named in `pubspec.lock`
 belongs to its own maintainers.

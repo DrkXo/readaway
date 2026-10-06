@@ -9,14 +9,6 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
-analyzer:
-  exclude:
-    # The hyper_render fork is a git submodule under packages/. Melos never
-    # sees it (it is absent from the pub `workspace:` list in pubspec.yaml),
-    # but IDE and workspace-wide analysis still walk the directory and would
-    # report the fork's own lint debt as if it were readaway's.
-    - packages/hyper_render/**
-
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

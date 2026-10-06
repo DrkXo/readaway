@@ -1,5 +1,10 @@
 import 'package:flutter/widgets.dart';
-import 'package:hyper_render/hyper_render.dart' show RenderHyperBox;
+// `RenderHyperBoxSelection` must be imported explicitly: the fork declares
+// `getBoxesForCharRange` on that extension rather than on `RenderHyperBox`
+// itself, and a `show` combinator excludes every name it does not list —
+// extensions included.
+import 'package:hyper_render/hyper_render.dart'
+    show RenderHyperBox, RenderHyperBoxSelection;
 import 'package:readaway_core/readaway_core.dart';
 
 /// Builds a [ChapterTextLayout] from a laid-out [RenderHyperBox].

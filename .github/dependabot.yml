@@ -11,8 +11,9 @@ updates:
         patterns:
           - "*"
 
-  # Dart/Flutter workspace members. packages/hyper_render is a git submodule
-  # (separate repository) and is intentionally not listed here.
+  # Dart/Flutter workspace members. The hyper_render fork is resolved as a git
+  # dependency (see dependency_overrides in the root pubspec.yaml) and is
+  # intentionally not listed here.
   - package-ecosystem: "pub"
     directories:
       - "/"
