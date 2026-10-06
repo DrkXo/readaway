@@ -16,6 +16,7 @@ class ThemeService {
 
   ThemeMode _currentThemeMode = ThemeMode.system;
   String? _currentSchemeId;
+  String _currentUiFont = 'system';
   StreamSubscription<Settings>? _settingsSub;
 
   ThemeMode get currentThemeMode => _currentThemeMode;
@@ -34,6 +35,7 @@ class ThemeService {
   Future<void> init() async {
     _currentThemeMode = _modeFrom(_settings.settings);
     _currentSchemeId = _settings.settings.globalViewSettings.selectedScheme;
+    _currentUiFont = _settings.settings.globalViewSettings.uiFont;
     _themeController.add(_currentThemeMode);
     _settingsSub = _settings.changes.listen(_onSettingsChanged);
   }
@@ -48,17 +50,26 @@ class ThemeService {
   void _onSettingsChanged(Settings settings) {
     final mode = _modeFrom(settings);
     final schemeId = settings.globalViewSettings.selectedScheme;
-    if (mode == _currentThemeMode && schemeId == _currentSchemeId) return;
+    final uiFont = settings.globalViewSettings.uiFont;
+    if (mode == _currentThemeMode &&
+        schemeId == _currentSchemeId &&
+        uiFont == _currentUiFont) {
+      return;
+    }
 
     _currentThemeMode = mode;
     _currentSchemeId = schemeId;
+    _currentUiFont = uiFont;
     _themeController.add(mode);
   }
 
   ThemeData _buildThemeData(VsCodeTheme vsTheme) {
     final scheme = vsTheme.scheme;
+    final uiFont = _settings.settings.globalViewSettings.uiFont;
     return ThemeData(
       colorScheme: scheme,
+      fontFamily: uiFont == 'system' ? null : uiFont,
+      fontFamilyFallback: const ['Noto Sans'],
       pageTransitionsTheme: appPageTransitionsTheme,
       extensions: [VsCodeThemeExtension(vsTheme)],
       useMaterial3: true,

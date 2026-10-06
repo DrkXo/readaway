@@ -116,3 +116,6 @@ flutter:
           weight: 700
         - asset: assets/google_fonts/JetBrainsMono-Italic.ttf
           style: italic
+    - family: Madimi One
+      fonts:
+        - asset: assets/google_fonts/MadimiOne-Regular.ttf
