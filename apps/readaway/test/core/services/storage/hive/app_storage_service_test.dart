@@ -64,6 +64,9 @@ void main() {
 
       expect(storageService.ttsBox.isOpen, isTrue);
       expect(storageService.ttsBox.name, hiveBoxes.tts);
+
+      expect(storageService.annotationsBox.isOpen, isTrue);
+      expect(storageService.annotationsBox.name, hiveBoxes.annotations);
     });
 
     test('settings service persists in settingsBox', () async {

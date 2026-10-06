@@ -8,12 +8,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get_it/get_it.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/overlay/reader_footnote_sheet.dart';
+import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../core/theme/theme.dart';
 import '../../../../../../features/settings/domain/entity/reader_preferences.dart';
+import '../../../../../annotations/presentation/widgets/painting/reader_annotation_layer.dart';
+import '../../../../../annotations/presentation/widgets/selection/annotation_selection_menu.dart';
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
+import '../../../controllers/reader_viewport_controller.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
+import 'chapter_layout_measurement.dart';
 import 'html/hyper_page_content.dart';
 import 'reflowable_scroll_coordinator.dart';
 
@@ -30,6 +35,8 @@ class ReflowableReaderPage extends StatefulWidget {
     required this.index,
     required this.state,
     required this.prefs,
+    required this.coordinator,
+    required this.controller,
     required this.onPageChangeRequested,
     this.isContinuous = false,
     this.onScrollBoundaryChanged,
@@ -38,6 +45,15 @@ class ReflowableReaderPage extends StatefulWidget {
   final int index;
   final ReaderState state;
   final ReaderPreferences prefs;
+
+  /// Supplies the chapter geometry the annotation layer resolves against, and
+  /// receives this chapter's measurement.
+  final PaginationCoordinator coordinator;
+
+  /// Receives the annotation layer's tap handler, so a tap on a highlight can
+  /// open it.
+  final ReaderViewportController controller;
+
   final void Function(int) onPageChangeRequested;
   final bool isContinuous;
 
@@ -66,6 +82,36 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   /// while also caching the result permanently.
   final Map<String, Future<List<int>?>> _inFlightAssetRequests = {};
 
+  /// Marks the chapter content, so its measured geometry can be read back.
+  final GlobalKey _contentKey = GlobalKey();
+
+  /// The last content width measured, so a reflow re-measures exactly once.
+  double? _lastMeasuredWidth;
+
+  /// Guards against queueing more than one measurement per frame.
+  bool _measureScheduled = false;
+
+  /// Reads this chapter's laid-out geometry into
+  /// [ReflowableReaderPage.coordinator].
+  ///
+  /// Continuous reading never slices a chapter, so nothing else would measure
+  /// it and the annotation layer would have no geometry to resolve against.
+  /// Deferred to after the frame because the render object has no size until
+  /// layout has run.
+  void _scheduleMeasurement() {
+    if (_measureScheduled) return;
+    _measureScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measureScheduled = false;
+      if (!mounted) return;
+      registerChapterLayoutFromRenderObject(
+        coordinator: widget.coordinator,
+        chapterIndex: widget.index,
+        root: _contentKey.currentContext?.findRenderObject(),
+      );
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -82,6 +128,7 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _scrollCoordinator.reportBoundary();
     });
+    _scheduleMeasurement();
   }
 
   @override
@@ -92,6 +139,13 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
       pageCount: widget.state.pageCount,
       direction: widget.prefs.scrollDirection,
     );
+    // A preference change reflows the chapter, and its HTML can be loaded or
+    // replaced; either way the measured geometry no longer describes what is
+    // on screen.
+    if (widget.prefs != oldWidget.prefs ||
+        !identical(widget.state.pageHtmls, oldWidget.state.pageHtmls)) {
+      _scheduleMeasurement();
+    }
     if (widget.state.ttsActive != oldWidget.state.ttsActive) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _scrollCoordinator.reportBoundary();
@@ -144,19 +198,51 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
         ),
         child: SizedBox(
           width: double.infinity,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              HyperPageContent(
-                html: html,
-                prefs: widget.prefs,
-                chapterIndex: widget.index,
-                cacheNamespace:
-                    widget.state.documentPath ?? widget.state.fileName ?? '',
-                onResolveAssetBytes: _resolveAssetBytes,
-                onLinkTap: (url) => _onTapUrl(context, url),
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // A width change reflows the chapter, so the geometry the
+              // annotations were resolved against is no longer valid.
+              if (_lastMeasuredWidth != constraints.maxWidth) {
+                _lastMeasuredWidth = constraints.maxWidth;
+                _scheduleMeasurement();
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Continuous reading never slices a chapter, so the content is
+                  // not translated and no slice offset applies: chapter
+                  // coordinates are already this widget's coordinates.
+                  ReaderAnnotationLayer(
+                    chapterIndex: widget.index,
+                    coordinator: widget.coordinator,
+                    controller: widget.controller,
+                    sliceTop: 0,
+                    child: KeyedSubtree(
+                      key: _contentKey,
+                      child: HyperPageContent(
+                        html: html,
+                        prefs: widget.prefs,
+                        chapterIndex: widget.index,
+                        cacheNamespace:
+                            widget.state.documentPath ??
+                            widget.state.fileName ??
+                            '',
+                        onResolveAssetBytes: _resolveAssetBytes,
+                        onLinkTap: (url) => _onTapUrl(context, url),
+                        menuActionsBuilder: (overlayState) =>
+                            AnnotationSelectionMenu.actions(
+                              context,
+                              chapterIndex: widget.index,
+                              coordinator: widget.coordinator,
+                              state: overlayState,
+                            ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       );

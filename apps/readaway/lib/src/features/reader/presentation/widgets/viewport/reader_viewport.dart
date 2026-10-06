@@ -504,6 +504,8 @@ class _ReaderViewportState extends State<ReaderViewport> {
         index: index,
         state: state,
         prefs: widget.prefs,
+        coordinator: _paginationCoordinator,
+        controller: widget.viewportController,
         isContinuous: true,
         onPageChangeRequested: (idx) =>
             _onNavigateRequested(context, state, idx, isContinuous: true),
@@ -522,6 +524,7 @@ class _ReaderViewportState extends State<ReaderViewport> {
       state: state,
       prefs: widget.prefs,
       coordinator: _paginationCoordinator,
+      controller: widget.viewportController,
       onResolveAssetBytes: (src) => _resolveAssetBytes(coord.chapterIndex, src),
       onLinkTap: (url) => _onLinkTap(context, url),
     );

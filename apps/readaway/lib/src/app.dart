@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 
 import '../flavors.dart';
 import 'core/services/services.dart';
+import 'features/annotations/presentation/bloc/annotations_bloc.dart';
 import 'features/settings/presentation/bloc/settings/settings_bloc.dart';
 import 'features/settings/presentation/bloc/tts_library/tts_library_bloc.dart';
 import 'router/router.dart';
@@ -56,6 +57,12 @@ class _ReadawayState extends State<Readaway> {
         ),
         BlocProvider(
           create: (context) => GetIt.I.get<TtsLibraryBloc>(),
+        ),
+        // The reader has one document open at a time, so its annotations are
+        // app-scoped rather than per-route; the reader page loads and clears
+        // them as documents open and close.
+        BlocProvider(
+          create: (context) => GetIt.I.get<AnnotationsBloc>(),
         ),
       ],
       child: BlocBuilder<SettingsBloc, SettingsState>(

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
-import 'reader_toc_content.dart';
+import '../../../../annotations/domain/entity/reader_note.dart';
+import 'reader_side_panel.dart';
 
 const double _panelWidth = 300;
 const double _peekStripWidth = 24;
@@ -14,10 +15,12 @@ class ReaderTocSidePanel extends StatelessWidget {
     super.key,
     required this.onUnpin,
     required this.onJumpToPage,
+    required this.onJumpToNote,
   });
 
   final VoidCallback onUnpin;
   final void Function(int page) onJumpToPage;
+  final void Function(ReaderNote note) onJumpToNote;
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +39,9 @@ class ReaderTocSidePanel extends StatelessWidget {
             ),
           ),
           child: SafeArea(
-            child: ReaderTocContent(
-              onJumpToPage: onJumpToPage,
+            child: ReaderSidePanel(
+              onJumpToChapter: onJumpToPage,
+              onJumpToNote: onJumpToNote,
               headerAction: PinButton(pinned: true, onTap: onUnpin),
             ),
           ),
@@ -54,10 +58,12 @@ class ReaderTocPeek extends StatefulWidget {
     super.key,
     required this.onPin,
     required this.onJumpToPage,
+    required this.onJumpToNote,
   });
 
   final VoidCallback onPin;
   final void Function(int page) onJumpToPage;
+  final void Function(ReaderNote note) onJumpToNote;
 
   @override
   State<ReaderTocPeek> createState() => _ReaderTocPeekState();
@@ -118,9 +124,13 @@ class _ReaderTocPeekState extends State<ReaderTocPeek> {
                       width: _panelWidth,
                       height: double.infinity,
                       child: SafeArea(
-                        child: ReaderTocContent(
-                          onJumpToPage: (page) {
-                            widget.onJumpToPage(page);
+                        child: ReaderSidePanel(
+                          onJumpToChapter: (chapter) {
+                            widget.onJumpToPage(chapter);
+                            _hide();
+                          },
+                          onJumpToNote: (note) {
+                            widget.onJumpToNote(note);
                             _hide();
                           },
                           headerAction: PinButton(

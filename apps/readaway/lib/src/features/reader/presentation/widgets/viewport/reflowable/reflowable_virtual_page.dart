@@ -9,11 +9,14 @@ import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../core/theme/theme.dart';
 import '../../../../../../core/theme/tts_highlight_palette.dart';
+import '../../../../../annotations/presentation/widgets/painting/reader_annotation_layer.dart';
+import '../../../../../annotations/presentation/widgets/selection/annotation_selection_menu.dart';
 import '../../../../../settings/domain/entity/reader_preferences.dart';
 import '../../../../../settings/domain/entity/settings.dart';
 import '../../../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../../../domain/repositories/reader_tts_repository.dart';
 import '../../../bloc/reader_bloc.dart';
+import '../../../controllers/reader_viewport_controller.dart';
 import '../../chrome/reader_running_footer.dart';
 import '../../chrome/reader_running_header.dart';
 import '../../toc/reader_toc_content.dart';
@@ -36,6 +39,7 @@ class ReflowableVirtualPage extends StatefulWidget {
     required this.state,
     required this.prefs,
     required this.coordinator,
+    required this.controller,
     required this.onResolveAssetBytes,
     required this.onLinkTap,
   });
@@ -47,6 +51,11 @@ class ReflowableVirtualPage extends StatefulWidget {
   final ReaderState state;
   final ReaderPreferences prefs;
   final PaginationCoordinator coordinator;
+
+  /// Receives the annotation layer's tap handler, so a tap on a highlight can
+  /// open it.
+  final ReaderViewportController controller;
+
   final Future<List<int>?> Function(String src)? onResolveAssetBytes;
   final void Function(String) onLinkTap;
 
@@ -320,6 +329,13 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
                       widget.state.documentPath ?? widget.state.fileName ?? '',
                   onResolveAssetBytes: widget.onResolveAssetBytes,
                   onLinkTap: widget.onLinkTap,
+                  menuActionsBuilder: (overlayState) =>
+                      AnnotationSelectionMenu.actions(
+                        context,
+                        chapterIndex: widget.chapterIndex,
+                        coordinator: widget.coordinator,
+                        state: overlayState,
+                      ),
                 ),
               ),
             ),
@@ -342,7 +358,15 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
                       child: child,
                     );
                   },
-                  child: pageContent,
+                  // Reader highlights paint beneath the spoken-text highlight,
+                  // so following along with TTS still reads correctly.
+                  child: ReaderAnnotationLayer(
+                    chapterIndex: widget.chapterIndex,
+                    coordinator: widget.coordinator,
+                    controller: widget.controller,
+                    sliceTop: sliceTop,
+                    child: pageContent,
+                  ),
                 ),
               ),
             ),

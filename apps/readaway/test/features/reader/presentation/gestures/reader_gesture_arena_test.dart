@@ -8,6 +8,125 @@ import 'package:readaway/src/features/settings/domain/entity/reader_preferences.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('text selection versus paging', () {
+    /// Pumps a horizontal-paging arena and reports whether a page drag started.
+    Future<bool Function()> pumpArena(WidgetTester tester) async {
+      var dragStarted = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 800,
+              child: ReaderGestureArena(
+                onTapAction: (_) {},
+                onPageDragStart: () => dragStarted = true,
+                child: Container(color: Colors.blue),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      return () => dragStarted;
+    }
+
+    testWidgets('a pointer held long enough to select does not turn the page', (
+      tester,
+    ) async {
+      final dragStarted = await pumpArena(tester);
+      final center = tester.getCenter(find.byType(ReaderGestureArena));
+
+      final gesture = await tester.startGesture(center);
+      // Real time has to pass: the arena reads the wall clock to time the hold,
+      // the same way it times a tap. The fake clock would not move it.
+      await tester.runAsync(
+        () => Future<void>.delayed(
+          kLongPressTimeout + const Duration(milliseconds: 100),
+        ),
+      );
+
+      await gesture.moveBy(const Offset(-80, 0));
+      await tester.pump();
+
+      // The hold became a text selection, so dragging to extend it must not page.
+      expect(dragStarted(), isFalse);
+
+      await gesture.up();
+      await tester.pump();
+    });
+
+    testWidgets('a prompt swipe still turns the page', (tester) async {
+      final dragStarted = await pumpArena(tester);
+      final center = tester.getCenter(find.byType(ReaderGestureArena));
+
+      final gesture = await tester.startGesture(center);
+      await gesture.moveBy(const Offset(-80, 0));
+      await tester.pump();
+
+      expect(dragStarted(), isTrue);
+
+      await gesture.up();
+      await tester.pump();
+    });
+  });
+
+  group('annotation taps', () {
+    /// Pumps an arena whose taps are intercepted by [intercept].
+    Future<List<ReaderTapAction>> pumpArena(
+      WidgetTester tester,
+      bool Function(Offset position) intercept,
+    ) async {
+      final actions = <ReaderTapAction>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 800,
+              child: ReaderGestureArena(
+                onTapAction: actions.add,
+                onTapIntercept: intercept,
+                child: Container(color: Colors.blue),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      return actions;
+    }
+
+    testWidgets('a consumed tap does not reach the tap zones', (tester) async {
+      Offset? intercepted;
+      final actions = await pumpArena(tester, (position) {
+        intercepted = position;
+        return true;
+      });
+
+      await tester.tapAt(tester.getCenter(find.byType(ReaderGestureArena)));
+      await tester.pump();
+
+      // The positions have to agree, or the hit test would look in the wrong
+      // place: the intercept is told where the tap landed.
+      expect(intercepted, isNotNull);
+      expect(actions, isEmpty);
+    });
+
+    testWidgets('an unconsumed tap still runs its tap-zone action', (
+      tester,
+    ) async {
+      final actions = await pumpArena(tester, (_) => false);
+
+      await tester.tapAt(tester.getCenter(find.byType(ReaderGestureArena)));
+      await tester.pump();
+
+      expect(actions, hasLength(1));
+    });
+  });
+
   group('ReaderGestureArena Vertical Drag Paging Tests', () {
     testWidgets(
       'registers vertical drag and ignores horizontal drag when isVerticalPaging is true',

@@ -50,6 +50,13 @@ class ReaderViewportController extends ChangeNotifier {
   /// Set by the owner (ReaderPage / ReaderControllerMixin) to notify BLoC of page changes.
   void Function(int index)? onNavigate;
 
+  /// Handles a tap that landed on an annotation, returning true when it did.
+  ///
+  /// Registered by the annotation layer, which is the only thing that knows
+  /// where the painted highlights are. Consulted before the reader's tap zones,
+  /// so opening a highlight does not also turn the page or hide the chrome.
+  bool Function(Offset globalPosition)? annotationTapDelegate;
+
   /// The currently active page index (0-based).
   int get currentPage => _currentPage;
 
@@ -213,6 +220,10 @@ class ReaderViewportController extends ChangeNotifier {
   /// Called by the gesture arena when an interactive page drag is cancelled.
   void handleDragCancel() => dragCancelDelegate?.call();
 
+  /// Asks the annotation layer whether it consumed a tap at [globalPosition].
+  bool handleAnnotationTap(Offset globalPosition) =>
+      annotationTapDelegate?.call(globalPosition) ?? false;
+
   @override
   void dispose() {
     animateToPageDelegate = null;
@@ -224,6 +235,7 @@ class ReaderViewportController extends ChangeNotifier {
     dragCancelDelegate = null;
     attachedScrollController = null;
     onNavigate = null;
+    annotationTapDelegate = null;
     super.dispose();
   }
 }

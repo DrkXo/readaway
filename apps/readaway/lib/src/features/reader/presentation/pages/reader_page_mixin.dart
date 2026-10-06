@@ -151,6 +151,32 @@ mixin ReaderControllerMixin on State<ReaderPage> {
     }
   }
 
+  /// Moves to where [note] is anchored.
+  ///
+  /// A fixed-layout note addresses a page directly. A reflowable note addresses
+  /// a character range, so its page is the chapter's first page plus the page the
+  /// offset falls on — which lands on the right page rather than the start of the
+  /// chapter. When the chapter has no measured geometry yet, the offset resolves
+  /// to its first page, so the note still takes the reader to the right chapter.
+  void jumpToNote(ReaderNote note) {
+    final anchor = note.anchor;
+    if (anchor.kind == NoteAnchorKind.page || !readerBloc.state.isReflowable) {
+      jumpToGlobalPage(anchor.pageIndex);
+      return;
+    }
+
+    if (!GetIt.I.isRegistered<PaginationCoordinator>()) {
+      jumpToChapter(anchor.chapterIndex);
+      return;
+    }
+
+    final coordinator = GetIt.I<PaginationCoordinator>();
+    jumpToGlobalPage(
+      coordinator.getGlobalPageForChapter(anchor.chapterIndex) +
+          coordinator.pageForChar(anchor.chapterIndex, anchor.startChar),
+    );
+  }
+
   void handleTapAction(ReaderTapAction action) {
     switch (action) {
       case ReaderTapAction.toggleChrome:

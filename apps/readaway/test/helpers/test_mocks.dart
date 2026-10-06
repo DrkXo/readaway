@@ -10,6 +10,8 @@ import 'package:readaway/src/core/services/path_service.dart';
 import 'package:readaway/src/core/services/settings_service.dart';
 import 'package:readaway/src/core/services/storage/hive/app_storage_service.dart';
 import 'package:readaway/src/core/services/window_service.dart';
+import 'package:readaway/src/features/annotations/domain/entity/document_notes.dart';
+import 'package:readaway/src/features/annotations/domain/repositories/annotations_repository.dart';
 import 'package:readaway/src/features/library/domain/entity/recent_document.dart';
 import 'package:readaway/src/features/library/domain/repositories/library_repository.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
@@ -27,6 +29,7 @@ import 'package:readaway_core/readaway_core.dart';
   MockSpec<ReaderTtsRepository>(),
   MockSpec<AppStorageService>(),
   MockSpec<SettingsService>(),
+  MockSpec<AnnotationsRepository>(),
 ])
 export 'test_mocks.mocks.dart';
 
@@ -35,6 +38,7 @@ void registerMockitoDummies() {
   const dummyFailure = UnexpectedFailure('mock_dummy');
   provideDummy<Result<Uint8List>>(const Failed(dummyFailure));
   provideDummy<Result<PageSize?>>(const Failed(dummyFailure));
+  provideDummy<Result<DocumentNotes>>(const Failed(dummyFailure));
   provideDummy<Result<String>>(const Failed(dummyFailure));
   provideDummy<Result<String?>>(const Failed(dummyFailure));
   provideDummy<Result<void>>(const Failed(dummyFailure));

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
@@ -20,6 +21,7 @@ class ReaderGestureArena extends StatefulWidget {
     super.key,
     required this.child,
     required this.onTapAction,
+    this.onTapIntercept,
     this.onPageDragStart,
     this.onPageDragUpdate,
     this.onPageDragEnd,
@@ -48,6 +50,12 @@ class ReaderGestureArena extends StatefulWidget {
 
   /// Triggered on single tap with the resolved [ReaderTapAction].
   final ValueChanged<ReaderTapAction> onTapAction;
+
+  /// Consulted with the tap position before the tap-zone action is applied.
+  ///
+  /// Return true to consume the tap. Set by the reader so a tap that lands on a
+  /// painted annotation opens it instead of running a tap-zone action.
+  final bool Function(Offset globalPosition)? onTapIntercept;
 
   /// Page drag callbacks for interactive transitions.
   final VoidCallback? onPageDragStart;
@@ -159,6 +167,15 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
     final primaryDelta = widget.isVerticalPaging ? deltaY : deltaX;
     final crossDelta = widget.isVerticalPaging ? deltaX : deltaY;
 
+    // A pointer held still long enough to become a long press belongs to the
+    // text-selection overlay, not to paging. This arena only ever sees raw
+    // pointer movement, so without this guard, dragging to extend a selection
+    // past the activation threshold turns the page mid-selection.
+    //
+    // The hold is the reader's own signal, and it is the same one the selection
+    // overlay acts on: hold to select, swipe promptly to page.
+    if (now.difference(_startTime) >= kLongPressTimeout) return;
+
     if (primaryDelta.abs() >= widget.constants.activationThresholdPx &&
         primaryDelta.abs() >
             crossDelta.abs() * widget.constants.directionDominanceMultiplier &&
@@ -202,6 +219,10 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
   void _onTapUp(TapUpDetails details) {
     if (!widget.enabled) return;
     if (!(widget.canHandleTapAction?.call() ?? true)) return;
+
+    // A tap on a painted annotation belongs to the annotation, so it must not
+    // also turn the page or toggle the chrome.
+    if (widget.onTapIntercept?.call(details.globalPosition) ?? false) return;
 
     final renderBox = context.findRenderObject() as RenderBox?;
     final width = renderBox?.size.width ?? 0.0;

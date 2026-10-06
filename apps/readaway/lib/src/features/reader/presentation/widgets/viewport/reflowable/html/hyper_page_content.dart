@@ -23,6 +23,7 @@ class HyperPageContent extends StatefulWidget {
     required this.onLinkTap,
     this.cacheNamespace = '',
     this.onResolveAssetBytes,
+    this.menuActionsBuilder,
   });
 
   final String html;
@@ -37,6 +38,14 @@ class HyperPageContent extends StatefulWidget {
 
   final void Function(String) onLinkTap;
   final Future<List<int>?> Function(String src)? onResolveAssetBytes;
+
+  /// Builds the actions offered when the reader selects text.
+  ///
+  /// Supplied by the reader because turning a selection into an annotation
+  /// needs the chapter's geometry, which this widget does not have. When null,
+  /// the overlay shows its own Copy / Select-all menu.
+  final List<SelectionMenuAction> Function(HyperSelectionOverlayState)?
+  menuActionsBuilder;
 
   /// Stamps the real pixel dimensions of already-decoded images onto the
   /// (shared) document nodes so RenderHyperBox lays them out at their true
@@ -298,6 +307,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
       widgetBuilder: _buildCustomWidget,
       baseStyle: baseStyle,
       onLinkTap: widget.onLinkTap,
+      menuActionsBuilder: widget.menuActionsBuilder,
     );
   }
 

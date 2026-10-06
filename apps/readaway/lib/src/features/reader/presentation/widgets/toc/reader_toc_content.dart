@@ -23,12 +23,19 @@ class ReaderTocContent extends StatefulWidget {
     super.key,
     required this.onJumpToPage,
     this.headerAction,
+    this.showHeader = true,
   });
 
   final void Function(int page) onJumpToPage;
 
   /// Trailing widget in the header row (close button, pin toggle, ...).
   final Widget? headerAction;
+
+  /// Whether to render the built-in icon-and-label header row.
+  ///
+  /// A host that provides its own chrome — the tabbed side panel does — turns
+  /// this off, so the panel's tabs are not stacked under a second title.
+  final bool showHeader;
 
   @override
   State<ReaderTocContent> createState() => _ReaderTocContentState();
@@ -195,28 +202,29 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-              child: Row(
-                children: [
-                  Icon(
-                    LucideIcons.bookOpen,
-                    size: 14,
-                    color: appColors.sidebarForeground.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(width: 9),
-                  AppText(
-                    'CONTENTS',
-                    variant: AppTextVariant.label,
-                    letterSpacing: 2.2,
-                    fontWeight: FontWeight.w700,
-                    color: appColors.sidebarSectionHeaderForeground,
-                  ),
-                  const Spacer(),
-                  ?widget.headerAction,
-                ],
+            if (widget.showHeader)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                child: Row(
+                  children: [
+                    Icon(
+                      LucideIcons.bookOpen,
+                      size: 14,
+                      color: appColors.sidebarForeground.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(width: 9),
+                    AppText(
+                      'CONTENTS',
+                      variant: AppTextVariant.label,
+                      letterSpacing: 2.2,
+                      fontWeight: FontWeight.w700,
+                      color: appColors.sidebarSectionHeaderForeground,
+                    ),
+                    const Spacer(),
+                    ?widget.headerAction,
+                  ],
+                ),
               ),
-            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
               child: Column(

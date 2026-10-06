@@ -14,6 +14,8 @@ import '../../../../core/routes/routes.dart';
 import '../../../../core/services/services.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
+import '../../../annotations/domain/entity/reader_note.dart';
+import '../../../annotations/presentation/bloc/annotations_bloc.dart';
 import '../../../settings/domain/entity/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../domain/gestures/reader_gestures.dart';
@@ -92,6 +94,15 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
             // effective prefs (document ?? global) reflect the book's settings.
             context.read<SettingsBloc>().add(
               SettingsEvent.loadDocumentPrefs(state.documentPath!),
+            );
+
+            // And this document's own annotations. Without this the annotations
+            // bloc has no document, and every create, edit or delete is dropped
+            // on the floor by its own guard.
+            context.read<AnnotationsBloc>().add(
+              AnnotationsEvent.loadForDocument(
+                documentPath: state.documentPath!,
+              ),
             );
           },
         ),
@@ -226,7 +237,10 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                   autofocus: true,
                   child: Scaffold(
                     key: _scaffoldKey,
-                    drawer: ReaderDrawer(onJumpToPage: jumpToChapter),
+                    drawer: ReaderDrawer(
+                      onJumpToPage: jumpToChapter,
+                      onJumpToNote: jumpToNote,
+                    ),
                     backgroundColor: context.appColors.readerBackground,
                     body: ReaderTtsPlayerOverlay(
                       isChromeVisible: isChromeVisibleNotifier,
@@ -253,6 +267,10 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                     !viewportController.isPageZoomed,
                                 canHandleTapAction: () =>
                                     !viewportController.isPageZoomed,
+                                // A tap on a painted highlight opens it rather
+                                // than running a tap-zone action.
+                                onTapIntercept:
+                                    viewportController.handleAnnotationTap,
                                 isAtScrollBoundary: isAtScrollBoundary,
                                 onPageDragStart:
                                     viewportController.handleDragStart,
@@ -293,6 +311,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                                 () => _tocPinned = true,
                                               ),
                                               onJumpToPage: jumpToChapter,
+                                              onJumpToNote: jumpToNote,
                                             ),
                                         ],
                                       ),
@@ -308,6 +327,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                               () => _tocPinned = false,
                                             ),
                                             onJumpToPage: jumpToChapter,
+                                            onJumpToNote: jumpToNote,
                                           ),
                                         Expanded(child: bodyContent),
                                       ],

@@ -9,6 +9,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/routes/routes.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../../router/router.dart';
+import '../../../../annotations/presentation/widgets/reader_bookmark_button.dart';
 import '../../bloc/reader_bloc.dart';
 import '../overlay/reader_share_sheet.dart';
 
@@ -87,6 +88,11 @@ class ReaderTopBar extends StatelessWidget implements PreferredSizeWidget {
             );
           },
           actions: [
+            ReaderBookmarkButton(
+              isReflowable: state.isReflowable,
+              currentPage: state.currentPage,
+              currentVirtualPage: state.currentVirtualPage,
+            ),
             AppIconButton(
               icon: LucideIcons.share2,
               tooltip: 'Share document or page',

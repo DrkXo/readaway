@@ -16,11 +16,15 @@ final class HiveBoxes {
   /// Box for offline TTS model catalog, download indexes, and checksums.
   final String tts = 'tts_box';
 
+  /// Box for per-document bookmarks, highlights and notes.
+  final String annotations = 'annotations_box';
+
   /// List of all active feature boxes.
   List<String> get all => [
     settings,
     library,
     reader,
     tts,
+    annotations,
   ];
 }
