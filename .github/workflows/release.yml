@@ -24,7 +24,7 @@ jobs:
   # -------------------------------------------------------------
   resolve-version:
     name: Resolve Version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
       title: ${{ steps.version.outputs.title }}
@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # packages/hyper_render is a git submodule and is a path dependency
           # override in pubspec.yaml, so it must be present before pub get.
@@ -75,7 +75,7 @@ jobs:
   build-android:
     name: Build Android
     needs: resolve-version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -85,22 +85,26 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
 
       - name: Setup Java (JDK 21)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: "temurin"
           java-version: "21"
 
       - name: Setup Gradle Cache
-        uses: gradle/actions/setup-gradle@v3
+        # v6 defaults to the "enhanced" cache provider (the proprietary
+        # gradle-actions-caching library), which is free forever for public
+        # repositories — so no cache-provider override is needed here.
+        # If this repo ever goes private, add `cache-provider: basic` (MIT).
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Cache FVM, Pub & Build Runner Dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.fvm/versions
@@ -160,7 +164,7 @@ jobs:
         run: bash scripts/package_android.sh "${{ needs.resolve-version.outputs.tag }}"
 
       - name: Upload Android Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android-release-artifacts
           path: build/release/*
@@ -173,12 +177,12 @@ jobs:
   build-linux:
     name: Build Linux
     needs: resolve-version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
@@ -199,7 +203,7 @@ jobs:
             curl
 
       - name: Cache FVM, Pub & Build Runner Dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.fvm/versions
@@ -244,7 +248,7 @@ jobs:
           bash scripts/package_deb_rpm.sh "${{ needs.resolve-version.outputs.tag }}"
 
       - name: Upload Linux Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-release-artifacts
           path: build/release/*
@@ -257,18 +261,18 @@ jobs:
   publish-release:
     name: Publish GitHub Release
     needs: [resolve-version, build-android, build-linux]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
 
       - name: Download Built Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: build/release
           merge-multiple: true

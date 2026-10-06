@@ -1,0 +1,37 @@
+version: 2
+updates:
+  # Keep GitHub Actions (including gradle/actions) on Node 24 runtimes and
+  # ahead of deprecation windows.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Dart/Flutter workspace members. packages/hyper_render is a git submodule
+  # (separate repository) and is intentionally not listed here.
+  - package-ecosystem: "pub"
+    directories:
+      - "/"
+      - "/apps/readaway"
+      - "/packages/readaway_core"
+      - "/packages/vscode_theme_parser"
+    schedule:
+      interval: "weekly"
+    groups:
+      pub:
+        patterns:
+          - "*"
+
+  # Gradle build for the Android app (wrapper + Android Gradle Plugin).
+  - package-ecosystem: "gradle"
+    directory: "/apps/readaway/android"
+    schedule:
+      interval: "weekly"
+    groups:
+      gradle:
+        patterns:
+          - "*"
