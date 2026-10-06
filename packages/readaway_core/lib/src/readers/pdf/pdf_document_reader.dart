@@ -198,6 +198,16 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       }
     }
 
+    // A page-based document is still navigable page by page even without a
+    // meaningful bookmark TOC, so fall back to one entry per page instead of
+    // an empty or near-empty contents list (mirrors the comic reader's page
+    // fallback). A single leaf bookmark — e.g. a stray figure anchor — is not
+    // a real TOC.
+    if (!PdfDocumentReader.hasUsableOutline(outlineItems) &&
+        pdfDoc.pages.isNotEmpty) {
+      outlineItems = PdfDocumentReader.buildPageOutline(pdfDoc.pages.length);
+    }
+
     _log.i(
       'PDF loaded successfully: $filePath (${pdfDoc.pages.length} pages, outline: ${outlineItems.length})',
     );
@@ -237,6 +247,31 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       );
     }
   }
+
+  /// Flat, one-entry-per-page outline used when the document provides no
+  /// native bookmarks and no scraped printed table of contents, so a
+  /// non-reflowable document always has a navigable contents list (mirrors
+  /// [ComicTocExtractor]'s page fallback).
+  static List<OutlineItem> buildPageOutline(int pageCount) {
+    return [
+      for (var i = 0; i < pageCount; i++)
+        OutlineItem(
+          title: 'Page ${i + 1}',
+          href: 'page:$i',
+          level: 0,
+          chapterIndex: i,
+        ),
+    ];
+  }
+
+  /// Whether [outline] is meaningful enough to serve as the document's TOC.
+  ///
+  /// A single leaf bookmark (e.g. a stray figure anchor) does not count, so a
+  /// fixed-layout document carrying only one unusable bookmark falls back to a
+  /// per-page outline instead.
+  static bool hasUsableOutline(List<OutlineItem> outline) =>
+      outline.isNotEmpty &&
+      !(outline.length == 1 && outline.single.children.isEmpty);
 
   @override
   String get format => 'pdf';

@@ -46,6 +46,12 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
   /// current chapter are force-expanded (see [_ensureCurrentVisible]).
   final Set<_TocNodeRef> _expanded = {};
 
+  /// Live TOC filter. Empty means "render the normal collapsible tree".
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  bool get _searchActive => _searchQuery.isNotEmpty;
+
   List<OutlineItem>? _outlineForIndex;
   int _currentPageForIndex = -1;
   (OutlineItem, List<OutlineItem>)? _cachedCurrent;
@@ -110,7 +116,23 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  /// Keeps [_searchQuery] in sync with the field, normalized for matching.
+  void _onSearchChanged() {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query != _searchQuery) {
+      setState(() => _searchQuery = query);
+    }
+  }
+
+  @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -132,25 +154,32 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
         final bookTitle = state.bookTitle;
         final author = state.author;
 
+        final searchActive = _searchActive;
         final current = hasOutline
             ? _currentNode(outline, state.currentPage)
             : null;
 
         // The current chapter stays reachable even under collapsed parents,
-        // so force its ancestor chain open.
-        if (current != null) {
+        // so force its ancestor chain open. Filtered rows ignore the expansion
+        // state entirely, so there is nothing to force open while searching.
+        if (!searchActive && current != null) {
           for (final node in current.$2) {
             _expanded.add(_TocNodeRef(node));
           }
         }
 
         final rows = hasOutline
-            ? tocVisibleRows(
-                outline,
-                (item) => _expanded.contains(_TocNodeRef(item)),
-              )
+            ? searchActive
+                  ? tocSearchRows(outline, _searchQuery)
+                  : tocVisibleRows(
+                      outline,
+                      (item) => _expanded.contains(_TocNodeRef(item)),
+                    )
             : const <OutlineItem>[];
-        final scrollIndex = _rowIndexOf(current?.$1, rows);
+
+        // Auto-reveal the current chapter only for the normal tree; a filtered
+        // list has its own ordering, so scrolling to a match would be wrong.
+        final scrollIndex = searchActive ? -1 : _rowIndexOf(current?.$1, rows);
 
         // Keep the current chapter in view on initial load or when position
         // changes, without overriding user manual scrolling on unrelated
@@ -272,12 +301,91 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
               thickness: 1,
               color: appColors.sidebarBorder,
             ),
+            if (hasOutline)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Semantics(
+                  label: 'Search chapters',
+                  child: SizedBox(
+                    height: 44,
+                    child: TextField(
+                      key: const ValueKey('toc-search-field'),
+                      controller: _searchController,
+                      textInputAction: TextInputAction.search,
+                      textAlignVertical: TextAlignVertical.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: appColors.inputForeground,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Search chapters…',
+                        hintStyle: TextStyle(
+                          fontSize: 13,
+                          color: appColors.inputPlaceholderForeground,
+                        ),
+                        prefixIcon: const Icon(LucideIcons.search, size: 16),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 40,
+                        ),
+                        suffixIcon: searchActive
+                            ? IconButton(
+                                tooltip: 'Clear search',
+                                onPressed: _searchController.clear,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 44,
+                                  minHeight: 44,
+                                ),
+                                icon: const Icon(LucideIcons.x, size: 16),
+                              )
+                            : null,
+                        suffixIconConstraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 44,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                        ),
+                        filled: true,
+                        fillColor: appColors.inputBackground,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: appColors.inputBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: appColors.inputBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: appColors.focusBorder,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             Expanded(
               child: !hasOutline
                   ? const AppEmptyView(
                       icon: LucideIcons.bookOpen,
                       title: 'No contents',
                       message: 'This document has no table of contents.',
+                    )
+                  : searchActive && rows.isEmpty
+                  ? AppEmptyView(
+                      icon: LucideIcons.searchX,
+                      title: 'No matches',
+                      message:
+                          'No chapters match “$_searchQuery”. '
+                          'Try a different word.',
+                      actionLabel: 'Clear search',
+                      onAction: _searchController.clear,
                     )
                   : ScrollbarTheme(
                       data: ScrollbarThemeData(
@@ -317,9 +425,17 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                             return OutlineItemTile(
                               item: item,
                               isCurrent: isCurrent,
-                              isExpanded: _expanded.contains(_TocNodeRef(item)),
+                              // Filtered rows are already flattened to reveal
+                              // every match, so they always read as expanded.
+                              isExpanded:
+                                  searchActive ||
+                                  _expanded.contains(_TocNodeRef(item)),
                               onTap: () {
                                 if (hasChildren) {
+                                  // While filtering, descendants appear because
+                                  // they match, not because of expansion, so a
+                                  // parent tap has nothing left to toggle.
+                                  if (searchActive) return;
                                   setState(() {
                                     final ref = _TocNodeRef(item);
                                     if (!_expanded.remove(ref)) {
@@ -376,6 +492,51 @@ List<OutlineItem> tocVisibleRows(
   }
 
   walk(outline);
+  return rows;
+}
+
+/// Depth-first list of outline nodes matching [query], keeping the ancestor
+/// chain of every match so results stay in context and remain navigable.
+///
+/// Matching is a case-insensitive substring test on the node title. A node is
+/// kept when its title matches or when any descendant matches, which keeps
+/// volumes and sections visible above their matching chapters. A blank [query]
+/// returns the whole tree, fully expanded.
+List<OutlineItem> tocSearchRows(List<OutlineItem> outline, String query) {
+  final needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return tocVisibleRows(outline, (_) => true);
+  }
+
+  // First pass: mark every match together with its ancestors.
+  final keep = <_TocNodeRef>{};
+  bool mark(List<OutlineItem> items) {
+    var anyMatch = false;
+    for (final item in items) {
+      final selfMatches = item.title.toLowerCase().contains(needle);
+      final childMatches = item.children.isNotEmpty && mark(item.children);
+      if (selfMatches || childMatches) {
+        keep.add(_TocNodeRef(item));
+        anyMatch = true;
+      }
+    }
+    return anyMatch;
+  }
+
+  // Second pass: emit marked nodes in document order. A kept node's ancestors
+  // are always kept too, so skipping an unmarked node never hides a match.
+  final rows = <OutlineItem>[];
+  void emit(List<OutlineItem> items) {
+    for (final item in items) {
+      if (keep.contains(_TocNodeRef(item))) {
+        rows.add(item);
+        emit(item.children);
+      }
+    }
+  }
+
+  mark(outline);
+  emit(outline);
   return rows;
 }
 

@@ -117,6 +117,14 @@ abstract class ReaderPreferences with _$ReaderPreferences {
   static ReaderPreferences fromStoredJson(Map<String, dynamic> json) =>
       _$ReaderPreferencesFromJson(json);
 
+  /// Whether the user's text alignment is applied on top of the book's own
+  /// alignment.
+  ///
+  /// Only meaningful while [overrideLayout] is on: when it is off the book's
+  /// layout wins, and when [keepTextAlignment] is on the book's own alignment
+  /// is preserved instead.
+  bool get appliesTextAlignment => overrideLayout && !keepTextAlignment;
+
   /// Returns the effective scroll direction for the given format reflowability.
   ReaderScrollDirection effectiveScrollDirection({
     required bool isReflowable,

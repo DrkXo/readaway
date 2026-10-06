@@ -5,15 +5,15 @@ requires redistributed works to carry their own notices, so this file records th
 third-party material that ships inside Readaway's release binaries or is vendored into
 this repository.
 
-**What is *not* in this file.** The Dart and Flutter dependency tree is not duplicated
+**What is _not_ in this file.** The Dart and Flutter dependency tree is not duplicated
 here — it is resolved and versioned in [`pubspec.lock`](pubspec.lock), and the manifests
-are listed in the *Built with* section of the [README](README.md#acknowledgments). The
+are listed in the _Built with_ section of the [README](README.md#acknowledgments). The
 bundled font families are listed at the end, because they already carry their license
 texts alongside the font files and need no further action.
 
 ## Bundled color themes
 
-The 15 built-in light/dark color schemes are VS Code color themes copied verbatim into
+The 7 built-in light/dark color schemes are VS Code color themes copied verbatim into
 [`packages/readaway_core/lib/src/theme/builtin_vscode_themes.dart`](packages/readaway_core/lib/src/theme/builtin_vscode_themes.dart)
 as JSON string literals, and parsed at runtime by
 [`packages/vscode_theme_parser`](packages/vscode_theme_parser).
@@ -21,18 +21,18 @@ as JSON string literals, and parsed at runtime by
 The copies are unmodified: each vendored file is byte-identical to the upstream file
 listed below.
 
-| Family   | Upstream                                                                                                                                                                                 | License      | Schemes                                                                                                                                                                                    |
-| :------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| Token    | [ThorstenRhau/token](https://github.com/ThorstenRhau/token) — `contrib/vscode/themes/`                                                                                                   | BSD-3-Clause | `tokenDark`, `tokenLight`, `tokenFlintDark`, `tokenFlintLight`, `tokenMeridianDark`, `tokenMeridianLight`, `tokenTemperDark`, `tokenTemperLight`, `tokenUltraDark`, `tokenUltraLight` (10) |
-| Kanagawa | [metapho-re/kanagawa-vscode-theme](https://github.com/metapho-re/kanagawa-vscode-theme) — `themes/`, a VS Code port of [rebelot/kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim) | MIT          | `kanagawaWave`, `kanagawaDragon`, `kanagawaLotus` (3)                                                                                                                                      |
-| Flexoki  | [kepano/flexoki](https://github.com/kepano/flexoki) — `vscode/`                                                                                                                          | MIT          | `flexokiDark`, `flexokiLight` (2)                                                                                                                                                          |
+|  Family  |                                                                                         Upstream                                                                                         |   License    |                        Schemes                        |
+| :------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------: | :---------------------------------------------------: |
+|  Token   |                                                  [ThorstenRhau/token](https://github.com/ThorstenRhau/token) — `contrib/vscode/themes/`                                                  | BSD-3-Clause |             `tokenDark`, `tokenLight` (2)             |
+| Kanagawa | [metapho-re/kanagawa-vscode-theme](https://github.com/metapho-re/kanagawa-vscode-theme) — `themes/`, a VS Code port of [rebelot/kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim) |     MIT      | `kanagawaWave`, `kanagawaDragon`, `kanagawaLotus` (3) |
+| Flexoki  |                                                             [kepano/flexoki](https://github.com/kepano/flexoki) — `vscode/`                                                              |     MIT      |           `flexokiDark`, `flexokiLight` (2)           |
 
 All three licenses are GPL-3.0 compatible, so vendoring them in a GPL-3.0 project is
 permitted, and Readaway adds no restrictions of its own.
 
 Kanagawa is credited twice on purpose: the JSON in this repository comes from the
 `metapho-re` VS Code port, and that port derives from the `rebelot/kanagawa.nvim`
-colorscheme, whose palette is in turn inspired by Hokusai's *The Great Wave off Kanagawa*.
+colorscheme, whose palette is in turn inspired by Hokusai's _The Great Wave off Kanagawa_.
 
 ### Token — BSD 3-Clause License
 
@@ -199,17 +199,17 @@ SOFTWARE.
 ## Native libraries in the release binaries
 
 The release builds carry prebuilt native shared libraries, pulled in as transitive
-dependencies. These are listed here because they are *redistributed inside the shipped
-binaries*, not merely linked at build time.
+dependencies. These are listed here because they are _redistributed inside the shipped
+binaries_, not merely linked at build time.
 
-| Library                                       | Source                                                                       | License                              | Where it ships    |
+|                    Library                    |                                    Source                                    |               License                |  Where it ships   |
 | :-------------------------------------------: | :--------------------------------------------------------------------------: | :----------------------------------: | :---------------: |
-| `libmpv.so`                                   | [mpv](https://github.com/mpv-player/mpv), via `media_kit_libs_android_audio` | GPL-2.0-or-later / LGPL-2.1-or-later | Android APKs only |
-| `libonnxruntime.so`                           | [ONNX Runtime](https://github.com/microsoft/onnxruntime)                     | MIT                                  | Android and Linux |
-| `libsherpa-onnx-*.so`                         | [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)                         | Apache-2.0                           | Android and Linux |
-| `libpdfium.so`                                | [PDFium](https://github.com/pdfium/pdfium), via `pdfrx`                      | BSD-3-Clause                         | Android and Linux |
-| `libmediakitandroidhelper.so`                 | [media_kit](https://github.com/media-kit/media-kit)                          | MIT                                  | Android           |
-| `libapp.so`, `libflutter.so`, `libdartjni.so` | [Flutter](https://github.com/flutter/flutter)                                | BSD-3-Clause                         | Android and Linux |
+|                  `libmpv.so`                  | [mpv](https://github.com/mpv-player/mpv), via `media_kit_libs_android_audio` | GPL-2.0-or-later / LGPL-2.1-or-later | Android APKs only |
+|              `libonnxruntime.so`              |           [ONNX Runtime](https://github.com/microsoft/onnxruntime)           |                 MIT                  | Android and Linux |
+|             `libsherpa-onnx-*.so`             |             [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)             |              Apache-2.0              | Android and Linux |
+|                `libpdfium.so`                 |           [PDFium](https://github.com/pdfium/pdfium), via `pdfrx`            |             BSD-3-Clause             | Android and Linux |
+|         `libmediakitandroidhelper.so`         |             [media_kit](https://github.com/media-kit/media-kit)              |                 MIT                  |      Android      |
+| `libapp.so`, `libflutter.so`, `libdartjni.so` |                [Flutter](https://github.com/flutter/flutter)                 |             BSD-3-Clause             | Android and Linux |
 
 All of these are GPL-3.0 compatible. Where a component is GPL-2.0-or-later, the whole
 combined work is likewise distributable under GPL-3.0 terms.
@@ -282,10 +282,10 @@ package registry. It is checked into this repository as a git submodule at
 `feat/line-fragments`. That fork is itself based on
 [brewkits/hyper_render](https://github.com/brewkits/hyper_render).
 
-| Package | Upstream | License |
-| :--- | :--- | :--- |
-| `hyper_render` | [DrkXo/hyper_render](https://github.com/DrkXo/hyper_render) (fork of [brewkits/hyper_render](https://github.com/brewkits/hyper_render)) | MIT |
-| `hyper_render_core` | same repository, `packages/hyper_render_core` | MIT |
+| Package             | Upstream                                                                                                                                | License |
+| :------------------ | :-------------------------------------------------------------------------------------------------------------------------------------- | :------ |
+| `hyper_render`      | [DrkXo/hyper_render](https://github.com/DrkXo/hyper_render) (fork of [brewkits/hyper_render](https://github.com/brewkits/hyper_render)) | MIT     |
+| `hyper_render_core` | same repository, `packages/hyper_render_core`                                                                                           | MIT     |
 
 Both are MIT, which is GPL-3.0 compatible, so the combination may be redistributed
 under the GPL-3.0. The full license texts are already committed inside the submodule

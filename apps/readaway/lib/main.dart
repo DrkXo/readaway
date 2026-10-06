@@ -33,6 +33,7 @@ Future<void> main([List<String> args = const []]) async {
           'NotoSans',
           'FiraCode',
           'JetBrainsMono',
+          'MadimiOne',
         ]) {
           yield LicenseEntryWithLineBreaks(
             ['google_fonts'],

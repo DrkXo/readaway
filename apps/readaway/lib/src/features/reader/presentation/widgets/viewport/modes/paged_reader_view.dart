@@ -17,6 +17,8 @@ class PagedReaderView extends StatefulWidget {
     required this.itemBuilder,
     required this.onPageChangeRequested,
     this.controller,
+    this.stepTargetResolver,
+    this.onStepRequested,
     this.duration = const Duration(milliseconds: 320),
     this.backgroundColor,
   });
@@ -31,6 +33,14 @@ class PagedReaderView extends StatefulWidget {
   final ReaderViewportController? controller;
   final Duration duration;
 
+  /// Resolves the page a step would reveal, or null when it cannot be shown yet
+  /// (an unmeasured previous chapter whose last page is unknown).
+  final int? Function({required bool forward})? stepTargetResolver;
+
+  /// Handles a step the pager cannot complete itself, so the owner can hold
+  /// until the target chapter is measurable.
+  final void Function({required bool forward})? onStepRequested;
+
   @override
   State<PagedReaderView> createState() => _PagedReaderViewState();
 }
@@ -42,16 +52,20 @@ class _PagedReaderViewState extends State<PagedReaderView>
   @override
   void initState() {
     super.initState();
-    _transitionController = PagedTransitionController(
-      vsync: this,
-      currentPage: widget.currentPage,
-      pageCount: widget.pageCount,
-      transition: widget.transition,
-      direction: widget.direction,
-      duration: widget.duration,
-      viewportController: widget.controller,
-      onPageCommitted: widget.onPageChangeRequested,
-    )..addListener(_requestRebuild);
+    _transitionController =
+        PagedTransitionController(
+            vsync: this,
+            currentPage: widget.currentPage,
+            pageCount: widget.pageCount,
+            transition: widget.transition,
+            direction: widget.direction,
+            duration: widget.duration,
+            viewportController: widget.controller,
+            onPageCommitted: widget.onPageChangeRequested,
+          )
+          ..addListener(_requestRebuild)
+          ..stepTargetResolver = widget.stepTargetResolver
+          ..onStepRequested = widget.onStepRequested;
     _bindController();
   }
 
@@ -94,12 +108,15 @@ class _PagedReaderViewState extends State<PagedReaderView>
       widget.controller?.updatePageCount(widget.pageCount);
     }
 
-    _transitionController.updateConfiguration(
-      pageCount: widget.pageCount,
-      transition: widget.transition,
-      direction: widget.direction,
-      duration: widget.duration,
-    );
+    _transitionController
+      ..stepTargetResolver = widget.stepTargetResolver
+      ..onStepRequested = widget.onStepRequested
+      ..updateConfiguration(
+        pageCount: widget.pageCount,
+        transition: widget.transition,
+        direction: widget.direction,
+        duration: widget.duration,
+      );
     _transitionController.syncCurrentPage(widget.currentPage);
   }
 

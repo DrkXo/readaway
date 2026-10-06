@@ -25,7 +25,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
     this.onSettingsPressed,
     this.settingsTooltip = 'Settings',
     this.height,
-    this.showBottomBorder = true,
+    this.showBottomBorder = false,
     this.backgroundColor,
     this.contentPadding,
   });

@@ -45,6 +45,23 @@ class PagedTransitionController extends ChangeNotifier {
   double _rawDragProgress = 0.0;
   DateTime _lastPointerScrollTime = DateTime.fromMillisecondsSinceEpoch(0);
 
+  /// Direction of a step the drag could not reveal, if any.
+  ///
+  /// Set while the finger is over a page that cannot be shown yet (an unmeasured
+  /// previous chapter). Release hands this intent to [onStepRequested] instead
+  /// of committing a page that would immediately be replaced.
+  bool? _blockedStepForward;
+
+  /// Resolves the page index a step would reveal, or null when it cannot be
+  /// shown yet. Null clamps the drag rather than revealing a placeholder page.
+  int? Function({required bool forward})? stepTargetResolver;
+
+  /// Handles a step this controller cannot complete on its own.
+  ///
+  /// The owner holds the current page until the target chapter is measurable,
+  /// then lands on it, rather than turning to a page it would have to correct.
+  void Function({required bool forward})? onStepRequested;
+
   int get currentPage => _currentPage;
   int? get targetPage => _targetPage;
   bool get isForward => _isForward;
@@ -128,8 +145,32 @@ class PagedTransitionController extends ChangeNotifier {
 
     _rawDragProgress += normalizedDelta;
     final targetForward = _rawDragProgress >= 0;
-    final potentialTarget = targetForward ? _currentPage + 1 : _currentPage - 1;
 
+    final resolver = stepTargetResolver;
+    if (resolver == null) {
+      _activateDragTarget(
+        targetForward ? _currentPage + 1 : _currentPage - 1,
+        targetForward,
+      );
+      return;
+    }
+
+    final resolved = resolver(forward: targetForward);
+    if (resolved == null) {
+      // The page this step would reveal cannot be shown yet. Keep the drag from
+      // revealing a page that would be replaced on release, and remember the
+      // intent so release can hand it to [onStepRequested].
+      _blockedStepForward = targetForward;
+      _targetPage = null;
+      _rawDragProgress *= 0.85;
+      return;
+    }
+
+    _blockedStepForward = null;
+    _activateDragTarget(resolved, targetForward);
+  }
+
+  void _activateDragTarget(int potentialTarget, bool targetForward) {
     if (potentialTarget < 0 || potentialTarget >= _pageCount) {
       _rawDragProgress *= 0.85;
       return;
@@ -147,8 +188,13 @@ class PagedTransitionController extends ChangeNotifier {
   }
 
   void handleDragEnd(double velocity) {
-    if (!_isInteractive || _targetPage == null) {
-      _isInteractive = false;
+    if (!_isInteractive) {
+      _blockedStepForward = null;
+      return;
+    }
+
+    if (_targetPage == null) {
+      _finishBlockedStep(velocity);
       return;
     }
 
@@ -175,6 +221,33 @@ class PagedTransitionController extends ChangeNotifier {
     }
   }
 
+  /// Resolves a release that could not reveal a page.
+  ///
+  /// When the reader dragged with enough intent, the step is handed to
+  /// [onStepRequested] rather than committed, so the owner can hold the current
+  /// page until the target chapter is measurable. Otherwise the drag unwinds.
+  void _finishBlockedStep(double velocity) {
+    final blocked = _blockedStepForward;
+    _blockedStepForward = null;
+    if (blocked == null) {
+      _isInteractive = false;
+      return;
+    }
+
+    final currentProgress = animationController.value;
+    final movingInTargetDirection =
+        (blocked && velocity < 0) || (!blocked && velocity > 0);
+    final isFling = movingInTargetDirection && velocity.abs() > 250.0;
+
+    if (isFling || currentProgress >= 0.3) {
+      _finalizeTransition(committed: false);
+      onStepRequested?.call(forward: blocked);
+    } else {
+      _curvedAnimToEaseOut();
+      animationController.reverse(from: animationController.value);
+    }
+  }
+
   void handleDragCancel() {
     if (_isInteractive) {
       _curvedAnimToEaseOut();
@@ -197,6 +270,14 @@ class PagedTransitionController extends ChangeNotifier {
 
     if (delta.abs() <= 15) return;
     _lastPointerScrollTime = now;
+
+    // Route wheel steps through the owner so a backward step into an
+    // unmeasured chapter can hold instead of turning to the wrong page.
+    final onStep = onStepRequested;
+    if (onStep != null) {
+      onStep(forward: delta > 0);
+      return;
+    }
 
     if (delta > 0 && _currentPage < _pageCount - 1) {
       animateToPage(_currentPage + 1);

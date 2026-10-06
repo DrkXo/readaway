@@ -340,20 +340,11 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                       duration: gestureConstants
                                           .chromeAnimationDuration,
                                       curve: Curves.easeOutCubic,
-                                      child: Container(
-                                        color: context
-                                            .appColors
-                                            .topbarBackground
-                                            .withValues(alpha: 0.95),
-                                        child: SafeArea(
-                                          bottom: false,
-                                          child: ReaderTopBar(
-                                            onOpenDrawer: () => _scaffoldKey
-                                                .currentState
-                                                ?.openDrawer(),
-                                            onCloseDocument: closeReader,
-                                          ),
-                                        ),
+                                      child: ReaderTopBar(
+                                        onOpenDrawer: () => _scaffoldKey
+                                            .currentState
+                                            ?.openDrawer(),
+                                        onCloseDocument: closeReader,
                                       ),
                                     ),
                                   ),

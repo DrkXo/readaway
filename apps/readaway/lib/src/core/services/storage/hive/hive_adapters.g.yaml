@@ -183,7 +183,7 @@ types:
         index: 2
   GlobalViewSettings:
     typeId: 16
-    nextIndex: 126
+    nextIndex: 127
     fields:
       volumeKeysToFlip:
         index: 18
@@ -237,6 +237,8 @@ types:
         index: 124
       ttsHighlightWordOpacity:
         index: 125
+      uiFont:
+        index: 126
   SherpaTtsModelInfo:
     typeId: 19
     nextIndex: 21

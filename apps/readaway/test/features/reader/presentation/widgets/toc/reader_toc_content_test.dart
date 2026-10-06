@@ -99,4 +99,72 @@ void main() {
       expect(tocCurrentPath([leafOnly], 0), isNull);
     });
   });
+
+  group('tocSearchRows', () {
+    final outline = [
+      volume(
+        'Volume 1',
+        children: [
+          chapter('Chapter 1', 0),
+          chapter('Chapter 2', 10),
+        ],
+      ),
+      volume(
+        'Volume 2',
+        children: [
+          chapter('Chapter 3', 20),
+        ],
+      ),
+      chapter('Epilogue', 30),
+    ];
+
+    test(
+      'keeps a matching leaf with its ancestor chain, in document order',
+      () {
+        expect(
+          tocSearchRows(outline, 'chapter 2').map((o) => o.title),
+          ['Volume 1', 'Chapter 2'],
+        );
+      },
+    );
+
+    test('matches titles case-insensitively', () {
+      expect(
+        tocSearchRows(outline, 'epiLOGUE').map((o) => o.title),
+        ['Epilogue'],
+      );
+    });
+
+    test('keeps a matched container but not its unmatched children', () {
+      expect(
+        tocSearchRows(outline, 'volume').map((o) => o.title),
+        ['Volume 1', 'Volume 2'],
+      );
+    });
+
+    test('keeps every ancestor of each match', () {
+      expect(
+        tocSearchRows(outline, 'chapter').map((o) => o.title),
+        ['Volume 1', 'Chapter 1', 'Chapter 2', 'Volume 2', 'Chapter 3'],
+      );
+    });
+
+    test('returns the full expanded tree for a blank query', () {
+      expect(
+        tocSearchRows(outline, '   ').map((o) => o.title),
+        [
+          'Volume 1',
+          'Chapter 1',
+          'Chapter 2',
+          'Volume 2',
+          'Chapter 3',
+          'Epilogue',
+        ],
+      );
+    });
+
+    test('returns nothing when no title matches', () {
+      expect(tocSearchRows(outline, 'zzz'), isEmpty);
+    });
+  });
 }

@@ -10,3 +10,4 @@ export 'primitives/settings_slider_row.dart';
 export 'primitives/settings_switch_row.dart';
 export 'scoped_settings_section.dart';
 export 'settings_sheet.dart';
+export 'tts_highlight_color_picker.dart';

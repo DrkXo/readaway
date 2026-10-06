@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../reader_prefs_scope.dart';
 import '../settings_bloc_x.dart';
@@ -24,6 +25,7 @@ class SettingsAppearancePanel extends StatelessWidget {
             globalViewSettings: settings.globalViewSettings.copyWith(
               theme: 'system',
               selectedScheme: 'token',
+              uiFont: 'Madimi One',
             ),
           ),
         ),
@@ -63,6 +65,7 @@ class SettingsAppearancePanel extends StatelessWidget {
           rows: const [
             _ThemeModeCard(),
             SchemePickerCard(),
+            _UiFontRow(),
           ],
         ),
         const SizedBox(height: 24),
@@ -142,6 +145,50 @@ class _ThemeModeCard extends StatelessWidget {
               },
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+class _UiFontRow extends StatelessWidget {
+  const _UiFontRow();
+
+  /// Sentinel for the "System" (platform default) choice, which maps to a
+  /// null font family on the [ThemeData].
+  static const _system = 'system';
+
+  static const _builtin = [
+    SettingsSelectEntry<String>(value: _system, label: 'System'),
+    SettingsSelectEntry<String>(value: 'Madimi One', label: 'Madimi One'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.appSettings.globalViewSettings.uiFont !=
+          curr.appSettings.globalViewSettings.uiFont,
+      builder: (context, state) {
+        final current = state.appSettings.globalViewSettings.uiFont;
+        return SettingsSelectRow<String>(
+          label: 'UI font',
+          description:
+              'Typeface used across the app interface, not book content',
+          value: current,
+          entries: _builtin,
+          onChanged: (uiFont) {
+            final settings = state.appSettings;
+            context.read<SettingsBloc>().add(
+              SettingsEvent.updateAppSettings(
+                settings.copyWith(
+                  globalViewSettings: settings.globalViewSettings.copyWith(
+                    uiFont: uiFont,
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );

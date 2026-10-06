@@ -17,6 +17,17 @@ class SettingsLayoutPanel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         ScopedSettingsSection(
+          title: 'Book layout',
+          onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(overrideLayout: true),
+            documentPath: path,
+          ),
+          rows: const [
+            _OverrideLayoutRow(),
+          ],
+        ),
+        const SizedBox(height: 24),
+        ScopedSettingsSection(
           title: 'Page margins',
           onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(
@@ -97,6 +108,37 @@ class SettingsLayoutPanel extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Whether the reader's layout settings replace the book's own styling.
+///
+/// While this is off, the Paragraph and Text groups cannot take effect, so
+/// their rows are shown disabled.
+class _OverrideLayoutRow extends StatelessWidget {
+  const _OverrideLayoutRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final override = state.effectiveReaderPrefs(path).overrideLayout;
+        return SettingsSwitchRow(
+          label: 'Override book layout',
+          description:
+              'Apply your spacing and alignment over the book\'s own styling. '
+              'Turn off to respect the book\'s layout.',
+          value: override,
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(overrideLayout: v),
+            documentPath: path,
+          ),
+        );
+      },
     );
   }
 }
@@ -191,13 +233,14 @@ class _ParagraphSpacingRow extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final margin = state.effectiveReaderPrefs(path).paragraphMargin;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSliderRow(
           label: 'Paragraph spacing',
-          value: margin,
+          value: prefs.paragraphMargin,
           min: 0,
           max: 2,
           divisions: 20,
+          enabled: prefs.overrideLayout,
           format: (v) => v.toStringAsFixed(1),
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(paragraphMargin: v),
@@ -219,13 +262,14 @@ class _TextIndentRow extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final indent = state.effectiveReaderPrefs(path).textIndent;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSliderRow(
           label: 'Text indent',
-          value: indent,
+          value: prefs.textIndent,
           min: 0,
           max: 4,
           divisions: 8,
+          enabled: prefs.overrideLayout,
           format: (v) => '${v.toStringAsFixed(1)} em',
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(textIndent: v),
@@ -247,15 +291,26 @@ class _TextAlignRow extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final current = state.effectiveReaderPrefs(path).textAlign;
+        final prefs = state.effectiveReaderPrefs(path);
+        final enabled = prefs.appliesTextAlignment;
+        final current = prefs.textAlign;
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
-                child: Text('Text alignment'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Text alignment',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: enabled
+                        ? null
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.38),
+                  ),
+                ),
               ),
               SegmentedButton<ReaderTextAlign>(
                 segments: const [
@@ -281,13 +336,15 @@ class _TextAlignRow extends StatelessWidget {
                   ),
                 ],
                 selected: {current},
-                onSelectionChanged: (s) {
-                  if (s.isEmpty) return;
-                  context.read<SettingsBloc>().updateReaderPrefs(
-                    (p) => p.copyWith(textAlign: s.first),
-                    documentPath: path,
-                  );
-                },
+                onSelectionChanged: enabled
+                    ? (s) {
+                        if (s.isEmpty) return;
+                        context.read<SettingsBloc>().updateReaderPrefs(
+                          (p) => p.copyWith(textAlign: s.first),
+                          documentPath: path,
+                        );
+                      }
+                    : null,
               ),
             ],
           ),
@@ -307,13 +364,14 @@ class _KeepTextAlignmentRow extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final enabled = state.effectiveReaderPrefs(path).keepTextAlignment;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSwitchRow(
           label: 'Keep book text alignment',
           description:
               'Preserve the book\'s own alignment (e.g. centered poetry) '
               'instead of overriding it.',
-          value: enabled,
+          value: prefs.keepTextAlignment,
+          enabled: prefs.overrideLayout,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(keepTextAlignment: v),
             documentPath: path,
@@ -334,13 +392,14 @@ class _LineHeightRow extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final lineHeight = state.effectiveReaderPrefs(path).lineHeight;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSliderRow(
           label: 'Line height',
-          value: lineHeight,
+          value: prefs.lineHeight,
           min: 0.8,
           max: 3,
           divisions: 44,
+          enabled: prefs.overrideLayout,
           format: (v) => v.toStringAsFixed(2),
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(lineHeight: v),
@@ -362,13 +421,14 @@ class _LetterSpacingRow extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final spacing = state.effectiveReaderPrefs(path).letterSpacing;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSliderRow(
           label: 'Letter spacing',
-          value: spacing,
+          value: prefs.letterSpacing,
           min: -0.1,
           max: 0.3,
           divisions: 40,
+          enabled: prefs.overrideLayout,
           format: (v) => v.toStringAsFixed(2),
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(letterSpacing: v),
@@ -390,13 +450,14 @@ class _WordSpacingRow extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
-        final spacing = state.effectiveReaderPrefs(path).wordSpacing;
+        final prefs = state.effectiveReaderPrefs(path);
         return SettingsSliderRow(
           label: 'Word spacing',
-          value: spacing,
+          value: prefs.wordSpacing,
           min: 0,
           max: 10,
           divisions: 10,
+          enabled: prefs.overrideLayout,
           format: (v) => '${v.round()} px',
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(wordSpacing: v),
@@ -444,16 +505,25 @@ class _HeaderAlignmentRow extends StatelessWidget {
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
         final prefs = state.effectiveReaderPrefs(path);
-        if (!prefs.showHeader) return const SizedBox.shrink();
+        final enabled = prefs.showHeader;
         final current = prefs.headerAlignment;
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
-                child: Text('Header position'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Header position',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: enabled
+                        ? null
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.38),
+                  ),
+                ),
               ),
               SegmentedButton<ReaderHeaderAlignment>(
                 segments: const [
@@ -474,13 +544,15 @@ class _HeaderAlignmentRow extends StatelessWidget {
                   ),
                 ],
                 selected: {current},
-                onSelectionChanged: (s) {
-                  if (s.isEmpty) return;
-                  context.read<SettingsBloc>().updateReaderPrefs(
-                    (p) => p.copyWith(headerAlignment: s.first),
-                    documentPath: path,
-                  );
-                },
+                onSelectionChanged: enabled
+                    ? (s) {
+                        if (s.isEmpty) return;
+                        context.read<SettingsBloc>().updateReaderPrefs(
+                          (p) => p.copyWith(headerAlignment: s.first),
+                          documentPath: path,
+                        );
+                      }
+                    : null,
               ),
             ],
           ),
@@ -526,16 +598,25 @@ class _ProgressStyleRow extends StatelessWidget {
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
         final prefs = state.effectiveReaderPrefs(path);
-        if (!prefs.showFooter) return const SizedBox.shrink();
+        final enabled = prefs.showFooter;
         final current = prefs.footerProgressStyle;
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
-                child: Text('Progress display'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Progress display',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: enabled
+                        ? null
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.38),
+                  ),
+                ),
               ),
               SegmentedButton<ReaderProgressStyle>(
                 segments: const [
@@ -553,13 +634,15 @@ class _ProgressStyleRow extends StatelessWidget {
                   ),
                 ],
                 selected: {current},
-                onSelectionChanged: (s) {
-                  if (s.isEmpty) return;
-                  context.read<SettingsBloc>().updateReaderPrefs(
-                    (p) => p.copyWith(footerProgressStyle: s.first),
-                    documentPath: path,
-                  );
-                },
+                onSelectionChanged: enabled
+                    ? (s) {
+                        if (s.isEmpty) return;
+                        context.read<SettingsBloc>().updateReaderPrefs(
+                          (p) => p.copyWith(footerProgressStyle: s.first),
+                          documentPath: path,
+                        );
+                      }
+                    : null,
               ),
             ],
           ),
@@ -580,10 +663,10 @@ class _RemainingPagesRow extends StatelessWidget {
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
         final prefs = state.effectiveReaderPrefs(path);
-        if (!prefs.showFooter) return const SizedBox.shrink();
         return SettingsSwitchRow(
           label: 'Remaining pages in chapter',
           value: prefs.showRemainingPages,
+          enabled: prefs.showFooter,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(showRemainingPages: v),
             documentPath: path,
@@ -605,11 +688,11 @@ class _CurrentTimeRow extends StatelessWidget {
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
         final prefs = state.effectiveReaderPrefs(path);
-        if (!prefs.showFooter) return const SizedBox.shrink();
         return SettingsSwitchRow(
           label: 'Clock',
           description: 'Show current time in the footer.',
           value: prefs.showCurrentTime,
+          enabled: prefs.showFooter,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(showCurrentTime: v),
             documentPath: path,
@@ -631,11 +714,11 @@ class _BatteryStatusRow extends StatelessWidget {
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
         final prefs = state.effectiveReaderPrefs(path);
-        if (!prefs.showFooter) return const SizedBox.shrink();
         return SettingsSwitchRow(
           label: 'Battery indicator',
           description: 'Show battery icon in the footer.',
           value: prefs.showBatteryStatus,
+          enabled: prefs.showFooter,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(showBatteryStatus: v),
             documentPath: path,
@@ -657,11 +740,11 @@ class _ProgressBarRow extends StatelessWidget {
           prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
       builder: (context, state) {
         final prefs = state.effectiveReaderPrefs(path);
-        if (!prefs.showFooter) return const SizedBox.shrink();
         return SettingsSwitchRow(
           label: 'Progress bar line',
           description: 'Show a slim progress track along the footer bottom.',
           value: prefs.showFooterProgressBar,
+          enabled: prefs.showFooter,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(showFooterProgressBar: v),
             documentPath: path,

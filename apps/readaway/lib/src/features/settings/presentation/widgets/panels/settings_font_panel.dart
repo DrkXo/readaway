@@ -158,6 +158,7 @@ class _FontSizeRow extends StatelessWidget {
           min: 10,
           max: 32,
           divisions: 22,
+          enabled: prefs.overrideLayout,
           format: (v) => '${v.round()} px',
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(fontSize: v),
@@ -186,6 +187,7 @@ class _MinimumFontSizeRow extends StatelessWidget {
           min: 0,
           max: 24,
           divisions: 24,
+          enabled: prefs.overrideLayout,
           format: (v) => v == 0 ? 'Off' : '${v.round()} px',
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(minimumFontSize: v),

@@ -8,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/routes/routes.dart';
 import '../../../../../core/services/services.dart';
+import '../../../../../core/theme/tts_highlight_palette.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../reader/presentation/widgets/viewport/reflowable/tts_speech_highlight.dart';
 import '../../../../settings/domain/entity/settings.dart';
@@ -421,12 +422,12 @@ class _HighlightTab extends StatelessWidget {
               rows: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  child: _ColorPalettePicker(
-                    selectedKey: gvs.ttsHighlightColor,
-                    onSelected: (key) => _updateSettings(
+                  child: TtsHighlightColorPicker(
+                    selectedValue: gvs.ttsHighlightColor,
+                    onSelected: (value) => _updateSettings(
                       context,
                       state,
-                      (curr) => curr.copyWith(ttsHighlightColor: key),
+                      (curr) => curr.copyWith(ttsHighlightColor: value),
                     ),
                   ),
                 ),
@@ -475,22 +476,22 @@ class _HighlightTab extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (gvs.ttsHighlightWordFocus)
-                  SettingsSliderRow(
-                    label: 'Word focus opacity',
-                    value: gvs.ttsHighlightWordOpacity,
-                    min: 0.20,
-                    max: 0.90,
-                    divisions: 14,
-                    format: (v) => '${(v * 100).round()}%',
-                    onChanged: (v) => _updateSettings(
-                      context,
-                      state,
-                      (curr) => curr.copyWith(
-                        ttsHighlightWordOpacity: (v * 100).round() / 100.0,
-                      ),
+                SettingsSliderRow(
+                  label: 'Word focus opacity',
+                  value: gvs.ttsHighlightWordOpacity,
+                  min: 0.20,
+                  max: 0.90,
+                  divisions: 14,
+                  enabled: gvs.ttsHighlightWordFocus,
+                  format: (v) => '${(v * 100).round()}%',
+                  onChanged: (v) => _updateSettings(
+                    context,
+                    state,
+                    (curr) => curr.copyWith(
+                      ttsHighlightWordOpacity: (v * 100).round() / 100.0,
                     ),
                   ),
+                ),
               ],
             ),
           ],
@@ -511,14 +512,10 @@ class _HighlightPreviewCard extends StatelessWidget {
     final bg = isDark ? const Color(0xFF1E1E24) : const Color(0xFFF7F7F9);
     final textColor = isDark ? Colors.white70 : Colors.black87;
 
-    final baseColor = switch (gvs.ttsHighlightColor) {
-      'amber' => const Color(0xFFF59E0B),
-      'emerald' => const Color(0xFF10B981),
-      'sky' => const Color(0xFF0EA5E9),
-      'violet' => const Color(0xFF8B5CF6),
-      'rose' => const Color(0xFFF43F5E),
-      _ => theme.colorScheme.primary,
-    };
+    final baseColor = resolveTtsHighlightColor(
+      gvs.ttsHighlightColor,
+      theme.colorScheme,
+    );
 
     final style = switch (gvs.ttsHighlightStyle) {
       'underline' => TtsHighlightStyle.underline,
@@ -632,80 +629,6 @@ class _HighlightPreviewCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ColorPalettePicker extends StatelessWidget {
-  const _ColorPalettePicker({
-    required this.selectedKey,
-    required this.onSelected,
-  });
-
-  final String selectedKey;
-  final ValueChanged<String> onSelected;
-
-  static const _palette = [
-    (key: 'primary', label: 'Primary', color: null),
-    (key: 'amber', label: 'Amber', color: Color(0xFFF59E0B)),
-    (key: 'emerald', label: 'Emerald', color: Color(0xFF10B981)),
-    (key: 'sky', label: 'Sky', color: Color(0xFF0EA5E9)),
-    (key: 'violet', label: 'Violet', color: Color(0xFF8B5CF6)),
-    (key: 'rose', label: 'Rose', color: Color(0xFFF43F5E)),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: _palette.map((item) {
-        final isSelected = selectedKey == item.key;
-        final color = item.color ?? theme.colorScheme.primary;
-
-        return InkWell(
-          onTap: () => onSelected(item.key),
-          borderRadius: BorderRadius.circular(20),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? color.withValues(alpha: 0.18)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected ? color : theme.colorScheme.outlineVariant,
-                width: isSelected ? 2 : 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  item.label,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    color: isSelected ? color : null,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 }

@@ -109,4 +109,33 @@ void main() {
       );
     });
   });
+
+  group('GlobalViewSettings.uiFont', () {
+    test('defaults to Madimi One for the app chrome', () {
+      const settings = GlobalViewSettings();
+
+      expect(settings.uiFont, 'Madimi One');
+    });
+
+    test('survives a round trip through stored settings', () {
+      final stored = settingsToJson(
+        const Settings(
+          globalViewSettings: GlobalViewSettings(uiFont: 'system'),
+        ),
+      );
+
+      expect(settingsFromJson(stored).globalViewSettings.uiFont, 'system');
+    });
+
+    test('reads settings stored before the option existed', () {
+      // Older blobs lack the key entirely; reading them back must resolve to
+      // the brand-new default, not a null that would silently blank the theme.
+      const stored =
+          '{"schemaVersion":1,"version":1,"migrationVersion":1,'
+          '"screenWakeLock":false,"customFonts":[],'
+          '"globalViewSettings":{"theme":"system"}}';
+
+      expect(settingsFromJson(stored).globalViewSettings.uiFont, 'Madimi One');
+    });
+  });
 }

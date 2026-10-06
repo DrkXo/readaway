@@ -6,13 +6,9 @@ import 'package:readaway_core/readaway_core.dart';
 
 void main() {
   group('ThemeSchemes', () {
-    test('all contains all Kanagawa, Flexoki, and Token variations', () {
-      expect(ThemeSchemes.all.length, 9);
+    test('all contains the base Token, Flexoki, and Kanagawa schemes', () {
+      expect(ThemeSchemes.all.length, 5);
       expect(ThemeSchemes.all, contains(ThemeSchemes.token));
-      expect(ThemeSchemes.all, contains(ThemeSchemes.tokenFlint));
-      expect(ThemeSchemes.all, contains(ThemeSchemes.tokenMeridian));
-      expect(ThemeSchemes.all, contains(ThemeSchemes.tokenTemper));
-      expect(ThemeSchemes.all, contains(ThemeSchemes.tokenUltra));
       expect(ThemeSchemes.all, contains(ThemeSchemes.flexoki));
       expect(ThemeSchemes.all, contains(ThemeSchemes.kanagawaDragon));
       expect(ThemeSchemes.all, contains(ThemeSchemes.kanagawaWave));
@@ -22,7 +18,6 @@ void main() {
     test('byId resolves known schemes', () {
       expect(ThemeSchemes.byId('token'), ThemeSchemes.token);
       expect(ThemeSchemes.byId('tokenInspired'), ThemeSchemes.token);
-      expect(ThemeSchemes.byId('tokenFlint'), ThemeSchemes.tokenFlint);
       expect(ThemeSchemes.byId('flexoki'), ThemeSchemes.flexoki);
       expect(ThemeSchemes.byId('kanagawaDragon'), ThemeSchemes.kanagawaDragon);
       expect(ThemeSchemes.byId('kanagawaWave'), ThemeSchemes.kanagawaWave);

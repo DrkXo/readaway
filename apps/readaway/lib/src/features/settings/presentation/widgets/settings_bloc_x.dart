@@ -19,6 +19,22 @@ extension SettingsBlocX on SettingsBloc {
     }
   }
 
+  /// Dispatches a reader-preference update using the settings sheet's scope
+  /// rule: the document is only targeted when it already has a stored
+  /// override, otherwise the global preferences are updated.
+  ///
+  /// Use this from quick controls that have no scope toggle, so touching them
+  /// never creates a per-book override by accident.
+  void updateReaderPrefsWithinScope(
+    ReaderPreferences Function(ReaderPreferences) update, {
+    String? documentPath,
+  }) {
+    final hasOverride =
+        documentPath != null &&
+        state.documentReaderPrefs.containsKey(documentPath);
+    updateReaderPrefs(update, documentPath: hasOverride ? documentPath : null);
+  }
+
   /// Dispatches a reader-preference update to a document's overrides.
   ///
   /// The update is applied on top of the document's current overrides (or the
