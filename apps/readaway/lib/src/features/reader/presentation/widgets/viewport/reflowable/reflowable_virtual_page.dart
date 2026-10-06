@@ -329,13 +329,18 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
                       widget.state.documentPath ?? widget.state.fileName ?? '',
                   onResolveAssetBytes: widget.onResolveAssetBytes,
                   onLinkTap: widget.onLinkTap,
-                  menuActionsBuilder: (overlayState) =>
-                      AnnotationSelectionMenu.actions(
-                        context,
-                        chapterIndex: widget.chapterIndex,
-                        coordinator: widget.coordinator,
-                        state: overlayState,
-                      ),
+                  menuActionsBuilder: (overlayState) {
+                    widget.controller.setSelectionActive(
+                      overlayState.hasSelection,
+                    );
+                    return AnnotationSelectionMenu.actions(
+                      context,
+                      chapterIndex: widget.chapterIndex,
+                      coordinator: widget.coordinator,
+                      state: overlayState,
+                      controller: widget.controller,
+                    );
+                  },
                 ),
               ),
             ),

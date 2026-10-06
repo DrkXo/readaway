@@ -230,13 +230,18 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
                             '',
                         onResolveAssetBytes: _resolveAssetBytes,
                         onLinkTap: (url) => _onTapUrl(context, url),
-                        menuActionsBuilder: (overlayState) =>
-                            AnnotationSelectionMenu.actions(
-                              context,
-                              chapterIndex: widget.index,
-                              coordinator: widget.coordinator,
-                              state: overlayState,
-                            ),
+                        menuActionsBuilder: (overlayState) {
+                          widget.controller.setSelectionActive(
+                            overlayState.hasSelection,
+                          );
+                          return AnnotationSelectionMenu.actions(
+                            context,
+                            chapterIndex: widget.index,
+                            coordinator: widget.coordinator,
+                            state: overlayState,
+                            controller: widget.controller,
+                          );
+                        },
                       ),
                     ),
                   ),

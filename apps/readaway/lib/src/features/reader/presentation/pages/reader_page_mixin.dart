@@ -114,6 +114,7 @@ mixin ReaderControllerMixin on State<ReaderPage> {
       final total = math.max(0, coordinator.currentState.totalPages);
       if (total <= 0) return;
       final clamped = globalPage.clamp(0, total - 1).toInt();
+      viewportController.updatePageCount(total);
       if (animated) {
         viewportController.goToPage(clamped, animated: true);
       } else {
@@ -125,6 +126,7 @@ mixin ReaderControllerMixin on State<ReaderPage> {
     final count = readerBloc.state.pageCount;
     if (count <= 0) return;
     final clamped = globalPage.clamp(0, count - 1).toInt();
+    viewportController.updatePageCount(count);
     if (animated) {
       viewportController.goToPage(clamped, animated: true);
     } else {
@@ -133,6 +135,31 @@ mixin ReaderControllerMixin on State<ReaderPage> {
   }
 
   void jumpToChapter(int chapterIndex, {bool animated = false}) {
+    final prefs = settingsBloc.state.effectiveReaderPrefs(
+      readerBloc.state.documentPath,
+    );
+    final isContinuous =
+        prefs.effectiveScrollDirection(
+              isReflowable: readerBloc.state.isReflowable,
+            ) ==
+            ReaderScrollDirection.vertical &&
+        !prefs.effectivePageSnap(
+          isReflowable: readerBloc.state.isReflowable,
+        );
+
+    if (isContinuous) {
+      final count = readerBloc.state.pageCount;
+      if (count <= 0) return;
+      final clamped = chapterIndex.clamp(0, count - 1).toInt();
+      viewportController.updatePageCount(count);
+      if (animated) {
+        viewportController.goToPage(clamped, animated: true);
+      } else {
+        viewportController.jumpToPage(clamped);
+      }
+      return;
+    }
+
     if (readerBloc.state.isReflowable &&
         GetIt.I.isRegistered<PaginationCoordinator>()) {
       final coordinator = GetIt.I<PaginationCoordinator>();
@@ -157,11 +184,29 @@ mixin ReaderControllerMixin on State<ReaderPage> {
   /// a character range, so its page is the chapter's first page plus the page the
   /// offset falls on — which lands on the right page rather than the start of the
   /// chapter. When the chapter has no measured geometry yet, the offset resolves
-  /// to its first page, so the note still takes the reader to the right chapter.
+  /// provisionally to its first page, loads the chapter, and then refines to the
+  /// exact page once layout measurement completes.
   void jumpToNote(ReaderNote note) {
     final anchor = note.anchor;
     if (anchor.kind == NoteAnchorKind.page || !readerBloc.state.isReflowable) {
       jumpToGlobalPage(anchor.pageIndex);
+      return;
+    }
+
+    final prefs = settingsBloc.state.effectiveReaderPrefs(
+      readerBloc.state.documentPath,
+    );
+    final isContinuous =
+        prefs.effectiveScrollDirection(
+              isReflowable: readerBloc.state.isReflowable,
+            ) ==
+            ReaderScrollDirection.vertical &&
+        !prefs.effectivePageSnap(
+          isReflowable: readerBloc.state.isReflowable,
+        );
+
+    if (isContinuous) {
+      jumpToChapter(anchor.chapterIndex);
       return;
     }
 
@@ -171,10 +216,26 @@ mixin ReaderControllerMixin on State<ReaderPage> {
     }
 
     final coordinator = GetIt.I<PaginationCoordinator>();
-    jumpToGlobalPage(
-      coordinator.getGlobalPageForChapter(anchor.chapterIndex) +
-          coordinator.pageForChar(anchor.chapterIndex, anchor.startChar),
+    if (coordinator.hasCharacterMapping(anchor.chapterIndex)) {
+      jumpToGlobalPage(
+        coordinator.globalPageForChar(anchor.chapterIndex, anchor.startChar),
+      );
+      return;
+    }
+
+    // Unmeasured chapter: jump provisionally, request loading, and refine once measured.
+    final provisionalPage = coordinator.getGlobalPageForChapter(
+      anchor.chapterIndex,
     );
+    jumpToGlobalPage(provisionalPage);
+    readerBloc.add(ReaderEvent.loadPage(index: anchor.chapterIndex));
+
+    coordinator.ensureChapterMeasured(anchor.chapterIndex).then((_) {
+      if (!mounted) return;
+      jumpToGlobalPage(
+        coordinator.globalPageForChar(anchor.chapterIndex, anchor.startChar),
+      );
+    });
   }
 
   void handleTapAction(ReaderTapAction action) {

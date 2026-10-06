@@ -24,4 +24,25 @@ void main() {
     controller.clearPageZoom();
     expect(controller.isPageZoomed, isFalse);
   });
+
+  test('active selection state notifies listeners and tracks state', () {
+    final controller = ReaderViewportController();
+    addTearDown(controller.dispose);
+
+    expect(controller.hasActiveSelection, isFalse);
+    var notifyCount = 0;
+    controller.addListener(() => notifyCount++);
+
+    controller.setSelectionActive(true);
+    expect(controller.hasActiveSelection, isTrue);
+    expect(notifyCount, 1);
+
+    // Idempotent call doesn't notify
+    controller.setSelectionActive(true);
+    expect(notifyCount, 1);
+
+    controller.setSelectionActive(false);
+    expect(controller.hasActiveSelection, isFalse);
+    expect(notifyCount, 2);
+  });
 }

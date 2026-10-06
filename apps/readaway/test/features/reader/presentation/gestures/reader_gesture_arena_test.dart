@@ -70,6 +70,60 @@ void main() {
       await gesture.up();
       await tester.pump();
     });
+
+    testWidgets('micro-drift during hold does not turn the page', (
+      tester,
+    ) async {
+      final dragStarted = await pumpArena(tester);
+      final center = tester.getCenter(find.byType(ReaderGestureArena));
+
+      final gesture = await tester.startGesture(center);
+      // Wait into the anticipation window (200ms)
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+
+      // Micro-drift of 20px (exceeds 18px base threshold, but low displacement & low velocity)
+      await gesture.moveBy(const Offset(-20, 0));
+      await tester.pump();
+
+      expect(dragStarted(), isFalse);
+
+      await gesture.up();
+      await tester.pump();
+    });
+
+    testWidgets('when canStartPageDrag returns false, drag is not claimed', (
+      tester,
+    ) async {
+      var dragStarted = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 800,
+              child: ReaderGestureArena(
+                onTapAction: (_) {},
+                onPageDragStart: () => dragStarted = true,
+                canStartPageDrag: () => false,
+                child: Container(color: Colors.blue),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final center = tester.getCenter(find.byType(ReaderGestureArena));
+      final gesture = await tester.startGesture(center);
+      await gesture.moveBy(const Offset(-100, 0));
+      await tester.pump();
+
+      expect(dragStarted, isFalse);
+
+      await gesture.up();
+      await tester.pump();
+    });
   });
 
   group('annotation taps', () {

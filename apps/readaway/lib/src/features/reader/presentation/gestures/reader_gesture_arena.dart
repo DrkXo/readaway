@@ -172,9 +172,16 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
     // pointer movement, so without this guard, dragging to extend a selection
     // past the activation threshold turns the page mid-selection.
     //
-    // The hold is the reader's own signal, and it is the same one the selection
-    // overlay acts on: hold to select, swipe promptly to page.
-    if (now.difference(_startTime) >= kLongPressTimeout) return;
+    final totalHoldMs = now.difference(_startTime).inMilliseconds;
+    if (totalHoldMs >= kLongPressTimeout.inMilliseconds) return;
+
+    // During the long-press anticipation window (100ms - 500ms), small drift
+    // (< 36px) belongs to a resting finger preparing to select text rather than an
+    // intentional page turn swipe. Require deliberate displacement (>= 36px)
+    // before claiming a page drag after a stationary pause.
+    if (totalHoldMs > 100 && primaryDelta.abs() < 36.0) {
+      return;
+    }
 
     if (primaryDelta.abs() >= widget.constants.activationThresholdPx &&
         primaryDelta.abs() >

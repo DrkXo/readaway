@@ -264,7 +264,8 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                     ),
                                 canStartPageDrag: () =>
                                     !isContinuous &&
-                                    !viewportController.isPageZoomed,
+                                    !viewportController.isPageZoomed &&
+                                    !viewportController.hasActiveSelection,
                                 canHandleTapAction: () =>
                                     !viewportController.isPageZoomed,
                                 // A tap on a painted highlight opens it rather

@@ -21,6 +21,7 @@ class ReaderViewportController extends ChangeNotifier {
   bool _isAnimating = false;
   bool _isDragging = false;
   double _dragProgress = 0.0;
+  bool _hasActiveSelection = false;
 
   /// Delegate for animated navigation provided by the active viewport widget.
   Future<void> Function(int targetPage, {Duration? duration, Curve? curve})?
@@ -65,6 +66,19 @@ class ReaderViewportController extends ChangeNotifier {
 
   /// Whether the active fixed-layout page is zoomed.
   bool get isPageZoomed => _zoomedPage == _currentPage;
+
+  /// Whether a text selection is currently active in the viewport.
+  ///
+  /// When true, page dragging is disallowed so selection handles and text
+  /// selection interaction are not interrupted by page turns.
+  bool get hasActiveSelection => _hasActiveSelection;
+
+  /// Updates whether text selection is currently active.
+  void setSelectionActive(bool active) {
+    if (_hasActiveSelection == active) return;
+    _hasActiveSelection = active;
+    notifyListeners();
+  }
 
   /// Whether an automated transition animation is currently running.
   bool get isAnimating => _isAnimating;
@@ -145,6 +159,9 @@ class ReaderViewportController extends ChangeNotifier {
     } else if (jumpToPageDelegate != null) {
       jumpToPageDelegate!(index);
     } else {
+      _currentPage = index;
+      _zoomedPage = null;
+      notifyListeners();
       onNavigate?.call(index);
     }
   }
