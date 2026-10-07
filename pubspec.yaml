@@ -39,16 +39,16 @@ dependency_overrides:
   hyper_render:
     git:
       url: https://github.com/DrkXo/hyper_render.git
-      ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681 # fix/get-boxes-for-char-range
+      ref: 5a151ff851d115eb29305b5d8447eee2b128d1cc # fix/get-boxes-for-char-range
   hyper_render_core:
     git:
       url: https://github.com/DrkXo/hyper_render.git
-      ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681 # fix/get-boxes-for-char-range
+      ref: 5a151ff851d115eb29305b5d8447eee2b128d1cc # fix/get-boxes-for-char-range
       path: packages/hyper_render_core
   hyper_render_devtools:
     git:
       url: https://github.com/DrkXo/hyper_render.git
-      ref: aded2c5a2b4fa34045ef00b1f84edfac0ad1b681 # fix/get-boxes-for-char-range
+      ref: 5a151ff851d115eb29305b5d8447eee2b128d1cc # fix/get-boxes-for-char-range
       path: packages/hyper_render_devtools
 
 melos:
