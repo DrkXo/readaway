@@ -20,7 +20,24 @@ class HtmlCleanupTransformer implements TextTransformer {
     // 2. Remove Apple-tab-span wrapper classes
     content = content.replaceAll(RegExp(r'\bApple-tab-span\b'), '');
 
+    // 3. Normalize XHTML self-closing non-void tags into paired HTML5 tags
+    content = _normalizeSelfClosingTags(content);
+
     return content;
+  }
+
+  static final RegExp _selfClosingNonVoidTagsRegex = RegExp(
+    r'<(script|style|title|textarea|iframe|div|span|p|a|h[1-6]|blockquote|section|article|li|td|th)\b([^>]*?)\s*\/>',
+    caseSensitive: false,
+  );
+
+  String _normalizeSelfClosingTags(String html) {
+    if (!html.contains('/>')) return html;
+    return html.replaceAllMapped(_selfClosingNonVoidTagsRegex, (match) {
+      final tag = match.group(1)!;
+      final attrs = match.group(2) ?? '';
+      return '<$tag$attrs></$tag>';
+    });
   }
 
   String _sanitizeInlineStyles(String html) {

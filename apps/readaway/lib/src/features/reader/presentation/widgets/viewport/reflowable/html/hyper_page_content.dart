@@ -245,46 +245,82 @@ class _HyperPageContentState extends State<HyperPageContent> {
   String _preprocessHtml(String rawHtml) {
     if (rawHtml.isEmpty) return rawHtml;
     final lower = rawHtml.toLowerCase();
-    if (!lower.contains('<svg') && !lower.contains('<image')) {
+    if (!lower.contains('<svg') &&
+        !lower.contains('<image') &&
+        !lower.contains('background-image') &&
+        !lower.contains('/>')) {
       return rawHtml;
     }
 
+    var result = rawHtml;
+
     // 1. Convert <svg ...><image ... xlink:href/href="..." .../></svg> blocks into <img> tags
-    var result = rawHtml.replaceAllMapped(
-      RegExp(r'<svg[^>]*>[\s\S]*?<\/svg>', caseSensitive: false),
-      (svgMatch) {
-        final svgContent = svgMatch.group(0)!;
-        final imgMatches = RegExp(
-          r'<image[^>]+(?:xlink:href|href)=[\x27\x22]([^\x27\x22]+)[\x27\x22][^>]*>',
-          caseSensitive: false,
-        ).allMatches(svgContent);
+    if (lower.contains('<svg')) {
+      result = result.replaceAllMapped(
+        RegExp(r'<svg[^>]*>[\s\S]*?<\/svg>', caseSensitive: false),
+        (svgMatch) {
+          final svgContent = svgMatch.group(0)!;
+          final imgMatches = RegExp(
+            r'<image[^>]+(?:xlink:href|href)=[\x27\x22]([^\x27\x22]+)[\x27\x22][^>]*>',
+            caseSensitive: false,
+          ).allMatches(svgContent);
 
-        if (imgMatches.isEmpty) return svgContent;
+          if (imgMatches.isEmpty) return svgContent;
 
-        final buffer = StringBuffer();
-        for (final m in imgMatches) {
-          final src = m.group(1);
-          if (src != null && src.isNotEmpty) {
-            buffer.write(
-              '<img src="$src" style="max-width: 100%; height: auto;" />',
-            );
+          final buffer = StringBuffer();
+          for (final m in imgMatches) {
+            final src = m.group(1);
+            if (src != null && src.isNotEmpty) {
+              buffer.write(
+                '<img src="$src" style="max-width: 100%; height: auto;" />',
+              );
+            }
           }
-        }
-        return buffer.toString();
-      },
-    );
+          return buffer.toString();
+        },
+      );
+    }
 
     // 2. Convert any standalone <image ...> tags into <img>
-    result = result.replaceAllMapped(
-      RegExp(
-        r'<image[^>]+(?:xlink:href|href)=[\x27\x22]([^\x27\x22]+)[\x27\x22][^>]*>(?:<\/image>)?',
+    if (lower.contains('<image')) {
+      result = result.replaceAllMapped(
+        RegExp(
+          r'<image[^>]+(?:xlink:href|href)=[\x27\x22]([^\x27\x22]+)[\x27\x22][^>]*>(?:<\/image>)?',
+          caseSensitive: false,
+        ),
+        (match) {
+          final src = match.group(1);
+          return '<img src="$src" style="max-width: 100%; height: auto;" />';
+        },
+      );
+    }
+
+    // 3. Convert background-image cover divs into <img> tags
+    if (lower.contains('background-image')) {
+      final bgImgRegex = RegExp(
+        r'''<div\b[^>]*style=["'][^"']*background-image:\s*url\(['"]?([^'"\)]+)['"]?\)[^"']*["'][^>]*>(?:\s*<\/div>)?''',
         caseSensitive: false,
-      ),
-      (match) {
+      );
+      result = result.replaceAllMapped(bgImgRegex, (match) {
         final src = match.group(1);
-        return '<img src="$src" style="max-width: 100%; height: auto;" />';
-      },
-    );
+        if (src != null && src.isNotEmpty) {
+          return '<img src="$src" style="max-width: 100%; height: auto;" />';
+        }
+        return match.group(0)!;
+      });
+    }
+
+    // 4. Defense-in-depth: normalize any remaining XHTML self-closing non-void tags
+    if (result.contains('/>')) {
+      result = result.replaceAllMapped(
+        RegExp(
+          r'<(script|style|title|iframe|div|span|p|a)\b([^>]*?)\s*\/>',
+          caseSensitive: false,
+        ),
+        (match) =>
+            '<${match.group(1)}${match.group(2) ?? ''}></${match.group(1)}>',
+      );
+    }
 
     return result;
   }

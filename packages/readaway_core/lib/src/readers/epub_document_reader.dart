@@ -372,7 +372,8 @@ class EpubDocumentReader
     try {
       _log.d('Loading section HTML at index $index: $href');
       final rawHtml = utf8.decode(_extractBytes(file), allowMalformed: true);
-      final html = _inlineStylesheets(rawHtml, href);
+      final inlinedHtml = _inlineStylesheets(rawHtml, href);
+      final html = _normalizeXhtml(inlinedHtml);
       _sectionHtmlCache[index] = html;
       return html;
     } catch (e, st) {
@@ -462,6 +463,22 @@ class EpubDocumentReader
       final importedContent = _loadCssContent(resolvedImportPath);
       if (importedContent == null) return '';
       return importedContent;
+    });
+  }
+
+  static final RegExp _selfClosingNonVoidTagsRegex = RegExp(
+    r'<(script|style|title|textarea|iframe|div|span|p|a|h[1-6]|blockquote|section|article|li|td|th)\b([^>]*?)\s*\/>',
+    caseSensitive: false,
+  );
+
+  /// Normalizes XHTML content (such as self-closing non-void tags) into
+  /// valid HTML5 markup so standard HTML5 parsers do not swallow content.
+  String _normalizeXhtml(String html) {
+    if (!html.contains('/>')) return html;
+    return html.replaceAllMapped(_selfClosingNonVoidTagsRegex, (match) {
+      final tag = match.group(1)!;
+      final attrs = match.group(2) ?? '';
+      return '<$tag$attrs></$tag>';
     });
   }
 

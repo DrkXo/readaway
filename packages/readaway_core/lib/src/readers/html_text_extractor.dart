@@ -6,7 +6,7 @@ class HtmlTextExtractor {
   const HtmlTextExtractor._();
 
   static final RegExp _ignoredTagsRe = RegExp(
-    r'<(?:script|style|noscript|head|svg|canvas)\b[^>]*>[\s\S]*?<\/(?:script|style|noscript|head|svg|canvas)>',
+    r'<(?:script|style|noscript|head|svg|canvas)\b[^>]*>[\s\S]*?<\/(?:script|style|noscript|head|svg|canvas)>|<(?:script|style|noscript|head|svg|canvas)\b[^>]*\/>',
     caseSensitive: false,
   );
 
