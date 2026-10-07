@@ -15,11 +15,17 @@ class HyperReflowableImage extends StatefulWidget {
     required this.node,
     required this.onResolveDecoded,
     this.initialDecoded,
+    this.availableWidth,
+    this.availableHeight,
+    this.onImageDecoded,
   });
 
   final AtomicNode node;
   final ui.Image? initialDecoded;
   final Future<ui.Image?> Function() onResolveDecoded;
+  final double? availableWidth;
+  final double? availableHeight;
+  final VoidCallback? onImageDecoded;
 
   @override
   State<HyperReflowableImage> createState() => _HyperReflowableImageState();
@@ -77,19 +83,52 @@ class _HyperReflowableImageState extends State<HyperReflowableImage> {
         if (decoded != null) {
           final imgW = decoded.width.toDouble();
           final imgH = decoded.height.toDouble();
+          final maxW =
+              (widget.availableWidth != null && widget.availableWidth! > 0)
+              ? widget.availableWidth!
+              : double.infinity;
+          final maxH =
+              (widget.availableHeight != null && widget.availableHeight! > 0)
+              ? widget.availableHeight!
+              : double.infinity;
+
+          double fittedW = imgW;
+          double fittedH = imgH;
+          if (fittedW > maxW && fittedW > 0) {
+            final scale = maxW / fittedW;
+            fittedW = maxW;
+            fittedH = fittedH * scale;
+          }
+          if (fittedH > maxH && fittedH > 0) {
+            final scale = maxH / fittedH;
+            fittedH = maxH;
+            fittedW = fittedW * scale;
+          }
+
           if (widget.node.style.width == null &&
               widget.node.style.height == null) {
-            widget.node.style.width = imgW;
-            widget.node.style.height = imgH;
+            widget.node.style.width = fittedW;
+            widget.node.style.height = fittedH;
           } else if (widget.node.style.width != null &&
               widget.node.style.height == null) {
-            widget.node.style.height = imgW > 0
+            final h = imgW > 0
                 ? widget.node.style.width! * (imgH / imgW)
                 : null;
+            if (h != null && h > maxH && maxH.isFinite) {
+              final scale = maxH / h;
+              widget.node.style.height = maxH;
+              widget.node.style.width = widget.node.style.width! * scale;
+            } else {
+              widget.node.style.height = h;
+            }
           } else if (widget.node.style.width == null &&
               widget.node.style.height != null) {
+            final clampedH = (widget.node.style.height! > maxH && maxH.isFinite)
+                ? maxH
+                : widget.node.style.height!;
+            widget.node.style.height = clampedH;
             widget.node.style.width = imgH > 0
-                ? widget.node.style.height! * (imgW / imgH)
+                ? clampedH * (imgW / imgH)
                 : null;
           }
         }
@@ -100,6 +139,9 @@ class _HyperReflowableImageState extends State<HyperReflowableImage> {
             _hasError = true;
           }
         });
+        if (decoded != null) {
+          widget.onImageDecoded?.call();
+        }
       }
     } catch (_) {
       if (mounted) setState(() => _hasError = true);
@@ -153,6 +195,8 @@ class _HyperReflowableImageState extends State<HyperReflowableImage> {
     } else if (_decoded != null) {
       content = RawImage(
         image: _decoded!,
+        width: widget.node.style.width,
+        height: widget.node.style.height,
         fit: fit,
         filterQuality: FilterQuality.medium,
       );

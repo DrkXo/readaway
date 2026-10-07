@@ -18,6 +18,7 @@ class ReaderStyleResolver {
     required Color backgroundColor,
     required Color linkColor,
     bool isDarkMode = false,
+    double? maxImageHeight,
   }) {
     final textHex = colorToHex(textColor);
     final linkHex = colorToHex(linkColor);
@@ -91,7 +92,9 @@ class ReaderStyleResolver {
       }
       img, svg {
         max-width: 100%;
+        ${maxImageHeight != null && maxImageHeight > 0 ? 'max-height: ${maxImageHeight.toStringAsFixed(1)}px;' : ''}
         height: auto;
+        object-fit: contain;
       }
     ''');
 

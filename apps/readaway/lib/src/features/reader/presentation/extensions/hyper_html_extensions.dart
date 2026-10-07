@@ -9,6 +9,7 @@ extension UDTNodeExtensions on UDTNode {
     required ReaderPreferences prefs,
     required Color textColor,
     required Color linkColor,
+    double? maxImageHeight,
   }) {
     _applyPreferencesRecursive(
       node: this,
@@ -16,6 +17,7 @@ extension UDTNodeExtensions on UDTNode {
       textColor: textColor,
       linkColor: linkColor,
       parentBlock: null,
+      maxImageHeight: maxImageHeight,
     );
   }
 
@@ -25,6 +27,7 @@ extension UDTNodeExtensions on UDTNode {
     required Color textColor,
     required Color linkColor,
     required UDTNode? parentBlock,
+    double? maxImageHeight,
   }) {
     // 0. Container sizing: Clear rigid heights/max-heights on non-atomic nodes.
     // EPubs often contain fixed height constraints on header/banner/wrapper blocks (e.g. height: 50px)
@@ -110,15 +113,7 @@ extension UDTNodeExtensions on UDTNode {
         }
 
         if (isParagraph) {
-          // Paragraph Margin (vertical spacing between paragraphs)
-          final vMargin = prefs.paragraphMargin * effectiveFontSize;
-          node.style.margin = node.style.margin.copyWith(
-            top: vMargin,
-            bottom: vMargin,
-          );
-          node.style.markExplicitlySet('margin');
-
-          // Text Indent: indent first line unless the paragraph is image-only
+          // Text Indent and Margin: indent first line unless the paragraph is image-only
           final nonWhitespaceChildren = node.children.where((c) {
             if (c is TextNode) {
               return c.text.trim().isNotEmpty;
@@ -135,7 +130,18 @@ extension UDTNodeExtensions on UDTNode {
 
           if (isImageOnly) {
             node.style.textIndent = 0.0;
+            // Clear vertical margins on image-only paragraphs so the image doesn't
+            // get pushed past availableHeight by paragraph spacing.
+            node.style.margin = EdgeInsets.zero;
+            node.style.markExplicitlySet('margin');
           } else {
+            // Paragraph Margin (vertical spacing between paragraphs)
+            final vMargin = prefs.paragraphMargin * effectiveFontSize;
+            node.style.margin = node.style.margin.copyWith(
+              top: vMargin,
+              bottom: vMargin,
+            );
+            node.style.markExplicitlySet('margin');
             node.style.textIndent = prefs.textIndent * effectiveFontSize;
           }
           node.style.markExplicitlySet('text-indent');
@@ -174,7 +180,31 @@ extension UDTNodeExtensions on UDTNode {
       }
     }
 
-    // 5. Recurse into children
+    // 5. Image element sizing constraint: ensure images never exceed maxImageHeight
+    if (node is AtomicNode &&
+        (node.tagName == 'img' || node.tagName == 'svg') &&
+        maxImageHeight != null &&
+        maxImageHeight > 0) {
+      if (node.style.maxHeight == null ||
+          node.style.maxHeight! > maxImageHeight) {
+        node.style.maxHeight = maxImageHeight;
+        node.style.markExplicitlySet('max-height');
+      }
+      if (node.style.height != null && node.style.height! > maxImageHeight) {
+        final currentH = node.style.height!;
+        final scale = maxImageHeight / currentH;
+        node.style.height = maxImageHeight;
+        if (node.style.width != null) {
+          node.style.width = node.style.width! * scale;
+        }
+      }
+      if (!node.style.isExplicitlySet('object-fit')) {
+        node.style.objectFit = 'contain';
+        node.style.markExplicitlySet('object-fit');
+      }
+    }
+
+    // 6. Recurse into children
     for (final child in node.children) {
       _applyPreferencesRecursive(
         node: child,
@@ -182,6 +212,7 @@ extension UDTNodeExtensions on UDTNode {
         textColor: textColor,
         linkColor: linkColor,
         parentBlock: currentBlock,
+        maxImageHeight: maxImageHeight,
       );
     }
   }

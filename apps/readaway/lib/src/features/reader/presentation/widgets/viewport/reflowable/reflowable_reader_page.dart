@@ -228,6 +228,11 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
                             widget.state.documentPath ??
                             widget.state.fileName ??
                             '',
+                        availableWidth: constraints.maxWidth,
+                        availableHeight: constraints.maxHeight.isFinite
+                            ? constraints.maxHeight
+                            : null,
+                        onImageDecoded: _scheduleMeasurement,
                         onResolveAssetBytes: _resolveAssetBytes,
                         onLinkTap: (url) => _onTapUrl(context, url),
                         menuActionsBuilder: (overlayState) {

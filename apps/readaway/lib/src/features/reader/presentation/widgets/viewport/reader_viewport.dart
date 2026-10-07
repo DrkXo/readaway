@@ -448,6 +448,7 @@ class _ReaderViewportState extends State<ReaderViewport> {
                       prefs: widget.prefs,
                       coordinator: _paginationCoordinator,
                       viewportWidth: constraints.maxWidth,
+                      viewportHeight: constraints.maxHeight,
                       cacheNamespace:
                           state.documentPath ?? state.fileName ?? '',
                       onResolveAssetBytes: (src) =>

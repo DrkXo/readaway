@@ -24,6 +24,9 @@ class HyperPageContent extends StatefulWidget {
     this.cacheNamespace = '',
     this.onResolveAssetBytes,
     this.menuActionsBuilder,
+    this.availableWidth,
+    this.availableHeight,
+    this.onImageDecoded,
   });
 
   final String html;
@@ -47,20 +50,36 @@ class HyperPageContent extends StatefulWidget {
   final List<SelectionMenuAction> Function(HyperSelectionOverlayState)?
   menuActionsBuilder;
 
+  /// Available width inside the reader viewport (viewport width minus margins).
+  final double? availableWidth;
+
+  /// Available height inside the reader viewport (viewport height minus margins).
+  final double? availableHeight;
+
+  /// Callback invoked when an uncached image finishes asynchronous decoding.
+  final VoidCallback? onImageDecoded;
+
   /// Stamps the real pixel dimensions of already-decoded images onto the
   /// (shared) document nodes so RenderHyperBox lays them out at their true
   /// size on the very first frame of a freshly created page.
   ///
-  /// Without this, every new page instance creates a RenderHyperBox with an
-  /// empty internal image cache, so each `<img>` is first sized at the 200×112
-  /// placeholder and only jumps to its real size after an async per-instance
-  /// decode + re-layout — the size jump visible as flicker on page changes.
+  /// Dimensions are scaled proportionally to fit within both [availableWidth]
+  /// and [availableHeight] so images never exceed page bounds or slice across pages.
   static void seedImageDimensions(
     DocumentNode document, {
     required String cacheNamespace,
     required int chapterIndex,
+    double? availableWidth,
+    double? availableHeight,
   }) {
     final cache = ReflowableImageCache.instance;
+    final maxW = (availableWidth != null && availableWidth > 0)
+        ? availableWidth
+        : double.infinity;
+    final maxH = (availableHeight != null && availableHeight > 0)
+        ? availableHeight
+        : double.infinity;
+
     document.traverse((node) {
       if (node is! AtomicNode || node.tagName != 'img') return;
       final src = node.src;
@@ -69,19 +88,40 @@ class HyperPageContent extends StatefulWidget {
       if (image == null) return;
       final imgW = image.width.toDouble();
       final imgH = image.height.toDouble();
-      // Fill only dimensions the document itself never specified; explicit
-      // CSS keeps priority. Mirrors RenderHyperBox's loaded-image sizing so a
-      // fresh box lays out at the real size from its first frame instead of
-      // the 200×112 (or 16:9) placeholder, which jumps on every page change.
+
+      double fittedW = imgW;
+      double fittedH = imgH;
+      if (fittedW > maxW && fittedW > 0) {
+        final scale = maxW / fittedW;
+        fittedW = maxW;
+        fittedH = fittedH * scale;
+      }
+      if (fittedH > maxH && fittedH > 0) {
+        final scale = maxH / fittedH;
+        fittedH = maxH;
+        fittedW = fittedW * scale;
+      }
+
       final styleWidth = node.style.width;
       final styleHeight = node.style.height;
       if (styleWidth == null && styleHeight == null) {
-        node.style.width = imgW;
-        node.style.height = imgH;
+        node.style.width = fittedW;
+        node.style.height = fittedH;
       } else if (styleWidth != null && styleHeight == null) {
-        node.style.height = imgW > 0 ? styleWidth * (imgH / imgW) : null;
+        final h = imgW > 0 ? styleWidth * (imgH / imgW) : null;
+        if (h != null && h > maxH && maxH.isFinite) {
+          final scale = maxH / h;
+          node.style.height = maxH;
+          node.style.width = styleWidth * scale;
+        } else {
+          node.style.height = h;
+        }
       } else if (styleWidth == null && styleHeight != null) {
-        node.style.width = imgH > 0 ? styleHeight * (imgW / imgH) : null;
+        final clampedH = (styleHeight > maxH && maxH.isFinite)
+            ? maxH
+            : styleHeight;
+        node.style.height = clampedH;
+        node.style.width = imgH > 0 ? clampedH * (imgW / imgH) : null;
       }
     });
   }
@@ -108,8 +148,10 @@ class _HyperPageContentState extends State<HyperPageContent> {
     // image widget.
     final prefs = widget.prefs;
     final prefsSig = prefs.hashCode;
+    final wSig = widget.availableWidth?.round();
+    final hSig = widget.availableHeight?.round();
     return '${widget.html.length}:${widget.html.hashCode}:$prefsSig:'
-        '${_textColor.toARGB32()}:${_linkColor.toARGB32()}:'
+        '${_textColor.toARGB32()}:${_linkColor.toARGB32()}:$wSig:$hSig:'
         '${Theme.of(context).brightness == Brightness.dark}';
   }
 
@@ -164,7 +206,10 @@ class _HyperPageContentState extends State<HyperPageContent> {
   @override
   void didUpdateWidget(HyperPageContent oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.html != widget.html || oldWidget.prefs != widget.prefs) {
+    if (oldWidget.html != widget.html ||
+        oldWidget.prefs != widget.prefs ||
+        oldWidget.availableWidth != widget.availableWidth ||
+        oldWidget.availableHeight != widget.availableHeight) {
       setState(() => _document = _parseDocument());
     }
   }
@@ -175,6 +220,10 @@ class _HyperPageContentState extends State<HyperPageContent> {
     if (cached != null) return cached;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final double? maxImgH =
+        (widget.availableHeight != null && widget.availableHeight! > 0)
+        ? (widget.availableHeight! - 4.0).clamp(0.0, double.infinity)
+        : null;
 
     final customCss = _styleResolver.buildCustomCss(
       prefs: widget.prefs,
@@ -182,6 +231,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
       backgroundColor: _backgroundColor,
       linkColor: _linkColor,
       isDarkMode: isDark,
+      maxImageHeight: maxImgH,
     );
 
     final cachedKey =
@@ -228,12 +278,15 @@ class _HyperPageContentState extends State<HyperPageContent> {
       prefs: widget.prefs,
       textColor: _textColor,
       linkColor: _linkColor,
+      maxImageHeight: maxImgH,
     );
 
     HyperPageContent.seedImageDimensions(
       document,
       cacheNamespace: widget.cacheNamespace,
       chapterIndex: widget.chapterIndex,
+      availableWidth: widget.availableWidth,
+      availableHeight: maxImgH,
     );
     _documentCache.set(cacheKey, document);
     return document;
@@ -251,6 +304,14 @@ class _HyperPageContentState extends State<HyperPageContent> {
         !lower.contains('/>')) {
       return rawHtml;
     }
+
+    final double? maxImgH =
+        (widget.availableHeight != null && widget.availableHeight! > 0)
+        ? (widget.availableHeight! - 4.0).clamp(0.0, double.infinity)
+        : null;
+    final imgStyle = (maxImgH != null && maxImgH > 0)
+        ? 'max-width: 100%; max-height: ${maxImgH.toStringAsFixed(1)}px; height: auto; object-fit: contain;'
+        : 'max-width: 100%; height: auto;';
 
     var result = rawHtml;
 
@@ -272,7 +333,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
             final src = m.group(1);
             if (src != null && src.isNotEmpty) {
               buffer.write(
-                '<img src="$src" style="max-width: 100%; height: auto;" />',
+                '<img src="$src" style="$imgStyle" />',
               );
             }
           }
@@ -290,7 +351,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
         ),
         (match) {
           final src = match.group(1);
-          return '<img src="$src" style="max-width: 100%; height: auto;" />';
+          return '<img src="$src" style="$imgStyle" />';
         },
       );
     }
@@ -304,7 +365,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
       result = result.replaceAllMapped(bgImgRegex, (match) {
         final src = match.group(1);
         if (src != null && src.isNotEmpty) {
-          return '<img src="$src" style="max-width: 100%; height: auto;" />';
+          return '<img src="$src" style="$imgStyle" />';
         }
         return match.group(0)!;
       });
@@ -357,11 +418,17 @@ class _HyperPageContentState extends State<HyperPageContent> {
 
       final cache = ReflowableImageCache.instance;
       final chapterIndex = widget.chapterIndex;
+      final double? maxImgH =
+          (widget.availableHeight != null && widget.availableHeight! > 0)
+          ? (widget.availableHeight! - 4.0).clamp(0.0, double.infinity)
+          : null;
       return HyperReflowableImage(
         // node.id (not hashCode) is stable for the lifetime of the cached
         // DocumentNode, so image state survives rebuilds within a chapter.
         key: ValueKey('hyper_img_${node.id}_$src'),
         node: node,
+        availableWidth: widget.availableWidth,
+        availableHeight: maxImgH,
         initialDecoded: cache.peekDecoded(
           widget.cacheNamespace,
           chapterIndex,
@@ -373,6 +440,13 @@ class _HyperPageContentState extends State<HyperPageContent> {
           src,
           load: () => _loadBytesFor(src),
         ),
+        onImageDecoded: () {
+          _documentCache.remove(_buildDocumentCacheKey());
+          if (mounted) {
+            setState(() => _document = _parseDocument());
+          }
+          widget.onImageDecoded?.call();
+        },
       );
     }
     return null;

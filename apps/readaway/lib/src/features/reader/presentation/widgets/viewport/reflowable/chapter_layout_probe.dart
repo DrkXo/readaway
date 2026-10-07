@@ -26,6 +26,7 @@ class ChapterLayoutProbe extends StatefulWidget {
     required this.prefs,
     required this.coordinator,
     required this.availableWidth,
+    this.availableHeight,
     required this.cacheNamespace,
     this.onResolveAssetBytes,
   });
@@ -38,6 +39,11 @@ class ChapterLayoutProbe extends StatefulWidget {
   /// Width the chapter's text is laid out in, i.e. the viewport minus the
   /// horizontal margins. Must match what the visible page uses.
   final double availableWidth;
+
+  /// Height available for content on a page, i.e. viewport minus top and bottom
+  /// margins. Used to size images so they don't exceed the page height.
+  /// If null, computed from [coordinator.currentState.viewportHeight].
+  final double? availableHeight;
 
   final String cacheNamespace;
   final Future<List<int>?> Function(String src)? onResolveAssetBytes;
@@ -67,7 +73,8 @@ class _ChapterLayoutProbeState extends State<ChapterLayoutProbe> {
     if (oldWidget.chapterIndex != widget.chapterIndex ||
         oldWidget.html != widget.html ||
         oldWidget.prefs != widget.prefs ||
-        oldWidget.availableWidth != widget.availableWidth) {
+        oldWidget.availableWidth != widget.availableWidth ||
+        oldWidget.availableHeight != widget.availableHeight) {
       _attempts = 0;
       _scheduleMeasurement();
     }
@@ -97,6 +104,16 @@ class _ChapterLayoutProbeState extends State<ChapterLayoutProbe> {
 
   @override
   Widget build(BuildContext context) {
+    final double? effAvailableHeight =
+        widget.availableHeight ??
+        (widget.coordinator.currentState.viewportHeight > 0
+            ? math.max(
+                0.0,
+                widget.coordinator.currentState.viewportHeight -
+                    (widget.prefs.marginTop + widget.prefs.marginBottom),
+              )
+            : null);
+
     return SizedBox(
       width: widget.availableWidth,
       child: OverflowBox(
@@ -112,6 +129,9 @@ class _ChapterLayoutProbeState extends State<ChapterLayoutProbe> {
             prefs: widget.prefs,
             chapterIndex: widget.chapterIndex,
             cacheNamespace: widget.cacheNamespace,
+            availableWidth: widget.availableWidth,
+            availableHeight: effAvailableHeight,
+            onImageDecoded: _scheduleMeasurement,
             onResolveAssetBytes: widget.onResolveAssetBytes,
             onLinkTap: _ignoreLink,
           ),
@@ -137,6 +157,7 @@ class OffscreenChapterMeasurer extends StatelessWidget {
     required this.prefs,
     required this.coordinator,
     required this.viewportWidth,
+    this.viewportHeight,
     required this.cacheNamespace,
     this.onResolveAssetBytes,
   });
@@ -146,6 +167,7 @@ class OffscreenChapterMeasurer extends StatelessWidget {
   final ReaderPreferences prefs;
   final PaginationCoordinator coordinator;
   final double viewportWidth;
+  final double? viewportHeight;
   final String cacheNamespace;
   final Future<List<int>?> Function(String src)? onResolveAssetBytes;
 
@@ -155,6 +177,14 @@ class OffscreenChapterMeasurer extends StatelessWidget {
       0.0,
       viewportWidth - (prefs.marginHorizontal * 2),
     );
+    final double effViewportHeight =
+        viewportHeight ?? coordinator.currentState.viewportHeight;
+    final double? availableHeight = effViewportHeight > 0
+        ? math.max(
+            0.0,
+            effViewportHeight - (prefs.marginTop + prefs.marginBottom),
+          )
+        : null;
 
     return Offstage(
       offstage: true,
@@ -167,6 +197,7 @@ class OffscreenChapterMeasurer extends StatelessWidget {
             prefs: prefs,
             coordinator: coordinator,
             availableWidth: availableWidth,
+            availableHeight: availableHeight,
             cacheNamespace: cacheNamespace,
             onResolveAssetBytes: onResolveAssetBytes,
           ),

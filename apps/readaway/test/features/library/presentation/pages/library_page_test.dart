@@ -191,23 +191,23 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Add Book'), findsNothing);
-    expect(find.byTooltip('Open Book'), findsNothing);
+    expect(find.byTooltip('Add'), findsNothing);
+    expect(find.byTooltip('Open'), findsNothing);
 
     final toggle = find.byKey(const ValueKey('library-actions-toggle'));
     final initialRight = tester.getRect(toggle).right;
     await tester.tap(toggle);
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Add Book'), findsOneWidget);
-    expect(find.byTooltip('Open Book'), findsOneWidget);
+    expect(find.byTooltip('Add'), findsOneWidget);
+    expect(find.byTooltip('Open'), findsOneWidget);
     expect(tester.getRect(toggle).right, closeTo(initialRight, 0.1));
 
-    await tester.tap(find.byTooltip('Open Book'));
+    await tester.tap(find.byTooltip('Open'));
     await tester.pumpAndSettle();
     expect(openCalls, 1);
     expect(addCalls, 0);
 
-    await tester.tap(find.byTooltip('Add Book'));
+    await tester.tap(find.byTooltip('Add'));
     await tester.pumpAndSettle();
     expect(openCalls, 1);
     expect(addCalls, 1);
@@ -236,37 +236,37 @@ void main() {
       await tester.pumpAndSettle();
 
       final toggle = find.byKey(const ValueKey('library-actions-toggle'));
-      expect(find.byTooltip('Add Book'), findsNothing);
+      expect(find.byTooltip('Add'), findsNothing);
 
       // 1. Open speed dial
       await tester.tap(toggle);
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Add Book'), findsOneWidget);
+      expect(find.byTooltip('Add'), findsOneWidget);
 
       // 2. Tap outside on the dimming barrier
       final barrier = find.byKey(const ValueKey('library-speed-dial-barrier'));
       expect(barrier, findsOneWidget);
       await tester.tap(barrier);
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Add Book'), findsNothing);
+      expect(find.byTooltip('Add'), findsNothing);
 
-      // 3. Open speed dial again and tap "Add Book"
+      // 3. Open speed dial again and tap "Add"
       await tester.tap(toggle);
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Add Book'), findsOneWidget);
+      expect(find.byTooltip('Add'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Add Book'));
+      await tester.tap(find.byTooltip('Add'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Add Book'), findsNothing);
+      expect(find.byTooltip('Add'), findsNothing);
 
       // 4. Open speed dial again and tap "Open Book"
       await tester.tap(toggle);
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Open Book'), findsOneWidget);
+      expect(find.byTooltip('Open'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Open Book'));
+      await tester.tap(find.byTooltip('Open'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Open Book'), findsNothing);
+      expect(find.byTooltip('Open'), findsNothing);
     },
   );
 }

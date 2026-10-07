@@ -157,6 +157,11 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
     });
   }
 
+  void _onImageDecoded() {
+    if (!mounted) return;
+    _scheduleMeasurement();
+  }
+
   void _measureAndRegister() {
     final contentContext = _contentKey.currentContext;
     if (contentContext == null) return;
@@ -327,6 +332,9 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
                   chapterIndex: widget.chapterIndex,
                   cacheNamespace:
                       widget.state.documentPath ?? widget.state.fileName ?? '',
+                  availableWidth: availableWidth,
+                  availableHeight: availableHeight,
+                  onImageDecoded: _onImageDecoded,
                   onResolveAssetBytes: widget.onResolveAssetBytes,
                   onLinkTap: widget.onLinkTap,
                   menuActionsBuilder: (overlayState) {

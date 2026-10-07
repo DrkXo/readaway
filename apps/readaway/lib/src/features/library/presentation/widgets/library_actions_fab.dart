@@ -30,7 +30,7 @@ class LibraryActionsFab extends StatelessWidget {
       children: [
         _ActionItem(
           key: const ValueKey('library-open-book'),
-          label: 'Open Book',
+          label: 'Open',
           icon: LucideIcons.bookOpen,
           isVisible: isExpanded && !isLoading,
           onPressed: onOpenBook,
@@ -38,7 +38,7 @@ class LibraryActionsFab extends StatelessWidget {
         if (isExpanded && !isLoading) const SizedBox(height: 8),
         _ActionItem(
           key: const ValueKey('library-add-books'),
-          label: isLoading ? 'Adding…' : 'Add Book',
+          label: isLoading ? 'Adding…' : 'Add',
           icon: isLoading ? null : LucideIcons.bookPlus,
           isLoading: isLoading,
           isVisible: isExpanded || isLoading,
