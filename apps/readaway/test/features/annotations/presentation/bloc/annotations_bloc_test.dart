@@ -304,6 +304,30 @@ void main() {
       expect(note.hasNoteBody, isTrue);
       expect(note.isPainted, isFalse);
     });
+
+    test(
+      'creates a painted highlight note when style and colorValue are provided',
+      () async {
+        final bloc = await loadedBloc();
+
+        final done = waitFor(bloc, (s) => s.annotations.isNotEmpty);
+        bloc.add(
+          const AnnotationsEvent.addNote(
+            anchor: _anchor,
+            note: 'worth quoting',
+            style: HighlightStyle.highlight,
+            colorValue: 'emerald',
+          ),
+        );
+        final note = (await done).annotations.single;
+
+        expect(note.type, ReaderNoteType.highlight);
+        expect(note.note, 'worth quoting');
+        expect(note.hasNoteBody, isTrue);
+        expect(note.isPainted, isTrue);
+        expect(note.colorValue, 'emerald');
+      },
+    );
   });
 
   group('toggleBookmark', () {

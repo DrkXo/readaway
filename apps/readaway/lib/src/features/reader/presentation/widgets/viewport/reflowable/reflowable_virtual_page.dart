@@ -19,6 +19,7 @@ import '../../../bloc/reader_bloc.dart';
 import '../../../controllers/reader_viewport_controller.dart';
 import '../../chrome/reader_running_footer.dart';
 import '../../chrome/reader_running_header.dart';
+import '../../selection/reader_selection_context_menu.dart';
 import '../../toc/reader_toc_content.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
 import 'chapter_layout_measurement.dart';
@@ -337,6 +338,17 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
                   onImageDecoded: _onImageDecoded,
                   onResolveAssetBytes: widget.onResolveAssetBytes,
                   onLinkTap: widget.onLinkTap,
+                  contextMenuBuilder: (overlayContext, overlayState) {
+                    widget.controller.setSelectionActive(
+                      overlayState.hasSelection,
+                    );
+                    return ReaderSelectionContextMenu(
+                      chapterIndex: widget.chapterIndex,
+                      coordinator: widget.coordinator,
+                      overlayState: overlayState,
+                      controller: widget.controller,
+                    );
+                  },
                   menuActionsBuilder: (overlayState) {
                     widget.controller.setSelectionActive(
                       overlayState.hasSelection,

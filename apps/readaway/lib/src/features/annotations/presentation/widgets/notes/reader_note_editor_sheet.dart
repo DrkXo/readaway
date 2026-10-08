@@ -81,14 +81,24 @@ class _ReaderNoteEditorSheetState extends State<ReaderNoteEditorSheet> {
     final body = _controller.text.trim();
 
     if (existing == null) {
-      // A note with no words is not a note.
-      if (body.isEmpty) return;
-      _bloc.add(AnnotationsEvent.addNote(anchor: widget.anchor, note: body));
+      // A note with no words and no highlight is not worth saving.
+      if (body.isEmpty && !_paint) return;
+      _bloc.add(
+        AnnotationsEvent.addNote(
+          anchor: widget.anchor,
+          note: body,
+          style: _paint ? _style : null,
+          colorValue: _paint ? _colorValue : null,
+        ),
+      );
       return;
     }
 
-    if (body.isEmpty && existing.hasNoteBody) {
-      // Emptying the body of a note leaves nothing worth keeping, so the record
+    if (body.isEmpty &&
+        existing.hasNoteBody &&
+        !existing.isPainted &&
+        !_paint) {
+      // Emptying the body of a pure note leaves nothing worth keeping, so the record
       // goes rather than lingering as an empty row.
       _bloc.add(AnnotationsEvent.deleteNote(id: existing.id));
       return;

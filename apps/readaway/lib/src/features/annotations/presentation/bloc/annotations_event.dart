@@ -21,10 +21,12 @@ sealed class AnnotationsEvent with _$AnnotationsEvent {
     required String colorValue,
   }) = _AddHighlight;
 
-  /// Attaches a note to [anchor] without painting it.
+  /// Attaches a note to [anchor], optionally painting it with [style] and [colorValue].
   const factory AnnotationsEvent.addNote({
     required ReaderNoteAnchor anchor,
     required String note,
+    HighlightStyle? style,
+    String? colorValue,
   }) = _AddNote;
 
   /// Saves [anchor] as a bookmark, or removes the bookmark already there.

@@ -24,6 +24,7 @@ class HyperPageContent extends StatefulWidget {
     this.cacheNamespace = '',
     this.onResolveAssetBytes,
     this.menuActionsBuilder,
+    this.contextMenuBuilder,
     this.availableWidth,
     this.availableHeight,
     this.onImageDecoded,
@@ -49,6 +50,13 @@ class HyperPageContent extends StatefulWidget {
   /// the overlay shows its own Copy / Select-all menu.
   final List<SelectionMenuAction> Function(HyperSelectionOverlayState)?
   menuActionsBuilder;
+
+  /// Optional custom context menu builder forwarded to [HyperSelectionOverlay].
+  ///
+  /// When provided, this takes precedence over [menuActionsBuilder] and
+  /// completely overrides the floating context menu UI.
+  final Widget Function(BuildContext, HyperSelectionOverlayState)?
+  contextMenuBuilder;
 
   /// Available width inside the reader viewport (viewport width minus margins).
   final double? availableWidth;
@@ -405,6 +413,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
       baseStyle: baseStyle,
       onLinkTap: widget.onLinkTap,
       menuActionsBuilder: widget.menuActionsBuilder,
+      contextMenuBuilder: widget.contextMenuBuilder,
     );
   }
 

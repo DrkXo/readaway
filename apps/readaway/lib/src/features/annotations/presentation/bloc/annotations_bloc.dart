@@ -151,13 +151,39 @@ class AnnotationsBloc extends Bloc<AnnotationsEvent, AnnotationsState> {
     Emitter<AnnotationsState> emit,
   ) => _mutate(emit, (notes) {
     final now = DateTime.now();
+    final isPainted = event.style != null || event.colorValue != null;
+
+    final existingIndex = notes.indexWhere(
+      (n) =>
+          !n.isDeleted &&
+          n.type != ReaderNoteType.bookmark &&
+          n.anchor.chapterIndex == event.anchor.chapterIndex &&
+          n.anchor.startChar == event.anchor.startChar &&
+          n.anchor.endChar == event.anchor.endChar,
+    );
+
+    if (existingIndex >= 0) {
+      final existing = notes[existingIndex];
+      final next = [...notes];
+      next[existingIndex] = existing.copyWith(
+        note: event.note,
+        type: isPainted ? ReaderNoteType.highlight : existing.type,
+        style: event.style ?? existing.style,
+        colorValue: event.colorValue ?? existing.colorValue,
+        updatedAt: now,
+      );
+      return next;
+    }
+
     return ReaderNoteOperations.upsert(
       notes,
       ReaderNote(
         id: newReaderNoteId(),
-        type: ReaderNoteType.note,
+        type: isPainted ? ReaderNoteType.highlight : ReaderNoteType.note,
         anchor: event.anchor,
         note: event.note,
+        style: event.style ?? HighlightStyle.highlight,
+        colorValue: event.colorValue ?? 'amber',
         createdAt: now,
         updatedAt: now,
       ),

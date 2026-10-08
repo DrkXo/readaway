@@ -163,6 +163,64 @@ void main() {
     expect(bloc.state.notes, isEmpty);
   });
 
+  testWidgets(
+    'toggling "Highlight this passage too" saves a painted highlight note',
+    (tester) async {
+      final bloc = await loadedBloc(const []);
+      await pumpSheet(tester, bloc);
+
+      await tester.enterText(field, 'insightful thought');
+      await tester.pump();
+
+      // Toggle switch on
+      await tester.tap(find.text('Highlight this passage too'));
+      await tester.pump();
+
+      // Select Emerald swatch
+      await tester.tap(find.byTooltip('Emerald'));
+      await tester.pump();
+
+      await tapAndWait(
+        tester,
+        'Save',
+        bloc,
+        (state) => state.notes.any((note) => note.note == 'insightful thought'),
+      );
+
+      final note = bloc.state.notes.single;
+      expect(note.type, ReaderNoteType.highlight);
+      expect(note.isPainted, isTrue);
+      expect(note.note, 'insightful thought');
+      expect(note.colorValue, 'emerald');
+      expect(note.anchor.text, 'hello');
+    },
+  );
+
+  testWidgets(
+    'toggling "Highlight this passage too" with empty text saves bare highlight',
+    (tester) async {
+      final bloc = await loadedBloc(const []);
+      await pumpSheet(tester, bloc);
+
+      // Toggle switch on without typing note text
+      await tester.tap(find.text('Highlight this passage too'));
+      await tester.pump();
+
+      await tapAndWait(
+        tester,
+        'Save',
+        bloc,
+        (state) => state.notes.isNotEmpty,
+      );
+
+      final note = bloc.state.notes.single;
+      expect(note.type, ReaderNoteType.highlight);
+      expect(note.isPainted, isTrue);
+      expect(note.note, isEmpty);
+      expect(note.anchor.text, 'hello');
+    },
+  );
+
   testWidgets('opens on the existing body and rewrites it', (tester) async {
     final note = _textNote();
     final bloc = await loadedBloc([note]);

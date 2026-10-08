@@ -17,6 +17,7 @@ import '../../../../../annotations/presentation/widgets/selection/annotation_sel
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../../controllers/reader_viewport_controller.dart';
+import '../../selection/reader_selection_context_menu.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
 import 'chapter_layout_measurement.dart';
 import 'html/hyper_page_content.dart';
@@ -235,6 +236,17 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
                         onImageDecoded: _scheduleMeasurement,
                         onResolveAssetBytes: _resolveAssetBytes,
                         onLinkTap: (url) => _onTapUrl(context, url),
+                        contextMenuBuilder: (overlayContext, overlayState) {
+                          widget.controller.setSelectionActive(
+                            overlayState.hasSelection,
+                          );
+                          return ReaderSelectionContextMenu(
+                            chapterIndex: widget.index,
+                            coordinator: widget.coordinator,
+                            overlayState: overlayState,
+                            controller: widget.controller,
+                          );
+                        },
                         menuActionsBuilder: (overlayState) {
                           widget.controller.setSelectionActive(
                             overlayState.hasSelection,
