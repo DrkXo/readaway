@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:readaway_core/readaway_core.dart';
 
-import '../../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../../domain/entity/reader_preferences.dart';
 import 'chapter_layout_measurement.dart';
 import 'html/hyper_page_content.dart';
 
@@ -188,18 +188,20 @@ class OffscreenChapterMeasurer extends StatelessWidget {
 
     return Offstage(
       offstage: true,
-      child: IgnorePointer(
-        child: SizedBox(
-          width: viewportWidth,
-          child: ChapterLayoutProbe(
-            chapterIndex: chapterIndex,
-            html: html,
-            prefs: prefs,
-            coordinator: coordinator,
-            availableWidth: availableWidth,
-            availableHeight: availableHeight,
-            cacheNamespace: cacheNamespace,
-            onResolveAssetBytes: onResolveAssetBytes,
+      child: ExcludeSemantics(
+        child: IgnorePointer(
+          child: SizedBox(
+            width: viewportWidth,
+            child: ChapterLayoutProbe(
+              chapterIndex: chapterIndex,
+              html: html,
+              prefs: prefs,
+              coordinator: coordinator,
+              availableWidth: availableWidth,
+              availableHeight: availableHeight,
+              cacheNamespace: cacheNamespace,
+              onResolveAssetBytes: onResolveAssetBytes,
+            ),
           ),
         ),
       ),

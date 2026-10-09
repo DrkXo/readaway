@@ -8,7 +8,7 @@ import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../../core/theme/theme.dart';
-import '../../../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../../../domain/entity/reader_preferences.dart';
 import '../../../selection/reader_selection_anchor.dart';
 import 'reader_style_resolver.dart';
 import 'reflowable_image_cache.dart';
@@ -27,6 +27,8 @@ class HyperPageContent extends StatefulWidget {
     this.menuActionsBuilder,
     this.contextMenuBuilder,
     this.selectionAnchorBuilder,
+    this.onSelectionChanged,
+    this.overlayKey,
     this.availableWidth,
     this.availableHeight,
     this.onImageDecoded,
@@ -65,6 +67,12 @@ class HyperPageContent extends StatefulWidget {
   /// When null, defaults to [ReaderSelectionAnchor.builder] using the configured
   /// [ReaderPreferences.selectionAnchorStyle].
   final HyperSelectionAnchorBuilder? selectionAnchorBuilder;
+
+  /// Callback when text selection changes within the page overlay.
+  final ValueChanged<HyperTextSelection?>? onSelectionChanged;
+
+  /// Optional GlobalKey to access the underlying [HyperSelectionOverlayState].
+  final GlobalKey<HyperSelectionOverlayState>? overlayKey;
 
   /// Available width inside the reader viewport (viewport width minus margins).
   final double? availableWidth;
@@ -414,9 +422,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
         context.appColors.scheme.primary;
 
     return HyperSelectionOverlay(
-      key: ValueKey(
-        'hyper_page_${_document.hashCode}_${widget.prefs.hashCode}',
-      ),
+      key: widget.overlayKey,
       document: _document,
       selectable: true,
       handleColor: handleColor,
@@ -432,6 +438,7 @@ class _HyperPageContentState extends State<HyperPageContent> {
       onLinkTap: widget.onLinkTap,
       menuActionsBuilder: widget.menuActionsBuilder,
       contextMenuBuilder: widget.contextMenuBuilder,
+      onSelectionChanged: widget.onSelectionChanged,
     );
   }
 

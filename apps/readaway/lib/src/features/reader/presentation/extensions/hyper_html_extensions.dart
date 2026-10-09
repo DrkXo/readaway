@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hyper_render/hyper_render.dart';
-import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
+import 'package:readaway/src/features/reader/domain/entity/reader_preferences.dart';
 
 extension UDTNodeExtensions on UDTNode {
   /// Enforces reader preferences (paragraph spacing, text indent, justification,

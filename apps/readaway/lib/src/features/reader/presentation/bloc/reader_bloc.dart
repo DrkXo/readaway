@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:audio_service/audio_service.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -10,12 +9,9 @@ import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/models/ui_feedback.dart';
-import '../../../../core/routes/routes.dart';
-import '../../../../core/services/tts/tts_models.dart';
 import '../../../../core/utils/reader/reader_html_utils.dart';
 import '../../domain/entity/reader_link.dart';
 import '../../domain/repositories/reader_repository.dart';
-import '../../domain/repositories/reader_tts_repository.dart';
 
 part 'reader_bloc.freezed.dart';
 part 'reader_event.dart';
@@ -26,78 +22,25 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   final _log = AppLogger.instance.scope('ReaderBloc');
 
   final ReaderRepository readerRepository;
-  final ReaderTtsRepository ttsRepository;
 
   Uri? _coverUri;
   Uri? get coverUri => _coverUri;
 
-  StreamSubscription<TtsPlaybackEvent>? _ttsStateSub;
-  StreamSubscription<TtsChunk>? _chunkSub;
-
-  /// Guards against re-entrant auto-advance while the next page's TTS is
-  /// being spun up (extract text + playText are async).
-  bool _autoAdvancing = false;
-
   ReaderBloc({
     required this.readerRepository,
-    required this.ttsRepository,
   }) : super(const ReaderState()) {
     on<_OpenDocument>(_onOpenDocument, transformer: droppable());
     on<_UnlockDocument>(_onUnlockDocument);
     on<_PageChanged>(_onPageChanged);
+    on<_JumpToChapter>(_onJumpToChapter);
     on<_LoadPage>(_onLoadPage, transformer: concurrent());
     on<_CloseDocument>(_onCloseDocument);
-    on<_TtsStart>(_onTtsStart);
-    on<_TtsClose>(_onTtsClose);
     on<_ConsumeFeedback>(_onConsumeFeedback);
-    on<_TtsErrorOccurred>(_onTtsErrorOccurred);
-    on<_JumpToTtsPage>(_onJumpToTtsPage);
-    on<_TtsPageAdvanced>(_onTtsPageAdvanced);
-    on<_TtsChunkAdvanced>(_onTtsChunkAdvanced);
-    on<_SetSleepTimer>(_onSetSleepTimer);
-    on<_TtsSleepTimerFired>(_onTtsSleepTimerFired);
-    on<_TtsSleepTimerTick>(_onTtsSleepTimerTick);
     on<_VirtualPageChanged>(_onVirtualPageChanged);
     on<_ClearPendingRestore>(_onClearPendingRestore);
-
-    // Auto-advance or report errors when TTS reports state updates
-    _ttsStateSub = ttsRepository.playbackState.listen((event) {
-      if (event.state == TtsPlaybackState.completed) {
-        _onPageTtsCompleted();
-      } else if (event.state == TtsPlaybackState.error) {
-        add(
-          ReaderEvent.ttsErrorOccurred(
-            event.message ?? 'Speech synthesis error',
-          ),
-        );
-      }
-    });
-
-    // Resolve each spoken chunk to a page as it is read. The chunk's offsets
-    // index the chapter's speech text, which the coordinator holds a
-    // correspondence for. Without this the follow target is never set, so the
-    // page never turns and the reader is never offered a way back.
-    //
-    // The chapter comes from this bloc rather than from the chunk: the chunker
-    // is invoked without a section index, so every chunk reports section 0
-    // regardless of which chapter is playing. `ttsCurrentPage` is the chapter
-    // playback was actually started on.
-    _chunkSub = ttsRepository.currentChunk.listen((chunk) {
-      if (isClosed) return;
-      final chapter = state.ttsCurrentPage;
-      if (chapter == null) return;
-      add(
-        ReaderEvent.ttsChunkAdvanced(
-          chapterIndex: chapter,
-          startOffset: chunk.startOffset,
-          endOffset: chunk.endOffset,
-        ),
-      );
-    });
   }
 
   Timer? _progressDebounceTimer;
-  Timer? _sleepTimerTick;
 
   void _scheduleProgressSync(int page) {
     _progressDebounceTimer?.cancel();
@@ -140,12 +83,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
   @override
   Future<void> close() async {
     _progressDebounceTimer?.cancel();
-    _cancelSleepTimer();
     _flushProgress();
-    await _ttsStateSub?.cancel();
-    await _chunkSub?.cancel();
-    await ttsRepository.stopPipeline();
-    await ttsRepository.releaseResources();
     await readerRepository.closeDocument();
     await readerRepository.updateWindowTitle(null);
     return super.close();
@@ -159,11 +97,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     if (state.hasDocument) {
       _progressDebounceTimer?.cancel();
       _progressDebounceTimer = null;
-      _cancelSleepTimer();
       _flushProgress();
-      _coverUri = null;
-      await ttsRepository.stopPipeline();
-      await ttsRepository.releaseResources();
       await readerRepository.closeDocument();
     }
 
@@ -236,7 +170,6 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
             currentVirtualPage: null,
             virtualPageCount: null,
             pendingRestoreAnchor: savedAnchor,
-            ttsCurrentPage: null,
             outline: info.outline,
             bookTitle: info.title,
             author: info.author,
@@ -362,413 +295,26 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     Emitter<ReaderState> emit,
   ) async {
     _progressDebounceTimer?.cancel();
-    _cancelSleepTimer();
     _flushProgress();
-    _coverUri = null;
-    await ttsRepository.releaseResources();
     await readerRepository.closeDocument();
     await readerRepository.updateWindowTitle(null);
     emit(const ReaderState());
   }
 
-  /// Starts TTS playback for the current page.
-  Future<void> _onTtsStart(
-    _TtsStart event,
-    Emitter<ReaderState> emit,
-  ) async {
-    if (!state.isReflowable) {
-      emit(
-        state.copyWith(
-          ttsActive: false,
-          transientFeedback: UiFeedback(
-            failure: const UnexpectedFailure(
-              'Text-to-speech is currently only available for reflowable text documents.',
-            ),
-          ),
-        ),
-      );
-      return;
-    }
-
-    final permissionResult = await readerRepository.requestAudioPermissions();
-    final hasPermission = permissionResult.dataOrNull ?? false;
-    if (!hasPermission) {
-      emit(
-        state.copyWith(
-          ttsActive: false,
-          ttsCurrentPage: null,
-          transientFeedback: UiFeedback(
-            failure: const NotificationPermissionDeniedFailure(
-              message: 'Audio notification permissions are required for background read-aloud.',
-            ),
-          ),
-        ),
-      );
-      return;
-    }
-
-    final prepResult = await ttsRepository.prepareForPlayback();
-    final prepFailure = prepResult.failureOrNull;
-    if (prepFailure != null) {
-      _log.w('TTS preparation failed: $prepFailure');
-      emit(
-        state.copyWith(
-          ttsActive: false,
-          ttsCurrentPage: null,
-          transientFeedback: UiFeedback(
-            failure: prepFailure,
-            actionLabel: 'TTS Settings',
-            actionRoute: '${appRoutes.settings.path}?tab=tts',
-          ),
-        ),
-      );
-      return;
-    }
-
-    int targetChapter = state.currentPage;
-    double? startProgression;
-    final coordinator = GetIt.I.isRegistered<PaginationCoordinator>()
-        ? GetIt.I<PaginationCoordinator>()
-        : null;
-    if (coordinator != null && coordinator.chapterCount > 0) {
-      final globalPage =
-          state.currentVirtualPage ?? coordinator.currentState.globalPage;
-      final coord = coordinator.coordinateFromGlobalPage(globalPage);
-      targetChapter = coord.chapterIndex;
-      final offsets = coordinator.getChapterPageOffsets(targetChapter);
-      final height = coordinator.getChapterHeight(targetChapter);
-      if (coord.pageInChapter < offsets.length &&
-          height != null &&
-          height > 0) {
-        startProgression = (offsets[coord.pageInChapter] / height).clamp(
-          0.0,
-          1.0,
-        );
-      } else if (coord.totalPagesInChapter > 0) {
-        startProgression = (coord.pageInChapter / coord.totalPagesInChapter)
-            .clamp(0.0, 1.0);
-      }
-    }
-
-    emit(state.copyWith(ttsActive: true, ttsCurrentPage: targetChapter));
-    await _beginPageTts(
-      targetChapter,
-      emit,
-      startProgression,
-    );
-  }
-
-  /// Starts TTS playback for the page at [pageIndex]: sets the active voice
-  /// from settings, spins up the pipeline, and plays the page's text.
-  Future<void> _beginPageTts(
-    int pageIndex, [
-    Emitter<ReaderState>? emit,
-    double? startProgression,
-  ]) async {
-    final prepResult = await ttsRepository.prepareForPlayback();
-    final prepFailure = prepResult.failureOrNull;
-    if (prepFailure != null) {
-      if (emit != null) {
-        emit(
-          state.copyWith(
-            ttsActive: false,
-            ttsCurrentPage: null,
-            transientFeedback: UiFeedback(
-              failure: prepFailure,
-              actionLabel: 'TTS Settings',
-              actionRoute: '${appRoutes.settings.path}?tab=tts',
-            ),
-          ),
-        );
-      } else {
-        add(ReaderEvent.ttsErrorOccurred(prepFailure.message));
-      }
-      return;
-    }
-
-    if (ttsRepository.currentVoice == null) {
-      final voices = ttsRepository.availableVoices;
-      if (voices.isNotEmpty) {
-        ttsRepository.setVoice(voices.first);
-      }
-    }
-
-    final textResult = await readerRepository.extractSpeechText(pageIndex);
-    final text = textResult.dataOrNull ?? '';
-    if (text.trim().isEmpty) return;
-
-    if (_coverUri == null && state.pageCount > 0) {
-      final coverResult = await readerRepository.getCoverArtUri(
-        filePath: state.documentPath ?? state.fileName ?? 'doc',
-        fileName: state.fileName ?? 'doc',
-        pageCount: state.pageCount,
-      );
-      _coverUri = coverResult.dataOrNull;
-    }
-
-    if (emit != null) {
-      emit(state.copyWith(ttsCurrentPage: pageIndex));
-    } else {
-      add(ReaderEvent.ttsPageAdvanced(pageIndex: pageIndex));
-    }
-
-    // Hand the speech text to the pagination coordinator so it can align this
-    // chapter's spoken text against the text the renderer laid out. The same
-    // string is what the chunker will produce offsets into, which is what makes
-    // the resulting page lookup exact rather than approximate.
-    //
-    // Safe to attach before the page has been measured: the coordinator keeps
-    // the text and aligns it when the layout arrives.
-    _paginationCoordinatorOrNull?.attachSpeechText(pageIndex, text);
-
-    ttsRepository.start();
-    final docPath = state.documentPath ?? state.fileName ?? 'doc';
-    final playResult = await ttsRepository.playText(
-      text,
-      bookPath: docPath,
-      sectionIndex: pageIndex,
-      pageIndex: pageIndex,
-      startProgression: startProgression,
-      tag: MediaItem(
-        id: 'page-${pageIndex + 1}',
-        title: 'Page ${pageIndex + 1}',
-        album: state.bookTitle,
-        artist: state.author,
-        genre: 'Ebook',
-        artUri: _coverUri,
-      ),
-    );
-
-    final playFailure = playResult.failureOrNull;
-    if (playFailure != null) {
-      _log.e('TTS playText failed: $playFailure');
-      if (emit != null) {
-        emit(
-          state.copyWith(
-            ttsActive: false,
-            ttsCurrentPage: null,
-            transientFeedback: UiFeedback(
-              failure: playFailure,
-              actionLabel: playFailure is TtsNoVoiceSelectedFailure
-                  ? 'TTS Settings'
-                  : null,
-              actionRoute: playFailure is TtsNoVoiceSelectedFailure
-                  ? '${appRoutes.settings.path}?tab=tts'
-                  : null,
-            ),
-          ),
-        );
-      } else {
-        add(ReaderEvent.ttsErrorOccurred(playFailure.message));
-      }
-    }
-  }
-
-  /// Called when [ReaderTtsRepository] reports a genuine page-end.
-  /// Decoupled: advances the spoken audio page in the background WITHOUT
-  /// forcefully changing the user's viewport page.
-  Future<void> _onPageTtsCompleted() async {
-    if (_autoAdvancing) return;
-    if (!state.ttsActive) return;
-
-    final basePage = state.ttsCurrentPage ?? state.currentPage;
-    if (basePage >= state.pageCount - 1) return;
-
-    _autoAdvancing = true;
-    try {
-      // Natural pause between page transitions (scaled for playback rate)
-      final gapMs =
-          (bakedGapForRate(kDefaultParagraphGapSec, ttsRepository.rate) * 1000)
-              .round();
-      if (gapMs > 0) {
-        await Future<void>.delayed(Duration(milliseconds: gapMs));
-      }
-      if (!state.ttsActive) return;
-
-      int? next;
-      for (var i = basePage + 1; i < state.pageCount; i++) {
-        final textResult = await readerRepository.extractSpeechText(i);
-        final text = textResult.dataOrNull ?? '';
-        if (text.trim().isNotEmpty) {
-          next = i;
-          break;
-        }
-      }
-      if (next == null) return;
-
-      add(ReaderEvent.ttsPageAdvanced(pageIndex: next));
-      await _beginPageTts(next);
-    } finally {
-      _autoAdvancing = false;
-    }
-  }
-
-  void _onTtsPageAdvanced(
-    _TtsPageAdvanced event,
-    Emitter<ReaderState> emit,
-  ) {
-    emit(state.copyWith(ttsCurrentPage: event.pageIndex));
-  }
-
-  /// Resolves the chunk being spoken to a page and a highlight range.
-  ///
-  /// The chunk's offsets index the chapter's speech text, and the pagination
-  /// coordinator holds the correspondence from that text to what the renderer
-  /// laid out. Both the page and the highlight therefore come from one lookup
-  /// into that correspondence, with no comparing of spoken words against
-  /// on-screen text.
-  ///
-  /// Nothing is emitted when the chapter has no correspondence yet. The page is
-  /// measured on the UI thread while this arrives from the speech engine, so
-  /// the first chunks routinely land before the mapping exists. Emitting a
-  /// guess would scroll the reader to page zero, which is worse than not
-  /// following for a moment.
-  void _onTtsChunkAdvanced(
-    _TtsChunkAdvanced event,
+  void _onJumpToChapter(
+    _JumpToChapter event,
     Emitter<ReaderState> emit,
   ) {
     final chapter = event.chapterIndex;
-    final coordinator = _paginationCoordinatorOrNull;
-    if (coordinator == null) return;
-    if (coordinator.speechMapFor(chapter) == null) return;
-
-    final targetPage = coordinator.globalPageForSpeechOffset(
-      chapter,
-      event.startOffset,
-    );
-
-    emit(
-      state.copyWith(
-        ttsSpeechRange: (start: event.startOffset, end: event.endOffset),
-        ttsTargetVirtualPage: targetPage ?? state.ttsTargetVirtualPage,
-      ),
-    );
-
-    if (targetPage != null && targetPage != state.ttsTargetVirtualPage) {
-      _precachePages(chapter);
-    }
-  }
-
-  /// Drops the follow target and highlight once they can no longer be trusted.
-  ///
-  /// Left in place they would pin the viewport to a page the reader chose to
-  /// leave, and would paint a highlight over text nobody is reading aloud.
-  void _clearTtsFollowState(Emitter<ReaderState> emit) {
-    if (state.ttsSpeechRange == null && state.ttsTargetVirtualPage == null) {
-      return;
-    }
-    emit(state.copyWith(ttsSpeechRange: null, ttsTargetVirtualPage: null));
-  }
-
-  PaginationCoordinator? get _paginationCoordinatorOrNull =>
-      GetIt.I.isRegistered<PaginationCoordinator>()
-      ? GetIt.I<PaginationCoordinator>()
-      : null;
-
-  /// Returns the reader to the text being read aloud.
-  ///
-  /// Moves to the page the speech was last placed on rather than to the start
-  /// of its chapter, since the reader who looked ahead wants the passage being
-  /// read, not the top of the section. Falls back to the chapter when nothing
-  /// has been placed, which is the case for a document with no character
-  /// mapping.
-  ///
-  /// Dropping the follow target on the way makes the viewport scroll once, to
-  /// the reader's own page, instead of applying a target it has just reached.
-  /// The next chunk restores it, so following resumes from where the speech
-  /// actually is rather than from the start of the chapter.
-  void _onJumpToTtsPage(_JumpToTtsPage event, Emitter<ReaderState> emit) {
-    final chapter = state.ttsCurrentPage;
-    if (chapter == null || chapter < 0 || chapter >= state.pageCount) return;
-
-    final follow = state.ttsTargetVirtualPage;
+    if (chapter < 0 || chapter >= state.pageCount) return;
     emit(
       state.copyWith(
         currentPage: chapter,
-        // Preserved when nothing was placed: a null follow page means the
-        // chapter was never measured, not that the reader has no page.
-        currentVirtualPage: follow ?? state.currentVirtualPage,
-        ttsTargetVirtualPage: null,
+        currentVirtualPage: event.virtualPage ?? state.currentVirtualPage,
       ),
     );
     _precachePages(chapter);
-    _scheduleProgressSync(follow ?? chapter);
-  }
-
-  /// Stops playback, terminates worker isolates, and hides the TTS player.
-  Future<void> _onTtsClose(
-    _TtsClose event,
-    Emitter<ReaderState> emit,
-  ) async {
-    await ttsRepository.releaseResources();
-    _cancelSleepTimer();
-    emit(state.copyWith(ttsActive: false, ttsCurrentPage: null));
-    _clearTtsFollowState(emit);
-  }
-
-  void _onSetSleepTimer(
-    _SetSleepTimer event,
-    Emitter<ReaderState> emit,
-  ) {
-    _sleepTimerTick?.cancel();
-    _sleepTimerTick = null;
-
-    if (event.duration <= Duration.zero) {
-      ttsRepository.setSleepTimer(Duration.zero);
-      emit(state.copyWith(ttsSleepTimerRemaining: null));
-      return;
-    }
-
-    ttsRepository.setSleepTimer(event.duration);
-    emit(state.copyWith(ttsSleepTimerRemaining: event.duration));
-
-    // The timer itself never emits; it only pokes an event so the tick handler
-    // can read current state and emit synchronously inside a handler.
-    _sleepTimerTick = Timer.periodic(const Duration(seconds: 1), (_) {
-      add(const ReaderEvent.ttsSleepTimerTick());
-    });
-  }
-
-  void _cancelSleepTimer() {
-    _sleepTimerTick?.cancel();
-    _sleepTimerTick = null;
-  }
-
-  /// Decrements the running sleep timer by one second each tick and fires
-  /// the stop flow when it reaches zero.
-  void _onTtsSleepTimerTick(
-    _TtsSleepTimerTick event,
-    Emitter<ReaderState> emit,
-  ) {
-    final remaining = state.ttsSleepTimerRemaining;
-    if (remaining == null) {
-      // Timer was cleared externally; stop ticking.
-      _sleepTimerTick?.cancel();
-      _sleepTimerTick = null;
-      return;
-    }
-
-    final next = remaining - const Duration(seconds: 1);
-    if (next <= Duration.zero) {
-      _sleepTimerTick?.cancel();
-      _sleepTimerTick = null;
-      emit(state.copyWith(ttsSleepTimerRemaining: null));
-      add(const ReaderEvent.ttsSleepTimerFired());
-    } else {
-      emit(state.copyWith(ttsSleepTimerRemaining: next));
-    }
-  }
-
-  void _onTtsSleepTimerFired(
-    _TtsSleepTimerFired event,
-    Emitter<ReaderState> emit,
-  ) {
-    _cancelSleepTimer();
-    // Full cleanup on timer end: stops playback and unloads the TTS engine
-    // (terminates the sherpa worker isolate), unlike a plain user close which
-    // only stops the session and keeps the engine warm.
-    ttsRepository.releaseResources();
-    emit(state.copyWith(ttsActive: false, ttsCurrentPage: null));
+    _scheduleProgressSync(event.virtualPage ?? chapter);
   }
 
   void _onConsumeFeedback(
@@ -776,23 +322,6 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     Emitter<ReaderState> emit,
   ) {
     emit(state.copyWith(transientFeedback: null));
-  }
-
-  void _onTtsErrorOccurred(
-    _TtsErrorOccurred event,
-    Emitter<ReaderState> emit,
-  ) {
-    emit(
-      state.copyWith(
-        ttsActive: false,
-        ttsCurrentPage: null,
-        transientFeedback: UiFeedback(
-          failure: TtsSynthesisFailure(event.message),
-          actionLabel: 'TTS Settings',
-          actionRoute: '${appRoutes.settings.path}?tab=tts',
-        ),
-      ),
-    );
   }
 
   void _precachePages(int currentIndex) {

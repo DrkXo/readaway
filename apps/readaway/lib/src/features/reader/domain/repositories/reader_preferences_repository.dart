@@ -1,5 +1,5 @@
 import '../../../../core/result/result.dart';
-import '../../../settings/domain/entity/reader_preferences.dart';
+import '../entity/reader_preferences.dart';
 
 /// Contract for persisting and retrieving user reading preferences.
 abstract interface class ReaderPreferencesRepository {

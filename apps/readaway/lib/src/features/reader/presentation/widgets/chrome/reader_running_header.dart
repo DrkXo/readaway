@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/theme.dart';
-import '../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../domain/entity/reader_preferences.dart';
 
 /// Persistent top header (Running Header) displaying chapter title or book title.
 class ReaderRunningHeader extends StatelessWidget {

@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/theme.dart';
-import '../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../domain/entity/reader_preferences.dart';
 import 'reader_status_widget.dart';
 
 /// Persistent bottom footer (Running Footer) displaying reading progress, remaining pages, and status.

@@ -8,7 +8,7 @@ import 'package:hyper_render/hyper_render.dart'
         HyperSelectionAnchorDetails,
         HyperSelectionAnchorType;
 import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
+import 'package:readaway/src/features/reader/domain/entity/reader_preferences.dart';
 
 /// Premium, touch-ergonomic text selection anchor widget for Readaway.
 ///

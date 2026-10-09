@@ -58,7 +58,6 @@ AppRoutes get appRoutes => GetIt.I<AppRoutes>();
 class AppRoutes {
   final library = const Routes(path: '/', name: 'Library');
   final reader = const Routes(path: '/reader', name: 'Reader');
-  final ttsPlayer = const Routes(path: '/tts-player', name: 'TtsPlayer');
 
   final settings = const Routes(path: '/settings', name: 'Settings');
   late final settingsVoices = settings.child('voices', name: 'VoiceLibrary');

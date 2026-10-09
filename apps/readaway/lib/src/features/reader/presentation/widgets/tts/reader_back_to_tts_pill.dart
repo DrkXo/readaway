@@ -3,13 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../bloc/reader_bloc.dart';
+import '../../bloc/tts/reader_tts_bloc.dart';
 
 /// A floating pill banner shown when the user has navigated away from the page
 /// actively being read aloud by TTS.
 ///
-/// Tapping the pill dispatches the jump; the viewport performs the scroll from
-/// the resulting state, so there is a single navigation and one place that
-/// decides where the reader lands.
+/// Tapping the pill dispatches the jump to chapter/page on [ReaderBloc] and
+/// clears the follow target on [ReaderTtsBloc].
 class ReaderBackToTtsPill extends StatefulWidget {
   const ReaderBackToTtsPill({super.key, this.topOffset = 76.0});
 
@@ -53,8 +53,12 @@ class _ReaderBackToTtsPillState extends State<ReaderBackToTtsPill>
           ),
         );
 
-    final state = context.read<ReaderBloc>().state;
-    if (state.canJumpToTtsPage) {
+    final ttsState = context.read<ReaderTtsBloc>().state;
+    final readerState = context.read<ReaderBloc>().state;
+    if (ttsState.canJumpToTtsPage(
+      currentPage: readerState.currentPage,
+      currentVirtualPage: readerState.currentVirtualPage,
+    )) {
       _animController.value = 1.0;
     }
   }
@@ -70,103 +74,108 @@ class _ReaderBackToTtsPillState extends State<ReaderBackToTtsPill>
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return BlocConsumer<ReaderBloc, ReaderState>(
-      listenWhen: (prev, curr) =>
-          prev.canJumpToTtsPage != curr.canJumpToTtsPage ||
-          prev.ttsCurrentPage != curr.ttsCurrentPage,
-      listener: (context, state) {
-        if (state.canJumpToTtsPage) {
-          _animController.forward();
-        } else {
-          _animController.reverse();
-        }
-      },
-      buildWhen: (prev, curr) =>
-          prev.canJumpToTtsPage != curr.canJumpToTtsPage ||
-          prev.ttsCurrentPage != curr.ttsCurrentPage,
-      builder: (context, state) {
-        final pageLabel = state.ttsPageLabel;
-        final visible = state.canJumpToTtsPage && pageLabel != null;
+    final ttsState = context.watch<ReaderTtsBloc>().state;
+    final readerState = context.watch<ReaderBloc>().state;
+    final canJump = ttsState.canJumpToTtsPage(
+      currentPage: readerState.currentPage,
+      currentVirtualPage: readerState.currentVirtualPage,
+    );
+    final pageLabel = ttsState.ttsPageLabel;
+    final visible = canJump && pageLabel != null;
 
-        return Positioned(
-          top: widget.topOffset,
-          left: 0,
-          right: 0,
-          child: IgnorePointer(
-            ignoring: !visible,
-            child: Center(
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(24),
-                    elevation: 4,
-                    shadowColor: Colors.black.withValues(alpha: 0.25),
-                    child: InkWell(
-                      onTap: visible
-                          ? () => context.read<ReaderBloc>().add(
-                              const ReaderEvent.jumpToTtsPage(),
-                            )
-                          : null,
-                      borderRadius: BorderRadius.circular(24),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          color: scheme.surfaceContainerHighest.withValues(
-                            alpha: 0.94,
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: scheme.primary.withValues(alpha: 0.35),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                color: scheme.primary.withValues(alpha: 0.12),
-                                shape: BoxShape.circle,
+    if (visible) {
+      if (_animController.status != AnimationStatus.forward &&
+          _animController.status != AnimationStatus.completed) {
+        _animController.forward();
+      }
+    } else {
+      if (_animController.status != AnimationStatus.reverse &&
+          _animController.status != AnimationStatus.dismissed) {
+        _animController.reverse();
+      }
+    }
+
+    return Positioned(
+      top: widget.topOffset,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        ignoring: !visible,
+        child: Center(
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(24),
+                elevation: 4,
+                shadowColor: Colors.black.withValues(alpha: 0.25),
+                child: InkWell(
+                  onTap: visible
+                      ? () {
+                          final chapter = ttsState.ttsCurrentPage;
+                          if (chapter != null) {
+                            context.read<ReaderBloc>().add(
+                              ReaderEvent.jumpToChapter(
+                                chapterIndex: chapter,
+                                virtualPage: ttsState.ttsTargetVirtualPage,
                               ),
-                              child: Icon(
-                                LucideIcons.volume2,
-                                size: 15,
-                                color: scheme.primary,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Back to Audio • Page $pageLabel',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: scheme.onSurface,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              LucideIcons.arrowRight,
-                              size: 14,
-                              color: scheme.primary,
-                            ),
-                          ],
-                        ),
+                            );
+                            context.read<ReaderTtsBloc>().add(
+                              const ReaderTtsEvent.clearFollowTarget(),
+                            );
+                          }
+                        }
+                      : null,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHighest.withValues(
+                        alpha: 0.94,
                       ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: scheme.primary.withValues(alpha: 0.35),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          LucideIcons.audioLines,
+                          size: 15,
+                          color: scheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Back to Audio (Page $pageLabel)',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: scheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          LucideIcons.arrowUpRight,
+                          size: 14,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

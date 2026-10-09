@@ -7,15 +7,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get_it/get_it.dart';
+import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/overlay/reader_footnote_sheet.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../core/theme/theme.dart';
-import '../../../../../../features/settings/domain/entity/reader_preferences.dart';
+import '../../../../domain/entity/reader_preferences.dart';
 import '../../../../../annotations/presentation/widgets/painting/reader_annotation_layer.dart';
 import '../../../../../annotations/presentation/widgets/selection/annotation_selection_menu.dart';
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
+import '../../../bloc/tts/reader_tts_bloc.dart';
 import '../../../controllers/reader_viewport_controller.dart';
 import '../../selection/reader_selection_context_menu.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
@@ -85,12 +87,18 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
 
   /// Marks the chapter content, so its measured geometry can be read back.
   final GlobalKey _contentKey = GlobalKey();
+  final GlobalKey<HyperSelectionOverlayState> _overlayKey =
+      GlobalKey<HyperSelectionOverlayState>();
 
   /// The last content width measured, so a reflow re-measures exactly once.
   double? _lastMeasuredWidth;
 
   /// Guards against queueing more than one measurement per frame.
   bool _measureScheduled = false;
+
+  void _clearSelection() {
+    _overlayKey.currentState?.clearSelection();
+  }
 
   /// Reads this chapter's laid-out geometry into
   /// [ReflowableReaderPage.coordinator].
@@ -116,6 +124,7 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   @override
   void initState() {
     super.initState();
+    widget.controller.clearSelectionDelegate = _clearSelection;
     _scrollController = ScrollController();
     _scrollCoordinator = ReflowableScrollCoordinator(
       scrollController: _scrollController,
@@ -135,6 +144,12 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
   @override
   void didUpdateWidget(ReflowableReaderPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      if (oldWidget.controller.clearSelectionDelegate == _clearSelection) {
+        oldWidget.controller.clearSelectionDelegate = null;
+      }
+      widget.controller.clearSelectionDelegate = _clearSelection;
+    }
     _scrollCoordinator.update(
       index: widget.index,
       pageCount: widget.state.pageCount,
@@ -147,15 +162,16 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
         !identical(widget.state.pageHtmls, oldWidget.state.pageHtmls)) {
       _scheduleMeasurement();
     }
-    if (widget.state.ttsActive != oldWidget.state.ttsActive) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _scrollCoordinator.reportBoundary();
-      });
-    }
   }
 
   @override
   void dispose() {
+    if (widget.controller.clearSelectionDelegate == _clearSelection) {
+      widget.controller.clearSelectionDelegate = null;
+    }
+    if (widget.controller.hasActiveSelection) {
+      widget.controller.setSelectionActive(false);
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -185,7 +201,10 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
       );
     }
 
-    final double extraBottom = (!widget.isContinuous && widget.state.ttsActive)
+    final ttsActive = context.select<ReaderTtsBloc, bool>(
+      (b) => b.state.ttsActive,
+    );
+    final double extraBottom = (!widget.isContinuous && ttsActive)
         ? (ReaderTtsMiniPlayerBar.height + 12.0)
         : 0.0;
 
@@ -236,10 +255,13 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
                         onImageDecoded: _scheduleMeasurement,
                         onResolveAssetBytes: _resolveAssetBytes,
                         onLinkTap: (url) => _onTapUrl(context, url),
-                        contextMenuBuilder: (overlayContext, overlayState) {
+                        overlayKey: _overlayKey,
+                        onSelectionChanged: (selection) {
                           widget.controller.setSelectionActive(
-                            overlayState.hasSelection,
+                            selection != null && !selection.isCollapsed,
                           );
+                        },
+                        contextMenuBuilder: (overlayContext, overlayState) {
                           return ReaderSelectionContextMenu(
                             chapterIndex: widget.index,
                             coordinator: widget.coordinator,
@@ -248,9 +270,6 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
                           );
                         },
                         menuActionsBuilder: (overlayState) {
-                          widget.controller.setSelectionActive(
-                            overlayState.hasSelection,
-                          );
                           return AnnotationSelectionMenu.actions(
                             context,
                             chapterIndex: widget.index,
@@ -280,7 +299,7 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
       );
     }
 
-    return ColoredBox(
+    final pageWidget = ColoredBox(
       color: bgColor,
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -309,6 +328,16 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
           );
         },
       ),
+    );
+
+    return BlocListener<ReaderTtsBloc, ReaderTtsState>(
+      listenWhen: (prev, curr) => prev.ttsActive != curr.ttsActive,
+      listener: (context, state) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _scrollCoordinator.reportBoundary();
+        });
+      },
+      child: pageWidget,
     );
   }
 

@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
+import 'package:readaway/src/features/reader/domain/entity/reader_preferences.dart';
 
 import '../../../bloc/reader_bloc.dart';
 import '../../../controllers/reader_viewport_controller.dart';

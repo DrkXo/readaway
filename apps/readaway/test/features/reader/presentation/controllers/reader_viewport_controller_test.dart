@@ -45,4 +45,54 @@ void main() {
     expect(controller.hasActiveSelection, isFalse);
     expect(notifyCount, 2);
   });
+
+  test(
+    'clearSelection invokes clearSelectionDelegate and resets selection',
+    () {
+      final controller = ReaderViewportController();
+      addTearDown(controller.dispose);
+
+      var delegateCalled = false;
+      controller.clearSelectionDelegate = () => delegateCalled = true;
+
+      controller.setSelectionActive(true);
+      expect(controller.hasActiveSelection, isTrue);
+
+      controller.clearSelection();
+      expect(delegateCalled, isTrue);
+      expect(controller.hasActiveSelection, isFalse);
+    },
+  );
+
+  test('setCurrentPage clears active selection', () {
+    final controller = ReaderViewportController(initialPage: 0, pageCount: 5);
+    addTearDown(controller.dispose);
+
+    var delegateCalled = false;
+    controller.clearSelectionDelegate = () => delegateCalled = true;
+
+    controller.setSelectionActive(true);
+    expect(controller.hasActiveSelection, isTrue);
+
+    controller.setCurrentPage(1);
+    expect(delegateCalled, isTrue);
+    expect(controller.hasActiveSelection, isFalse);
+    expect(controller.currentPage, 1);
+  });
+
+  test('goToPage clears active selection', () async {
+    final controller = ReaderViewportController(initialPage: 0, pageCount: 5);
+    addTearDown(controller.dispose);
+
+    var delegateCalled = false;
+    controller.clearSelectionDelegate = () => delegateCalled = true;
+
+    controller.setSelectionActive(true);
+    expect(controller.hasActiveSelection, isTrue);
+
+    await controller.goToPage(2, animated: false);
+    expect(delegateCalled, isTrue);
+    expect(controller.hasActiveSelection, isFalse);
+    expect(controller.currentPage, 2);
+  });
 }

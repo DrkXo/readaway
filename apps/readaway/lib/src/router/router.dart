@@ -15,6 +15,7 @@ import '../core/routes/routes.dart';
 import '../core/services/services.dart';
 import '../features/library/presentation/pages/library_page.dart';
 import '../features/reader/presentation/bloc/reader_bloc.dart';
+import '../features/reader/presentation/bloc/tts/reader_tts_bloc.dart';
 import '../features/reader/presentation/pages/reader_page.dart';
 import '../features/settings/presentation/pages/settings_custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
@@ -140,8 +141,15 @@ class AppRouter {
           return true;
         },
         builder: (context, state) {
-          return BlocProvider<ReaderBloc>(
-            create: (_) => GetIt.I.get<ReaderBloc>(),
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider<ReaderBloc>(
+                create: (_) => GetIt.I.get<ReaderBloc>(),
+              ),
+              BlocProvider<ReaderTtsBloc>(
+                create: (_) => GetIt.I.get<ReaderTtsBloc>(),
+              ),
+            ],
             child: ReaderPage.fromRoute(state),
           );
         },

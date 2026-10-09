@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:readaway/src/core/theme/theme.dart';
+import 'package:readaway/src/features/reader/domain/entity/reader_preferences.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
-import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../bloc/reader_bloc.dart';
 import 'fixed_layout_image_cache.dart';
+import 'fixed_layout_page_shimmer.dart';
 
 /// Renders an individual fixed-layout page for comic book archives (CBZ, CBR, CBT, CB7, images).
 ///
@@ -136,20 +137,24 @@ class _FixedLayoutReaderPageState extends State<FixedLayoutReaderPage>
       _pageSize = cachedSize;
       _isLoading = false;
       _hasError = false;
+      // Pre-fetch adjacent pages in background once current page is already rendered
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          cache.preloadAdjacent(
+            repo,
+            docPath,
+            widget.index,
+            widget.state.pageCount,
+          );
+        }
+      });
+      return;
     } else if (mounted && _imageBytes == null) {
       setState(() {
         _isLoading = true;
         _hasError = false;
       });
     }
-
-    // Trigger pre-fetching of adjacent pages ($N-2, N-1, N+1, N+2$)
-    cache.preloadAdjacent(
-      repo,
-      docPath,
-      widget.index,
-      widget.state.pageCount,
-    );
 
     try {
       final sizeFuture = cache.getOrLoadSize(repo, docPath, widget.index);
@@ -166,6 +171,17 @@ class _FixedLayoutReaderPageState extends State<FixedLayoutReaderPage>
           _imageBytes = bytes;
           _isLoading = false;
           _hasError = false;
+        });
+        // Pre-fetch adjacent pages in background only after current page has loaded
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            cache.preloadAdjacent(
+              repo,
+              docPath,
+              widget.index,
+              widget.state.pageCount,
+            );
+          }
         });
       } else if (_imageBytes == null) {
         setState(() {
@@ -223,25 +239,10 @@ class _FixedLayoutReaderPageState extends State<FixedLayoutReaderPage>
     final scheme = Theme.of(context).colorScheme;
 
     if (_isLoading && _imageBytes == null) {
-      Widget placeholder = const Center(
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+      return FixedLayoutPageShimmer(
+        pageIndex: widget.index,
+        aspectRatio: _pageSize?.aspectRatio,
       );
-
-      if (_pageSize != null && _pageSize!.width > 0 && _pageSize!.height > 0) {
-        placeholder = AspectRatio(
-          aspectRatio: _pageSize!.aspectRatio,
-          child: Container(
-            color: appColors.readerBackground,
-            child: placeholder,
-          ),
-        );
-      }
-
-      return Center(child: placeholder);
     }
 
     if (_hasError || _imageBytes == null) {
@@ -273,8 +274,20 @@ class _FixedLayoutReaderPageState extends State<FixedLayoutReaderPage>
       );
     }
 
+    final mq = MediaQuery.maybeOf(context);
+    final dpr = mq?.devicePixelRatio ?? 2.0;
+    final screenSize = mq?.size ?? const Size(1080, 1920);
+
+    // In continuous mode (no zoom), downsample to physical screen width.
+    // In paged mode, provide 1.5x physical screen width for sharp double-tap zoom,
+    // clamped between 1200 and 2400 to prevent multi-megapixel VRAM texture exhaustion.
+    final int targetCacheWidth = widget.isContinuous
+        ? (screenSize.width * dpr).round()
+        : (screenSize.width * dpr * 1.5).round().clamp(1200, 2400);
+
     Widget content = Image.memory(
       _imageBytes!,
+      cacheWidth: targetCacheWidth,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.medium,
       gaplessPlayback: true,

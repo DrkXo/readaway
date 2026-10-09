@@ -26,6 +26,9 @@ class SettingsBehaviorPanel extends StatelessWidget {
           nonReflowableScrollDirection: ReaderScrollDirection.vertical,
           nonReflowablePageTransition: ReaderPageTransition.slide,
           nonReflowablePageSnap: true,
+          pdfEngineMode: PdfEngineMode.vector,
+          readingDirection: ReaderReadingDirection.leftToRight,
+          pageSpread: ReaderPageSpread.auto,
         ),
         documentPath: path,
       );
@@ -94,6 +97,9 @@ class SettingsBehaviorPanel extends StatelessWidget {
           title: 'Fixed layout & documents (PDF, CBZ, CBR)',
           onReset: resetPageTurning,
           rows: const [
+            _PdfEngineModeRow(),
+            _ReadingDirectionRow(),
+            _PageSpreadRow(),
             _NonReflowableScrollDirectionRow(),
             _NonReflowablePageTransitionRow(),
             _NonReflowablePageSnapRow(),
@@ -358,6 +364,113 @@ class _NonReflowablePageSnapRow extends StatelessWidget {
           value: prefs.nonReflowablePageSnap,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(nonReflowablePageSnap: v),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PdfEngineModeRow extends StatelessWidget {
+  const _PdfEngineModeRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        return SettingsSelectRow<PdfEngineMode>(
+          label: 'PDF engine',
+          value: prefs.pdfEngineMode,
+          entries: const [
+            SettingsSelectEntry(
+              value: PdfEngineMode.vector,
+              label: 'Native vector (Sharp zoom & search)',
+            ),
+            SettingsSelectEntry(
+              value: PdfEngineMode.snapshot,
+              label: 'Animated transitions (Slide, cover, curl)',
+            ),
+          ],
+          onChanged: (mode) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(pdfEngineMode: mode),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ReadingDirectionRow extends StatelessWidget {
+  const _ReadingDirectionRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        return SettingsSelectRow<ReaderReadingDirection>(
+          label: 'Reading direction',
+          value: prefs.readingDirection,
+          entries: const [
+            SettingsSelectEntry(
+              value: ReaderReadingDirection.leftToRight,
+              label: 'Left to right (Western)',
+            ),
+            SettingsSelectEntry(
+              value: ReaderReadingDirection.rightToLeft,
+              label: 'Right to left (Manga)',
+            ),
+          ],
+          onChanged: (direction) =>
+              context.read<SettingsBloc>().updateReaderPrefs(
+                (p) => p.copyWith(readingDirection: direction),
+                documentPath: path,
+              ),
+        );
+      },
+    );
+  }
+}
+
+class _PageSpreadRow extends StatelessWidget {
+  const _PageSpreadRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        return SettingsSelectRow<ReaderPageSpread>(
+          label: 'Page presentation',
+          value: prefs.pageSpread,
+          entries: const [
+            SettingsSelectEntry(
+              value: ReaderPageSpread.auto,
+              label: 'Auto (Dual on wide/landscape)',
+            ),
+            SettingsSelectEntry(
+              value: ReaderPageSpread.single,
+              label: 'Single page',
+            ),
+            SettingsSelectEntry(
+              value: ReaderPageSpread.dual,
+              label: 'Dual page spread',
+            ),
+          ],
+          onChanged: (spread) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(pageSpread: spread),
             documentPath: path,
           ),
         );

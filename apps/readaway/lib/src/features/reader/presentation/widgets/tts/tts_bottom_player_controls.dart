@@ -12,7 +12,7 @@ import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../../domain/repositories/reader_tts_repository.dart';
-import '../../bloc/reader_bloc.dart';
+import '../../bloc/tts/reader_tts_bloc.dart';
 import 'live_speech_waveform.dart';
 import 'tts_pitch_control_panel.dart';
 import 'tts_prosody_control_panel.dart';
@@ -242,15 +242,14 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                   : _showSleepTimerPanel
                   ? Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: BlocBuilder<ReaderBloc, ReaderState>(
+                      child: BlocBuilder<ReaderTtsBloc, ReaderTtsState>(
                         buildWhen: (prev, curr) =>
                             prev.ttsSleepTimerRemaining !=
                                 curr.ttsSleepTimerRemaining ||
                             prev.ttsActive != curr.ttsActive,
-                        builder: (context, readerState) {
+                        builder: (context, ttsState) {
                           return TtsSleepTimerControl(
-                            initialSelection:
-                                readerState.ttsSleepTimerRemaining,
+                            initialSelection: ttsState.ttsSleepTimerRemaining,
                             onClose: () {
                               setState(() => _showSleepTimerPanel = false);
                             },
@@ -404,7 +403,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
 
                 // 2e. Sleep Timer Pill
                 Expanded(
-                  child: BlocBuilder<ReaderBloc, ReaderState>(
+                  child: BlocBuilder<ReaderTtsBloc, ReaderTtsState>(
                     buildWhen: (prev, curr) =>
                         prev.ttsSleepTimerRemaining !=
                         curr.ttsSleepTimerRemaining,

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:motor/motor.dart';
 
-import '../../bloc/reader_bloc.dart';
+import '../../bloc/tts/reader_tts_bloc.dart';
 import '../navigation/reader_bottom_bar.dart';
 import 'reader_tts_full_player_view.dart';
 import 'reader_tts_mini_player_bar.dart';
@@ -40,7 +40,7 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
       vsync: this,
       duration: _presenceDuration,
     );
-    final active = context.read<ReaderBloc>().state.ttsActive;
+    final active = context.read<ReaderTtsBloc>().state.ttsActive;
     _active = active;
     _playerVisible = active;
     if (active) {
@@ -73,7 +73,7 @@ class _ReaderTtsPlayerOverlayState extends State<ReaderTtsPlayerOverlay>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ReaderBloc, ReaderState>(
+    return BlocListener<ReaderTtsBloc, ReaderTtsState>(
       listenWhen: (prev, curr) => prev.ttsActive != curr.ttsActive,
       listener: (context, state) => _syncWithActive(state.ttsActive),
       child: Stack(
@@ -219,7 +219,7 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
 
   void _handleSkipDrag(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
-    final tts = context.read<ReaderBloc>().ttsRepository;
+    final tts = context.read<ReaderTtsBloc>().ttsRepository;
     if (velocity < -200) {
       tts.skipToNextSentence();
     } else if (velocity > 200) {
@@ -250,7 +250,8 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
 
   void _expand() => _motion.animateTo(1.0);
   void _collapse() => _motion.animateTo(0.0);
-  void _close() => context.read<ReaderBloc>().add(const ReaderEvent.ttsClose());
+  void _close() =>
+      context.read<ReaderTtsBloc>().add(const ReaderTtsEvent.close());
 
   @override
   Widget build(BuildContext context) {

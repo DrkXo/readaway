@@ -10,6 +10,7 @@ import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../domain/repositories/reader_tts_repository.dart';
 import '../../bloc/reader_bloc.dart';
+import '../../bloc/tts/reader_tts_bloc.dart';
 import 'live_speech_waveform.dart';
 import 'tts_sleep_timer_control.dart';
 
@@ -25,7 +26,7 @@ class ReaderTtsMiniPlayerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tts = context.read<ReaderBloc>().ttsRepository;
+    final tts = context.read<ReaderTtsBloc>().ttsRepository;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -167,107 +168,100 @@ class _MiniPlayerText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ReaderBloc, ReaderState>(
-      buildWhen: (prev, curr) =>
-          prev.ttsCurrentPage != curr.ttsCurrentPage ||
-          prev.currentPage != curr.currentPage ||
-          // The "reader has looked away" badge follows the placed page, which
-          // moves as the speech does and as the reader does.
-          prev.ttsTargetVirtualPage != curr.ttsTargetVirtualPage ||
-          prev.currentVirtualPage != curr.currentVirtualPage,
-      builder: (context, readerState) {
-        final ttsPage = readerState.ttsCurrentPage;
-        final isOtherPage = readerState.canJumpToTtsPage;
+    final readerState = context.watch<ReaderBloc>().state;
+    final ttsState = context.watch<ReaderTtsBloc>().state;
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final ttsPage = ttsState.ttsCurrentPage;
+    final isOtherPage = ttsState.canJumpToTtsPage(
+      currentPage: readerState.currentPage,
+      currentVirtualPage: readerState.currentVirtualPage,
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
+            if (ttsPage != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 5,
+                  vertical: 1.5,
+                ),
+                decoration: BoxDecoration(
+                  color: isOtherPage
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'P.${ttsPage + 1}',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isOtherPage
+                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
+            Expanded(
+              child: StreamBuilder<TtsChunk>(
+                stream: tts.currentChunk,
+                builder: (context, snapshot) {
+                  final text = snapshot.data?.text ?? 'Preparing…';
+                  return AppText(
+                    text,
+                    variant: AppTextVariant.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Builder(
+          builder: (context) {
+            final remaining = ttsState.ttsSleepTimerRemaining;
+            return Row(
               children: [
-                if (ttsPage != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 1.5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isOtherPage
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'P.${ttsPage + 1}',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isOtherPage
-                            ? Theme.of(context).colorScheme.onPrimaryContainer
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                if (remaining != null) ...[
+                  Icon(
+                    LucideIcons.moonStar,
+                    size: 12,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    formatSleepDuration(remaining),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 6),
                 ],
                 Expanded(
-                  child: StreamBuilder<TtsChunk>(
-                    stream: tts.currentChunk,
-                    builder: (context, snapshot) {
-                      final text = snapshot.data?.text ?? 'Preparing…';
-                      return AppText(
-                        text,
-                        variant: AppTextVariant.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      );
-                    },
+                  child: AppCaption(
+                    isOtherPage
+                        ? 'Playing on Page ${(ttsPage ?? 0) + 1} • Tap to open'
+                        : 'Drag ↑ / ↓ • Tap to open • Swipe ←/→ skip',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 2),
-            BlocBuilder<ReaderBloc, ReaderState>(
-              buildWhen: (prev, curr) =>
-                  prev.ttsSleepTimerRemaining != curr.ttsSleepTimerRemaining,
-              builder: (context, timerState) {
-                final remaining = timerState.ttsSleepTimerRemaining;
-                return Row(
-                  children: [
-                    if (remaining != null) ...[
-                      Icon(
-                        LucideIcons.moonStar,
-                        size: 12,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        formatSleepDuration(remaining),
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                    Expanded(
-                      child: AppCaption(
-                        isOtherPage
-                            ? 'Playing on Page ${(ttsPage ?? 0) + 1} • Tap to open'
-                            : 'Drag ↑ / ↓ • Tap to open • Swipe ←/→ skip',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        );
-      },
+            );
+          },
+        ),
+      ],
     );
   }
 }

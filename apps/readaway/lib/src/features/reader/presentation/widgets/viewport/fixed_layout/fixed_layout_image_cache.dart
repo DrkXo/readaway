@@ -11,16 +11,15 @@ import 'package:readaway_core/readaway_core.dart';
 /// images, the cache would thrash and every page turn would re-decode.
 const int kMinReaderCacheBytes = 16 * 1024 * 1024;
 
-/// Default byte budget, matching `GlobalViewSettings.readerCacheSizeMb`'s
-/// default of 8 MB.
-const int kDefaultReaderCacheBytes = 8 * 1024 * 1024;
+/// Default byte budget, giving ample headroom for decoded spreads and
+/// multi-page preloads without thrashing (64 MB).
+const int kDefaultReaderCacheBytes = 64 * 1024 * 1024;
 
 /// [kMinReaderCacheBytes] expressed in megabytes — the smallest size offered in
 /// settings, and the value the floor is derived from.
 const int kMinReaderCacheMb = kMinReaderCacheBytes ~/ (1024 * 1024);
 
-/// The default offered in settings, mirroring
-/// `GlobalViewSettings.readerCacheSizeMb`'s `@Default(8)`.
+/// The default offered in settings, mirroring [kDefaultReaderCacheBytes].
 const int kDefaultReaderCacheSizeMb = kDefaultReaderCacheBytes ~/ (1024 * 1024);
 
 /// Default ceiling on the page-image entry count, enforced alongside the byte
@@ -184,19 +183,22 @@ class FixedLayoutImageCache {
   PageSize? getCachedSize(String docPath, int pageIndex) =>
       _sizeCache.peek(_key(docPath, pageIndex));
 
-  /// Pre-fetches adjacent pages ($N-2, N-1, N+1, N+2$) in the background.
+  /// Pre-fetches adjacent pages ($N+1, N-1, N+2, N-2$) in the background sequentially.
   void preloadAdjacent(
     ReaderRepository repository,
     String docPath,
     int currentPage,
     int pageCount, {
     double? scale,
-  }) {
+  }) async {
     for (final delta in const [1, -1, 2, -2]) {
       final target = currentPage + delta;
       if (target >= 0 && target < pageCount) {
-        getOrLoadSize(repository, docPath, target);
-        getOrLoadImage(repository, docPath, target, scale: scale);
+        final key = _key(docPath, target);
+        if (_imageCache.peek(key) == null) {
+          await getOrLoadSize(repository, docPath, target);
+          await getOrLoadImage(repository, docPath, target, scale: scale);
+        }
       }
     }
   }

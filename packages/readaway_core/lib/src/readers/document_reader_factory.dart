@@ -73,8 +73,14 @@ class DocumentReaderFactory {
       final file = File(filePath);
       if (file.existsSync()) {
         try {
-          _log.d('Sniffing magic bytes from disk for: $filePath');
-          sniffBytes = file.readAsBytesSync();
+          final raf = file.openSync(mode: FileMode.read);
+          try {
+            final len = raf.lengthSync();
+            final bytesToRead = len < 2048 ? len : 2048;
+            sniffBytes = raf.readSync(bytesToRead);
+          } finally {
+            raf.closeSync();
+          }
           for (final handler in _handlers) {
             if (handler.supports(filePath, sniffBytes)) {
               _log.d(

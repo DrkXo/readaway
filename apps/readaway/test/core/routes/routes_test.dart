@@ -58,7 +58,6 @@ void main() {
 
       expect(routes.library.path, '/');
       expect(routes.reader.path, '/reader');
-      expect(routes.ttsPlayer.path, '/tts-player');
 
       expect(routes.settings.path, '/settings');
       expect(routes.settingsVoices.path, '/settings/voices');

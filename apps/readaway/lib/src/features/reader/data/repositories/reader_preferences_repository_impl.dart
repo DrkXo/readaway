@@ -6,7 +6,7 @@ import 'package:injectable/injectable.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/services/storage/hive/app_storage_service.dart';
-import '../../../settings/domain/entity/reader_preferences.dart';
+import '../../domain/entity/reader_preferences.dart';
 import '../../domain/repositories/reader_preferences_repository.dart';
 
 @LazySingleton(as: ReaderPreferencesRepository)

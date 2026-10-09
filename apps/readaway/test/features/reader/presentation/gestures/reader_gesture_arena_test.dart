@@ -480,5 +480,38 @@ void main() {
       await tester.pump(kDoubleTapTimeout);
       expect(tapActions, [ReaderTapAction.nextPage]);
     });
+
+    testWidgets(
+      'when canHandleTapAction returns false, tap actions do not fire',
+      (
+        tester,
+      ) async {
+        final tapActions = <ReaderTapAction>[];
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 400,
+                height: 800,
+                child: ReaderGestureArena(
+                  canHandleTapAction: () => false,
+                  onTapAction: tapActions.add,
+                  child: const ColoredBox(color: Colors.blue),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final point =
+            tester.getTopRight(find.byType(ReaderGestureArena)) -
+            const Offset(20, -400);
+        await tester.tapAt(point);
+        await tester.pump();
+        await tester.pump(kDoubleTapTimeout);
+        expect(tapActions, isEmpty);
+      },
+    );
   });
 }

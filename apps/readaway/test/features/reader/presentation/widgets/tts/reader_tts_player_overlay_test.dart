@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_tts_repository.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
+import 'package:readaway/src/features/reader/presentation/bloc/tts/reader_tts_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/tts/reader_tts_mini_player_bar.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/tts/reader_tts_player_overlay.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
@@ -15,8 +16,11 @@ import 'package:rxdart/rxdart.dart';
 import '../../../../../helpers/test_mocks.dart';
 
 class _MockReaderBloc extends MockBloc<ReaderEvent, ReaderState>
-    implements ReaderBloc {
-  _MockReaderBloc(this.ttsRepository);
+    implements ReaderBloc {}
+
+class _MockReaderTtsBloc extends MockBloc<ReaderTtsEvent, ReaderTtsState>
+    implements ReaderTtsBloc {
+  _MockReaderTtsBloc(this.ttsRepository);
 
   @override
   final ReaderTtsRepository ttsRepository;
@@ -30,7 +34,8 @@ void main() {
     tester,
   ) async {
     final tts = MockReaderTtsRepository();
-    final bloc = _MockReaderBloc(tts);
+    final bloc = _MockReaderBloc();
+    final ttsBloc = _MockReaderTtsBloc(tts);
     final settingsBloc = _MockSettingsBloc();
     final timeline = BehaviorSubject<TtsTimeline?>.seeded(null);
     addTearDown(timeline.close);
@@ -38,7 +43,12 @@ void main() {
     whenListen(
       bloc,
       const Stream<ReaderState>.empty(),
-      initialState: const ReaderState(ttsActive: true),
+      initialState: const ReaderState(),
+    );
+    whenListen(
+      ttsBloc,
+      const Stream<ReaderTtsState>.empty(),
+      initialState: const ReaderTtsState(ttsActive: true),
     );
     whenListen(
       settingsBloc,
@@ -51,32 +61,33 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider<ReaderBloc>.value(
-          value: bloc,
-          child: BlocProvider<SettingsBloc>.value(
-            value: settingsBloc,
-            child: Scaffold(
-              drawer: Drawer(
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: 0,
-                      bottom: 80,
-                      child: TextButton(
-                        onPressed: () => drawerActionCount++,
-                        child: const Text('Drawer action'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              body: ReaderTtsPlayerOverlay(
-                child: Builder(
-                  builder: (context) => Center(
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<ReaderBloc>.value(value: bloc),
+            BlocProvider<ReaderTtsBloc>.value(value: ttsBloc),
+            BlocProvider<SettingsBloc>.value(value: settingsBloc),
+          ],
+          child: Scaffold(
+            drawer: Drawer(
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: 0,
+                    bottom: 80,
                     child: TextButton(
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                      child: const Text('Open drawer'),
+                      onPressed: () => drawerActionCount++,
+                      child: const Text('Drawer action'),
                     ),
+                  ),
+                ],
+              ),
+            ),
+            body: ReaderTtsPlayerOverlay(
+              child: Builder(
+                builder: (context) => Center(
+                  child: TextButton(
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                    child: const Text('Open drawer'),
                   ),
                 ),
               ),

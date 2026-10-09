@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/reader_bloc.dart';
+import '../../bloc/tts/reader_tts_bloc.dart';
 import 'reader_bottom_bar_mixin.dart';
 import 'reader_bottom_panel.dart';
 
@@ -78,7 +79,6 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
     return BlocBuilder<ReaderBloc, ReaderState>(
       buildWhen: (prev, curr) =>
           prev.hasDocument != curr.hasDocument ||
-          prev.ttsActive != curr.ttsActive ||
           prev.isReflowable != curr.isReflowable,
       builder: (context, readerState) {
         if (!readerState.hasDocument) return const SizedBox.shrink();
@@ -150,15 +150,20 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
 
                   // 5. TTS (Text to Speech) (Reflowable only)
                   if (readerState.isReflowable)
-                    AppIconButton(
-                      icon: LucideIcons.audioLines,
-                      tooltip: readerState.ttsActive
-                          ? 'Close TTS player'
-                          : 'Listen (TTS player)',
-                      size: AppIconButtonSize.medium,
-                      selected: readerState.ttsActive,
-                      semanticLabel: 'Text to speech player toggle',
-                      onPressed: () => handleTtsTap(readerState),
+                    BlocSelector<ReaderTtsBloc, ReaderTtsState, bool>(
+                      selector: (ttsState) => ttsState.ttsActive,
+                      builder: (context, ttsActive) {
+                        return AppIconButton(
+                          icon: LucideIcons.audioLines,
+                          tooltip: ttsActive
+                              ? 'Close TTS player'
+                              : 'Listen (TTS player)',
+                          size: AppIconButtonSize.medium,
+                          selected: ttsActive,
+                          semanticLabel: 'Text to speech player toggle',
+                          onPressed: () => handleTtsTap(readerState),
+                        );
+                      },
                     ),
                 ],
               ),

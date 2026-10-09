@@ -16,10 +16,11 @@ import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
 import '../../../annotations/domain/entity/reader_note.dart';
 import '../../../annotations/presentation/bloc/annotations_bloc.dart';
-import '../../../settings/domain/entity/reader_preferences.dart';
+import '../../domain/entity/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../domain/gestures/reader_gestures.dart';
 import '../bloc/reader_bloc.dart';
+import '../bloc/tts/reader_tts_bloc.dart';
 import '../controllers/reader_viewport_controller.dart';
 import '../widgets/widgets.dart';
 
@@ -117,6 +118,37 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
               final actionLabel = feedback.actionLabel;
               context.read<ReaderBloc>().add(
                 const ReaderEvent.consumeFeedback(),
+              );
+
+              context.toasts.show(
+                message: feedback.failure.message,
+                type: ToastType.warning,
+                duration: const Duration(seconds: 5),
+                action: actionLabel != null
+                    ? ToastAction(
+                        label: actionLabel,
+                        onPressed: () {
+                          if (actionRoute != null) {
+                            context.push(actionRoute);
+                          }
+                        },
+                      )
+                    : null,
+              );
+            }
+          },
+        ),
+        BlocListener<ReaderTtsBloc, ReaderTtsState>(
+          listenWhen: (prev, curr) =>
+              curr.transientFeedback != null &&
+              prev.transientFeedback != curr.transientFeedback,
+          listener: (context, state) {
+            final feedback = state.transientFeedback;
+            if (feedback != null) {
+              final actionRoute = feedback.actionRoute;
+              final actionLabel = feedback.actionLabel;
+              context.read<ReaderTtsBloc>().add(
+                const ReaderTtsEvent.consumeFeedback(),
               );
 
               context.toasts.show(
@@ -253,6 +285,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                               // 1. Fullscreen Document Viewport with Gesture Arena
                               ReaderGestureArena(
                                 enabled: true,
+                                isRtl: prefs.isRtl,
                                 isVerticalPaging:
                                     prefs.effectiveScrollDirection(
                                           isReflowable:
@@ -267,11 +300,20 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                     !viewportController.isPageZoomed &&
                                     !viewportController.hasActiveSelection,
                                 canHandleTapAction: () =>
-                                    !viewportController.isPageZoomed,
+                                    !viewportController.isPageZoomed &&
+                                    !viewportController.hasActiveSelection,
                                 // A tap on a painted highlight opens it rather
-                                // than running a tap-zone action.
-                                onTapIntercept:
-                                    viewportController.handleAnnotationTap,
+                                // than running a tap-zone action. If text is
+                                // selected, tapping clears the selection.
+                                onTapIntercept: (globalPosition) {
+                                  if (viewportController.hasActiveSelection) {
+                                    viewportController.clearSelection();
+                                    return true;
+                                  }
+                                  return viewportController.handleAnnotationTap(
+                                    globalPosition,
+                                  );
+                                },
                                 isAtScrollBoundary: isAtScrollBoundary,
                                 onPageDragStart:
                                     viewportController.handleDragStart,

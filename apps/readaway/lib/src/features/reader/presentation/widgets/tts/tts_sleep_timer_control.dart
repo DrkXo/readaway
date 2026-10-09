@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../bloc/reader_bloc.dart';
+import '../../bloc/tts/reader_tts_bloc.dart';
 
 /// Sleep-timer slider range limits (minutes).
 const int kSleepTimerMinMinutes = 5;
@@ -67,8 +68,8 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
 
   void _arm(int minutes) {
     setState(() => _minutes = minutes);
-    context.read<ReaderBloc>().add(
-      ReaderEvent.setSleepTimer(Duration(minutes: minutes)),
+    context.read<ReaderTtsBloc>().add(
+      ReaderTtsEvent.setSleepTimer(Duration(minutes: minutes)),
     );
   }
 
@@ -116,7 +117,7 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
                 ),
               ),
               const Spacer(),
-              BlocBuilder<ReaderBloc, ReaderState>(
+              BlocBuilder<ReaderTtsBloc, ReaderTtsState>(
                 buildWhen: (prev, curr) =>
                     prev.ttsSleepTimerRemaining != curr.ttsSleepTimerRemaining,
                 builder: (context, state) {
@@ -163,8 +164,8 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
                     padding: const EdgeInsets.all(6),
                   ),
                   onPressed: () {
-                    context.read<ReaderBloc>().add(
-                      const ReaderEvent.setSleepTimer(Duration.zero),
+                    context.read<ReaderTtsBloc>().add(
+                      const ReaderTtsEvent.setSleepTimer(Duration.zero),
                     );
                   },
                   icon: Icon(

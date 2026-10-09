@@ -362,7 +362,7 @@ class PdfDocumentReader with DisposableMixin implements PageDocumentReader {
       throw DocumentParseException('Failed to render PDF page $pageIndex');
     }
 
-    final bytes = encodeBgraToPng(
+    final bytes = encodeBgraToBmp(
       pdfImage.pixels,
       width: pdfImage.width,
       height: pdfImage.height,

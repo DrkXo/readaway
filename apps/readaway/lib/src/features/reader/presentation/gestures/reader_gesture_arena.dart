@@ -158,7 +158,9 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
     // If Page Drag is claimed
     if (_claimed == _ClaimedGesture.pageDrag) {
       final dimension = widget.isVerticalPaging ? size.height : size.width;
-      final normalizedDelta = -primaryStep / (dimension > 0 ? dimension : 1.0);
+      final factor = (!widget.isVerticalPaging && widget.isRtl) ? 1.0 : -1.0;
+      final normalizedDelta =
+          (factor * primaryStep) / (dimension > 0 ? dimension : 1.0);
       widget.onPageDragUpdate?.call(primaryStep, normalizedDelta);
       return;
     }
@@ -201,7 +203,9 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
       _claimed = _ClaimedGesture.pageDrag;
       widget.onPageDragStart?.call();
       final dimension = widget.isVerticalPaging ? size.height : size.width;
-      final normalizedDelta = -primaryDelta / (dimension > 0 ? dimension : 1.0);
+      final factor = (!widget.isVerticalPaging && widget.isRtl) ? 1.0 : -1.0;
+      final normalizedDelta =
+          (factor * primaryDelta) / (dimension > 0 ? dimension : 1.0);
       widget.onPageDragUpdate?.call(primaryDelta, normalizedDelta);
       return;
     }
@@ -214,7 +218,10 @@ class _ReaderGestureArenaState extends State<ReaderGestureArena> {
 
     switch (_claimed) {
       case _ClaimedGesture.pageDrag:
-        widget.onPageDragEnd?.call(_lastVelocity);
+        final velocity = (!widget.isVerticalPaging && widget.isRtl)
+            ? -_lastVelocity
+            : _lastVelocity;
+        widget.onPageDragEnd?.call(velocity);
         break;
       case _ClaimedGesture.none:
         break;

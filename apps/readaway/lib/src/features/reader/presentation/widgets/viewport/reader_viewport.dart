@@ -7,11 +7,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/core/widgets/core_widgets.dart';
+import 'package:readaway/src/features/reader/domain/entity/reader_preferences.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
-import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../bloc/reader_bloc.dart';
+import '../../bloc/tts/reader_tts_bloc.dart';
 import '../../controllers/reader_viewport_controller.dart';
 import '../common/reader_error_view.dart';
 import '../overlay/reader_footnote_sheet.dart';
@@ -19,6 +20,7 @@ import '../tts/reader_tts_mini_player_bar.dart';
 import 'fixed_layout/fixed_layout.dart';
 import 'modes/continuous_reader_view.dart';
 import 'modes/paged_reader_view.dart';
+import 'pdf/pdf.dart';
 import 'reflowable/chapter_layout_probe.dart';
 import 'reflowable/reflowable_reader_page.dart';
 import 'reflowable/reflowable_virtual_page.dart';
@@ -65,13 +67,8 @@ class ReaderViewport extends StatefulWidget {
       prev.currentVirtualPage != curr.currentVirtualPage ||
       prev.virtualPageCount != curr.virtualPageCount ||
       prev.pageHtmls != curr.pageHtmls ||
-      prev.ttsActive != curr.ttsActive ||
-      prev.ttsSpeechRange != curr.ttsSpeechRange ||
-      prev.ttsChapterIndex != curr.ttsChapterIndex ||
-      // The follow target is the only field that moves the page without the
-      // reader having moved it, so it has to reach the builder.
-      prev.ttsTargetVirtualPage != curr.ttsTargetVirtualPage ||
       prev.isReflowable != curr.isReflowable ||
+      prev.format != curr.format ||
       prev.documentPath != curr.documentPath;
 }
 
@@ -224,249 +221,341 @@ class _ReaderViewportState extends State<ReaderViewport> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ReaderBloc, ReaderState>(
-      listenWhen: ReaderViewport.reactsTo,
-      listener: (context, state) {
-        if (_lastDocumentPath != state.documentPath) {
-          _lastDocumentPath = state.documentPath;
-          widget.viewportController.clearPageZoom();
-        }
-
+    return BlocListener<ReaderTtsBloc, ReaderTtsState>(
+      listenWhen: (prev, curr) =>
+          prev.ttsTargetVirtualPage != curr.ttsTargetVirtualPage,
+      listener: (context, ttsState) {
+        final isReflowable = context.read<ReaderBloc>().state.isReflowable;
         final isContinuous =
             widget.prefs.effectiveScrollDirection(
-                  isReflowable: state.isReflowable,
+                  isReflowable: isReflowable,
                 ) ==
                 ReaderScrollDirection.vertical &&
-            !widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
+            !widget.prefs.effectivePageSnap(isReflowable: isReflowable);
+        if (!isReflowable || isContinuous) return;
 
-        if (!state.isReflowable) {
-          widget.viewportController.updatePageCount(state.pageCount);
-          widget.viewportController.setCurrentPage(state.currentPage);
+        final ttsTarget = ttsState.ttsTargetVirtualPage;
+        if (ttsTarget == null) {
+          _lastTtsTarget = null;
           return;
         }
-
-        if (!isContinuous) {
-          final ttsTarget = state.ttsTargetVirtualPage;
-          // Act on the follow target only when the spoken text has moved to a
-          // different page. Treating it as a standing preference would undo
-          // every scroll the reader makes, since a scroll reports itself as a
-          // page change and would immediately be overridden.
-          final ttsMoved = ttsTarget != null && ttsTarget != _lastTtsTarget;
+        if (ttsTarget != _lastTtsTarget) {
           _lastTtsTarget = ttsTarget;
-
-          final targetPage = ttsMoved
-              ? ttsTarget
-              : (state.currentVirtualPage ?? _currentGlobalPage);
-          _currentGlobalPage = targetPage;
-          widget.viewportController.updatePageCount(
-            _paginationCoordinator.currentState.totalPages,
-          );
-          widget.viewportController.setCurrentPage(targetPage);
-        } else {
-          widget.viewportController.updatePageCount(state.pageCount);
-          widget.viewportController.setCurrentPage(state.currentPage);
+          _currentGlobalPage = ttsTarget;
+          widget.viewportController.setCurrentPage(ttsTarget);
         }
       },
-      buildWhen: ReaderViewport.reactsTo,
-      builder: (context, state) {
-        if (state.loading) {
-          return const AppLoadingView(label: 'Opening document...');
-        }
-        if (state.error != null) {
-          return const ReaderErrorView();
-        }
-        if (!state.hasDocument) {
-          return const Center(child: Text('No document open'));
-        }
+      child: BlocConsumer<ReaderBloc, ReaderState>(
+        listenWhen: ReaderViewport.reactsTo,
+        listener: (context, state) {
+          if (_lastDocumentPath != state.documentPath) {
+            _lastDocumentPath = state.documentPath;
+            widget.viewportController.clearPageZoom();
+          }
 
-        // Opt mouse and pointer devices in for responsive gestures
-        final scrollConfig = ScrollConfiguration.of(context).copyWith(
-          dragDevices: const {
-            PointerDeviceKind.touch,
-            PointerDeviceKind.stylus,
-            PointerDeviceKind.invertedStylus,
-            PointerDeviceKind.trackpad,
-            PointerDeviceKind.mouse,
-          },
-        );
+          final isContinuous =
+              widget.prefs.effectiveScrollDirection(
+                    isReflowable: state.isReflowable,
+                  ) ==
+                  ReaderScrollDirection.vertical &&
+              !widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
 
-        final isContinuous =
-            widget.prefs.effectiveScrollDirection(
-                  isReflowable: state.isReflowable,
-                ) ==
-                ReaderScrollDirection.vertical &&
-            !widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
+          if (!state.isReflowable) {
+            widget.viewportController.updatePageCount(state.pageCount);
+            widget.viewportController.setCurrentPage(state.currentPage);
+            return;
+          }
 
-        final isVerticalSnap =
-            widget.prefs.effectiveScrollDirection(
-                  isReflowable: state.isReflowable,
-                ) ==
-                ReaderScrollDirection.vertical &&
-            widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
+          if (!isContinuous) {
+            final targetPage = state.currentVirtualPage ?? _currentGlobalPage;
+            _currentGlobalPage = targetPage;
+            widget.viewportController.updatePageCount(
+              _paginationCoordinator.currentState.totalPages,
+            );
+            widget.viewportController.setCurrentPage(targetPage);
+          } else {
+            widget.viewportController.updatePageCount(state.pageCount);
+            widget.viewportController.setCurrentPage(state.currentPage);
+          }
+        },
+        buildWhen: ReaderViewport.reactsTo,
+        builder: (context, state) {
+          if (state.loading) {
+            return const AppLoadingView(label: 'Opening document...');
+          }
+          if (state.error != null) {
+            return const ReaderErrorView();
+          }
+          if (!state.hasDocument) {
+            return const Center(child: Text('No document open'));
+          }
 
-        final double miniPlayerPadding = state.ttsActive
-            ? (ReaderTtsMiniPlayerBar.height + 24.0)
-            : 0.0;
+          // Opt mouse and pointer devices in for responsive gestures
+          final scrollConfig = ScrollConfiguration.of(context).copyWith(
+            dragDevices: const {
+              PointerDeviceKind.touch,
+              PointerDeviceKind.stylus,
+              PointerDeviceKind.invertedStylus,
+              PointerDeviceKind.trackpad,
+              PointerDeviceKind.mouse,
+            },
+          );
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            // Only coordinate HTML pagination if reflowable.
-            if (state.isReflowable) {
-              final availableHeight = math.max(
-                100.0,
-                constraints.maxHeight -
-                    (widget.prefs.marginTop + widget.prefs.marginBottom),
-              );
+          final isContinuous =
+              widget.prefs.effectiveScrollDirection(
+                    isReflowable: state.isReflowable,
+                  ) ==
+                  ReaderScrollDirection.vertical &&
+              !widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
 
-              if (_lastInitializedChapterCount != state.pageCount) {
-                _lastInitializedChapterCount = state.pageCount;
-                _lastViewportHeight = availableHeight;
-                _paginationCoordinator.initialize(
-                  chapterCount: state.pageCount,
-                  viewportHeight: availableHeight,
-                  contentHeight: 0,
+          final isVerticalSnap =
+              widget.prefs.effectiveScrollDirection(
+                    isReflowable: state.isReflowable,
+                  ) ==
+                  ReaderScrollDirection.vertical &&
+              widget.prefs.effectivePageSnap(isReflowable: state.isReflowable);
+
+          final ttsActive = context.select<ReaderTtsBloc, bool>(
+            (b) => b.state.ttsActive,
+          );
+          final double miniPlayerPadding = ttsActive
+              ? (ReaderTtsMiniPlayerBar.height + 24.0)
+              : 0.0;
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              // Only coordinate HTML pagination if reflowable.
+              if (state.isReflowable) {
+                final availableHeight = math.max(
+                  100.0,
+                  constraints.maxHeight -
+                      (widget.prefs.marginTop + widget.prefs.marginBottom),
                 );
-              } else if (_lastViewportHeight == null ||
-                  (_lastViewportHeight! - availableHeight).abs() > 1.0) {
-                _lastViewportHeight = availableHeight;
-                _paginationCoordinator.updateViewport(
-                  viewportHeight: availableHeight,
-                  contentHeight:
-                      _paginationCoordinator.currentState.chapterHeights[0] ??
-                      0,
-                );
-              }
 
-              // Restore the saved reading position once pagination is ready
-              // (paged mode only; continuous mode restores via scroll offset).
-              if (!isContinuous && state.pendingRestoreAnchor != null) {
-                final bloc = context.read<ReaderBloc>();
-                final totalPages =
-                    _paginationCoordinator.currentState.totalPages;
-                if (totalPages > 0) {
-                  final anchor = state.pendingRestoreAnchor!;
-                  _paginationCoordinator.setCurrentAnchor(anchor);
-                  _currentGlobalPage =
-                      _paginationCoordinator.currentState.globalPage;
-                  final coord = _paginationCoordinator.coordinateFromGlobalPage(
-                    _currentGlobalPage,
+                if (_lastInitializedChapterCount != state.pageCount) {
+                  _lastInitializedChapterCount = state.pageCount;
+                  _lastViewportHeight = availableHeight;
+                  _paginationCoordinator.initialize(
+                    chapterCount: state.pageCount,
+                    viewportHeight: availableHeight,
+                    contentHeight: 0,
                   );
-                  bloc.add(
-                    ReaderEvent.virtualPageChanged(
-                      globalPage: _currentGlobalPage,
-                      totalPages: totalPages,
-                      chapterIndex: coord.chapterIndex,
-                    ),
+                } else if (_lastViewportHeight == null ||
+                    (_lastViewportHeight! - availableHeight).abs() > 1.0) {
+                  _lastViewportHeight = availableHeight;
+                  _paginationCoordinator.updateViewport(
+                    viewportHeight: availableHeight,
+                    contentHeight:
+                        _paginationCoordinator.currentState.chapterHeights[0] ??
+                        0,
                   );
                 }
-                bloc.add(ReaderEvent.clearPendingRestore());
+
+                // Restore the saved reading position once pagination is ready
+                // (paged mode only; continuous mode restores via scroll offset).
+                if (!isContinuous && state.pendingRestoreAnchor != null) {
+                  final bloc = context.read<ReaderBloc>();
+                  final totalPages =
+                      _paginationCoordinator.currentState.totalPages;
+                  if (totalPages > 0) {
+                    final anchor = state.pendingRestoreAnchor!;
+                    _paginationCoordinator.setCurrentAnchor(anchor);
+                    _currentGlobalPage =
+                        _paginationCoordinator.currentState.globalPage;
+                    final coord = _paginationCoordinator
+                        .coordinateFromGlobalPage(
+                          _currentGlobalPage,
+                        );
+                    bloc.add(
+                      ReaderEvent.virtualPageChanged(
+                        globalPage: _currentGlobalPage,
+                        totalPages: totalPages,
+                        chapterIndex: coord.chapterIndex,
+                      ),
+                    );
+                  }
+                  bloc.add(ReaderEvent.clearPendingRestore());
+                }
               }
-            }
 
-            final Widget view;
-            if (isContinuous) {
-              view = ContinuousReaderView(
-                currentPage: state.currentPage,
-                pageCount: state.pageCount,
-                controller: widget.viewportController,
-                bottomPadding: miniPlayerPadding,
-                restoreAnchor: state.pendingRestoreAnchor,
-                onAnchorChanged: state.isReflowable
-                    ? (anchor) =>
-                          _paginationCoordinator.setCurrentAnchor(anchor)
-                    : null,
-                onRestoreComplete: () => context.read<ReaderBloc>().add(
-                  ReaderEvent.clearPendingRestore(),
-                ),
-                itemBuilder: (ctx, idx) =>
-                    _buildPageItem(ctx, state, idx, isContinuous: true),
-                onPageChangeRequested: (idx) =>
-                    _onPageCommitted(context, state, idx, isContinuous: true),
-              );
-            } else {
-              final effectivePageCount = state.isReflowable
-                  ? math.max(
-                      1,
-                      _paginationCoordinator.currentState.totalPages,
-                    )
-                  : math.max(1, state.pageCount);
-
-              final effectiveCurrentPage =
-                  (state.isReflowable ? _currentGlobalPage : state.currentPage)
-                      .clamp(0, effectivePageCount - 1);
-
-              view = PagedReaderView(
-                currentPage: effectiveCurrentPage,
-                pageCount: effectivePageCount,
-                transition: widget.prefs.effectivePageTransition(
-                  isReflowable: state.isReflowable,
-                ),
-                direction: widget.prefs.effectiveScrollDirection(
-                  isReflowable: state.isReflowable,
-                ),
-                controller: widget.viewportController,
-                backgroundColor: context.appColors.readerBackground,
-                stepTargetResolver: _resolveStepTarget,
-                onStepRequested: ({required bool forward}) {
-                  unawaited(_stepPage(forward: forward));
-                },
-                itemBuilder: (ctx, idx) => _buildPageItem(
-                  ctx,
-                  state,
-                  idx,
-                  isContinuous: false,
-                  onScrollBoundaryChanged: isVerticalSnap
-                      ? widget.onScrollBoundaryChanged
-                      : null,
-                ),
-                onPageChangeRequested: (idx) =>
-                    _onPageCommitted(context, state, idx, isContinuous: false),
-              );
-            }
-
-            final measureChapter = _measurementRequest;
-            final pages = state.pageHtmls;
-            final measureHtml =
-                (measureChapter != null &&
-                    pages != null &&
-                    measureChapter < pages.length)
-                ? pages[measureChapter]
-                : null;
-
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                ScrollConfiguration(behavior: scrollConfig, child: view),
-                // A held step lays the target chapter out here, offstage, to
-                // learn its page count before turning to it.
-                if (measureHtml != null)
-                  Offstage(
-                    offstage: true,
-                    child: OffscreenChapterMeasurer(
-                      chapterIndex: measureChapter!,
-                      html: measureHtml,
-                      prefs: widget.prefs,
-                      coordinator: _paginationCoordinator,
-                      viewportWidth: constraints.maxWidth,
-                      viewportHeight: constraints.maxHeight,
-                      cacheNamespace:
-                          state.documentPath ?? state.fileName ?? '',
-                      onResolveAssetBytes: (src) =>
-                          _resolveAssetBytes(measureChapter, src),
+              if (!state.isReflowable &&
+                  state.format == 'pdf' &&
+                  widget.prefs.pdfEngineMode == PdfEngineMode.vector) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ScrollConfiguration(
+                      behavior: scrollConfig,
+                      child: PdfReaderView(
+                        state: state,
+                        prefs: widget.prefs,
+                        viewportController: widget.viewportController,
+                        onPageChangeRequested: (idx) => _onPageCommitted(
+                          context,
+                          state,
+                          idx,
+                          isContinuous: isContinuous,
+                        ),
+                      ),
                     ),
+                  ],
+                );
+              }
+
+              final isDualSpread =
+                  !state.isReflowable &&
+                  FixedLayoutSpreadHelper.isDualSpreadActive(
+                    prefs: widget.prefs,
+                    constraints: constraints,
+                  );
+
+              final Widget view;
+              if (isContinuous) {
+                final continuousPageCount = isDualSpread
+                    ? FixedLayoutSpreadHelper.totalSpreads(
+                        state.pageCount,
+                        isDualSpread: true,
+                      )
+                    : state.pageCount;
+                final continuousCurrentPage = isDualSpread
+                    ? FixedLayoutSpreadHelper.spreadForPage(
+                        state.currentPage,
+                        isDualSpread: true,
+                      )
+                    : state.currentPage;
+
+                view = ContinuousReaderView(
+                  currentPage: continuousCurrentPage,
+                  pageCount: continuousPageCount,
+                  controller: widget.viewportController,
+                  bottomPadding: miniPlayerPadding,
+                  restoreAnchor: state.pendingRestoreAnchor,
+                  onAnchorChanged: state.isReflowable
+                      ? (anchor) =>
+                            _paginationCoordinator.setCurrentAnchor(anchor)
+                      : null,
+                  onRestoreComplete: () => context.read<ReaderBloc>().add(
+                    ReaderEvent.clearPendingRestore(),
                   ),
-                if (_heldStep != null)
-                  const Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 32.0,
-                    child: IgnorePointer(child: _HoldIndicator()),
+                  itemBuilder: (ctx, idx) => _buildPageItem(
+                    ctx,
+                    state,
+                    idx,
+                    isContinuous: true,
+                    isDualSpread: isDualSpread,
                   ),
-              ],
-            );
-          },
-        );
-      },
+                  onPageChangeRequested: (idx) => _onPageCommitted(
+                    context,
+                    state,
+                    idx,
+                    isContinuous: true,
+                    isDualSpread: isDualSpread,
+                  ),
+                );
+              } else {
+                final effectivePageCount = state.isReflowable
+                    ? math.max(
+                        1,
+                        _paginationCoordinator.currentState.totalPages,
+                      )
+                    : isDualSpread
+                    ? math.max(
+                        1,
+                        FixedLayoutSpreadHelper.totalSpreads(
+                          state.pageCount,
+                          isDualSpread: true,
+                        ),
+                      )
+                    : math.max(1, state.pageCount);
+
+                final effectiveCurrentPage = state.isReflowable
+                    ? _currentGlobalPage.clamp(0, effectivePageCount - 1)
+                    : isDualSpread
+                    ? FixedLayoutSpreadHelper.spreadForPage(
+                        state.currentPage,
+                        isDualSpread: true,
+                      ).clamp(0, effectivePageCount - 1)
+                    : state.currentPage.clamp(0, effectivePageCount - 1);
+
+                view = PagedReaderView(
+                  currentPage: effectiveCurrentPage,
+                  pageCount: effectivePageCount,
+                  transition: widget.prefs.effectivePageTransition(
+                    isReflowable: state.isReflowable,
+                  ),
+                  direction: widget.prefs.effectiveScrollDirection(
+                    isReflowable: state.isReflowable,
+                  ),
+                  controller: widget.viewportController,
+                  backgroundColor: context.appColors.readerBackground,
+                  stepTargetResolver: _resolveStepTarget,
+                  onStepRequested: ({required bool forward}) {
+                    unawaited(_stepPage(forward: forward));
+                  },
+                  itemBuilder: (ctx, idx) => _buildPageItem(
+                    ctx,
+                    state,
+                    idx,
+                    isContinuous: false,
+                    isDualSpread: isDualSpread,
+                    onScrollBoundaryChanged: isVerticalSnap
+                        ? widget.onScrollBoundaryChanged
+                        : null,
+                  ),
+                  onPageChangeRequested: (idx) => _onPageCommitted(
+                    context,
+                    state,
+                    idx,
+                    isContinuous: false,
+                    isDualSpread: isDualSpread,
+                  ),
+                );
+              }
+
+              final measureChapter = _measurementRequest;
+              final pages = state.pageHtmls;
+              final measureHtml =
+                  (measureChapter != null &&
+                      pages != null &&
+                      measureChapter < pages.length)
+                  ? pages[measureChapter]
+                  : null;
+
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  ScrollConfiguration(behavior: scrollConfig, child: view),
+                  // A held step lays the target chapter out here, offstage, to
+                  // learn its page count before turning to it.
+                  if (measureHtml != null)
+                    Offstage(
+                      offstage: true,
+                      child: OffscreenChapterMeasurer(
+                        chapterIndex: measureChapter!,
+                        html: measureHtml,
+                        prefs: widget.prefs,
+                        coordinator: _paginationCoordinator,
+                        viewportWidth: constraints.maxWidth,
+                        viewportHeight: constraints.maxHeight,
+                        cacheNamespace:
+                            state.documentPath ?? state.fileName ?? '',
+                        onResolveAssetBytes: (src) =>
+                            _resolveAssetBytes(measureChapter, src),
+                      ),
+                    ),
+                  if (_heldStep != null)
+                    const Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 32.0,
+                      child: IgnorePointer(child: _HoldIndicator()),
+                    ),
+                ],
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -475,10 +564,36 @@ class _ReaderViewportState extends State<ReaderViewport> {
     ReaderState state,
     int index, {
     bool isContinuous = false,
+    bool isDualSpread = false,
     void Function({required bool atTop, required bool atBottom})?
     onScrollBoundaryChanged,
   }) {
     if (!state.isReflowable) {
+      if (isDualSpread) {
+        return FixedLayoutSpreadPage(
+          key: ValueKey('fixed_layout_spread_${state.documentPath}_$index'),
+          spreadIndex: index,
+          state: state,
+          prefs: widget.prefs,
+          isDualSpread: true,
+          isContinuous: isContinuous,
+          onZoomChanged: isContinuous
+              ? null
+              : (isZoomed) {
+                  final primary = FixedLayoutSpreadHelper.primaryPageForSpread(
+                    index,
+                    isDualSpread: true,
+                  );
+                  widget.viewportController.setPageZoom(primary, isZoomed);
+                },
+          onPageChangeRequested: (idx) => _onNavigateRequested(
+            context,
+            state,
+            idx,
+            isContinuous: isContinuous,
+          ),
+        );
+      }
       return FixedLayoutReaderPage(
         key: ValueKey('fixed_layout_${state.documentPath}_$index'),
         index: index,
@@ -701,10 +816,26 @@ class _ReaderViewportState extends State<ReaderViewport> {
 
     if (!state.isReflowable || isContinuous || state.pageCount <= 0) {
       final controller = widget.viewportController;
-      final target = forward
-          ? controller.currentPage + 1
-          : controller.currentPage - 1;
-      await controller.goToPage(target);
+      final mq = MediaQuery.maybeOf(context);
+      final isDualSpread =
+          mq != null &&
+          FixedLayoutSpreadHelper.isDualSpreadActive(
+            prefs: widget.prefs,
+            constraints: BoxConstraints(
+              maxWidth: mq.size.width,
+              maxHeight: mq.size.height,
+            ),
+          );
+      final currentSpread = FixedLayoutSpreadHelper.spreadForPage(
+        controller.currentPage,
+        isDualSpread: isDualSpread,
+      );
+      final targetSpread = forward ? currentSpread + 1 : currentSpread - 1;
+      final targetPage = FixedLayoutSpreadHelper.primaryPageForSpread(
+        targetSpread,
+        isDualSpread: isDualSpread,
+      ).clamp(0, state.pageCount - 1);
+      await controller.goToPage(targetPage);
       return;
     }
 
@@ -752,11 +883,27 @@ class _ReaderViewportState extends State<ReaderViewport> {
 
     if (!state.isReflowable || isContinuous || state.pageCount <= 0) {
       final controller = widget.viewportController;
-      final target = forward
-          ? controller.currentPage + 1
-          : controller.currentPage - 1;
-      if (target < 0 || target >= controller.pageCount) return null;
-      return target;
+      final mq = MediaQuery.maybeOf(context);
+      final isDualSpread =
+          mq != null &&
+          FixedLayoutSpreadHelper.isDualSpreadActive(
+            prefs: widget.prefs,
+            constraints: BoxConstraints(
+              maxWidth: mq.size.width,
+              maxHeight: mq.size.height,
+            ),
+          );
+      final currentSpread = FixedLayoutSpreadHelper.spreadForPage(
+        controller.currentPage,
+        isDualSpread: isDualSpread,
+      );
+      final totalSpreads = FixedLayoutSpreadHelper.totalSpreads(
+        state.pageCount,
+        isDualSpread: isDualSpread,
+      );
+      final targetSpread = forward ? currentSpread + 1 : currentSpread - 1;
+      if (targetSpread < 0 || targetSpread >= totalSpreads) return null;
+      return targetSpread;
     }
 
     final coordinator = _paginationCoordinator;
@@ -834,15 +981,21 @@ class _ReaderViewportState extends State<ReaderViewport> {
     ReaderState state,
     int index, {
     required bool isContinuous,
+    bool isDualSpread = false,
   }) {
     final bloc = context.read<ReaderBloc>();
     if (!state.isReflowable) {
       if (state.pageCount <= 0) return;
-      final clamped = index.clamp(0, state.pageCount - 1);
-      if (clamped != state.currentPage) {
-        bloc.add(ReaderEvent.pageChanged(index: clamped));
+      final targetPage = isDualSpread
+          ? FixedLayoutSpreadHelper.primaryPageForSpread(
+              index,
+              isDualSpread: true,
+            ).clamp(0, state.pageCount - 1)
+          : index.clamp(0, state.pageCount - 1);
+      if (targetPage != state.currentPage) {
+        bloc.add(ReaderEvent.pageChanged(index: targetPage));
       }
-      widget.viewportController.setCurrentPage(clamped);
+      widget.viewportController.setCurrentPage(targetPage);
       return;
     }
     if (!isContinuous) {

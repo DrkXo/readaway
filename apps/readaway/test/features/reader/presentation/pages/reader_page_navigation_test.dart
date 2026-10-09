@@ -12,6 +12,7 @@ import 'package:readaway/src/features/annotations/presentation/bloc/annotations_
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_tts_repository.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
+import 'package:readaway/src/features/reader/presentation/bloc/tts/reader_tts_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/pages/reader_page.dart';
 import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
 import 'package:readaway/src/features/settings/presentation/bloc/settings/settings_bloc.dart';
@@ -30,6 +31,12 @@ class _MockReaderBloc extends MockBloc<ReaderEvent, ReaderState>
     super.add(event);
   }
 
+  @override
+  bool get isClosed => false;
+}
+
+class _MockReaderTtsBloc extends MockBloc<ReaderTtsEvent, ReaderTtsState>
+    implements ReaderTtsBloc {
   @override
   bool get isClosed => false;
 }
@@ -78,6 +85,7 @@ void main() {
   setUpAll(registerMockitoDummies);
 
   late _MockReaderBloc readerBloc;
+  late _MockReaderTtsBloc ttsBloc;
   late _MockSettingsBloc settingsBloc;
   late _MockAnnotationsBloc annotationsBloc;
   late MockReaderRepository readerRepository;
@@ -89,6 +97,7 @@ void main() {
     GetIt.I.reset();
 
     readerBloc = _MockReaderBloc();
+    ttsBloc = _MockReaderTtsBloc();
     settingsBloc = _MockSettingsBloc();
     annotationsBloc = _MockAnnotationsBloc();
     readerRepository = MockReaderRepository();
@@ -120,6 +129,11 @@ void main() {
       initialState: readerState,
     );
     whenListen(
+      ttsBloc,
+      const Stream<ReaderTtsState>.empty(),
+      initialState: const ReaderTtsState(),
+    );
+    whenListen(
       settingsBloc,
       const Stream<SettingsState>.empty(),
       initialState: settingsState,
@@ -134,6 +148,7 @@ void main() {
       home: MultiBlocProvider(
         providers: [
           BlocProvider<ReaderBloc>.value(value: readerBloc),
+          BlocProvider<ReaderTtsBloc>.value(value: ttsBloc),
           BlocProvider<SettingsBloc>.value(value: settingsBloc),
           BlocProvider<AnnotationsBloc>.value(value: annotationsBloc),
         ],

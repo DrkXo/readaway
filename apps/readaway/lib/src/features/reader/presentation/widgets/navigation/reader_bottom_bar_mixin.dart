@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../bloc/reader_bloc.dart';
+import '../../bloc/tts/reader_tts_bloc.dart';
 import 'reader_bottom_bar.dart';
 
 /// Mixin managing bottom bar operations, panel animations, and overlay presentation.
@@ -115,13 +116,21 @@ mixin ReaderBottomBarMixin on State<ReaderBottomBar>, TickerProvider {
   /// Handles toggling the text-to-speech engine.
   void handleTtsTap(ReaderState readerState) {
     closePanel();
-    if (readerState.ttsActive) {
-      context.read<ReaderBloc>().add(
-        const ReaderEvent.ttsClose(),
-      );
+    final ttsBloc = context.read<ReaderTtsBloc>();
+    if (ttsBloc.state.ttsActive) {
+      ttsBloc.add(const ReaderTtsEvent.close());
     } else {
-      context.read<ReaderBloc>().add(
-        const ReaderEvent.ttsStart(),
+      ttsBloc.add(
+        ReaderTtsEvent.start(
+          documentPath: readerState.documentPath ?? '',
+          pageIndex: readerState.currentPage,
+          pageCount: readerState.pageCount,
+          fileName: readerState.fileName,
+          bookTitle: readerState.bookTitle,
+          author: readerState.author,
+          isReflowable: readerState.isReflowable,
+          currentVirtualPage: readerState.currentVirtualPage,
+        ),
       );
     }
   }
@@ -129,6 +138,7 @@ mixin ReaderBottomBarMixin on State<ReaderBottomBar>, TickerProvider {
   /// Creates the [OverlayEntry] containing the backdrop and floating controls card.
   OverlayEntry createOverlayEntry() {
     final readerBloc = context.read<ReaderBloc>();
+    final readerTtsBloc = context.read<ReaderTtsBloc>();
     final settingsBloc = context.read<SettingsBloc>();
 
     return OverlayEntry(
@@ -139,6 +149,7 @@ mixin ReaderBottomBarMixin on State<ReaderBottomBar>, TickerProvider {
         return MultiBlocProvider(
           providers: [
             BlocProvider.value(value: readerBloc),
+            BlocProvider.value(value: readerTtsBloc),
             BlocProvider.value(value: settingsBloc),
           ],
           child: Stack(

@@ -17,6 +17,7 @@ import '../../../../annotations/presentation/bloc/annotations_bloc.dart';
 import '../../../../annotations/presentation/widgets/notes/reader_note_defaults.dart';
 import '../../../../annotations/presentation/widgets/notes/reader_note_editor_sheet.dart';
 import '../../bloc/reader_bloc.dart';
+import '../../bloc/tts/reader_tts_bloc.dart';
 import '../../controllers/reader_viewport_controller.dart';
 import 'reader_lookup_sheet.dart';
 import 'reader_selection_action.dart';
@@ -355,7 +356,19 @@ class ReaderSelectionActionRegistry {
       return;
     }
 
-    final readerBloc = ctx.context.read<ReaderBloc>();
-    readerBloc.add(const ReaderEvent.ttsStart());
+    final readerState = ctx.context.read<ReaderBloc>().state;
+    final ttsBloc = ctx.context.read<ReaderTtsBloc>();
+    ttsBloc.add(
+      ReaderTtsEvent.start(
+        documentPath: readerState.documentPath ?? '',
+        pageIndex: readerState.currentPage,
+        pageCount: readerState.pageCount,
+        fileName: readerState.fileName,
+        bookTitle: readerState.bookTitle,
+        author: readerState.author,
+        isReflowable: readerState.isReflowable,
+        currentVirtualPage: readerState.currentVirtualPage,
+      ),
+    );
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../../domain/entity/reader_preferences.dart';
 
 class ReflowableScrollCoordinator {
   ReflowableScrollCoordinator({

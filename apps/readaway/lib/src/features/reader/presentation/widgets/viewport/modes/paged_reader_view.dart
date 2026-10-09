@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:readaway/src/core/theme/theme.dart';
-import 'package:readaway/src/features/settings/domain/entity/reader_preferences.dart';
+import 'package:readaway/src/features/reader/domain/entity/reader_preferences.dart';
 
 import '../../../controllers/reader_viewport_controller.dart';
 import '../../../transitions/transitions.dart';
@@ -170,7 +170,9 @@ class _PagedReaderViewState extends State<PagedReaderView>
           );
           final outgoing = RepaintBoundary(
             key: ValueKey<int>(currentPage),
-            child: _buildPageLayer(context, currentPage, effectiveBackground),
+            child: ExcludeSemantics(
+              child: _buildPageLayer(context, currentPage, effectiveBackground),
+            ),
           );
           final incoming = RepaintBoundary(
             key: ValueKey<int>(targetPage),

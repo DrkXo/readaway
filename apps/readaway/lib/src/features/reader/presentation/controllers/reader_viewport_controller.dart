@@ -58,6 +58,9 @@ class ReaderViewportController extends ChangeNotifier {
   /// so opening a highlight does not also turn the page or hide the chrome.
   bool Function(Offset globalPosition)? annotationTapDelegate;
 
+  /// Delegate to clear the active text selection in the rendered page overlay.
+  void Function()? clearSelectionDelegate;
+
   /// The currently active page index (0-based).
   int get currentPage => _currentPage;
 
@@ -78,6 +81,12 @@ class ReaderViewportController extends ChangeNotifier {
     if (_hasActiveSelection == active) return;
     _hasActiveSelection = active;
     notifyListeners();
+  }
+
+  /// Clears any active text selection in the viewport.
+  void clearSelection() {
+    clearSelectionDelegate?.call();
+    setSelectionActive(false);
   }
 
   /// Whether an automated transition animation is currently running.
@@ -101,6 +110,7 @@ class ReaderViewportController extends ChangeNotifier {
     if (_currentPage == index) return;
     _currentPage = index;
     _zoomedPage = null;
+    clearSelection();
     notifyListeners();
   }
 
@@ -155,12 +165,15 @@ class ReaderViewportController extends ChangeNotifier {
     if (index == _currentPage && !_isAnimating) return;
 
     if (animated && animateToPageDelegate != null) {
+      clearSelection();
       await animateToPageDelegate!(index, duration: duration, curve: curve);
     } else if (jumpToPageDelegate != null) {
+      clearSelection();
       jumpToPageDelegate!(index);
     } else {
       _currentPage = index;
       _zoomedPage = null;
+      clearSelection();
       notifyListeners();
       onNavigate?.call(index);
     }
@@ -253,6 +266,7 @@ class ReaderViewportController extends ChangeNotifier {
     attachedScrollController = null;
     onNavigate = null;
     annotationTapDelegate = null;
+    clearSelectionDelegate = null;
     super.dispose();
   }
 }

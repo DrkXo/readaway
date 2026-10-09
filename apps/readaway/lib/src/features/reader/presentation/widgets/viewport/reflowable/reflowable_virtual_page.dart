@@ -5,17 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get_it/get_it.dart';
+import 'package:hyper_render/hyper_render.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../core/theme/theme.dart';
 import '../../../../../../core/theme/tts_highlight_palette.dart';
 import '../../../../../annotations/presentation/widgets/painting/reader_annotation_layer.dart';
 import '../../../../../annotations/presentation/widgets/selection/annotation_selection_menu.dart';
-import '../../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../../domain/entity/reader_preferences.dart';
 import '../../../../../settings/domain/entity/settings.dart';
 import '../../../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../../../domain/repositories/reader_tts_repository.dart';
 import '../../../bloc/reader_bloc.dart';
+import '../../../bloc/tts/reader_tts_bloc.dart';
 import '../../../controllers/reader_viewport_controller.dart';
 import '../../chrome/reader_running_footer.dart';
 import '../../chrome/reader_running_header.dart';
@@ -66,6 +68,8 @@ class ReflowableVirtualPage extends StatefulWidget {
 
 class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   final GlobalKey _contentKey = GlobalKey();
+  final GlobalKey<HyperSelectionOverlayState> _overlayKey =
+      GlobalKey<HyperSelectionOverlayState>();
   Size? _lastConstraints;
   StreamSubscription<PaginationState>? _coordinatorSubscription;
   List<double>? _lastOffsets;
@@ -76,6 +80,7 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   @override
   void initState() {
     super.initState();
+    widget.controller.clearSelectionDelegate = _clearSelection;
     _lastOffsets = widget.coordinator.getChapterPageOffsets(
       widget.chapterIndex,
     );
@@ -88,6 +93,10 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
           .listen(_onWordProgress);
     }
     _scheduleMeasurement();
+  }
+
+  void _clearSelection() {
+    _overlayKey.currentState?.clearSelection();
   }
 
   void _onWordProgress(TtsWordProgress? progress) {
@@ -124,6 +133,12 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   @override
   void didUpdateWidget(ReflowableVirtualPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      if (oldWidget.controller.clearSelectionDelegate == _clearSelection) {
+        oldWidget.controller.clearSelectionDelegate = null;
+      }
+      widget.controller.clearSelectionDelegate = _clearSelection;
+    }
     if (oldWidget.coordinator != widget.coordinator) {
       _coordinatorSubscription?.cancel();
       _coordinatorSubscription = widget.coordinator.state.listen(
@@ -145,6 +160,12 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
 
   @override
   void dispose() {
+    if (widget.controller.clearSelectionDelegate == _clearSelection) {
+      widget.controller.clearSelectionDelegate = null;
+    }
+    if (widget.controller.hasActiveSelection) {
+      widget.controller.setSelectionActive(false);
+    }
     _coordinatorSubscription?.cancel();
     _wordProgressSubscription?.cancel();
     _activeWordNotifier.dispose();
@@ -182,11 +203,11 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
   TtsSpeechHighlightPainter? _buildSpeechHighlight(
     double sliceTop,
     GlobalViewSettings? gvs,
+    ReaderTtsState ttsState,
   ) {
-    final state = widget.state;
-    final range = state.ttsSpeechRange;
-    if (!state.ttsActive || range == null) return null;
-    if (state.ttsChapterIndex != widget.chapterIndex) return null;
+    final range = ttsState.ttsSpeechRange;
+    if (!ttsState.ttsActive || range == null) return null;
+    if (ttsState.ttsChapterIndex != widget.chapterIndex) return null;
 
     final rects = widget.coordinator.rectsForSpeechRange(
       widget.chapterIndex,
@@ -313,7 +334,10 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
               ? math.max(0.0, math.min(availableHeight, sliceBottom - sliceTop))
               : availableHeight;
 
-          final double extraBottom = widget.state.ttsActive
+          final ttsActive = context.select<ReaderTtsBloc, bool>(
+            (b) => b.state.ttsActive,
+          );
+          final double extraBottom = ttsActive
               ? (ReaderTtsMiniPlayerBar.height + 16.0)
               : 0.0;
 
@@ -338,10 +362,13 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
                   onImageDecoded: _onImageDecoded,
                   onResolveAssetBytes: widget.onResolveAssetBytes,
                   onLinkTap: widget.onLinkTap,
-                  contextMenuBuilder: (overlayContext, overlayState) {
+                  overlayKey: _overlayKey,
+                  onSelectionChanged: (selection) {
                     widget.controller.setSelectionActive(
-                      overlayState.hasSelection,
+                      selection != null && !selection.isCollapsed,
                     );
+                  },
+                  contextMenuBuilder: (overlayContext, overlayState) {
                     return ReaderSelectionContextMenu(
                       chapterIndex: widget.chapterIndex,
                       coordinator: widget.coordinator,
@@ -350,9 +377,6 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
                     );
                   },
                   menuActionsBuilder: (overlayState) {
-                    widget.controller.setSelectionActive(
-                      overlayState.hasSelection,
-                    );
                     return AnnotationSelectionMenu.actions(
                       context,
                       chapterIndex: widget.chapterIndex,
@@ -372,26 +396,38 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
               width: availableWidth,
               height: sliceHeight,
               child: ClipRect(
-                child: ListenableBuilder(
-                  listenable: _activeWordNotifier,
-                  builder: (context, child) {
-                    final highlight = _buildSpeechHighlight(sliceTop, gvs);
-                    return CustomPaint(
-                      // Behind the text, so a highlighted passage reads as marked
-                      // rather than tinted.
-                      painter: highlight,
-                      child: child,
+                child: BlocBuilder<ReaderTtsBloc, ReaderTtsState>(
+                  buildWhen: (prev, curr) =>
+                      prev.ttsActive != curr.ttsActive ||
+                      prev.ttsSpeechRange != curr.ttsSpeechRange ||
+                      prev.ttsCurrentPage != curr.ttsCurrentPage,
+                  builder: (context, ttsState) {
+                    return ListenableBuilder(
+                      listenable: _activeWordNotifier,
+                      builder: (context, child) {
+                        final highlight = _buildSpeechHighlight(
+                          sliceTop,
+                          gvs,
+                          ttsState,
+                        );
+                        return CustomPaint(
+                          // Behind the text, so a highlighted passage reads as marked
+                          // rather than tinted.
+                          painter: highlight,
+                          child: child,
+                        );
+                      },
+                      // Reader highlights paint beneath the spoken-text highlight,
+                      // so following along with TTS still reads correctly.
+                      child: ReaderAnnotationLayer(
+                        chapterIndex: widget.chapterIndex,
+                        coordinator: widget.coordinator,
+                        controller: widget.controller,
+                        sliceTop: sliceTop,
+                        child: pageContent,
+                      ),
                     );
                   },
-                  // Reader highlights paint beneath the spoken-text highlight,
-                  // so following along with TTS still reads correctly.
-                  child: ReaderAnnotationLayer(
-                    chapterIndex: widget.chapterIndex,
-                    coordinator: widget.coordinator,
-                    controller: widget.controller,
-                    sliceTop: sliceTop,
-                    child: pageContent,
-                  ),
                 ),
               ),
             ),

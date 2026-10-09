@@ -7,6 +7,7 @@ import 'package:get_it/get_it.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/result/result.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
+import 'package:readaway/src/features/reader/presentation/bloc/tts/reader_tts_bloc.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../helpers/test_mocks.dart';
@@ -94,7 +95,7 @@ void main() {
     GetIt.I.registerSingleton<PaginationCoordinator>(coordinator);
   }
 
-  ReaderBloc buildBloc() => ReaderBloc(
+  ReaderTtsBloc buildBloc() => ReaderTtsBloc(
     readerRepository: mockReader,
     ttsRepository: mockTts,
   );
@@ -107,7 +108,7 @@ void main() {
   /// tests exist to cover.
   late StreamController<TtsChunk> chunks;
 
-  blocTest<ReaderBloc, ReaderState>(
+  blocTest<ReaderTtsBloc, ReaderTtsState>(
     'follows the page as chunks arrive on the speech stream',
     setUp: () {
       chunks = StreamController<TtsChunk>();
@@ -119,7 +120,7 @@ void main() {
       registerCoordinator(coordinator);
       return buildBloc();
     },
-    seed: () => const ReaderState(ttsActive: true, ttsCurrentPage: 0),
+    seed: () => const ReaderTtsState(ttsActive: true, ttsCurrentPage: 0),
     act: (bloc) async {
       // A chunk inside page 0, then one inside page 2. The reader is on a
       // different page throughout, so this is following rather than agreement.
@@ -134,10 +135,10 @@ void main() {
     },
     tearDown: () => chunks.close(),
     expect: () => [
-      isA<ReaderState>()
+      isA<ReaderTtsState>()
           .having((s) => s.ttsTargetVirtualPage, 'target', 0)
           .having((s) => s.ttsSpeechRange, 'range', (start: 10, end: 40)),
-      isA<ReaderState>()
+      isA<ReaderTtsState>()
           .having((s) => s.ttsTargetVirtualPage, 'target', 2)
           .having((s) => s.ttsSpeechRange, 'range', (start: 600, end: 640)),
     ],
@@ -170,7 +171,7 @@ void main() {
   group('following the spoken text', () {
     // These dispatch the event directly. The tests below cover the wiring that
     // decides whether that event is ever dispatched at all.
-    blocTest<ReaderBloc, ReaderState>(
+    blocTest<ReaderTtsBloc, ReaderTtsState>(
       'resolves a chunk offset to the page holding that text',
       build: () {
         final coordinator = _coordinatorWithLayout();
@@ -178,22 +179,22 @@ void main() {
         registerCoordinator(coordinator);
         return buildBloc();
       },
-      seed: () => const ReaderState(ttsActive: true, ttsCurrentPage: 0),
+      seed: () => const ReaderTtsState(ttsActive: true, ttsCurrentPage: 0),
       act: (bloc) => bloc.add(
-        const ReaderEvent.ttsChunkAdvanced(
+        const ReaderTtsEvent.chunkAdvanced(
           chapterIndex: 0,
           startOffset: 300,
           endOffset: 360,
         ),
       ),
       expect: () => [
-        isA<ReaderState>()
+        isA<ReaderTtsState>()
             .having((s) => s.ttsTargetVirtualPage, 'target page', 1)
             .having((s) => s.ttsSpeechRange, 'range', (start: 300, end: 360)),
       ],
     );
 
-    blocTest<ReaderBloc, ReaderState>(
+    blocTest<ReaderTtsBloc, ReaderTtsState>(
       'keeps the target on the same page while the chunk advances within it',
       build: () {
         final coordinator = _coordinatorWithLayout();
@@ -201,10 +202,10 @@ void main() {
         registerCoordinator(coordinator);
         return buildBloc();
       },
-      seed: () => const ReaderState(ttsActive: true, ttsCurrentPage: 0),
+      seed: () => const ReaderTtsState(ttsActive: true, ttsCurrentPage: 0),
       act: (bloc) async {
         bloc.add(
-          const ReaderEvent.ttsChunkAdvanced(
+          const ReaderTtsEvent.chunkAdvanced(
             chapterIndex: 0,
             startOffset: 10,
             endOffset: 40,
@@ -212,7 +213,7 @@ void main() {
         );
         await Future<void>.delayed(Duration.zero);
         bloc.add(
-          const ReaderEvent.ttsChunkAdvanced(
+          const ReaderTtsEvent.chunkAdvanced(
             chapterIndex: 0,
             startOffset: 60,
             endOffset: 90,
@@ -220,12 +221,20 @@ void main() {
         );
       },
       expect: () => [
-        isA<ReaderState>().having((s) => s.ttsTargetVirtualPage, 'target', 0),
-        isA<ReaderState>().having((s) => s.ttsTargetVirtualPage, 'target', 0),
+        isA<ReaderTtsState>().having(
+          (s) => s.ttsTargetVirtualPage,
+          'target',
+          0,
+        ),
+        isA<ReaderTtsState>().having(
+          (s) => s.ttsTargetVirtualPage,
+          'target',
+          0,
+        ),
       ],
     );
 
-    blocTest<ReaderBloc, ReaderState>(
+    blocTest<ReaderTtsBloc, ReaderTtsState>(
       'moves the target when the speech crosses a page boundary',
       build: () {
         final coordinator = _coordinatorWithLayout();
@@ -233,10 +242,10 @@ void main() {
         registerCoordinator(coordinator);
         return buildBloc();
       },
-      seed: () => const ReaderState(ttsActive: true, ttsCurrentPage: 0),
+      seed: () => const ReaderTtsState(ttsActive: true, ttsCurrentPage: 0),
       act: (bloc) async {
         bloc.add(
-          const ReaderEvent.ttsChunkAdvanced(
+          const ReaderTtsEvent.chunkAdvanced(
             chapterIndex: 0,
             startOffset: 10,
             endOffset: 40,
@@ -244,7 +253,7 @@ void main() {
         );
         await Future<void>.delayed(Duration.zero);
         bloc.add(
-          const ReaderEvent.ttsChunkAdvanced(
+          const ReaderTtsEvent.chunkAdvanced(
             chapterIndex: 0,
             startOffset: 600,
             endOffset: 640,
@@ -252,12 +261,20 @@ void main() {
         );
       },
       expect: () => [
-        isA<ReaderState>().having((s) => s.ttsTargetVirtualPage, 'target', 0),
-        isA<ReaderState>().having((s) => s.ttsTargetVirtualPage, 'target', 2),
+        isA<ReaderTtsState>().having(
+          (s) => s.ttsTargetVirtualPage,
+          'target',
+          0,
+        ),
+        isA<ReaderTtsState>().having(
+          (s) => s.ttsTargetVirtualPage,
+          'target',
+          2,
+        ),
       ],
     );
 
-    blocTest<ReaderBloc, ReaderState>(
+    blocTest<ReaderTtsBloc, ReaderTtsState>(
       'accounts for text the renderer draws but never speaks',
       build: () {
         // A list marker occupies six characters the speech side skips, so a
@@ -270,54 +287,58 @@ void main() {
         registerCoordinator(coordinator);
         return buildBloc();
       },
-      seed: () => const ReaderState(ttsActive: true, ttsCurrentPage: 0),
+      seed: () => const ReaderTtsState(ttsActive: true, ttsCurrentPage: 0),
       act: (bloc) => bloc.add(
-        const ReaderEvent.ttsChunkAdvanced(
+        const ReaderTtsEvent.chunkAdvanced(
           chapterIndex: 0,
           startOffset: 245,
           endOffset: 260,
         ),
       ),
       expect: () => [
-        isA<ReaderState>().having((s) => s.ttsTargetVirtualPage, 'target', 1),
+        isA<ReaderTtsState>().having(
+          (s) => s.ttsTargetVirtualPage,
+          'target',
+          1,
+        ),
       ],
     );
   });
 
   group('when the chapter cannot be followed', () {
-    blocTest<ReaderBloc, ReaderState>(
+    blocTest<ReaderTtsBloc, ReaderTtsState>(
       'stays put before the speech text has been aligned',
       build: () {
         // Measured, but no speech text attached: nothing to align against.
         registerCoordinator(_coordinatorWithLayout());
         return buildBloc();
       },
-      seed: () => const ReaderState(ttsActive: true, ttsCurrentPage: 0),
+      seed: () => const ReaderTtsState(ttsActive: true, ttsCurrentPage: 0),
       act: (bloc) => bloc.add(
-        const ReaderEvent.ttsChunkAdvanced(
+        const ReaderTtsEvent.chunkAdvanced(
           chapterIndex: 0,
           startOffset: 300,
           endOffset: 360,
         ),
       ),
-      expect: () => <ReaderState>[],
+      expect: () => <ReaderTtsState>[],
     );
 
-    blocTest<ReaderBloc, ReaderState>(
+    blocTest<ReaderTtsBloc, ReaderTtsState>(
       'stays put when no coordinator is registered at all',
       build: buildBloc,
-      seed: () => const ReaderState(ttsActive: true, ttsCurrentPage: 0),
+      seed: () => const ReaderTtsState(ttsActive: true, ttsCurrentPage: 0),
       act: (bloc) => bloc.add(
-        const ReaderEvent.ttsChunkAdvanced(
+        const ReaderTtsEvent.chunkAdvanced(
           chapterIndex: 0,
           startOffset: 300,
           endOffset: 360,
         ),
       ),
-      expect: () => <ReaderState>[],
+      expect: () => <ReaderTtsState>[],
     );
 
-    blocTest<ReaderBloc, ReaderState>(
+    blocTest<ReaderTtsBloc, ReaderTtsState>(
       'stays put for a chapter that was never measured',
       build: () {
         final coordinator = _coordinatorWithLayout();
@@ -325,20 +346,20 @@ void main() {
         registerCoordinator(coordinator);
         return buildBloc();
       },
-      seed: () => const ReaderState(ttsActive: true, ttsCurrentPage: 0),
+      seed: () => const ReaderTtsState(ttsActive: true, ttsCurrentPage: 0),
       act: (bloc) => bloc.add(
-        const ReaderEvent.ttsChunkAdvanced(
+        const ReaderTtsEvent.chunkAdvanced(
           chapterIndex: 7,
           startOffset: 300,
           endOffset: 360,
         ),
       ),
-      expect: () => <ReaderState>[],
+      expect: () => <ReaderTtsState>[],
     );
   });
 
   group('clearing the follow state', () {
-    blocTest<ReaderBloc, ReaderState>(
+    blocTest<ReaderTtsBloc, ReaderTtsState>(
       'drops the target and highlight when playback stops',
       build: () {
         final coordinator = _coordinatorWithLayout();
@@ -346,146 +367,105 @@ void main() {
         registerCoordinator(coordinator);
         return buildBloc();
       },
-      seed: () => const ReaderState(
+      seed: () => const ReaderTtsState(
         ttsActive: true,
         ttsCurrentPage: 0,
         ttsTargetVirtualPage: 2,
         ttsSpeechRange: (start: 600, end: 640),
       ),
-      act: (bloc) => bloc.add(const ReaderEvent.ttsClose()),
+      act: (bloc) => bloc.add(const ReaderTtsEvent.close()),
       wait: const Duration(milliseconds: 50),
       verify: (bloc) {
         expect(bloc.state.ttsTargetVirtualPage, isNull);
         expect(bloc.state.ttsSpeechRange, isNull);
       },
     );
-  });
 
-  group('jumping back to the audio', () {
-    blocTest<ReaderBloc, ReaderState>(
-      'lands on the page the speech was last placed on',
-      build: () {
-        final coordinator = _coordinatorWithLayout();
-        coordinator.attachSpeechText(0, 'x' * 750);
-        registerCoordinator(coordinator);
-        return buildBloc();
-      },
-      seed: () => const ReaderState(
+    blocTest<ReaderTtsBloc, ReaderTtsState>(
+      'clears target virtual page on clearFollowTarget',
+      build: buildBloc,
+      seed: () => const ReaderTtsState(
         ttsActive: true,
         ttsCurrentPage: 0,
         ttsTargetVirtualPage: 2,
-        currentVirtualPage: 5,
-        currentPage: 1,
-        pageCount: 3,
       ),
-      act: (bloc) => bloc.add(const ReaderEvent.jumpToTtsPage()),
-      verify: (bloc) {
-        // Not the start of the chapter: the reader who looked ahead wants the
-        // passage being read, which is on the chapter's third page.
-        expect(bloc.state.currentVirtualPage, 2);
-        expect(bloc.state.currentPage, 0);
-        // The target is dropped so the viewport applies the reader's own page
-        // once, rather than re-applying a target it has just reached.
-        expect(bloc.state.ttsTargetVirtualPage, isNull);
-      },
-    );
-
-    blocTest<ReaderBloc, ReaderState>(
-      'keeps the reader on the chapter when nothing has been placed',
-      build: () {
-        registerCoordinator(_coordinatorWithLayout());
-        return buildBloc();
-      },
-      seed: () => const ReaderState(
-        ttsActive: true,
-        ttsCurrentPage: 0,
-        currentVirtualPage: 5,
-        currentPage: 1,
-        pageCount: 3,
-      ),
-      act: (bloc) => bloc.add(const ReaderEvent.jumpToTtsPage()),
-      verify: (bloc) {
-        expect(bloc.state.currentPage, 0);
-        // A null follow page means the chapter was never measured. It must not
-        // be mistaken for the reader having no page.
-        expect(bloc.state.currentVirtualPage, 5);
-      },
-    );
-
-    blocTest<ReaderBloc, ReaderState>(
-      'does nothing when playback is not on a chapter',
-      build: buildBloc,
-      seed: () => const ReaderState(currentPage: 4, pageCount: 6),
-      act: (bloc) => bloc.add(const ReaderEvent.jumpToTtsPage()),
-      expect: () => <ReaderState>[],
-    );
-
-    blocTest<ReaderBloc, ReaderState>(
-      'does nothing for a chapter outside the document',
-      build: buildBloc,
-      seed: () => const ReaderState(
-        ttsActive: true,
-        ttsCurrentPage: 9,
-        pageCount: 3,
-      ),
-      act: (bloc) => bloc.add(const ReaderEvent.jumpToTtsPage()),
-      expect: () => <ReaderState>[],
+      act: (bloc) => bloc.add(const ReaderTtsEvent.clearFollowTarget()),
+      expect: () => [
+        const ReaderTtsState(
+          ttsActive: true,
+          ttsCurrentPage: 0,
+          ttsTargetVirtualPage: null,
+        ),
+      ],
     );
   });
 
-  group('ReaderState derived values', () {
+  group('ReaderBloc jumpToChapter', () {
+    blocTest<ReaderBloc, ReaderState>(
+      'lands on the target chapter and virtual page',
+      build: () => ReaderBloc(readerRepository: mockReader),
+      seed: () => const ReaderState(
+        currentPage: 5,
+        currentVirtualPage: 12,
+        pageCount: 10,
+      ),
+      act: (bloc) => bloc.add(
+        const ReaderEvent.jumpToChapter(
+          chapterIndex: 0,
+          virtualPage: 2,
+        ),
+      ),
+      expect: () => [
+        const ReaderState(
+          currentPage: 0,
+          currentVirtualPage: 2,
+          pageCount: 10,
+        ),
+      ],
+    );
+  });
+
+  group('ReaderTtsState derived values', () {
     test('canJumpToTtsPage compares pages once the speech is placed', () {
       // On the right chapter but the wrong page: a chapter-only comparison
       // would call this "already there" and hide the shortcut.
-      const wrongPage = ReaderState(
+      const state = ReaderTtsState(
         ttsActive: true,
         ttsCurrentPage: 0,
         ttsTargetVirtualPage: 2,
-        currentVirtualPage: 7,
-        currentPage: 0,
       );
-      expect(wrongPage.canJumpToTtsPage, isTrue);
-
-      const rightPage = ReaderState(
-        ttsActive: true,
-        ttsCurrentPage: 0,
-        ttsTargetVirtualPage: 2,
-        currentVirtualPage: 2,
-        currentPage: 0,
+      expect(
+        state.canJumpToTtsPage(currentPage: 0, currentVirtualPage: 7),
+        isTrue,
       );
-      expect(rightPage.canJumpToTtsPage, isFalse);
+      expect(
+        state.canJumpToTtsPage(currentPage: 0, currentVirtualPage: 2),
+        isFalse,
+      );
     });
 
     test('canJumpToTtsPage falls back to chapters when nothing is placed', () {
       // A document with no character mapping still needs the shortcut.
+      const statePlaying0 = ReaderTtsState(
+        ttsActive: true,
+        ttsCurrentPage: 0,
+      );
       expect(
-        const ReaderState(
-          ttsActive: true,
-          ttsCurrentPage: 0,
-          currentVirtualPage: 3,
-          currentPage: 1,
-        ).canJumpToTtsPage,
+        statePlaying0.canJumpToTtsPage(currentPage: 1, currentVirtualPage: 3),
         isTrue,
       );
       expect(
-        const ReaderState(
-          ttsActive: true,
-          ttsCurrentPage: 1,
-          currentPage: 1,
-        ).canJumpToTtsPage,
+        statePlaying0.canJumpToTtsPage(currentPage: 0, currentVirtualPage: 0),
         isFalse,
       );
-      expect(
-        const ReaderState(
-          ttsActive: true,
-          ttsCurrentPage: 0,
-          currentPage: 0,
-        ).canJumpToTtsPage,
-        isFalse,
-      );
+
       // Nothing playing means nothing to jump back to.
+      const stateInactive = ReaderTtsState(
+        ttsActive: false,
+        ttsCurrentPage: 0,
+      );
       expect(
-        const ReaderState(ttsCurrentPage: 0, currentPage: 3).canJumpToTtsPage,
+        stateInactive.canJumpToTtsPage(currentPage: 3, currentVirtualPage: 3),
         isFalse,
       );
     });
@@ -494,7 +474,7 @@ void main() {
       // One-based, and agreeing with the page indicator, which shows
       // currentVirtualPage in a reflowable document.
       expect(
-        const ReaderState(
+        const ReaderTtsState(
           ttsActive: true,
           ttsCurrentPage: 3,
           ttsTargetVirtualPage: 7,
@@ -502,14 +482,14 @@ void main() {
         8,
       );
       expect(
-        const ReaderState(ttsActive: true, ttsCurrentPage: 3).ttsPageLabel,
+        const ReaderTtsState(ttsActive: true, ttsCurrentPage: 3).ttsPageLabel,
         4,
       );
-      expect(const ReaderState().ttsPageLabel, isNull);
+      expect(const ReaderTtsState().ttsPageLabel, isNull);
     });
 
     test('hasTtsHighlight requires active playback and a range', () {
-      const reading = ReaderState(
+      const reading = ReaderTtsState(
         ttsActive: true,
         ttsCurrentPage: 0,
         ttsSpeechRange: (start: 0, end: 10),
@@ -518,14 +498,17 @@ void main() {
 
       // A range left over from playback that has stopped must not highlight.
       expect(
-        const ReaderState(
+        const ReaderTtsState(
           ttsCurrentPage: 0,
           ttsSpeechRange: (start: 0, end: 10),
         ).hasTtsHighlight,
         isFalse,
       );
       expect(
-        const ReaderState(ttsActive: true, ttsCurrentPage: 0).hasTtsHighlight,
+        const ReaderTtsState(
+          ttsActive: true,
+          ttsCurrentPage: 0,
+        ).hasTtsHighlight,
         isFalse,
       );
     });

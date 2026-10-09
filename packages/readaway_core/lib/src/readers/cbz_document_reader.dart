@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cacherine/cacherine.dart';
 import 'package:path/path.dart' as p;
 
 import '../abstracts/page_document_reader.dart';
@@ -27,9 +28,9 @@ class ComicBookDocumentReader
   final DocumentMetadata? _metadata;
   final List<OutlineItem> _outline;
 
-  final Map<int, Uint8List> _imageCache = {};
-  final Map<String, Uint8List> _assetCache = {};
-  final Map<int, PageSize> _pageSizeCache = {};
+  final SimpleLRUCache<int, Uint8List> _imageCache;
+  final SimpleLRUCache<String, Uint8List> _assetCache;
+  final SimpleLRUCache<int, PageSize> _pageSizeCache;
 
   ComicBookDocumentReader._({
     required this.filePath,
@@ -39,8 +40,16 @@ class ComicBookDocumentReader
     this._title,
     this._metadata,
     List<OutlineItem> outline = const [],
+    int imageCacheSize = 25,
   }) : _pagePaths = List.unmodifiable(pagePaths),
-       _outline = List.unmodifiable(outline);
+       _outline = List.unmodifiable(outline),
+       _imageCache = SimpleLRUCache<int, Uint8List>(
+         imageCacheSize < 1 ? 1 : imageCacheSize,
+       ),
+       _assetCache = SimpleLRUCache<String, Uint8List>(
+         imageCacheSize < 1 ? 1 : imageCacheSize,
+       ),
+       _pageSizeCache = SimpleLRUCache<int, PageSize>(500);
 
   /// Opens a comic document archive from [filePath].
   static Future<ComicBookDocumentReader> open(
@@ -215,14 +224,14 @@ class ComicBookDocumentReader
   PageSize? getPageSize(int pageIndex) {
     checkNotDisposed('getPageSize');
     if (pageIndex < 0 || pageIndex >= _pagePaths.length) return null;
-    final cached = _pageSizeCache[pageIndex];
+    final cached = _pageSizeCache.get(pageIndex);
     if (cached != null) return cached;
 
     final bytes = loadAsset(_pagePaths[pageIndex]);
     if (bytes != null && bytes.isNotEmpty) {
       final size = ImageHeaderParser.parseDimensions(bytes);
       if (size != null) {
-        _pageSizeCache[pageIndex] = size;
+        _pageSizeCache.set(pageIndex, size);
         return size;
       }
     }
@@ -232,12 +241,12 @@ class ComicBookDocumentReader
   @override
   Uint8List? loadAsset(String assetPath) {
     if (isDisposed) return null;
-    final cached = _assetCache[assetPath];
+    final cached = _assetCache.get(assetPath);
     if (cached != null) return cached;
 
     final bytes = _adapter.loadEntryBytes(assetPath);
     if (bytes != null) {
-      _assetCache[assetPath] = bytes;
+      _assetCache.set(assetPath, bytes);
     }
     return bytes;
   }
@@ -251,7 +260,7 @@ class ComicBookDocumentReader
       );
       throw RangeError.range(pageIndex, 0, _pagePaths.length - 1, 'pageIndex');
     }
-    final cached = _imageCache[pageIndex];
+    final cached = _imageCache.get(pageIndex);
     if (cached != null) return cached;
 
     final path = _pagePaths[pageIndex];
@@ -263,7 +272,7 @@ class ComicBookDocumentReader
         'Failed to load page image at index $pageIndex: $path',
       );
     }
-    _imageCache[pageIndex] = bytes;
+    _imageCache.set(pageIndex, bytes);
     return bytes;
   }
 
@@ -281,7 +290,7 @@ class ComicBookDocumentReader
   }
 
   @override
-  Uint8List? getCachedPageImage(int pageIndex) => _imageCache[pageIndex];
+  Uint8List? getCachedPageImage(int pageIndex) => _imageCache.peek(pageIndex);
 
   @override
   void dispose() {

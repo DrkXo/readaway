@@ -9,6 +9,7 @@ import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/result/result.dart';
 import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/reader/presentation/bloc/reader_bloc.dart';
+import 'package:readaway/src/features/reader/presentation/bloc/tts/reader_tts_bloc.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/dialogs/reader_password_dialog.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/navigation/reader_bottom_bar.dart';
 import 'package:readaway/src/features/reader/presentation/widgets/viewport/fixed_layout/fixed_layout_image_cache.dart';
@@ -18,6 +19,9 @@ import '../../../../../../helpers/test_mocks.dart';
 
 class MockReaderBloc extends MockBloc<ReaderEvent, ReaderState>
     implements ReaderBloc {}
+
+class MockReaderTtsBloc extends MockBloc<ReaderTtsEvent, ReaderTtsState>
+    implements ReaderTtsBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -259,6 +263,7 @@ void main() {
       tester,
     ) async {
       final mockBloc = MockReaderBloc();
+      final mockTtsBloc = MockReaderTtsBloc();
       whenListen(
         mockBloc,
         const Stream<ReaderState>.empty(),
@@ -269,6 +274,11 @@ void main() {
           currentPage: 0,
         ),
       );
+      whenListen(
+        mockTtsBloc,
+        const Stream<ReaderTtsState>.empty(),
+        initialState: const ReaderTtsState(),
+      );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -277,8 +287,11 @@ void main() {
               VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
             ],
           ),
-          home: BlocProvider<ReaderBloc>.value(
-            value: mockBloc,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<ReaderBloc>.value(value: mockBloc),
+              BlocProvider<ReaderTtsBloc>.value(value: mockTtsBloc),
+            ],
             child: Scaffold(
               bottomNavigationBar: ReaderBottomBar(
                 onPreviousPage: () {},
@@ -303,6 +316,7 @@ void main() {
       'hides font size and TTS buttons for non-reflowable documents',
       (tester) async {
         final mockBloc = MockReaderBloc();
+        final mockTtsBloc = MockReaderTtsBloc();
         whenListen(
           mockBloc,
           const Stream<ReaderState>.empty(),
@@ -314,6 +328,11 @@ void main() {
             currentPage: 0,
           ),
         );
+        whenListen(
+          mockTtsBloc,
+          const Stream<ReaderTtsState>.empty(),
+          initialState: const ReaderTtsState(),
+        );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -322,8 +341,11 @@ void main() {
                 VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
               ],
             ),
-            home: BlocProvider<ReaderBloc>.value(
-              value: mockBloc,
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<ReaderBloc>.value(value: mockBloc),
+                BlocProvider<ReaderTtsBloc>.value(value: mockTtsBloc),
+              ],
               child: Scaffold(
                 bottomNavigationBar: ReaderBottomBar(
                   onPreviousPage: () {},

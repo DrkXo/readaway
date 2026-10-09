@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/widgets/core_widgets.dart';
 import '../bloc/library_bloc.dart';
 
 class LibrarySortSheet extends StatefulWidget {
@@ -24,13 +25,9 @@ class LibrarySortSheet extends StatefulWidget {
     required ValueChanged<LibrarySortBy> onSortChanged,
     required VoidCallback onToggleAscending,
   }) {
-    return showModalBottomSheet<void>(
+    return showAppSheet<void>(
       context: context,
-      showDragHandle: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      maxWidth: 440,
       builder: (_) => LibrarySortSheet(
         currentSortBy: currentSortBy,
         sortAscending: sortAscending,
@@ -76,93 +73,89 @@ class _LibrarySortSheetState extends State<LibrarySortSheet> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Sort Library',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onSurface,
-                  ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Sort Library',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: scheme.onSurface,
                 ),
-                ActionChip(
-                  avatar: Icon(
-                    _sortAscending
-                        ? LucideIcons.arrowUpNarrowWide
-                        : LucideIcons.arrowDownWideNarrow,
-                    size: 16,
+              ),
+              ActionChip(
+                avatar: Icon(
+                  _sortAscending
+                      ? LucideIcons.arrowUpNarrowWide
+                      : LucideIcons.arrowDownWideNarrow,
+                  size: 16,
+                  color: scheme.primary,
+                ),
+                label: Text(
+                  _sortAscending ? 'Ascending' : 'Descending',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     color: scheme.primary,
                   ),
-                  label: Text(
-                    _sortAscending ? 'Ascending' : 'Descending',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                ),
+                backgroundColor: scheme.primaryContainer.withValues(
+                  alpha: 0.3,
+                ),
+                side: BorderSide.none,
+                onPressed: _handleToggleAscending,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 6),
+          ...LibrarySortBy.values.map((sort) {
+            final isSelected = sort == _selectedSortBy;
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 2,
+              ),
+              dense: true,
+              leading: Icon(
+                _iconForSort(sort),
+                size: 18,
+                color: isSelected ? scheme.primary : scheme.onSurfaceVariant,
+              ),
+              title: Text(
+                sort.label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+                  color: isSelected ? scheme.primary : scheme.onSurface,
+                ),
+              ),
+              trailing: isSelected
+                  ? Icon(
+                      LucideIcons.circleCheck,
                       color: scheme.primary,
-                    ),
-                  ),
-                  backgroundColor: scheme.primaryContainer.withValues(
-                    alpha: 0.3,
-                  ),
-                  side: BorderSide.none,
-                  onPressed: _handleToggleAscending,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 6),
-            ...LibrarySortBy.values.map((sort) {
-              final isSelected = sort == _selectedSortBy;
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2,
-                ),
-                dense: true,
-                leading: Icon(
-                  _iconForSort(sort),
-                  size: 18,
-                  color: isSelected ? scheme.primary : scheme.onSurfaceVariant,
-                ),
-                title: Text(
-                  sort.label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isSelected
-                        ? FontWeight.w700
-                        : FontWeight.normal,
-                    color: isSelected ? scheme.primary : scheme.onSurface,
-                  ),
-                ),
-                trailing: isSelected
-                    ? Icon(
-                        Icons.check_circle_rounded,
-                        color: scheme.primary,
-                        size: 20,
-                      )
-                    : null,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                tileColor: isSelected
-                    ? scheme.primaryContainer.withValues(alpha: 0.25)
-                    : Colors.transparent,
-                onTap: () => _handleSortSelection(sort),
-              );
-            }),
-            const SizedBox(height: 12),
-          ],
-        ),
+                      size: 20,
+                    )
+                  : null,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              tileColor: isSelected
+                  ? scheme.primaryContainer.withValues(alpha: 0.25)
+                  : Colors.transparent,
+              onTap: () => _handleSortSelection(sort),
+            );
+          }),
+          const SizedBox(height: 12),
+        ],
       ),
     );
   }

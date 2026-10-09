@@ -57,6 +57,11 @@ part 'hive_adapters.g.dart';
 
   // Selection Anchor Style
   AdapterSpec<ReaderAnchorStyle>(),
+
+  // Non-Reflowable & PDF Preferences
+  AdapterSpec<PdfEngineMode>(),
+  AdapterSpec<ReaderReadingDirection>(),
+  AdapterSpec<ReaderPageSpread>(),
 ])
 // ignore: unused_element
 void _() {}

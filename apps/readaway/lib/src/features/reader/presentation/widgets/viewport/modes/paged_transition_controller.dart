@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../../domain/entity/reader_preferences.dart';
 import '../../../controllers/reader_viewport_controller.dart';
 
 class PagedTransitionController extends ChangeNotifier {
@@ -87,7 +87,8 @@ class PagedTransitionController extends ChangeNotifier {
     }
 
     final isForward = page > _currentPage;
-    if (_transition == ReaderPageTransition.none) {
+    final isAdjacent = (page - _currentPage).abs() == 1;
+    if (_transition == ReaderPageTransition.none || !isAdjacent) {
       _currentPage = page;
       _targetPage = null;
       notifyListeners();
