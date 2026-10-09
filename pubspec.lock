@@ -969,26 +969,26 @@ packages:
     dependency: "direct overridden"
     description:
       path: "."
-      ref: gutenberg_conversion
-      resolved-ref: "4ae86b707f62fa10c323a4667ce3b105b42a800c"
+      ref: "19694fab460b6dca83590620d20462369c1d1ee4"
+      resolved-ref: "19694fab460b6dca83590620d20462369c1d1ee4"
       url: "https://github.com/DrkXo/hyper_render.git"
     source: git
-    version: "1.10.0"
+    version: "1.13.0"
   hyper_render_core:
     dependency: "direct overridden"
     description:
       path: "packages/hyper_render_core"
-      ref: gutenberg_conversion
-      resolved-ref: "4ae86b707f62fa10c323a4667ce3b105b42a800c"
+      ref: "19694fab460b6dca83590620d20462369c1d1ee4"
+      resolved-ref: "19694fab460b6dca83590620d20462369c1d1ee4"
       url: "https://github.com/DrkXo/hyper_render.git"
     source: git
-    version: "1.10.0"
+    version: "1.13.0"
   hyper_render_devtools:
     dependency: "direct overridden"
     description:
       path: "packages/hyper_render_devtools"
-      ref: gutenberg_conversion
-      resolved-ref: "4ae86b707f62fa10c323a4667ce3b105b42a800c"
+      ref: "19694fab460b6dca83590620d20462369c1d1ee4"
+      resolved-ref: "19694fab460b6dca83590620d20462369c1d1ee4"
       url: "https://github.com/DrkXo/hyper_render.git"
     source: git
     version: "1.8.0"

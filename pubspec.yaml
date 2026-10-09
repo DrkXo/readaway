@@ -39,16 +39,16 @@ dependency_overrides:
   hyper_render:
     git:
       url: https://github.com/DrkXo/hyper_render.git
-      ref: gutenberg_conversion
+      ref: 19694fab460b6dca83590620d20462369c1d1ee4
   hyper_render_core:
     git:
       url: https://github.com/DrkXo/hyper_render.git
-      ref: gutenberg_conversion
+      ref: 19694fab460b6dca83590620d20462369c1d1ee4
       path: packages/hyper_render_core
   hyper_render_devtools:
     git:
       url: https://github.com/DrkXo/hyper_render.git
-      ref: gutenberg_conversion
+      ref: 19694fab460b6dca83590620d20462369c1d1ee4
       path: packages/hyper_render_devtools
 
 melos:

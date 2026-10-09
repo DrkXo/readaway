@@ -54,6 +54,9 @@ part 'hive_adapters.g.dart';
   AdapterSpec<ReaderNoteType>(),
   AdapterSpec<NoteAnchorKind>(),
   AdapterSpec<HighlightStyle>(),
+
+  // Selection Anchor Style
+  AdapterSpec<ReaderAnchorStyle>(),
 ])
 // ignore: unused_element
 void _() {}

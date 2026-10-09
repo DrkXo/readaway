@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/widgets/core_widgets.dart';
+import '../../../domain/entity/reader_preferences.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../reader_prefs_scope.dart';
 import '../settings_bloc_x.dart';
@@ -53,6 +54,10 @@ class SettingsAppearancePanel extends StatelessWidget {
           ),
         ),
       );
+      bloc.updateReaderPrefs(
+        (p) => p.copyWith(selectionAnchorStyle: ReaderAnchorStyle.modernPin),
+        documentPath: path,
+      );
     }
 
     return ListView(
@@ -79,11 +84,11 @@ class SettingsAppearancePanel extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         ScopedSettingsSection(
-          scopable: false,
           title: 'Reading',
           onReset: resetReading,
           rows: const [
             _HighlightOpacityRow(),
+            _SelectionAnchorStyleRow(),
           ],
         ),
       ],
@@ -281,6 +286,52 @@ class _HighlightOpacityRow extends StatelessWidget {
               ),
             );
           },
+        );
+      },
+    );
+  }
+}
+
+class _SelectionAnchorStyleRow extends StatelessWidget {
+  const _SelectionAnchorStyleRow();
+
+  static const _entries = [
+    SettingsSelectEntry(
+      value: ReaderAnchorStyle.modernPin,
+      label: 'Modern pin',
+    ),
+    SettingsSelectEntry(
+      value: ReaderAnchorStyle.lollipop,
+      label: 'Lollipop caret',
+    ),
+    SettingsSelectEntry(
+      value: ReaderAnchorStyle.minimalPill,
+      label: 'Minimal pill',
+    ),
+    SettingsSelectEntry(
+      value: ReaderAnchorStyle.classicTeardrop,
+      label: 'Classic teardrop',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path).selectionAnchorStyle !=
+          curr.effectiveReaderPrefs(path).selectionAnchorStyle,
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        return SettingsSelectRow<ReaderAnchorStyle>(
+          label: 'Selection handles',
+          description: 'Style of start and end text selection handles',
+          value: prefs.selectionAnchorStyle,
+          entries: _entries,
+          onChanged: (style) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(selectionAnchorStyle: style),
+            documentPath: path,
+          ),
         );
       },
     );

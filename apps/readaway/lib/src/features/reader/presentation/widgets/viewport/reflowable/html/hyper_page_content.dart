@@ -9,6 +9,7 @@ import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../../core/theme/theme.dart';
 import '../../../../../../settings/domain/entity/reader_preferences.dart';
+import '../../../selection/reader_selection_anchor.dart';
 import 'reader_style_resolver.dart';
 import 'reflowable_image_cache.dart';
 import 'widgets/hyper_reflowable_image.dart';
@@ -25,6 +26,7 @@ class HyperPageContent extends StatefulWidget {
     this.onResolveAssetBytes,
     this.menuActionsBuilder,
     this.contextMenuBuilder,
+    this.selectionAnchorBuilder,
     this.availableWidth,
     this.availableHeight,
     this.onImageDecoded,
@@ -57,6 +59,12 @@ class HyperPageContent extends StatefulWidget {
   /// completely overrides the floating context menu UI.
   final Widget Function(BuildContext, HyperSelectionOverlayState)?
   contextMenuBuilder;
+
+  /// Optional custom selection anchor builder forwarded to [HyperSelectionOverlay].
+  ///
+  /// When null, defaults to [ReaderSelectionAnchor.builder] using the configured
+  /// [ReaderPreferences.selectionAnchorStyle].
+  final HyperSelectionAnchorBuilder? selectionAnchorBuilder;
 
   /// Available width inside the reader viewport (viewport width minus margins).
   final double? availableWidth;
@@ -401,12 +409,22 @@ class _HyperPageContentState extends State<HyperPageContent> {
       textColor: _textColor,
     );
 
+    final handleColor =
+        Theme.of(context).textSelectionTheme.selectionHandleColor ??
+        context.appColors.scheme.primary;
+
     return HyperSelectionOverlay(
       key: ValueKey(
         'hyper_page_${_document.hashCode}_${widget.prefs.hashCode}',
       ),
       document: _document,
       selectable: true,
+      handleColor: handleColor,
+      selectionAnchorBuilder:
+          widget.selectionAnchorBuilder ??
+          ReaderSelectionAnchor.builder(
+            style: widget.prefs.selectionAnchorStyle,
+          ),
       config: const HyperRenderConfig(extraLinkSchemes: {''}),
       imageLoader: widget.onResolveAssetBytes != null ? _handleImageLoad : null,
       widgetBuilder: _buildCustomWidget,

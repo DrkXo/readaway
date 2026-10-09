@@ -39,6 +39,21 @@ enum ReaderDefaultFont {
   sansSerif,
 }
 
+/// Visual style of text selection handles/anchors in the reader.
+enum ReaderAnchorStyle {
+  /// Sleek teardrop pin with a stem pointing directly at the boundary.
+  modernPin,
+
+  /// Fine vertical caret stem with a rounded grab bulb.
+  lollipop,
+
+  /// Compact rounded capsule with grip cues.
+  minimalPill,
+
+  /// Refined native-style teardrop.
+  classicTeardrop,
+}
+
 /// Whether a [ReaderPageTransition] is available for a given scroll direction.
 extension ReaderPageTransitionSupport on ReaderPageTransition {
   /// The page-flip curl effect is inherently horizontal.
@@ -109,6 +124,9 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     @Default(false) bool showBatteryStatus,
     @Default(false) bool showFooterProgressBar,
     @Default(11.0) double footerFontSize,
+    @Default(ReaderAnchorStyle.modernPin)
+    @JsonKey(unknownEnumValue: ReaderAnchorStyle.modernPin)
+    ReaderAnchorStyle selectionAnchorStyle,
   }) = _ReaderPreferences;
 
   factory ReaderPreferences.fromJson(Map<String, dynamic> json) =>

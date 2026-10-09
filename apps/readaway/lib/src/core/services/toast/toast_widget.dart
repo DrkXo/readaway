@@ -68,7 +68,7 @@ class ToastWidget extends StatelessWidget {
               boxShadow: appColors.shadowMd,
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Semantic icon badge
@@ -149,17 +149,20 @@ class ToastWidget extends StatelessWidget {
                 // Optional Close Button
                 if (showCloseButton && action == null) ...[
                   const SizedBox(width: 6),
-                  IconButton(
-                    icon: const Icon(LucideIcons.x, size: 16),
-                    color: subtleText,
-                    onPressed: onDismiss,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
+                  Semantics(
+                    label: 'Dismiss',
+                    button: true,
+                    child: IconButton(
+                      icon: const Icon(LucideIcons.x, size: 16),
+                      color: subtleText,
+                      onPressed: onDismiss,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      splashRadius: 18,
                     ),
-                    splashRadius: 18,
-                    tooltip: 'Dismiss',
                   ),
                 ],
               ],
