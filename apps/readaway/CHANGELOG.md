@@ -1,3 +1,14 @@
+## 1.4.0-dev.0
+
+ - **REFACTOR**(App): ui. ([49cc6d92](https://github.com/DrkXo/readaway/commit/49cc6d9243c9dc8ca116a8ee3c1f5b619e2766e3))
+ - **FIX**(App): de-coupling, re-arrange and some fixes. ([6de66e2b](https://github.com/DrkXo/readaway/commit/6de66e2b2206cb4746743e756a78d69e53195f52))
+ - **FIX**(App): annotation fixes. ([93512a41](https://github.com/DrkXo/readaway/commit/93512a41c15921153f9014a506d9825593158f0c))
+ - **FIX**(App): Reflowable image loading fixed. ([afd75b2f](https://github.com/DrkXo/readaway/commit/afd75b2f0d9278ac559843ad79711bb4dea8ad1a))
+ - **FIX**(reader): normalize XHTML self-closing tags and cover background images. ([75aba84c](https://github.com/DrkXo/readaway/commit/75aba84c90d13a2be36b0d6701b3a15d25da6d5d))
+ - **FIX**(App): book highlight, bookmark, notes fixes. ([539848e3](https://github.com/DrkXo/readaway/commit/539848e3eaa46fc323c4e6e335060300c0f8ac38))
+ - **FEAT**(App): custom selection anchor widget. ([f22579f8](https://github.com/DrkXo/readaway/commit/f22579f81e9497a61ed135ac0a0bc1f1d8e23402))
+ - **FEAT**(readaway): add bookmarks, highlights and notes, and open highlights from taps on the page. ([8c7fa425](https://github.com/DrkXo/readaway/commit/8c7fa425c968ebefcfdecfa710b85b7e806d3626))
+
 ## 1.3.0
 
  - **FIX**(App): update built in themes. ([46a95c9b](https://github.com/DrkXo/readaway/commit/46a95c9bbaab38670adf4e86b911d43c978aeb3f))

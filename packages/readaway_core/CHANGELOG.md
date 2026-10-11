@@ -1,3 +1,9 @@
+## 1.3.1-dev.0
+
+ - **FIX**(App): de-coupling, re-arrange and some fixes. ([6de66e2b](https://github.com/DrkXo/readaway/commit/6de66e2b2206cb4746743e756a78d69e53195f52))
+ - **FIX**(App): Reflowable image loading fixed. ([afd75b2f](https://github.com/DrkXo/readaway/commit/afd75b2f0d9278ac559843ad79711bb4dea8ad1a))
+ - **FIX**(reader): normalize XHTML self-closing tags and cover background images. ([75aba84c](https://github.com/DrkXo/readaway/commit/75aba84c90d13a2be36b0d6701b3a15d25da6d5d))
+
 ## 1.3.0
 
  - **FIX**(App): update built in themes. ([46a95c9b](https://github.com/DrkXo/readaway/commit/46a95c9bbaab38670adf4e86b911d43c978aeb3f))
