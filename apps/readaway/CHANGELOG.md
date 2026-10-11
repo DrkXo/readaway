@@ -1,3 +1,7 @@
+## 1.4.0-dev.1
+
+ - **REFACTOR**(App): ui. ([e1808ba5](https://github.com/DrkXo/readaway/commit/e1808ba5b78222f61df199aa60b799faad776301))
+
 ## 1.4.0-dev.0
 
  - **REFACTOR**(App): ui. ([49cc6d92](https://github.com/DrkXo/readaway/commit/49cc6d9243c9dc8ca116a8ee3c1f5b619e2766e3))

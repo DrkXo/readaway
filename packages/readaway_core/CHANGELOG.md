@@ -1,3 +1,7 @@
+## 1.3.1-dev.1
+
+ - **REFACTOR**(App): ui. ([e1808ba5](https://github.com/DrkXo/readaway/commit/e1808ba5b78222f61df199aa60b799faad776301))
+
 ## 1.3.1-dev.0
 
  - **FIX**(App): de-coupling, re-arrange and some fixes. ([6de66e2b](https://github.com/DrkXo/readaway/commit/6de66e2b2206cb4746743e756a78d69e53195f52))

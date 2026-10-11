@@ -15,6 +15,32 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`readaway` - `v1.4.0-dev.1`](#readaway---v140-dev1)
+ - [`readaway_core` - `v1.3.1-dev.1`](#readaway_core---v131-dev1)
+
+---
+
+#### `readaway` - `v1.4.0-dev.1`
+
+ - **REFACTOR**(App): ui. ([e1808ba5](https://github.com/DrkXo/readaway/commit/e1808ba5b78222f61df199aa60b799faad776301))
+
+#### `readaway_core` - `v1.3.1-dev.1`
+
+ - **REFACTOR**(App): ui. ([e1808ba5](https://github.com/DrkXo/readaway/commit/e1808ba5b78222f61df199aa60b799faad776301))
+
+
+## 2026-10-11
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`readaway` - `v1.4.0-dev.0`](#readaway---v140-dev0)
  - [`readaway_core` - `v1.3.1-dev.0`](#readaway_core---v131-dev0)
 
