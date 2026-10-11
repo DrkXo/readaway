@@ -76,13 +76,11 @@ class _SwatchChip extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected ? accent.withValues(alpha: 0.18) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? accent : theme.colorScheme.outlineVariant,
             width: selected ? 2 : 1,
@@ -95,12 +93,9 @@ class _SwatchChip extends StatelessWidget {
               Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant)
             else
               Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: accent,
-                  shape: BoxShape.circle,
-                ),
+                width: 12,
+                height: 12,
+                color: accent,
               ),
             const SizedBox(width: 8),
             Text(

@@ -219,22 +219,23 @@ class _DefaultFontRow extends StatelessWidget {
                 padding: EdgeInsets.only(bottom: 8),
                 child: Text('Default font'),
               ),
-              SegmentedButton<ReaderDefaultFont>(
-                segments: const [
-                  ButtonSegment(
+              MetroPivotControl<ReaderDefaultFont>(
+                value: current,
+                size: MetroPivotControlSize.compact,
+                expanded: true,
+                items: const [
+                  MetroPivotControlItem(
                     value: ReaderDefaultFont.serif,
-                    label: Text('Serif'),
+                    label: 'serif',
                   ),
-                  ButtonSegment(
+                  MetroPivotControlItem(
                     value: ReaderDefaultFont.sansSerif,
-                    label: Text('Sans-serif'),
+                    label: 'sans-serif',
                   ),
                 ],
-                selected: {current},
-                onSelectionChanged: (s) {
-                  if (s.isEmpty) return;
+                onChanged: (selected) {
                   context.read<SettingsBloc>().updateReaderPrefs(
-                    (p) => p.copyWith(defaultFont: s.first),
+                    (p) => p.copyWith(defaultFont: selected),
                     documentPath: path,
                   );
                 },

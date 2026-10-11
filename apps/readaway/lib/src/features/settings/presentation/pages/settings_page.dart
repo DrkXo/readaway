@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/services/services.dart';
+import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/core_widgets.dart';
 import '../bloc/settings/settings_bloc.dart';
 import '../widgets/reader_prefs_scope.dart';
 import '../widgets/settings_bloc_x.dart';
@@ -31,10 +33,15 @@ class _SettingsPageState extends State<SettingsPage> {
   /// Whether the reader-preference groups are editing this book's per-book
   /// preferences (true) or the global preferences (false).
   late bool _scoped;
+  late final MetroPivotController _pivotController;
 
   @override
   void initState() {
     super.initState();
+    _pivotController = MetroPivotController(
+      length: 5,
+      initialIndex: widget.initialTab.index,
+    );
     final path = widget.documentPath;
     final settingsBloc = context.read<SettingsBloc>();
     _scoped =
@@ -46,6 +53,21 @@ class _SettingsPageState extends State<SettingsPage> {
         SettingsEvent.loadDocumentPrefs(path),
       );
     }
+  }
+
+  @override
+  void didUpdateWidget(SettingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTab != oldWidget.initialTab &&
+        _pivotController.index != widget.initialTab.index) {
+      _pivotController.animateTo(widget.initialTab.index);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pivotController.dispose();
+    super.dispose();
   }
 
   void _syncScoped(SettingsState state) {
@@ -71,82 +93,66 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final path = widget.documentPath;
+    final appColors = context.appColors;
 
-    return BlocListener<SettingsBloc, SettingsState>(
-      listenWhen: (previous, current) =>
-          previous.failure != current.failure ||
-          previous.loadedDocumentPaths != current.loadedDocumentPaths,
-      listener: (context, state) {
-        _syncScoped(state);
-        if (state.failure case final failure?) {
-          context.toasts.showFailure(failure);
-        }
-      },
-      child: SettingsScopeControl(
-        bookPath: path,
-        scoped: _scoped,
-        onScopedChanged: _setScoped,
-        child: DefaultTabController(
-          length: 5,
-          initialIndex: widget.initialTab.index,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SettingsSheetHeader(
-                title: 'Settings',
-                trailing: SettingsSheetCloseButton(),
-              ),
-
-              if (path != null)
-                _BookScopeBanner(
-                  scoped: _scoped,
-                  onChanged: _setScoped,
-                ),
-
-              const TabBar(
-                isScrollable: false,
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: Colors.transparent,
-                labelPadding: EdgeInsets.symmetric(horizontal: 6),
-                tabs: [
-                  Tab(
-                    icon: Icon(LucideIcons.type, size: 18),
-                    text: 'Font',
-                  ),
-                  Tab(
-                    icon: Icon(LucideIcons.space, size: 18),
-                    text: 'Layout',
-                  ),
-                  Tab(
-                    icon: Icon(LucideIcons.hand, size: 18),
-                    text: 'Behavior',
-                  ),
-                  Tab(
-                    icon: Icon(LucideIcons.palette, size: 18),
-                    text: 'Appearance',
-                  ),
-                  Tab(
-                    icon: Icon(LucideIcons.mic, size: 18),
-                    text: 'TTS',
+    return Scaffold(
+      backgroundColor: appColors.readerBackground,
+      body: SafeArea(
+        child: BlocListener<SettingsBloc, SettingsState>(
+          listenWhen: (previous, current) =>
+              previous.failure != current.failure ||
+              previous.loadedDocumentPaths != current.loadedDocumentPaths,
+          listener: (context, state) {
+            _syncScoped(state);
+            if (state.failure case final failure?) {
+              context.toasts.showFailure(failure);
+            }
+          },
+          child: SettingsScopeControl(
+            bookPath: path,
+            scoped: _scoped,
+            onScopedChanged: _setScoped,
+            child: ReaderPrefsScope(
+              documentPath: _scoped ? path : null,
+              child: Column(
+                children: [
+                  if (path != null)
+                    _BookScopeBanner(
+                      scoped: _scoped,
+                      onChanged: _setScoped,
+                    ),
+                  Expanded(
+                    child: MetroPivot(
+                      controller: _pivotController,
+                      title: 'settings',
+                      trailing: const SettingsSheetCloseButton(useText: true),
+                      items: const [
+                        MetroPivotItem(
+                          label: 'font',
+                          content: SettingsFontPanel(),
+                        ),
+                        MetroPivotItem(
+                          label: 'layout',
+                          content: SettingsLayoutPanel(),
+                        ),
+                        MetroPivotItem(
+                          label: 'behavior',
+                          content: SettingsBehaviorPanel(),
+                        ),
+                        MetroPivotItem(
+                          label: 'appearance',
+                          content: SettingsAppearancePanel(),
+                        ),
+                        MetroPivotItem(
+                          label: 'tts',
+                          content: SettingsTtsPanel(),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-
-              Flexible(
-                child: ReaderPrefsScope(
-                  documentPath: _scoped ? path : null,
-                  child: const TabBarView(
-                    children: [
-                      SettingsFontPanel(),
-                      SettingsLayoutPanel(),
-                      SettingsBehaviorPanel(),
-                      SettingsAppearancePanel(),
-                      SettingsTtsPanel(),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -167,22 +173,32 @@ class _BookScopeBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final appColors = context.appColors;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 6, 16, 4),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: scoped
-            ? scheme.secondaryContainer.withValues(alpha: 0.3)
-            : scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: scoped
-              ? scheme.secondary.withValues(alpha: 0.3)
-              : scheme.outlineVariant.withValues(alpha: 0.4),
-          width: 0.8,
+        color: appColors.readerForeground.withValues(alpha: 0.04),
+        border: Border(
+          left: BorderSide(
+            color: scoped
+                ? appColors.buttonBackground
+                : appColors.readerForeground.withValues(alpha: 0.3),
+            width: 3.5,
+          ),
+          top: BorderSide(
+            color: appColors.readerForeground.withValues(alpha: 0.08),
+            width: 1,
+          ),
+          right: BorderSide(
+            color: appColors.readerForeground.withValues(alpha: 0.08),
+            width: 1,
+          ),
+          bottom: BorderSide(
+            color: appColors.readerForeground.withValues(alpha: 0.08),
+            width: 1,
+          ),
         ),
       ),
       child: Row(
@@ -190,26 +206,32 @@ class _BookScopeBanner extends StatelessWidget {
           Icon(
             LucideIcons.bookOpen,
             size: 18,
-            color: scoped ? scheme.secondary : scheme.onSurfaceVariant,
+            color: scoped
+                ? appColors.buttonBackground
+                : appColors.readerForeground.withValues(alpha: 0.6),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Customize this book',
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  'customize this book',
+                  style: TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
+                    color: appColors.readerForeground,
                   ),
                 ),
+                const SizedBox(height: 1),
                 Text(
                   scoped
                       ? 'Settings apply to this book only'
                       : 'Settings apply to all books',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: appColors.readerForeground.withValues(alpha: 0.55),
                   ),
                 ),
               ],
@@ -219,16 +241,11 @@ class _BookScopeBanner extends StatelessWidget {
             message: scoped
                 ? 'Editing only this book — toggle to edit all books'
                 : 'Editing all books — toggle to edit only this book',
-            child: Transform.scale(
-              scale: 0.8,
-              alignment: Alignment.centerRight,
-              child: Semantics(
-                label: 'Customize settings for this book',
-                child: Switch(
-                  value: scoped,
-                  onChanged: onChanged,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
+            child: Semantics(
+              label: 'Customize settings for this book',
+              child: MetroSwitch(
+                value: scoped,
+                onChanged: onChanged,
               ),
             ),
           ),

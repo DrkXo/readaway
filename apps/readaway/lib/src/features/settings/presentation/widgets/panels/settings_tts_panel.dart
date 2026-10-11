@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/services/services.dart';
+import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/tts_library/tts_library_bloc.dart';
 import 'tts/settings_tts_cache_tab.dart';
 import 'tts/settings_tts_highlight_tab.dart';
@@ -70,60 +71,40 @@ class _TtsViewState extends State<_TtsView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 600;
-            final selector = SegmentedButton<_TtsTab>(
-              segments: const [
-                ButtonSegment(
-                  value: _TtsTab.voice,
-                  label: Text('Voice'),
-                  icon: Icon(LucideIcons.mic, size: 16),
-                ),
-                ButtonSegment(
-                  value: _TtsTab.reading,
-                  label: Text('Reading'),
-                  icon: Icon(LucideIcons.slidersHorizontal, size: 16),
-                ),
-                ButtonSegment(
-                  value: _TtsTab.highlight,
-                  label: Text('Highlight'),
-                  icon: Icon(LucideIcons.highlighter, size: 16),
-                ),
-                ButtonSegment(
-                  value: _TtsTab.lyric,
-                  label: Text('Lyric'),
-                  icon: Icon(LucideIcons.music, size: 16),
-                ),
-                ButtonSegment(
-                  value: _TtsTab.cache,
-                  label: Text('Cache'),
-                  icon: Icon(LucideIcons.hardDrive, size: 16),
-                ),
-              ],
-              selected: {_tab},
-              showSelectedIcon: false,
-              expandedInsets: isNarrow ? null : EdgeInsets.zero,
-              onSelectionChanged: (s) {
-                // A segmented button reports an empty selection when the pressed
-                // segment is tapped again; there is nothing to switch to.
-                if (s.isEmpty) return;
-                setState(() => _tab = s.first);
-              },
-            );
-
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: isNarrow
-                  ? SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: selector,
-                    )
-                  : selector,
-            );
-          },
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: MetroPivotControl<_TtsTab>(
+            value: _tab,
+            onChanged: (newTab) => setState(() => _tab = newTab),
+            items: const [
+              MetroPivotControlItem(
+                value: _TtsTab.voice,
+                label: 'voice',
+                icon: LucideIcons.mic,
+              ),
+              MetroPivotControlItem(
+                value: _TtsTab.reading,
+                label: 'reading',
+                icon: LucideIcons.slidersHorizontal,
+              ),
+              MetroPivotControlItem(
+                value: _TtsTab.highlight,
+                label: 'highlight',
+                icon: LucideIcons.highlighter,
+              ),
+              MetroPivotControlItem(
+                value: _TtsTab.lyric,
+                label: 'lyric',
+                icon: LucideIcons.music,
+              ),
+              MetroPivotControlItem(
+                value: _TtsTab.cache,
+                label: 'cache',
+                icon: LucideIcons.hardDrive,
+              ),
+            ],
+          ),
         ),
-        const Divider(height: 1),
         Expanded(
           child: IndexedStack(
             index: _tab.index,

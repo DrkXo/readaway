@@ -283,7 +283,7 @@ class _PaintToggle extends StatelessWidget {
         height: 44,
         child: Row(
           children: [
-            Switch(value: value, onChanged: onChanged),
+            MetroSwitch(value: value, onChanged: onChanged),
             const SizedBox(width: 8),
             const Expanded(child: Text('Highlight this passage too')),
           ],

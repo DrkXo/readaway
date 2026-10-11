@@ -37,90 +37,22 @@ class AppSegmentedControl<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final selectedIndex = segments.indexWhere((s) => s.value == value);
-
-    return Semantics(
-      container: true,
-      label: 'Segmented control',
-      child: Container(
-        padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < segments.length; i++)
-              _buildSegment(context, i, selectedIndex),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSegment(BuildContext context, int index, int selectedIndex) {
-    final scheme = Theme.of(context).colorScheme;
-    final segment = segments[index];
-    final isSelected = index == selectedIndex;
-    final isEnabled = enabled && !isSelected;
-
-    return Expanded(
-      child: Semantics(
-        selected: isSelected,
-        button: true,
-        label: segment.tooltip ?? segment.label,
-        child: Tooltip(
-          message: segment.tooltip ?? segment.label,
-          child: InkWell(
-            onTap: isEnabled ? () => onChanged(segment.value) : null,
-            borderRadius: BorderRadius.circular(9),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? scheme.surface : Colors.transparent,
-                borderRadius: BorderRadius.circular(9),
-                border: isSelected
-                    ? Border.all(
-                        color: context.appColors.borderSubtle,
-                        width: 1.0,
-                      )
-                    : null,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (segment.icon != null) ...[
-                    Icon(
-                      segment.icon,
-                      size: 16,
-                      color: isSelected
-                          ? scheme.primary
-                          : scheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                  Text(
-                    segment.label,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: isSelected
-                          ? scheme.onSurface
-                          : scheme.onSurfaceVariant,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return MetroPivotControl<T>(
+      value: value,
+      enabled: enabled,
+      expanded: true,
+      size: MetroPivotControlSize.compact,
+      style: MetroPivotControlStyle.flatTiles,
+      items: [
+        for (final s in segments)
+          MetroPivotControlItem<T>(
+            value: s.value,
+            label: s.label,
+            icon: s.icon,
+            tooltip: s.tooltip,
           ),
-        ),
-      ),
+      ],
+      onChanged: onChanged,
     );
   }
 }

@@ -121,7 +121,6 @@ class _SchemeOption extends StatelessWidget {
     final schemeColors = theme.colorScheme;
     return InkWell(
       onTap: onTap,
-      borderRadius: const BorderRadius.all(Radius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -184,12 +183,11 @@ class _SwatchStrip extends StatelessWidget {
       children: [
         for (final color in colors)
           Container(
-            width: 18,
-            height: 18,
+            width: 16,
+            height: 16,
             margin: const EdgeInsets.only(right: 4),
             decoration: BoxDecoration(
               color: color,
-              shape: BoxShape.circle,
               border: Border.all(color: outline, width: 0.5),
             ),
           ),

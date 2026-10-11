@@ -8,10 +8,12 @@ class WindowCaptionControls extends StatelessWidget {
     super.key,
     this.service,
     this.buttonWidth = 44.0,
+    this.height,
   });
 
   final WindowService? service;
   final double buttonWidth;
+  final double? height;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,7 @@ class WindowCaptionControls extends StatelessWidget {
             : null);
     if (windowService == null) return const SizedBox.shrink();
 
-    return Row(
+    final row = Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -49,6 +51,11 @@ class WindowCaptionControls extends StatelessWidget {
         ),
       ],
     );
+
+    if (height != null) {
+      return SizedBox(height: height, child: row);
+    }
+    return row;
   }
 }
 

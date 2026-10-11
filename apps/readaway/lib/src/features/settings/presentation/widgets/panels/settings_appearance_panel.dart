@@ -114,41 +114,40 @@ class _ThemeModeCard extends StatelessWidget {
         };
 
         return Padding(
-          padding: const EdgeInsets.all(16),
-          child: SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<ThemeMode>(
-              segments: const [
-                ButtonSegment(
-                  value: ThemeMode.light,
-                  icon: Icon(LucideIcons.sun),
-                  label: Text('Light'),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.system,
-                  icon: Icon(LucideIcons.sunMoon),
-                  label: Text('System'),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.dark,
-                  icon: Icon(LucideIcons.moon),
-                  label: Text('Dark'),
-                ),
-              ],
-              selected: {mode},
-              onSelectionChanged: (selected) {
-                final settings = state.appSettings;
-                context.read<SettingsBloc>().add(
-                  SettingsEvent.updateAppSettings(
-                    settings.copyWith(
-                      globalViewSettings: settings.globalViewSettings.copyWith(
-                        theme: selected.first.name,
-                      ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: MetroPivotControl<ThemeMode>(
+            value: mode,
+            size: MetroPivotControlSize.compact,
+            expanded: true,
+            items: const [
+              MetroPivotControlItem(
+                value: ThemeMode.light,
+                icon: LucideIcons.sun,
+                label: 'light',
+              ),
+              MetroPivotControlItem(
+                value: ThemeMode.system,
+                icon: LucideIcons.sunMoon,
+                label: 'system',
+              ),
+              MetroPivotControlItem(
+                value: ThemeMode.dark,
+                icon: LucideIcons.moon,
+                label: 'dark',
+              ),
+            ],
+            onChanged: (selected) {
+              final settings = state.appSettings;
+              context.read<SettingsBloc>().add(
+                SettingsEvent.updateAppSettings(
+                  settings.copyWith(
+                    globalViewSettings: settings.globalViewSettings.copyWith(
+                      theme: selected.name,
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         );
       },

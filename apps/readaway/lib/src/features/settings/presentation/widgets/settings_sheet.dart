@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/core_widgets.dart';
+
 /// Chrome for the settings bottom sheet.
 ///
 /// The sheet is a single modal managed as a GoRouter [ShellRoute]. Everything
@@ -49,81 +52,169 @@ class SettingsSheet extends StatelessWidget {
   }
 }
 
-/// Header row for a page inside the [SettingsSheet]: a title, an optional
-/// leading control (sub-pages use a back arrow to return to the tabbed root)
-/// and an optional trailing control (the root uses a close button to dismiss
-/// the whole sheet).
+/// Header row for a page inside the [SettingsSheet]:
+/// Features authentic Windows Phone / Lumia two-line horizon typography:
+/// uppercase category tag (e.g. `SETTINGS`), grand light lower-case title (`34pt`, `w300`),
+/// and sleek touch-reactive leading/trailing actions with zero dividing lines.
 class SettingsSheetHeader extends StatelessWidget {
   const SettingsSheetHeader({
     super.key,
     required this.title,
+    this.category = 'settings',
     this.leading,
     this.trailing,
   });
 
   final String title;
+  final String? category;
   final Widget? leading;
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final appColors = context.appColors;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(leading == null ? 20 : 8, 8, 8, 4),
-          child: Row(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (category != null)
+            Text(
+              category!.toUpperCase(),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.5,
+                color: appColors.readerForeground.withValues(alpha: 0.5),
+              ),
+            ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ?leading,
-              Text(
-                title,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  title.toLowerCase(),
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: -1.0,
+                    height: 1.15,
+                    color: appColors.readerForeground,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
               ?trailing,
             ],
           ),
-        ),
-        const Divider(height: 1),
-      ],
+        ],
+      ),
     );
   }
 }
 
 /// Back arrow for a sub-page of the settings sheet.
 ///
-/// Pops the sheet's own navigator, so the tabbed settings page is revealed
-/// rather than the whole sheet being dismissed.
+/// Features authentic Metro touch interaction with tilt feedback and clean iconography.
 class SettingsSheetBackButton extends StatelessWidget {
-  const SettingsSheetBackButton({super.key});
+  const SettingsSheetBackButton({
+    super.key,
+    this.useText = false,
+  });
+
+  final bool useText;
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: const Icon(LucideIcons.chevronLeft),
-      tooltip: 'Back to settings',
-      onPressed: () => Navigator.of(context).pop(),
+    final appColors = context.appColors;
+
+    void handlePop() {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        Navigator.of(context, rootNavigator: true).maybePop();
+      }
+    }
+
+    return MetroPressable(
+      onTap: handlePop,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              LucideIcons.arrowLeft,
+              size: 24,
+              color: appColors.readerForeground,
+            ),
+            if (useText) ...[
+              const SizedBox(width: 6),
+              Text(
+                'back',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: appColors.readerForeground.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
 
-/// Close button for the sheet's root page.
+/// Close button for the settings page.
 ///
-/// Pops the *root* navigator: [Navigator.pop] alone would only unwind the
-/// sheet's own navigator, which is already at its root page.
+/// Pops the enclosing navigator or root navigator when dismissed.
 class SettingsSheetCloseButton extends StatelessWidget {
-  const SettingsSheetCloseButton({super.key});
+  const SettingsSheetCloseButton({
+    super.key,
+    this.useText = false,
+  });
+
+  final bool useText;
 
   @override
   Widget build(BuildContext context) {
+    void handlePop() {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        Navigator.of(context, rootNavigator: true).maybePop();
+      }
+    }
+
+    if (useText) {
+      final appColors = context.appColors;
+      return MetroPressable(
+        onTap: handlePop,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Text(
+            'close',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: appColors.readerForeground.withValues(alpha: 0.7),
+            ),
+          ),
+        ),
+      );
+    }
+
     return IconButton(
       icon: const Icon(LucideIcons.x),
       tooltip: 'Close settings',
-      onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+      onPressed: handlePop,
     );
   }
 }

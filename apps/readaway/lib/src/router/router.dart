@@ -13,6 +13,7 @@ import 'package:readaway_core/readaway_core.dart';
 
 import '../core/routes/routes.dart';
 import '../core/services/services.dart';
+import '../core/widgets/core_widgets.dart';
 import '../features/library/presentation/pages/library_page.dart';
 import '../features/reader/presentation/bloc/reader_bloc.dart';
 import '../features/reader/presentation/bloc/tts/reader_tts_bloc.dart';
@@ -20,7 +21,6 @@ import '../features/reader/presentation/pages/reader_page.dart';
 import '../features/settings/presentation/pages/settings_custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
 import '../features/settings/presentation/pages/voice_library_page.dart';
-import '../features/settings/presentation/widgets/settings_sheet.dart';
 
 part 'custom_routes.dart';
 
@@ -60,10 +60,6 @@ class AppRouter {
 
   final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
     debugLabel: 'root',
-  );
-
-  final GlobalKey<NavigatorState> _settingsNavKey = GlobalKey<NavigatorState>(
-    debugLabel: 'settings-sheet',
   );
 
   BuildContext? get context => _rootNavigatorKey.currentContext;
@@ -117,13 +113,17 @@ class AppRouter {
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: kDebugMode,
     routes: [
-      // 1. Top-Level Library Page (Outside TTS Overlay Shell)
+      // 1. Top-Level Library Page with Lumia Metro Pivot Transition
       GoRoute(
         name: _appRoutes.library.name,
         path: _appRoutes.library.path,
-        builder: (context, state) => const LibraryPage(),
+        pageBuilder: (context, state) => MetroPivotPage(
+          key: state.pageKey,
+          child: const LibraryPage(),
+        ),
       ),
 
+      // 2. Reader Page with Lumia Metro Pivot Transition
       GoRoute(
         name: _appRoutes.reader.name,
         path: _appRoutes.reader.path,
@@ -140,8 +140,9 @@ class AppRouter {
           }
           return true;
         },
-        builder: (context, state) {
-          return MultiBlocProvider(
+        pageBuilder: (context, state) => MetroPivotPage(
+          key: state.pageKey,
+          child: MultiBlocProvider(
             providers: [
               BlocProvider<ReaderBloc>(
                 create: (_) => GetIt.I.get<ReaderBloc>(),
@@ -151,57 +152,49 @@ class AppRouter {
               ),
             ],
             child: ReaderPage.fromRoute(state),
-          );
-        },
+          ),
+        ),
       ),
 
-      // Global Modal overlaid on top of the router.
-      //
-      // The settings sheet is a ShellRoute hosting a nested navigator with a
-      // stable key ('settings-modal'). Sub-pages (voice library, custom fonts)
-      // are child routes that push within the sheet's nested navigator, keeping
-      // the sheet open and bypassing Flutter's _ModalScope caching.
-      ShellRoute(
-        navigatorKey: _settingsNavKey,
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state, child) => ModalPage(
-          key: const ValueKey('settings-modal'),
-          isScrollControlled: true,
-          showDragHandle: false,
-          builder: (context) => SettingsSheet(child: child),
-        ),
+      // 3. Settings Full-Page Route with Lumia Metro Pivot Transition
+      GoRoute(
+        name: _appRoutes.settings.name,
+        path: _appRoutes.settings.path,
+        pageBuilder: (context, state) {
+          final tabParam = state.uri.queryParameters['tab'];
+          final initialTab = switch (tabParam) {
+            'layout' => SettingsTab.layout,
+            'behavior' => SettingsTab.behavior,
+            'appearance' => SettingsTab.appearance,
+            'tts' => SettingsTab.tts,
+            _ => SettingsTab.font,
+          };
+          final documentPath = state.uri.queryParameters['documentPath'];
+
+          return MetroPivotPage(
+            key: state.pageKey,
+            child: SettingsPage(
+              initialTab: initialTab,
+              documentPath: documentPath,
+            ),
+          );
+        },
         routes: [
           GoRoute(
-            name: _appRoutes.settings.name,
-            path: _appRoutes.settings.path,
-            builder: (context, state) {
-              final tabParam = state.uri.queryParameters['tab'];
-              final initialTab = switch (tabParam) {
-                'layout' => SettingsTab.layout,
-                'behavior' => SettingsTab.behavior,
-                'appearance' => SettingsTab.appearance,
-                'tts' => SettingsTab.tts,
-                _ => SettingsTab.font,
-              };
-              final documentPath = state.uri.queryParameters['documentPath'];
-
-              return SettingsPage(
-                initialTab: initialTab,
-                documentPath: documentPath,
-              );
-            },
-            routes: [
-              GoRoute(
-                name: _appRoutes.settingsVoices.name,
-                path: _appRoutes.settingsVoices.lastSegment,
-                builder: (context, state) => const VoiceLibraryPage(),
-              ),
-              GoRoute(
-                name: _appRoutes.settingsFonts.name,
-                path: _appRoutes.settingsFonts.lastSegment,
-                builder: (context, state) => const SettingsCustomFontsPage(),
-              ),
-            ],
+            name: _appRoutes.settingsVoices.name,
+            path: _appRoutes.settingsVoices.lastSegment,
+            pageBuilder: (context, state) => MetroPivotPage(
+              key: state.pageKey,
+              child: const VoiceLibraryPage(),
+            ),
+          ),
+          GoRoute(
+            name: _appRoutes.settingsFonts.name,
+            path: _appRoutes.settingsFonts.lastSegment,
+            pageBuilder: (context, state) => MetroPivotPage(
+              key: state.pageKey,
+              child: const SettingsCustomFontsPage(),
+            ),
           ),
         ],
       ),

@@ -1,9 +1,11 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/result/result.dart';
+import 'package:readaway/src/core/widgets/core_widgets.dart';
 import 'package:readaway/src/features/library/presentation/bloc/library_bloc.dart';
 import 'package:readaway/src/features/library/presentation/pages/library_page.dart';
 import 'package:readaway/src/features/library/presentation/widgets/library_actions_fab.dart';
@@ -15,81 +17,108 @@ import '../../../../helpers/test_mocks.dart';
 void main() {
   setUpAll(registerMockitoDummies);
 
-  testWidgets('library tools expand with the sliver app bar', (tester) async {
-    tester.view.physicalSize = const Size(360, 420);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'renders MetroPivot hub with panoramic sections and toggles search',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final mockRepo = MockLibraryRepository();
-    final mockSettings = MockSettingsService();
-    when(mockSettings.settings).thenReturn(const Settings());
-    when(mockRepo.watchRecentDocuments())
-        .thenAnswer((_) => Stream.value(const Success([])));
+      final mockRepo = MockLibraryRepository();
+      final mockSettings = MockSettingsService();
+      when(mockSettings.settings).thenReturn(const Settings());
+      when(mockRepo.watchRecentDocuments())
+          .thenAnswer((_) => Stream.value(const Success([])));
 
-    final bloc = LibraryBloc(mockRepo, mockSettings);
-    GetIt.I.registerSingleton<LibraryBloc>(bloc);
-    addTearDown(() => GetIt.I.unregister<LibraryBloc>());
+      final bloc = LibraryBloc(mockRepo, mockSettings);
+      GetIt.I.registerSingleton<LibraryBloc>(bloc);
+      addTearDown(() => GetIt.I.unregister<LibraryBloc>());
 
-    await tester.pumpWidget(const MaterialApp(home: LibraryPage()));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: LibraryPage()));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(CustomScrollView), findsOneWidget);
-    expect(find.byType(SliverAppBar), findsOneWidget);
-    expect(find.byType(LibraryToolsPanel), findsNothing);
-    final initialAppBar = tester.widget<SliverAppBar>(
-      find.byType(SliverAppBar),
-    );
-    expect(initialAppBar.pinned, isTrue);
-    expect(
-      initialAppBar.expandedHeight,
-      closeTo(initialAppBar.toolbarHeight, 1),
-    );
-    expect(find.text('Library'), findsOneWidget);
+      expect(find.byType(MetroPivot), findsOneWidget);
+      expect(find.text('library'), findsOneWidget);
+      expect(find.text('all books'), findsOneWidget);
+      expect(find.text('reading'), findsOneWidget);
+      expect(find.text('favorites'), findsOneWidget);
+      expect(find.text('finished'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('library-tools-toggle')));
-    await tester.pumpAndSettle();
-    expect(find.byType(LibraryToolsPanel), findsOneWidget);
-    final expandedAppBar = tester.widget<SliverAppBar>(
-      find.byType(SliverAppBar),
-    );
-    expect(
-      expandedAppBar.expandedHeight,
-      greaterThan(expandedAppBar.toolbarHeight),
-    );
+      expect(find.text('add'), findsOneWidget);
+      expect(find.text('open'), findsOneWidget);
+      expect(find.text('search'), findsOneWidget);
+      expect(find.text('settings'), findsOneWidget);
 
-    final scrollView = tester.widget<CustomScrollView>(
-      find.byType(CustomScrollView),
-    );
-    final scrollController = scrollView.controller!;
-    expect(scrollController.hasClients, isTrue);
+      // Toggle search
+      await tester.tap(find.text('search'));
+      await tester.pumpAndSettle();
 
-    await tester.drag(
-      find.byType(CustomScrollView),
-      const Offset(0, -180),
-    );
-    await tester.pumpAndSettle();
-    expect(scrollController.offset, greaterThan(0));
+      expect(find.byType(TextField), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('library-tools-toggle')));
-    await tester.pumpAndSettle();
-    expect(scrollController.offset, closeTo(0, 1));
+      // Toggle search off via cancel button
+      await tester.tap(find.text('cancel'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('library-tools-toggle')));
-    await tester.pumpAndSettle();
-    final collapsedAppBar = tester.widget<SliverAppBar>(
-      find.byType(SliverAppBar),
-    );
-    expect(
-      collapsedAppBar.expandedHeight,
-      closeTo(expandedAppBar.toolbarHeight, 1),
-    );
-    expect(find.byType(LibraryToolsPanel), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+    },
+  );
 
-    await tester.tap(find.byKey(const ValueKey('library-tools-toggle')));
-    await tester.pumpAndSettle();
-    expect(find.byType(LibraryToolsPanel), findsOneWidget);
-  });
+  testWidgets(
+    'MetroPivot horizontal gestures change active section in LibraryPage',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final mockRepo = MockLibraryRepository();
+      final mockSettings = MockSettingsService();
+      when(mockSettings.settings).thenReturn(const Settings());
+      when(mockRepo.watchRecentDocuments())
+          .thenAnswer((_) => Stream.value(const Success([])));
+
+      final bloc = LibraryBloc(mockRepo, mockSettings);
+      GetIt.I.registerSingleton<LibraryBloc>(bloc);
+      addTearDown(() => GetIt.I.unregister<LibraryBloc>());
+
+      await tester.pumpWidget(const MaterialApp(home: LibraryPage()));
+      await tester.pumpAndSettle();
+
+      final pivotFinder = find.byType(MetroPivot);
+      expect(pivotFinder, findsOneWidget);
+
+      final pivot = tester.widget<MetroPivot>(pivotFinder);
+      expect(pivot.controller, isNotNull);
+      expect(pivot.controller!.index, 0);
+
+      // Verify dragging horizontally changes pivot section to 'reading' (index 1)
+      await tester.drag(
+        find.text('No matching books found.'),
+        const Offset(-600, 0),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pumpAndSettle();
+
+      expect(pivot.controller!.index, 1);
+      expect(find.text('No books currently in progress.'), findsOneWidget);
+
+      // Verify horizontal pointer scroll event changes pivot section to 'favorites' (index 2)
+      final center = tester.getCenter(
+        find.text('No books currently in progress.'),
+      );
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: center,
+          scrollDelta: const Offset(50, 0),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(pivot.controller!.index, 2);
+      expect(find.text('No favorite books marked yet.'), findsOneWidget);
+    },
+  );
 
   testWidgets('library tools slide into view when opened', (tester) async {
     await tester.pumpWidget(
@@ -214,7 +243,7 @@ void main() {
   });
 
   testWidgets(
-    'speed dial closes when tapping outside on barrier or selecting an action',
+    'Bottom bar right-aligned text actions trigger document picking',
     (tester) async {
       final mockRepo = MockLibraryRepository();
       final mockSettings = MockSettingsService();
@@ -235,38 +264,36 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final toggle = find.byKey(const ValueKey('library-actions-toggle'));
-      expect(find.byTooltip('Add'), findsNothing);
+      // 1. Verify right-aligned text actions exist
+      expect(find.text('open'), findsOneWidget);
+      expect(find.text('add'), findsOneWidget);
 
-      // 1. Open speed dial
-      await tester.tap(toggle);
+      // 2. Tap Add button in bottom bar
+      await tester.tap(find.text('add'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Add'), findsOneWidget);
+      verify(mockRepo.pickAndAddDocuments()).called(1);
 
-      // 2. Tap outside on the dimming barrier
-      final barrier = find.byKey(const ValueKey('library-speed-dial-barrier'));
-      expect(barrier, findsOneWidget);
-      await tester.tap(barrier);
+      // 3. Tap Open button in bottom bar
+      await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Add'), findsNothing);
+      verify(mockRepo.pickDocumentWithoutSaving()).called(1);
 
-      // 3. Open speed dial again and tap "Add"
-      await tester.tap(toggle);
+      // 4. Toggle selection mode via BLoC event
+      bloc.add(const LibraryEvent.selectModeToggled());
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Add'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Add'));
-      await tester.pumpAndSettle();
-      expect(find.byTooltip('Add'), findsNothing);
+      // Verify entered selection mode with flat text actions
+      expect(find.text('0 selected'), findsOneWidget);
+      expect(find.text('select all'), findsOneWidget);
+      expect(find.text('cancel'), findsOneWidget);
 
-      // 4. Open speed dial again and tap "Open Book"
-      await tester.tap(toggle);
+      // 5. Close selection mode
+      await tester.tap(find.text('cancel'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Open'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Open'));
-      await tester.pumpAndSettle();
-      expect(find.byTooltip('Open'), findsNothing);
+      // Back to two-action bottom bar
+      expect(find.text('open'), findsOneWidget);
+      expect(find.text('add'), findsOneWidget);
     },
   );
 }

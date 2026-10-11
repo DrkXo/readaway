@@ -2,11 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/metro/metro.dart';
 import '../../domain/entity/reading_status.dart';
 import '../../domain/entity/recent_document.dart';
 import 'book_cover_widget.dart';
 import 'book_favorite_badge.dart';
 
+/// A flat Metro-style book card with authentic 3D perspective tilt.
+///
+/// Features:
+/// - Zero elevation, zero shadows, zero border radius ([BorderRadius.zero]).
+/// - Integrated [MetroPressable] 3D matrix tilt on touch.
+/// - Flat format badge overlay, favorite toggle, and selection state.
 class BookGridCard extends StatelessWidget {
   const BookGridCard({
     super.key,
@@ -28,49 +35,35 @@ class BookGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appColors = context.appColors;
-    final scheme = appColors.scheme;
 
     final String statusLabel;
-    final TextStyle statusStyle;
+    final Color statusColor;
     if (document.isFinished) {
       statusLabel = 'Finished';
-      statusStyle = TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: appColors.success,
-      );
+      statusColor = appColors.buttonBackground;
     } else if (document.readingStatus == ReadingStatus.abandoned) {
       statusLabel = 'On Hold';
-      statusStyle = TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: appColors.warning,
-      );
+      statusColor = appColors.readerForeground.withValues(alpha: 0.5);
     } else if (document.progressPercent > 0) {
       statusLabel = document.progressFormatted;
-      statusStyle = TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        color: scheme.primary,
-      );
+      statusColor = appColors.buttonBackground;
     } else {
       statusLabel = 'Unread';
-      statusStyle = TextStyle(
-        fontSize: 12,
-        color: scheme.outline,
-      );
+      statusColor = appColors.readerForeground.withValues(alpha: 0.5);
     }
 
-    return InkWell(
+    return MetroPressable(
       onTap: onTap,
       onLongPress: onLongPress,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
+      child: Container(
+        color: isSelected
+            ? appColors.buttonBackground.withValues(alpha: 0.12)
+            : Colors.transparent,
+        padding: const EdgeInsets.all(4.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cover Stack
+            // 1. Cover Stack with overlays
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -81,52 +74,54 @@ class BookGridCard extends StatelessWidget {
                     author: document.displayAuthor,
                     format: document.format,
                     progressPercent: document.progressPercent,
+                    borderRadius: BorderRadius.zero,
                   ),
 
-                  // Format badge overlay (top-left)
+                  // Flat format badge overlay (top-left)
                   Positioned(
-                    top: 6,
-                    left: 6,
+                    top: 0,
+                    left: 0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 5,
                         vertical: 2,
                       ),
-                      decoration: BoxDecoration(
-                        color: scheme.inverseSurface.withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                      color: appColors.readerBackground.withValues(alpha: 0.88),
                       child: Text(
                         document.formatBadge,
                         style: TextStyle(
-                          color: scheme.onInverseSurface,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.4,
+                          color: appColors.readerForeground,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
                         ),
                       ),
                     ),
                   ),
 
-                  // Top-right status / select indicator
+                  // Selection mode indicator or favorite badge (top-right)
                   if (isSelectMode)
                     Positioned(
-                      top: 6,
-                      right: 6,
+                      top: 4,
+                      right: 4,
                       child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? scheme.primary
-                              : scheme.inverseSurface.withValues(alpha: 0.6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isSelected ? LucideIcons.check : LucideIcons.circle,
-                          size: 14,
-                          color: isSelected
-                              ? scheme.onPrimary
-                              : scheme.onInverseSurface,
+                        width: 22,
+                        height: 22,
+                        color: isSelected
+                            ? appColors.buttonBackground
+                            : appColors.readerBackground.withValues(
+                                alpha: 0.75,
+                              ),
+                        child: Center(
+                          child: Icon(
+                            isSelected ? LucideIcons.check : LucideIcons.square,
+                            size: 14,
+                            color: isSelected
+                                ? appColors.buttonForeground
+                                : appColors.readerForeground.withValues(
+                                    alpha: 0.6,
+                                  ),
+                          ),
                         ),
                       ),
                     )
@@ -143,37 +138,38 @@ class BookGridCard extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
-            // Book Details
+            // 2. Book Title
             Text(
               document.displayTitle,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13.5,
                 fontWeight: FontWeight.w600,
                 height: 1.2,
-                color: scheme.onSurface,
+                color: appColors.readerForeground,
               ),
             ),
 
             if (document.displayAuthor != null) ...[
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 document.displayAuthor!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w400,
+                  color: appColors.readerForeground.withValues(alpha: 0.65),
                 ),
               ),
             ],
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
 
-            // Progress / Status indicator text
+            // 3. Status and Size Row
             Row(
               children: [
                 Flexible(
@@ -182,7 +178,11 @@ class BookGridCard extends StatelessWidget {
                     statusLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: statusStyle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
                   ),
                 ),
                 if (document.formattedFileSize.isNotEmpty) ...[
@@ -190,14 +190,14 @@ class BookGridCard extends StatelessWidget {
                     ' · ',
                     style: TextStyle(
                       fontSize: 10,
-                      color: scheme.outlineVariant,
+                      color: appColors.readerForeground.withValues(alpha: 0.35),
                     ),
                   ),
                   Text(
                     document.formattedFileSize,
                     style: TextStyle(
                       fontSize: 10,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      color: appColors.readerForeground.withValues(alpha: 0.55),
                     ),
                   ),
                 ],

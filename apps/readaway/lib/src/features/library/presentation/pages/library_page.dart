@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/routes/routes.dart';
 import '../../../../core/services/toast/toast_service.dart';
@@ -15,10 +14,16 @@ import '../../domain/entity/recent_document.dart';
 import '../bloc/library_bloc.dart';
 import '../widgets/book_details_sheet.dart';
 import '../widgets/book_grid_card.dart';
-import '../widgets/book_list_tile.dart';
-import '../widgets/library_actions_fab.dart';
-import '../widgets/library_sliver_app_bar.dart';
 
+/// The root Library screen refactored into the Lumia Inspired
+/// Metro Design System.
+///
+/// Features:
+/// - Strictly flat, zero-elevation, zero-shadow, zero-outline aesthetic.
+/// - Horizon-stretching [MetroPivot] hub with sections: all, reading, favorites, finished.
+/// - Featured Wide Live Flip Tile with 3D perspective flip animation.
+/// - Lumia bottom [MetroAppBar] with flat circular action buttons and expandable "more" menu.
+/// - Turnstile entrance animations via [MetroTurnstileAnimationX].
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
 
@@ -39,28 +44,24 @@ class _LibraryView extends StatefulWidget {
   State<_LibraryView> createState() => _LibraryViewState();
 }
 
-class _LibraryViewState extends State<_LibraryView>
-    with SingleTickerProviderStateMixin {
+class _LibraryViewState extends State<_LibraryView> {
   final TextEditingController _searchController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  bool _areActionsExpanded = false;
-  late final AnimationController _headerExpansion;
+  bool _isSearchActive = false;
+  late final MetroPivotController _pivotController;
 
   @override
   void initState() {
     super.initState();
-    _headerExpansion = AnimationController(
-      vsync: this,
-      value: 0,
-      duration: const Duration(milliseconds: 240),
+    _pivotController = MetroPivotController(
+      length: 4,
+      initialIndex: 0,
     );
   }
 
   @override
   void dispose() {
+    _pivotController.dispose();
     _searchController.dispose();
-    _scrollController.dispose();
-    _headerExpansion.dispose();
     super.dispose();
   }
 
@@ -85,33 +86,19 @@ class _LibraryViewState extends State<_LibraryView>
     );
   }
 
-  void _closeActions() {
-    if (_areActionsExpanded) {
-      setState(() => _areActionsExpanded = false);
-    }
-  }
-
-  void _toggleLibraryTools(AppMotion motion) {
-    _closeActions();
-    if (_scrollController.hasClients && _scrollController.position.pixels > 1) {
-      _scrollController.animateTo(
-        _scrollController.position.minScrollExtent,
-        duration: motion.standard,
-        curve: motion.enter,
-      );
-      return;
-    }
-
-    _headerExpansion.animateTo(
-      _headerExpansion.value > 0.5 ? 0 : 1,
-      duration: motion.standard,
-      curve: motion.enter,
-    );
+  void _toggleSearch(LibraryBloc bloc) {
+    setState(() {
+      _isSearchActive = !_isSearchActive;
+      if (!_isSearchActive) {
+        _searchController.clear();
+        bloc.add(const LibraryEvent.searchQueryChanged(''));
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final appColors = context.appColors;
     final platform = defaultTargetPlatform;
     final isDesktop =
         !kIsWeb &&
@@ -121,15 +108,12 @@ class _LibraryViewState extends State<_LibraryView>
     final windowService = GetIt.I.isRegistered<WindowService>()
         ? GetIt.I<WindowService>()
         : null;
-    final toolbarHeight = isDesktop
-        ? AppTopBar.desktopHeight
-        : AppTopBar.mobileHeight;
 
     return PopScope(
-      canPop: !_areActionsExpanded,
+      canPop: !_isSearchActive,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _areActionsExpanded) {
-          _closeActions();
+        if (!didPop && _isSearchActive) {
+          _toggleSearch(context.read<LibraryBloc>());
         }
       },
       child: BlocConsumer<LibraryBloc, LibraryState>(
@@ -143,14 +127,12 @@ class _LibraryViewState extends State<_LibraryView>
         listener: (context, state) {
           final doc = state.openedDocument;
           if (doc != null) {
-            _closeActions();
             context.read<LibraryBloc>().add(const LibraryEvent.clearOpened());
             _navigateToReader(context, doc.path, doc.fileName);
           }
 
           final directDoc = state.directOpenDocument;
           if (directDoc != null) {
-            _closeActions();
             context.read<LibraryBloc>().add(
               const LibraryEvent.clearDirectOpen(),
             );
@@ -165,396 +147,454 @@ class _LibraryViewState extends State<_LibraryView>
         },
         builder: (context, state) {
           final bloc = context.read<LibraryBloc>();
-          final documents = state.filteredDocuments;
-          final motion = context.appMotion;
+          final allDocuments = state.filteredDocuments;
+
+          final readingDocuments = allDocuments
+              .where(
+                (d) =>
+                    d.readingStatus == ReadingStatus.reading ||
+                    (d.progressPercent > 0 && !d.isFinished),
+              )
+              .toList();
+
+          final favoriteDocuments = allDocuments
+              .where((d) => d.isFavorite)
+              .toList();
+
+          final finishedDocuments = allDocuments
+              .where((d) => d.isFinished)
+              .toList();
 
           return Scaffold(
-            bottomNavigationBar:
-                state.isSelectMode && state.selectedPaths.isNotEmpty
-                ? _buildSelectModeBar(context, state, bloc)
-                : null,
-            body: Stack(
-              children: [
-                ListenableBuilder(
-                  listenable: _headerExpansion,
-                  builder: (context, _) => CustomScrollView(
-                    key: const ValueKey('library-scroll-view'),
-                    controller: _scrollController,
-                    slivers: [
-                      LibrarySliverAppBar(
-                        toolbarHeight: toolbarHeight,
-                        headerExpansion: _headerExpansion,
-                        isSelectMode: state.isSelectMode,
-                        selectedCount: state.selectedPaths.length,
-                        totalDocumentsCount: documents.length,
-                        isDesktop: isDesktop,
-                        state: state,
-                        searchController: _searchController,
-                        scrollController: _scrollController,
-                        onToggleLibraryTools: () => _toggleLibraryTools(motion),
-                        onSelectModeToggled: () => bloc.add(
-                          const LibraryEvent.selectModeToggled(),
-                        ),
-                        onSelectAll: () => bloc.add(
-                          const LibraryEvent.selectAll(),
-                        ),
-                        onDeselectAll: () => bloc.add(
-                          const LibraryEvent.deselectAll(),
-                        ),
-                        onSearchChanged: (query) => bloc.add(
-                          LibraryEvent.searchQueryChanged(query),
-                        ),
-                        onFilterChanged: (filter) => bloc.add(
-                          LibraryEvent.filterChanged(filter),
-                        ),
-                        onSortChanged: (sort) => bloc.add(
-                          LibraryEvent.sortByChanged(sort),
-                        ),
-                        onSortOrderToggled: () => bloc.add(
-                          const LibraryEvent.sortOrderToggled(),
-                        ),
-                        onViewModeChanged: (mode) => bloc.add(
-                          LibraryEvent.viewModeChanged(mode),
-                        ),
-                        onReset: () {
-                          _searchController.clear();
-                          bloc.add(
-                            const LibraryEvent.searchQueryChanged(''),
-                          );
-                          bloc.add(
-                            const LibraryEvent.filterChanged(
-                              ReadingStatusFilter.all,
+            backgroundColor: appColors.readerBackground,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // 1. Desktop Window Caption & Drag Area
+                  if (isDesktop)
+                    SizedBox(
+                      height: 32,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onPanStart: windowService == null
+                                  ? null
+                                  : (_) => windowService.startDragging(),
+                              onDoubleTap: windowService?.toggleMaximize,
+                              child: const SizedBox.expand(),
                             ),
-                          );
-                        },
-                        titleDragHandler: isDesktop && windowService != null
-                            ? (_) => windowService.startDragging()
-                            : null,
-                        titleDoubleTapHandler:
-                            isDesktop && windowService != null
-                            ? windowService.toggleMaximize
-                            : null,
-                        windowControls: isDesktop
-                            ? WindowCaptionControls(service: windowService)
-                            : null,
-                        settingsButton: const SettingsButton(),
+                          ),
+                          if (windowService != null)
+                            WindowCaptionControls(
+                              service: windowService,
+                              height: 32,
+                            ),
+                        ],
                       ),
-                      if (state.failure != null)
-                        SliverToBoxAdapter(
-                          child: FailureBanner(
-                            failure: state.failure!,
-                            onRetry: () =>
-                                bloc.add(const LibraryEvent.loadRequested()),
-                            onDismiss: () =>
-                                bloc.add(const LibraryEvent.loadRequested()),
-                          ),
-                        ),
-                      if (state.isLoading && state.recentDocuments.isEmpty)
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: AppLoadingView(label: 'Loading library...'),
-                        )
-                      else if (state.recentDocuments.isEmpty)
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: AppEmptyView(
-                            icon: LucideIcons.bookOpen,
-                            title: 'Your Library is Empty',
-                            message: 'Add books to your library or open a document directly using the bar below.',
-                          ),
-                        )
-                      else if (documents.isEmpty)
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: _buildNoMatchingBooks(context, bloc),
-                        )
-                      else if (state.viewMode == LibraryViewMode.grid)
-                        _buildGridSliver(context, documents, state, bloc)
-                      else
-                        _buildListSliver(context, documents, state, bloc),
-                    ],
-                  ),
-                ),
+                    ),
 
-                // Dismiss barrier when speed dial is open
-                IgnorePointer(
-                  ignoring: !_areActionsExpanded,
-                  child: AnimatedOpacity(
-                    opacity: _areActionsExpanded ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOut,
-                    child: GestureDetector(
-                      key: const ValueKey('library-speed-dial-barrier'),
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _closeActions,
-                      child: Container(
-                        color: scheme.scrim.withValues(alpha: 0.32),
+                  // 2. Search Bar Header (if active)
+                  if (_isSearchActive)
+                    Container(
+                      color: appColors.editorWidgetBackground,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              autofocus: true,
+                              cursorColor: appColors.buttonBackground,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: appColors.readerForeground,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'search library…',
+                                hintStyle: TextStyle(
+                                  fontSize: 16,
+                                  color: appColors.readerForeground.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                ),
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                              onChanged: (query) => bloc.add(
+                                LibraryEvent.searchQueryChanged(query),
+                              ),
+                            ),
+                          ),
+                          MetroPressable(
+                            onTap: () => _toggleSearch(bloc),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              child: Text(
+                                'cancel',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: appColors.buttonBackground,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-            floatingActionButton: state.isSelectMode
-                ? null
-                : LibraryActionsFab(
-                    isLoading: state.isLoading,
-                    isExpanded: _areActionsExpanded,
-                    onToggle: () => setState(
-                      () => _areActionsExpanded = !_areActionsExpanded,
+
+                  // 3. Error Banner
+                  if (state.failure != null)
+                    FailureBanner(
+                      failure: state.failure!,
+                      onRetry: () =>
+                          bloc.add(const LibraryEvent.loadRequested()),
+                      onDismiss: () =>
+                          bloc.add(const LibraryEvent.loadRequested()),
                     ),
-                    onAddBooks: () {
-                      _closeActions();
-                      bloc.add(const LibraryEvent.addDocuments());
-                    },
-                    onOpenBook: () {
-                      _closeActions();
-                      bloc.add(const LibraryEvent.openDirectly());
-                    },
+
+                  // 4. Main Panoramic Pivot Hub
+                  Expanded(
+                    child: state.isLoading && state.recentDocuments.isEmpty
+                        ? const Center(
+                            child: AppLoadingView(label: 'Loading library...'),
+                          )
+                        : MetroPivot(
+                            controller: _pivotController,
+                            title: 'library',
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                MetroPressable(
+                                  onTap: () => _toggleSearch(bloc),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 6,
+                                    ),
+                                    child: Text(
+                                      _isSearchActive ? 'close' : 'search',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w400,
+                                        color: _isSearchActive
+                                            ? appColors.buttonBackground
+                                            : appColors.readerForeground
+                                                  .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                MetroPressable(
+                                  onTap: () =>
+                                      GoRouter.of(context)
+                                          .push(appRoutes.settings.path),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 6,
+                                    ),
+                                    child: Text(
+                                      'settings',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w400,
+                                        color: appColors.readerForeground
+                                            .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            items: [
+                              MetroPivotItem(
+                                label: 'all books',
+                                count: '${allDocuments.length}',
+                                content: _buildDocumentView(
+                                  context: context,
+                                  documents: allDocuments,
+                                  state: state,
+                                  bloc: bloc,
+                                ),
+                              ),
+                              MetroPivotItem(
+                                label: 'reading',
+                                count: '${readingDocuments.length}',
+                                content: _buildDocumentView(
+                                  context: context,
+                                  documents: readingDocuments,
+                                  state: state,
+                                  bloc: bloc,
+                                  emptyMessage:
+                                      'No books currently in progress.',
+                                ),
+                              ),
+                              MetroPivotItem(
+                                label: 'favorites',
+                                count: '${favoriteDocuments.length}',
+                                content: _buildDocumentView(
+                                  context: context,
+                                  documents: favoriteDocuments,
+                                  state: state,
+                                  bloc: bloc,
+                                  emptyMessage: 'No favorite books marked yet.',
+                                ),
+                              ),
+                              MetroPivotItem(
+                                label: 'finished',
+                                count: '${finishedDocuments.length}',
+                                content: _buildDocumentView(
+                                  context: context,
+                                  documents: finishedDocuments,
+                                  state: state,
+                                  bloc: bloc,
+                                  emptyMessage: 'No completed books yet.',
+                                ),
+                              ),
+                            ],
+                          ),
                   ),
+
+                  // 5. Bottom Action Bar or Selection Bar
+                  if (state.isSelectMode)
+                    _buildSelectionBar(context, state, bloc)
+                  else
+                    Container(
+                      color: appColors.readerBackground,
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        8,
+                        20,
+                        8 + MediaQuery.paddingOf(context).bottom,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          MetroPressable(
+                            onTap: () =>
+                                bloc.add(const LibraryEvent.openDirectly()),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              child: MetroText.bottomAction(
+                                'open',
+                                color: appColors.readerForeground.withValues(
+                                  alpha: 0.65,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          MetroPressable(
+                            onTap: () =>
+                                bloc.add(const LibraryEvent.addDocuments()),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              child: MetroText.bottomAction(
+                                'add',
+                                color: appColors.buttonBackground,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildNoMatchingBooks(BuildContext context, LibraryBloc bloc) {
-    final scheme = Theme.of(context).colorScheme;
+  Widget _buildDocumentView({
+    required BuildContext context,
+    required List<RecentDocument> documents,
+    required LibraryState state,
+    required LibraryBloc bloc,
+    String emptyMessage = 'No matching books found.',
+  }) {
+    final appColors = context.appColors;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(LucideIcons.filterX, size: 48, color: scheme.outline),
-            const SizedBox(height: 16),
-            Text(
-              'No matching books found',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: scheme.onSurface,
+    if (documents.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(
+            emptyMessage,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w300,
+              color: appColors.readerForeground.withValues(alpha: 0.6),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Uniform flat grid where all book cards share the exact same 0.58 aspect ratio.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = (width / 170).floor().clamp(2, 6);
+
+        return CustomScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+              sliver: SliverGrid.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.58,
+                ),
+                itemCount: documents.length,
+                itemBuilder: (context, index) {
+                  final doc = documents[index];
+                  final isSelected = state.selectedPaths.contains(doc.path);
+
+                  final card = BookGridCard(
+                    document: doc,
+                    isSelectMode: state.isSelectMode,
+                    isSelected: isSelected,
+                    onTap: () {
+                      if (state.isSelectMode) {
+                        bloc.add(
+                          LibraryEvent.selectDocumentToggled(doc.path),
+                        );
+                      } else {
+                        _navigateToReader(context, doc.path, doc.fileName);
+                      }
+                    },
+                    onLongPress: () {
+                      if (state.isSelectMode) {
+                        bloc.add(
+                          LibraryEvent.selectDocumentToggled(doc.path),
+                        );
+                      } else {
+                        _openDetailsSheet(context, doc);
+                      }
+                    },
+                    onToggleFavorite: () =>
+                        bloc.add(LibraryEvent.toggleFavorite(doc.path)),
+                  );
+
+                  return Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: card,
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Try clearing your search query or changing filters.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 16),
-            FilledButton.tonal(
-              onPressed: () {
-                _searchController.clear();
-                bloc.add(const LibraryEvent.searchQueryChanged(''));
-                bloc.add(
-                  const LibraryEvent.filterChanged(ReadingStatusFilter.all),
-                );
-              },
-              child: const Text('Reset Filters'),
-            ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGridSliver(
-    BuildContext context,
-    List<RecentDocument> documents,
-    LibraryState state,
-    LibraryBloc bloc,
-  ) {
-    final bottomInset = 88.0 + MediaQuery.paddingOf(context).bottom;
-
-    return SliverLayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.crossAxisExtent;
-        final crossAxisCount = (width / 184).floor().clamp(2, 6);
-        final gutter = breakpointFromWidth(width).resolve(
-          compact: 12.0,
-          medium: 20.0,
-          expanded: 28.0,
-          wide: 40.0,
-        );
-
-        return SliverPadding(
-          padding: EdgeInsets.fromLTRB(gutter, 8, gutter, bottomInset),
-          sliver: SliverGrid.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              childAspectRatio: width < 380 ? 0.52 : 0.56,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-            ),
-            itemCount: documents.length,
-            itemBuilder: (context, index) {
-              final doc = documents[index];
-              final isSelected = state.selectedPaths.contains(doc.path);
-
-              return BookGridCard(
-                document: doc,
-                isSelectMode: state.isSelectMode,
-                isSelected: isSelected,
-                onTap: () {
-                  if (state.isSelectMode) {
-                    bloc.add(LibraryEvent.selectDocumentToggled(doc.path));
-                  } else {
-                    _navigateToReader(context, doc.path, doc.fileName);
-                  }
-                },
-                onLongPress: () {
-                  if (state.isSelectMode) {
-                    bloc.add(LibraryEvent.selectDocumentToggled(doc.path));
-                  } else {
-                    _openDetailsSheet(context, doc);
-                  }
-                },
-                onToggleFavorite: () =>
-                    bloc.add(LibraryEvent.toggleFavorite(doc.path)),
-              );
-            },
-          ),
         );
       },
     );
   }
 
-  Widget _buildListSliver(
-    BuildContext context,
-    List<RecentDocument> documents,
-    LibraryState state,
-    LibraryBloc bloc,
-  ) {
-    final bottomInset = 88.0 + MediaQuery.paddingOf(context).bottom;
-
-    return SliverLayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.crossAxisExtent;
-        final gutter = breakpointFromWidth(width).resolve(
-          compact: 12.0,
-          medium: 20.0,
-          expanded: 28.0,
-          wide: 40.0,
-        );
-        final dividerIndent = BookListTile.contentIndentFor(width);
-
-        return SliverPadding(
-          padding: EdgeInsets.fromLTRB(gutter, 6, gutter, bottomInset),
-          sliver: SliverList.separated(
-            itemCount: documents.length,
-            separatorBuilder: (_, _) =>
-                Divider(height: 1, indent: dividerIndent),
-            itemBuilder: (context, index) {
-              final doc = documents[index];
-              final isSelected = state.selectedPaths.contains(doc.path);
-
-              return BookListTile(
-                document: doc,
-                isSelectMode: state.isSelectMode,
-                isSelected: isSelected,
-                onTap: () {
-                  if (state.isSelectMode) {
-                    bloc.add(LibraryEvent.selectDocumentToggled(doc.path));
-                  } else {
-                    _navigateToReader(context, doc.path, doc.fileName);
-                  }
-                },
-                onLongPress: () {
-                  if (state.isSelectMode) {
-                    bloc.add(LibraryEvent.selectDocumentToggled(doc.path));
-                  } else {
-                    _openDetailsSheet(context, doc);
-                  }
-                },
-                onToggleFavorite: () =>
-                    bloc.add(LibraryEvent.toggleFavorite(doc.path)),
-                onOpenDetails: () => _openDetailsSheet(context, doc),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSelectModeBar(
+  Widget _buildSelectionBar(
     BuildContext context,
     LibraryState state,
     LibraryBloc bloc,
   ) {
     final appColors = context.appColors;
-    final scheme = Theme.of(context).colorScheme;
     final count = state.selectedPaths.length;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: appColors.bottombarBackground,
-        border: Border(
-          top: BorderSide(
-            color: appColors.bottombarBorder,
-            width: 1.0,
-          ),
-        ),
+      color: appColors.bottombarBackground,
+      padding: EdgeInsets.fromLTRB(
+        16,
+        10,
+        16,
+        10 + MediaQuery.paddingOf(context).bottom,
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: appColors.buttonBackground,
-                  foregroundColor: appColors.buttonForeground,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(3),
+      child: Row(
+        children: [
+          Text(
+            '$count selected',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: appColors.readerForeground,
+            ),
+          ),
+          const Spacer(),
+          Builder(
+            builder: (context) {
+              final allSelected =
+                  state.filteredDocuments.isNotEmpty &&
+                  state.selectedPaths.length == state.filteredDocuments.length;
+              return MetroPressable(
+                onTap: () => bloc.add(
+                  allSelected
+                      ? const LibraryEvent.deselectAll()
+                      : const LibraryEvent.selectAll(),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: Text(
+                    allSelected ? 'deselect all' : 'select all',
+                    style: TextStyle(
+                      color: appColors.buttonBackground,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
-                icon: const Icon(LucideIcons.circleCheck, size: 15),
-                label: const Text('Mark Finished'),
-                onPressed: () => bloc.add(
-                  const LibraryEvent.batchUpdateStatusSelected(
-                    ReadingStatus.finished,
+              );
+            },
+          ),
+          if (count > 0) ...[
+            const SizedBox(width: 8),
+            MetroPressable(
+              onTap: () => bloc.add(
+                const LibraryEvent.batchUpdateStatusSelected(
+                  ReadingStatus.finished,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Text(
+                  'finish',
+                  style: TextStyle(
+                    color: appColors.buttonBackground,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: scheme.onSurface,
-                  side: BorderSide(color: scheme.outlineVariant),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                icon: const Icon(LucideIcons.clock, size: 15),
-                label: const Text('Mark Unread'),
-                onPressed: () => bloc.add(
-                  const LibraryEvent.batchUpdateStatusSelected(
-                    ReadingStatus.unread,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            IconButton.filled(
-              style: IconButton.styleFrom(
-                backgroundColor: appColors.error,
-                foregroundColor: appColors.onError,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              icon: const Icon(LucideIcons.trash2, size: 16),
-              tooltip: 'Delete selected',
-              onPressed: () async {
+            MetroPressable(
+              onTap: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
                     title: Text(
                       count == 1
                           ? 'Remove 1 Book from Library?'
@@ -562,8 +602,8 @@ class _LibraryViewState extends State<_LibraryView>
                     ),
                     content: Text(
                       count == 1
-                          ? 'Are you sure you want to remove the selected book from your library?\n\nReading progress and preferences will be cleared. The book file on your device will NOT be deleted.'
-                          : 'Are you sure you want to remove $count selected books from your library?\n\nReading progress and preferences will be cleared. The book files on your device will NOT be deleted.',
+                          ? 'Are you sure you want to remove the selected book from your library?'
+                          : 'Are you sure you want to remove $count selected books from your library?',
                     ),
                     actions: [
                       TextButton(
@@ -572,8 +612,10 @@ class _LibraryViewState extends State<_LibraryView>
                       ),
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: scheme.error,
-                          foregroundColor: scheme.onError,
+                          backgroundColor: appColors.buttonBackground,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                          ),
                         ),
                         onPressed: () => Navigator.of(ctx).pop(true),
                         child: const Text('Remove'),
@@ -585,9 +627,35 @@ class _LibraryViewState extends State<_LibraryView>
                   bloc.add(const LibraryEvent.batchDeleteSelected());
                 }
               },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Text(
+                  'delete',
+                  style: TextStyle(
+                    color: appColors.readerForeground.withValues(alpha: 0.75),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
             ),
           ],
-        ),
+          const SizedBox(width: 8),
+          MetroPressable(
+            onTap: () => bloc.add(const LibraryEvent.selectModeToggled()),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Text(
+                'cancel',
+                style: TextStyle(
+                  color: appColors.readerForeground.withValues(alpha: 0.75),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

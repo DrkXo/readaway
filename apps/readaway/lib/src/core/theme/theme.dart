@@ -3,6 +3,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:readaway_core/readaway_core.dart';
 
+import '../widgets/metro/metro_page_transition.dart';
+
 export 'package:readaway_core/readaway_core.dart'
     show VsCodeTheme, VsCodeThemeColorX, BuiltinVsCodeThemes;
 
@@ -10,13 +12,17 @@ export 'package:readaway_core/readaway_core.dart'
 typedef AppColors = VsCodeTheme;
 
 /// Default page transition animations for the application.
+///
+/// Uses the Lumia / Windows Phone [MetroPivotTransitionsBuilder] for smooth,
+/// hardware-composited horizontal parallax glide and crossfade transitions
+/// across all target platforms.
 const PageTransitionsTheme appPageTransitionsTheme = PageTransitionsTheme(
   builders: {
-    TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
-    TargetPlatform.iOS: PredictiveBackPageTransitionsBuilder(),
-    TargetPlatform.linux: PredictiveBackPageTransitionsBuilder(),
-    TargetPlatform.macOS: PredictiveBackPageTransitionsBuilder(),
-    TargetPlatform.windows: PredictiveBackPageTransitionsBuilder(),
+    TargetPlatform.android: MetroPivotTransitionsBuilder(),
+    TargetPlatform.iOS: MetroPivotTransitionsBuilder(),
+    TargetPlatform.linux: MetroPivotTransitionsBuilder(),
+    TargetPlatform.macOS: MetroPivotTransitionsBuilder(),
+    TargetPlatform.windows: MetroPivotTransitionsBuilder(),
   },
 );
 
@@ -54,6 +60,9 @@ class AppMotion {
     required this.fast,
     required this.standard,
     required this.enter,
+    this.page = const Duration(milliseconds: 260),
+    this.pageReverse = const Duration(milliseconds: 220),
+    this.exit = Curves.easeInCubic,
   });
 
   /// Immediate feedback for small state changes, such as a chip press.
@@ -62,8 +71,17 @@ class AppMotion {
   /// Layout-level change, such as expanding or collapsing a panel.
   final Duration standard;
 
+  /// Full-page horizon shift / navigation transition.
+  final Duration page;
+
+  /// Reverse transition duration when popping a page.
+  final Duration pageReverse;
+
   /// Decelerating curve for content arriving on screen.
   final Curve enter;
+
+  /// Accelerating or subtle curve for content leaving screen.
+  final Curve exit;
 
   /// The default token set, or an all-zero set when motion is disabled.
   factory AppMotion.resolve({required bool disableAnimations}) {
@@ -71,13 +89,19 @@ class AppMotion {
       return const AppMotion(
         fast: Duration.zero,
         standard: Duration.zero,
+        page: Duration.zero,
+        pageReverse: Duration.zero,
         enter: Curves.linear,
+        exit: Curves.linear,
       );
     }
     return const AppMotion(
       fast: Duration(milliseconds: 140),
       standard: Duration(milliseconds: 240),
+      page: Duration(milliseconds: 260),
+      pageReverse: Duration(milliseconds: 220),
       enter: Curves.easeOutCubic,
+      exit: Curves.easeInCubic,
     );
   }
 }

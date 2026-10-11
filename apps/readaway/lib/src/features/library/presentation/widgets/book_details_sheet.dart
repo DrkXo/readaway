@@ -271,10 +271,7 @@ class BookDetailsSheet extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: scheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.5),
-              ),
+              borderRadius: BorderRadius.zero,
             ),
             child: Column(
               children: [
@@ -410,7 +407,7 @@ class _Badge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.zero,
       ),
       child: Text(
         label,

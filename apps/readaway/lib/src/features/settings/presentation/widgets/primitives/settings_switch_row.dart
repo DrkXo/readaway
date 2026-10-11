@@ -33,14 +33,10 @@ class SettingsSwitchRow extends StatelessWidget {
       onTap: effectiveOnChanged == null
           ? null
           : () => effectiveOnChanged(!value),
-      trailing: Transform.scale(
-        scale: 0.8,
-        alignment: Alignment.centerRight,
-        child: Switch(
-          value: value,
-          onChanged: effectiveOnChanged,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
+      trailing: MetroSwitch(
+        value: value,
+        enabled: enabled,
+        onChanged: effectiveOnChanged,
       ),
     );
   }

@@ -54,7 +54,10 @@ void main() {
       ),
     );
 
-    expect(tester.widget<Switch>(find.byType(Switch)).onChanged, isNull);
+    expect(
+      tester.widget<MetroSwitch>(find.byType(MetroSwitch)).onChanged,
+      isNull,
+    );
   });
 
   testWidgets('an enabled switch row stays interactive', (tester) async {
@@ -68,7 +71,10 @@ void main() {
       ),
     );
 
-    expect(tester.widget<Switch>(find.byType(Switch)).onChanged, isNotNull);
+    expect(
+      tester.widget<MetroSwitch>(find.byType(MetroSwitch)).onChanged,
+      isNotNull,
+    );
   });
 
   testWidgets('a disabled select row cannot open its menu', (tester) async {

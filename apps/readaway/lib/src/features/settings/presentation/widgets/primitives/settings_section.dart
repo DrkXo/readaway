@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../../core/theme/theme.dart';
+
 enum SettingsScope { global, perBook }
 
-/// Adwaita-style preferences group: optional uppercase [title] above a
-/// boxed card whose [rows] are separated by hairline dividers.
+/// Flat Metro preferences group: uppercase tracking [title] tag above a
+/// flat boxed panel with zero border radius, separated by subtle hairline dividers.
 class SettingsSection extends StatelessWidget {
   const SettingsSection({
     super.key,
@@ -27,8 +29,7 @@ class SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final appColors = context.appColors;
     final children = <Widget>[];
     for (var i = 0; i < rows.length; i++) {
       if (i > 0) {
@@ -37,7 +38,7 @@ class SettingsSection extends StatelessWidget {
             height: 1,
             indent: 16,
             endIndent: 16,
-            color: scheme.outlineVariant.withValues(alpha: 0.5),
+            color: appColors.readerForeground.withValues(alpha: 0.08),
           ),
         );
       }
@@ -58,12 +59,13 @@ class SettingsSection extends StatelessWidget {
                       Flexible(
                         child: Text(
                           title!.toUpperCase(),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: scheme.onSurfaceVariant.withValues(
-                              alpha: 0.8,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                            color: appColors.readerForeground.withValues(
+                              alpha: 0.7,
                             ),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.6,
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
@@ -82,9 +84,11 @@ class SettingsSection extends StatelessWidget {
             ),
           ),
         Material(
-          color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(16),
-          clipBehavior: Clip.antiAlias,
+          color: appColors.readerForeground.withValues(alpha: 0.04),
+          shape: Border.all(
+            color: appColors.readerForeground.withValues(alpha: 0.08),
+            width: 1,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: children,

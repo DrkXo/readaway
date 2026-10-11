@@ -14,8 +14,8 @@ class BookCoverWidget extends StatelessWidget {
     required this.format,
     this.aspectRatio,
     this.progressPercent,
-    this.borderRadius = const BorderRadius.all(Radius.circular(8)),
-    this.showSpine = true,
+    this.borderRadius = BorderRadius.zero,
+    this.showSpine = false,
   });
 
   final String? coverPath;
@@ -34,21 +34,16 @@ class BookCoverWidget extends StatelessWidget {
     final file = (coverPath != null && coverPath!.isNotEmpty)
         ? File(coverPath!)
         : null;
-    final hasImage = file != null && file.existsSync();
 
     final coverBox = Container(
       decoration: BoxDecoration(
         borderRadius: borderRadius,
-        border: Border.all(
-          color: appColors.borderSubtle,
-          width: 1,
-        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (hasImage)
+          if (file != null)
             Image.file(
               file,
               fit: BoxFit.cover,
@@ -141,14 +136,7 @@ class _FallbackCover extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            scheme.surfaceContainerHigh,
-            scheme.surfaceContainerHighest,
-          ],
-        ),
+        color: scheme.surfaceContainerHigh,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

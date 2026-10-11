@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/services/services.dart';
 import '../../../../core/services/tts/tts_download_task.dart';
+import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
 import '../bloc/tts_library/tts_library_bloc.dart';
 import '../widgets/dialogs/custom_tts_import_dialog.dart';
@@ -33,106 +34,111 @@ class VoiceLibraryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SettingsSheetHeader(
-          title: 'Voice library',
-          leading: SettingsSheetBackButton(),
-        ),
-        Flexible(
-          child: BlocBuilder<TtsLibraryBloc, TtsLibraryState>(
-            buildWhen: (prev, curr) =>
-                prev.availableModels != curr.availableModels ||
-                prev.installedModels != curr.installedModels ||
-                prev.activeModelId != curr.activeModelId ||
-                prev.busyModelId != curr.busyModelId ||
-                prev.downloads != curr.downloads ||
-                prev.isCheckingUpdates != curr.isCheckingUpdates,
-            builder: (context, state) {
-              if (state.availableModels.isEmpty) {
-                return const AppLoadingView(label: 'Loading TTS models...');
-              }
+    return Scaffold(
+      backgroundColor: context.appColors.readerBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SettingsSheetHeader(
+              title: 'voice library',
+              leading: SettingsSheetBackButton(useText: true),
+            ),
+            Expanded(
+              child: BlocBuilder<TtsLibraryBloc, TtsLibraryState>(
+                buildWhen: (prev, curr) =>
+                    prev.availableModels != curr.availableModels ||
+                    prev.installedModels != curr.installedModels ||
+                    prev.activeModelId != curr.activeModelId ||
+                    prev.busyModelId != curr.busyModelId ||
+                    prev.downloads != curr.downloads ||
+                    prev.isCheckingUpdates != curr.isCheckingUpdates,
+                builder: (context, state) {
+                  if (state.availableModels.isEmpty) {
+                    return const AppLoadingView(label: 'Loading TTS models...');
+                  }
 
-              final interrupted = state.downloads.values
-                  .where((t) => t.phase == TtsDownloadPhase.interrupted)
-                  .length;
+                  final interrupted = state.downloads.values
+                      .where((t) => t.phase == TtsDownloadPhase.interrupted)
+                      .length;
 
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                children: [
-                  if (interrupted > 0) ...[
-                    _ResumeInterruptedBanner(count: interrupted),
-                    const SizedBox(height: 16),
-                  ],
-                  SettingsSection(
-                    title: 'Available voices',
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: 'Import Custom Voice Model',
-                          icon: const Icon(
-                            LucideIcons.filePlus,
-                            size: 18,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () => CustomTtsImportDialog.show(context),
-                        ),
-                        const SizedBox(width: 4),
-                        if (state.isCheckingUpdates)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            ),
-                          )
-                        else
-                          IconButton(
-                            tooltip: 'Check for voice updates from GitHub',
-                            icon: const Icon(
-                              LucideIcons.refreshCw,
-                              size: 16,
-                            ),
-                            visualDensity: VisualDensity.compact,
-                            onPressed: () {
-                              context.read<TtsLibraryBloc>().add(
-                                const TtsLibraryEvent.checkForUpdates(),
-                              );
-                            },
-                          ),
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    children: [
+                      if (interrupted > 0) ...[
+                        _ResumeInterruptedBanner(count: interrupted),
+                        const SizedBox(height: 16),
                       ],
-                    ),
-                    rows: [
-                      for (final entry in _groupedByLanguage(
-                        state.availableModels,
-                      ).entries)
-                        _LanguageGroupTile(
-                          // Keyed by language: a catalog refresh can
-                          // add or drop groups, and without a key the
-                          // expanded state would move to whichever group
-                          // landed on the same index.
-                          key: ValueKey(entry.key),
-                          language: entry.key,
-                          models: entry.value,
-                          initiallyExpanded:
-                              entry.key == 'Custom Voices' ||
-                              entry.value.any(
-                                (m) => m.id == (state.activeModelId ?? ''),
+                      SettingsSection(
+                        title: 'Available voices',
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Import Custom Voice Model',
+                              icon: const Icon(
+                                LucideIcons.filePlus,
+                                size: 18,
                               ),
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () =>
+                                  CustomTtsImportDialog.show(context),
+                            ),
+                            const SizedBox(width: 4),
+                            if (state.isCheckingUpdates)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8),
+                                child: SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            else
+                              IconButton(
+                                tooltip: 'Check for voice updates from GitHub',
+                                icon: const Icon(
+                                  LucideIcons.refreshCw,
+                                  size: 16,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                onPressed: () {
+                                  context.read<TtsLibraryBloc>().add(
+                                    const TtsLibraryEvent.checkForUpdates(),
+                                  );
+                                },
+                              ),
+                          ],
                         ),
+                        rows: [
+                          for (final entry in _groupedByLanguage(
+                            state.availableModels,
+                          ).entries)
+                            _LanguageGroupTile(
+                              // Keyed by language: a catalog refresh can
+                              // add or drop groups, and without a key the
+                              // expanded state would move to whichever group
+                              // landed on the same index.
+                              key: ValueKey(entry.key),
+                              language: entry.key,
+                              models: entry.value,
+                              initiallyExpanded:
+                                  entry.key == 'Custom Voices' ||
+                                  entry.value.any(
+                                    (m) => m.id == (state.activeModelId ?? ''),
+                                  ),
+                            ),
+                        ],
+                      ),
                     ],
-                  ),
-                ],
-              );
-            },
-          ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -146,36 +152,77 @@ class _ResumeInterruptedBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final appColors = context.appColors;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: scheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.outlineVariant),
+        color: appColors.readerForeground.withValues(alpha: 0.04),
+        border: Border(
+          left: BorderSide(
+            color: appColors.buttonBackground,
+            width: 3.5,
+          ),
+          top: BorderSide(
+            color: appColors.readerForeground.withValues(alpha: 0.08),
+            width: 1,
+          ),
+          right: BorderSide(
+            color: appColors.readerForeground.withValues(alpha: 0.08),
+            width: 1,
+          ),
+          bottom: BorderSide(
+            color: appColors.readerForeground.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
       ),
       child: Row(
         children: [
-          Icon(LucideIcons.rotateCcw, color: scheme.onSecondaryContainer),
+          Icon(
+            LucideIcons.rotateCcw,
+            color: appColors.buttonBackground,
+            size: 18,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               '$count interrupted download${count == 1 ? '' : 's'} — the app '
               'closed before it finished. Resume to continue where it left off.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSecondaryContainer,
+              style: TextStyle(
+                fontSize: 13,
+                color: appColors.readerForeground,
               ),
             ),
           ),
           const SizedBox(width: 12),
-          FilledButton.tonalIcon(
-            onPressed: () => context.read<TtsLibraryBloc>().add(
+          MetroPressable(
+            onTap: () => context.read<TtsLibraryBloc>().add(
               const TtsLibraryEvent.resumeInterrupted(),
             ),
-            icon: const Icon(LucideIcons.play, size: 16),
-            label: const Text('Resume'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              color: appColors.buttonBackground,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    LucideIcons.play,
+                    size: 14,
+                    color: appColors.buttonForeground,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'resume',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: appColors.buttonForeground,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -321,13 +368,14 @@ class _VoiceTile extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: scheme.secondaryContainer,
-                                  borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  'Custom',
-                                  style: theme.textTheme.labelSmall?.copyWith(
+                                  'CUSTOM',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
                                     color: scheme.onSecondaryContainer,
-                                    fontSize: 10,
                                   ),
                                 ),
                               ),
@@ -341,13 +389,14 @@ class _VoiceTile extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: scheme.tertiaryContainer,
-                                  borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  'Update Available',
-                                  style: theme.textTheme.labelSmall?.copyWith(
+                                  'UPDATE AVAILABLE',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
                                     color: scheme.onTertiaryContainer,
-                                    fontSize: 10,
                                   ),
                                 ),
                               ),
@@ -386,8 +435,8 @@ class _VoiceTile extends StatelessWidget {
                 const SizedBox(height: 6),
                 LinearProgressIndicator(
                   value: _progressValue(task),
-                  minHeight: 4,
-                  borderRadius: BorderRadius.circular(2),
+                  minHeight: 3,
+                  borderRadius: BorderRadius.zero,
                 ),
                 const SizedBox(height: 4),
                 Padding(

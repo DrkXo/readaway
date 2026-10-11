@@ -19,7 +19,6 @@ class BookFavoriteBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appColors = context.appColors;
-    final scheme = appColors.scheme;
 
     return Tooltip(
       message: isFavorite ? 'Remove from favorites' : 'Mark as favorite',
@@ -31,17 +30,19 @@ class BookFavoriteBadge extends StatelessWidget {
           height: 44,
           child: Center(
             child: Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: scheme.inverseSurface.withValues(
-                  alpha: isFavorite ? 0.85 : 0.6,
+              width: 22,
+              height: 22,
+              color: isFavorite
+                  ? appColors.buttonBackground
+                  : appColors.readerBackground.withValues(alpha: 0.8),
+              child: Center(
+                child: Icon(
+                  LucideIcons.star,
+                  size: 13,
+                  color: isFavorite
+                      ? appColors.buttonForeground
+                      : appColors.readerForeground.withValues(alpha: 0.6),
                 ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                LucideIcons.star,
-                size: 13,
-                color: isFavorite ? appColors.warning : scheme.onInverseSurface,
               ),
             ),
           ),
