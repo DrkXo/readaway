@@ -6,7 +6,7 @@ import 'package:readaway_core/readaway_core.dart';
 import '../widgets/metro/metro_page_transition.dart';
 
 export 'package:readaway_core/readaway_core.dart'
-    show VsCodeTheme, VsCodeThemeColorX, BuiltinVsCodeThemes;
+    show VsCodeTheme, VsCodeThemeColorX, MetroColorScheme;
 
 /// Convenient alias mapping legacy [AppColors] to [VsCodeTheme].
 typedef AppColors = VsCodeTheme;
@@ -111,7 +111,7 @@ extension ThemeExtensions on BuildContext {
   /// The active [VsCodeTheme] in the current widget tree.
   VsCodeTheme get vsCodeTheme =>
       Theme.of(this).extension<VsCodeThemeExtension>()?.theme ??
-      BuiltinVsCodeThemes.kanagawaDragon;
+      MetroColorScheme.kanagawaDragon.toVsCodeTheme();
 
   /// Direct accessor for theme colors throughout the application.
   VsCodeTheme get appColors => vsCodeTheme;

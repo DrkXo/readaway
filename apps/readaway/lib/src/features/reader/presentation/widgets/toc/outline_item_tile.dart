@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/core_widgets.dart';
 
 /// The classic serif used for reading text, so the contents list reads like
 /// the book it belongs to.
@@ -50,14 +51,13 @@ class OutlineItemTile extends StatelessWidget {
         color: isCurrent
             ? appColors.sidebarActiveBackground
             : Colors.transparent,
-        child: InkWell(
+        child: MetroPressable(
           onTap: onTap,
-          hoverColor: appColors.sidebarHoverBackground,
           child: Container(
             decoration: isCurrent
                 ? BoxDecoration(
                     border: Border(
-                      left: BorderSide(color: accent, width: 3.0),
+                      left: BorderSide(color: accent, width: 3.5),
                     ),
                   )
                 : null,

@@ -113,7 +113,7 @@ class _AnnotationTile extends StatelessWidget {
           )
         : appColors.borderSubtle;
 
-    return InkWell(
+    return MetroPressable(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
@@ -127,7 +127,7 @@ class _AnnotationTile extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: 32),
               decoration: BoxDecoration(
                 color: ruleColor,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.zero,
               ),
             ),
             const SizedBox(width: 10),

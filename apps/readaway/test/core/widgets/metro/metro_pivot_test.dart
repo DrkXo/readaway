@@ -9,7 +9,9 @@ void main() {
     return MaterialApp(
       theme: ThemeData(
         extensions: [
-          VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
+          VsCodeThemeExtension(
+            MetroColorScheme.kanagawaDragon.toVsCodeTheme(),
+          ),
         ],
       ),
       home: Scaffold(
@@ -410,6 +412,57 @@ void main() {
         // 'all books' is back at the leading position
         expect(tester.getTopLeft(find.text('all books')).dx, equals(20.0));
         expect(find.text('Page 0'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tab positions transition with zero readjustment snap when settling at rest',
+      (tester) async {
+        final controller = MetroPivotController(length: 3, initialIndex: 0);
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          buildThemed(
+            MetroPivot(
+              title: 'Library',
+              controller: controller,
+              items: const [
+                MetroPivotItem(label: 'all books', content: Text('Page 0')),
+                MetroPivotItem(label: 'reading', content: Text('Page 1')),
+                MetroPivotItem(label: 'favorites', content: Text('Page 2')),
+              ],
+            ),
+          ),
+        );
+
+        // Initially at rest: 'all books' at x = 20.0
+        expect(tester.getTopLeft(find.text('all books')).dx, equals(20.0));
+
+        // Start animation to page 1
+        controller.animateTo(1, duration: const Duration(milliseconds: 300));
+        await tester.pump();
+
+        // Sample intermediate frames and verify 'reading' glides continuously toward 20.0
+        double previousReadingPos = tester.getTopLeft(find.text('reading')).dx;
+        expect(previousReadingPos, greaterThan(20.0));
+
+        await tester.pump(const Duration(milliseconds: 100));
+        double midReadingPos = tester.getTopLeft(find.text('reading')).dx;
+        expect(midReadingPos, lessThan(previousReadingPos));
+        expect(midReadingPos, greaterThan(20.0));
+
+        await tester.pump(const Duration(milliseconds: 150));
+        double nearEndReadingPos = tester.getTopLeft(find.text('reading')).dx;
+        expect(nearEndReadingPos, lessThan(midReadingPos));
+        expect(nearEndReadingPos, greaterThanOrEqualTo(20.0));
+
+        // Finish the animation to rest
+        await tester.pumpAndSettle();
+        final finalReadingPos = tester.getTopLeft(find.text('reading')).dx;
+        expect(finalReadingPos, equals(20.0));
+
+        // The delta between near-end frame and resting state must be continuous
+        expect((nearEndReadingPos - finalReadingPos).abs(), lessThan(8.0));
       },
     );
   });

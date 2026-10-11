@@ -14,7 +14,9 @@ void main() {
     return MaterialApp(
       theme: ThemeData(
         extensions: [
-          VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
+          VsCodeThemeExtension(
+            MetroColorScheme.kanagawaDragon.toVsCodeTheme(),
+          ),
         ],
         bottomSheetTheme: const BottomSheetThemeData(
           backgroundColor: Color(0xFF181616),

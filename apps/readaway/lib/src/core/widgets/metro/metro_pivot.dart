@@ -177,11 +177,19 @@ class MetroPivot extends StatefulWidget {
     this.initialIndex = 0,
     this.onIndexChanged,
     this.trailing,
+    this.titleFontSize,
+    this.tabFontSize,
     this.headerPadding = const EdgeInsets.fromLTRB(20, 16, 20, 10),
   });
 
   /// The grand display title of the panorama (e.g. "library").
   final String title;
+
+  /// Optional custom font size for the grand horizon title. Defaults to 54.0.
+  final double? titleFontSize;
+
+  /// Optional custom font size for the tab category headers. Defaults to 28.0.
+  final double? tabFontSize;
 
   /// List of pivot categories and their respective contents.
   final List<MetroPivotItem> items;
@@ -217,13 +225,9 @@ class _MetroPivotState extends State<MetroPivot> {
 
   late final PageController _pageController;
 
-  // Track tab positions to ensure exact continuous parallax alignment during drags
-  final List<GlobalKey> _tabKeys = [];
-
   @override
   void initState() {
     super.initState();
-    _initTabKeys();
 
     final startIndex =
         widget.currentIndex ?? widget.controller?.index ?? widget.initialIndex;
@@ -242,21 +246,9 @@ class _MetroPivotState extends State<MetroPivot> {
     _pageController.addListener(_handlePageScrollTick);
   }
 
-  void _initTabKeys() {
-    _tabKeys.clear();
-    for (int i = 0; i < widget.items.length; i++) {
-      _tabKeys.add(GlobalKey());
-    }
-  }
-
   @override
   void didUpdateWidget(MetroPivot oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    if (widget.items.length != oldWidget.items.length) {
-      _initTabKeys();
-      _tabWidths.clear();
-    }
 
     if (widget.controller != oldWidget.controller) {
       oldWidget.controller?.detachPageController();
@@ -297,43 +289,11 @@ class _MetroPivotState extends State<MetroPivot> {
     super.dispose();
   }
 
-  static const double _kTabGap = 28.0;
-  static const double _kLeadingPadding = 20.0;
   static const TextStyle _kTabTextStyle = TextStyle(
     fontSize: 28.0,
     fontWeight: FontWeight.w400,
     letterSpacing: -0.5,
   );
-
-  final Map<int, double> _tabWidths = {};
-
-  double _getTabWidth(int index, BuildContext context) {
-    if (_tabWidths.containsKey(index)) {
-      return _tabWidths[index]!;
-    }
-    final item = widget.items[index];
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: item.label.toLowerCase(),
-        style: _kTabTextStyle,
-      ),
-      textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
-    )..layout();
-
-    double width = textPainter.width;
-    if (item.count != null) {
-      final countPainter = TextPainter(
-        text: TextSpan(
-          text: item.count!,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-        ),
-        textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
-      )..layout();
-      width += 8.0 + 12.0 + countPainter.width;
-    }
-    _tabWidths[index] = width;
-    return width;
-  }
 
   void _handlePageScrollTick() {
     if (!_pageController.hasClients) return;
@@ -415,6 +375,7 @@ class _MetroPivotState extends State<MetroPivot> {
                 child: MetroText.pivotTitle(
                   widget.title.toLowerCase(),
                   color: appColors.readerForeground,
+                  fontSize: widget.titleFontSize,
                 ),
               ),
               if (widget.trailing != null) widget.trailing!,
@@ -474,14 +435,15 @@ class _MetroPivotState extends State<MetroPivot> {
       return SizedBox(
         height: 56,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: _kLeadingPadding),
+          padding: const EdgeInsets.symmetric(
+            horizontal: _MetroPivotFlowDelegate._kLeadingPadding,
+          ),
           child: Align(
             alignment: Alignment.centerLeft,
             child: _buildTabItem(
               context,
               widget.items[0],
               0,
-              1.0,
               1.0,
               appColors,
             ),
@@ -492,22 +454,30 @@ class _MetroPivotState extends State<MetroPivot> {
 
     final baseIndex = currentPage.floor().clamp(0, itemCount - 1);
     final fraction = (currentPage - baseIndex).clamp(0.0, 1.0);
-
-    // Compute cyclic display order starting from baseIndex:
-    // e.g. for 3 items with base 1: [1, 2, 0]
-    final displayIndices = <int>[];
-    for (int i = 0; i < itemCount; i++) {
-      displayIndices.add((baseIndex + i) % itemCount);
-    }
-
     final bool isAnimating = fraction > 0.0001 && fraction < 0.9999;
-    if (isAnimating) {
-      // Add trailing wrap-around clone of baseIndex at the end of the carousel
-      displayIndices.add(baseIndex);
-    }
 
-    final leadingWidth = _getTabWidth(baseIndex, context);
-    final shift = fraction * (leadingWidth + _kTabGap);
+    final flowChildren = <Widget>[
+      for (int i = 0; i < itemCount; i++)
+        _buildFlowTabItem(
+          context,
+          i,
+          baseIndex,
+          fraction,
+          isAnimating,
+          appColors,
+          isClone: false,
+        ),
+      if (isAnimating)
+        _buildFlowTabItem(
+          context,
+          baseIndex,
+          baseIndex,
+          fraction,
+          isAnimating,
+          appColors,
+          isClone: true,
+        ),
+    ];
 
     return SizedBox(
       height: 56,
@@ -526,92 +496,54 @@ class _MetroPivotState extends State<MetroPivot> {
           }
         },
         child: ClipRect(
-          child: OverflowBox(
-            alignment: Alignment.centerLeft,
-            minWidth: 0.0,
-            maxWidth: double.infinity,
-            child: Transform.translate(
-              offset: Offset(_kLeadingPadding - shift, 0.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  for (int i = 0; i < displayIndices.length; i++) ...[
-                    if (i > 0) const SizedBox(width: _kTabGap),
-                    _buildCarouselItemSlot(
-                      context,
-                      displayIndices[i],
-                      i,
-                      displayIndices.length,
-                      fraction,
-                      isAnimating,
-                      appColors,
-                    ),
-                  ],
-                ],
-              ),
+          child: Flow(
+            delegate: _MetroPivotFlowDelegate(
+              baseIndex: baseIndex,
+              fraction: fraction,
+              itemCount: itemCount,
+              isAnimating: isAnimating,
+              repaint: _effectiveController,
             ),
+            children: flowChildren,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCarouselItemSlot(
+  Widget _buildFlowTabItem(
     BuildContext context,
     int originalIndex,
-    int slotIndex,
-    int totalSlots,
+    int baseIndex,
     double fraction,
     bool isAnimating,
-    AppColors appColors,
-  ) {
+    AppColors appColors, {
+    required bool isClone,
+  }) {
     final item = widget.items[originalIndex];
 
     double t;
-    double opacity = 1.0;
-
-    if (!isAnimating) {
-      // At rest: slot 0 is the leading active item (t = 1.0), all other slots are inactive (t = 0.0)
-      t = slotIndex == 0 ? 1.0 : 0.0;
-      opacity = 1.0;
+    if (isClone) {
+      t = 0.0;
+    } else if (!isAnimating) {
+      t = originalIndex == baseIndex ? 1.0 : 0.0;
     } else {
-      if (slotIndex == 0) {
-        // Exiting item being pushed out to the left
+      if (originalIndex == baseIndex) {
         t = (1.0 - fraction).clamp(0.0, 1.0);
-        opacity = (1.0 - fraction * 1.5).clamp(0.0, 1.0);
-      } else if (slotIndex == 1) {
-        // Entering item sliding into the leading position
+      } else if (originalIndex == (baseIndex + 1) % widget.items.length) {
         t = fraction.clamp(0.0, 1.0);
-        opacity = 1.0;
-      } else if (slotIndex == totalSlots - 1) {
-        // Trailing wrap-around clone of the exiting item entering from the right
-        t = 0.0;
-        opacity = fraction.clamp(0.0, 1.0);
       } else {
-        // Other items in between
         t = 0.0;
-        opacity = 1.0;
       }
     }
 
-    // Attach GlobalKey to the primary instance only (never to trailing clone)
-    final Key? key =
-        (slotIndex < widget.items.length && originalIndex < _tabKeys.length)
-        ? _tabKeys[originalIndex]
-        : null;
-
-    return Opacity(
-      opacity: opacity,
-      child: _buildTabItem(
-        context,
-        item,
-        originalIndex,
-        t,
-        opacity,
-        appColors,
-        key: key,
-      ),
+    return _buildTabItem(
+      context,
+      item,
+      originalIndex,
+      t,
+      appColors,
+      key: isClone ? null : ValueKey('metro_pivot_tab_$originalIndex'),
     );
   }
 
@@ -620,7 +552,6 @@ class _MetroPivotState extends State<MetroPivot> {
     MetroPivotItem item,
     int originalIndex,
     double t,
-    double opacity,
     AppColors appColors, {
     Key? key,
   }) {
@@ -628,6 +559,7 @@ class _MetroPivotState extends State<MetroPivot> {
     final inactiveColor = appColors.readerForeground.withValues(alpha: 0.40);
 
     final style = _kTabTextStyle.copyWith(
+      fontSize: widget.tabFontSize ?? _kTabTextStyle.fontSize,
       color: Color.lerp(inactiveColor, activeColor, t),
     );
 
@@ -649,6 +581,7 @@ class _MetroPivotState extends State<MetroPivot> {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               item.label.toLowerCase(),
@@ -676,6 +609,133 @@ class _MetroPivotState extends State<MetroPivot> {
         ),
       ),
     );
+  }
+}
+
+/// FlowDelegate for authentic Lumia-style panoramic header carousel.
+///
+/// Features:
+/// - Exact layout sizing via [FlowPaintingContext.getChildSize], eliminating text width estimation discrepancies.
+/// - GPU composited [Matrix4.translationValues] for 60/120fps continuous parallax without layout passes.
+/// - Strict mathematical continuity: Δx = 0.000px between animation completion (fraction -> 1.0) and settled state (fraction = 0.0).
+class _MetroPivotFlowDelegate extends FlowDelegate {
+  _MetroPivotFlowDelegate({
+    required this.baseIndex,
+    required this.fraction,
+    required this.itemCount,
+    required this.isAnimating,
+    super.repaint,
+  });
+
+  final int baseIndex;
+  final double fraction;
+  final int itemCount;
+  final bool isAnimating;
+
+  static const double _kTabGap = 28.0;
+  static const double _kLeadingPadding = 20.0;
+
+  @override
+  Size getSize(BoxConstraints constraints) {
+    final width = constraints.hasBoundedWidth
+        ? constraints.maxWidth
+        : double.infinity;
+    return Size(width, 56.0);
+  }
+
+  @override
+  BoxConstraints getConstraintsForChild(int i, BoxConstraints constraints) {
+    return const BoxConstraints(
+      minWidth: 0.0,
+      maxWidth: double.infinity,
+      minHeight: 0.0,
+      maxHeight: 56.0,
+    );
+  }
+
+  @override
+  void paintChildren(FlowPaintingContext context) {
+    if (itemCount == 0 || context.childCount == 0) return;
+
+    // 1. Read exact layout widths measured by Flutter's layout engine
+    final widths = <double>[];
+    for (int i = 0; i < itemCount; i++) {
+      widths.add(context.getChildSize(i)?.width ?? 0.0);
+    }
+
+    // 2. Cyclic carousel order starting from baseIndex:
+    // e.g. for 3 items with base 1: [1, 2, 0]
+    final carouselIndices = <int>[];
+    for (int i = 0; i < itemCount; i++) {
+      carouselIndices.add((baseIndex + i) % itemCount);
+    }
+
+    // 3. Compute continuous resting X positions in cyclic sequence
+    final carouselPositions = <double>[];
+    double currentX = _kLeadingPadding;
+    for (int k = 0; k < itemCount; k++) {
+      carouselPositions.add(currentX);
+      final originalIdx = carouselIndices[k];
+      currentX += widths[originalIdx] + _kTabGap;
+    }
+    final trailingClonePosition = currentX;
+
+    // 4. Shift formula using the EXACT layout width of baseIndex:
+    // At fraction -> 1.0, shift = widths[baseIndex] + gap.
+    // Incoming tab (carouselPositions[1] = 20 + widths[baseIndex] + gap)
+    // lands at exactly 20.0 - (widths[baseIndex] + gap) + widths[baseIndex] + gap = 20.000px!
+    final leadingWidth = widths[baseIndex];
+    final shift = fraction * (leadingWidth + _kTabGap);
+
+    // 5. Paint each primary child
+    for (int k = 0; k < itemCount; k++) {
+      final childIndex = carouselIndices[k];
+      final unshiftedX = carouselPositions[k];
+      final x = unshiftedX - shift;
+
+      final childHeight = context.getChildSize(childIndex)?.height ?? 56.0;
+      final y = (56.0 - childHeight) / 2.0;
+
+      double opacity = 1.0;
+      if (isAnimating && k == 0) {
+        opacity = (1.0 - fraction * 1.5).clamp(0.0, 1.0);
+      }
+
+      context.paintChild(
+        childIndex,
+        transform: Matrix4.translationValues(x, y, 0.0),
+        opacity: opacity,
+      );
+    }
+
+    // 6. Paint trailing wrap-around clone of baseIndex if animating
+    if (isAnimating && context.childCount > itemCount) {
+      final cloneChildIndex = itemCount;
+      final x = trailingClonePosition - shift;
+      final childHeight = context.getChildSize(cloneChildIndex)?.height ?? 56.0;
+      final y = (56.0 - childHeight) / 2.0;
+      final opacity = fraction.clamp(0.0, 1.0);
+
+      context.paintChild(
+        cloneChildIndex,
+        transform: Matrix4.translationValues(x, y, 0.0),
+        opacity: opacity,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _MetroPivotFlowDelegate oldDelegate) {
+    return oldDelegate.baseIndex != baseIndex ||
+        oldDelegate.fraction != fraction ||
+        oldDelegate.itemCount != itemCount ||
+        oldDelegate.isAnimating != isAnimating;
+  }
+
+  @override
+  bool shouldRelayout(covariant _MetroPivotFlowDelegate oldDelegate) {
+    return oldDelegate.itemCount != itemCount ||
+        oldDelegate.isAnimating != isAnimating;
   }
 }
 

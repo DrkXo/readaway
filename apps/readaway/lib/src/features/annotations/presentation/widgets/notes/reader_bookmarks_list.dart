@@ -74,7 +74,7 @@ class _BookmarkTile extends StatelessWidget {
     final appColors = context.appColors;
     final bloc = context.read<AnnotationsBloc>();
 
-    return InkWell(
+    return MetroPressable(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),

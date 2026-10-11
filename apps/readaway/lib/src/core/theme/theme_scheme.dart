@@ -1,17 +1,17 @@
 import 'package:readaway_core/readaway_core.dart';
 
-/// A named collection of light and dark [VsCodeTheme] palettes.
+/// A named collection of light and dark [MetroColorScheme] palettes.
 ///
 /// Schemes are the unit of theming: each one bundles a stable [id] (used for
-/// persistence), a display [name], and the VS Code themes used for light and
-/// dark mode.
+/// persistence), a display [name], and the Metro color schemes used for light
+/// and dark mode.
 class ThemeScheme {
   const ThemeScheme({
     required this.id,
     required this.name,
     this.originalRepoLink,
-    required this.light,
-    required this.dark,
+    required this.metroLight,
+    required this.metroDark,
   });
 
   /// Stable identifier used to persist the selection (e.g. in settings).
@@ -23,11 +23,17 @@ class ThemeScheme {
   /// Optional original repository / project URL.
   final String? originalRepoLink;
 
-  /// Light-mode VS Code theme.
-  final VsCodeTheme light;
+  /// Light-mode Metro color scheme.
+  final MetroColorScheme metroLight;
 
-  /// Dark-mode VS Code theme.
-  final VsCodeTheme dark;
+  /// Dark-mode Metro color scheme.
+  final MetroColorScheme metroDark;
+
+  /// Light-mode [VsCodeTheme] for compatibility with [VsCodeThemeColorX].
+  VsCodeTheme get light => metroLight.toVsCodeTheme();
+
+  /// Dark-mode [VsCodeTheme] for compatibility with [VsCodeThemeColorX].
+  VsCodeTheme get dark => metroDark.toVsCodeTheme();
 }
 
 /// Registry of all available [ThemeScheme]s.
@@ -37,8 +43,8 @@ abstract final class ThemeSchemes {
     id: 'token',
     name: 'Token',
     originalRepoLink: 'https://github.com/ThorstenRhau/token',
-    light: BuiltinVsCodeThemes.tokenLight,
-    dark: BuiltinVsCodeThemes.tokenDark,
+    metroLight: MetroColorScheme.tokenLight,
+    metroDark: MetroColorScheme.tokenDark,
   );
 
   /// Paper-and-ink scheme, named "Flexoki".
@@ -46,8 +52,8 @@ abstract final class ThemeSchemes {
     id: 'flexoki',
     name: 'Flexoki',
     originalRepoLink: 'https://github.com/kepano/flexoki',
-    light: BuiltinVsCodeThemes.flexokiLight,
-    dark: BuiltinVsCodeThemes.flexokiDark,
+    metroLight: MetroColorScheme.flexokiLight,
+    metroDark: MetroColorScheme.flexokiDark,
   );
 
   /// Kanagawa Dragon scheme.
@@ -55,8 +61,8 @@ abstract final class ThemeSchemes {
     id: 'kanagawaDragon',
     name: 'Kanagawa Dragon',
     originalRepoLink: 'https://github.com/paccodes/kanagawa-vscode-theme',
-    light: BuiltinVsCodeThemes.kanagawaLotus,
-    dark: BuiltinVsCodeThemes.kanagawaDragon,
+    metroLight: MetroColorScheme.kanagawaLotus,
+    metroDark: MetroColorScheme.kanagawaDragon,
   );
 
   /// Kanagawa Wave scheme.
@@ -64,8 +70,8 @@ abstract final class ThemeSchemes {
     id: 'kanagawaWave',
     name: 'Kanagawa Wave',
     originalRepoLink: 'https://github.com/paccodes/kanagawa-vscode-theme',
-    light: BuiltinVsCodeThemes.kanagawaLotus,
-    dark: BuiltinVsCodeThemes.kanagawaWave,
+    metroLight: MetroColorScheme.kanagawaLotus,
+    metroDark: MetroColorScheme.kanagawaWave,
   );
 
   /// Kanagawa Lotus scheme.
@@ -73,8 +79,8 @@ abstract final class ThemeSchemes {
     id: 'kanagawaLotus',
     name: 'Kanagawa Lotus',
     originalRepoLink: 'https://github.com/paccodes/kanagawa-vscode-theme',
-    light: BuiltinVsCodeThemes.kanagawaLotus,
-    dark: BuiltinVsCodeThemes.kanagawaWave,
+    metroLight: MetroColorScheme.kanagawaLotus,
+    metroDark: MetroColorScheme.kanagawaWave,
   );
 
   /// All available schemes, in display order.
@@ -89,9 +95,10 @@ abstract final class ThemeSchemes {
   /// Resolves a scheme by [id], falling back to [token] when the id
   /// is unknown or null (e.g. a scheme was removed from the registry).
   static ThemeScheme byId(String? id) {
-    if (id == 'tokenInspired') return token;
+    if (id == null) return token;
+    final normalized = id.replaceAll('Inspired', '');
     return all.firstWhere(
-      (scheme) => scheme.id == id,
+      (scheme) => scheme.id == id || scheme.id == normalized,
       orElse: () => token,
     );
   }

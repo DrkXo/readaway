@@ -201,7 +201,9 @@ void main() {
         MaterialApp(
           theme: ThemeData(
             extensions: [
-              VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
+              VsCodeThemeExtension(
+                MetroColorScheme.kanagawaDragon.toVsCodeTheme(),
+              ),
             ],
           ),
           home: Scaffold(
@@ -236,7 +238,9 @@ void main() {
         MaterialApp(
           theme: ThemeData(
             extensions: [
-              VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
+              VsCodeThemeExtension(
+                MetroColorScheme.kanagawaDragon.toVsCodeTheme(),
+              ),
             ],
           ),
           home: Scaffold(
@@ -284,7 +288,9 @@ void main() {
         MaterialApp(
           theme: ThemeData(
             extensions: [
-              VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
+              VsCodeThemeExtension(
+                MetroColorScheme.kanagawaDragon.toVsCodeTheme(),
+              ),
             ],
           ),
           home: MultiBlocProvider(
@@ -338,7 +344,9 @@ void main() {
           MaterialApp(
             theme: ThemeData(
               extensions: [
-                VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
+                VsCodeThemeExtension(
+                  MetroColorScheme.kanagawaDragon.toVsCodeTheme(),
+                ),
               ],
             ),
             home: MultiBlocProvider(

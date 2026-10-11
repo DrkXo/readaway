@@ -3,43 +3,60 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 void main() {
-  group('BuiltinVsCodeThemes registry', () {
-    test('contains all 7 pre-compiled themes and finds them by name', () {
-      expect(BuiltinVsCodeThemes.all.length, 7);
-      expect(BuiltinVsCodeThemes.kanagawaDragon.name, 'Kanagawa Dragon');
-      expect(BuiltinVsCodeThemes.kanagawaDragon.isDark, isTrue);
-      expect(
-        BuiltinVsCodeThemes.kanagawaDragon.editorBackground,
-        const Color(0xFF181616),
-      );
-      expect(
-        BuiltinVsCodeThemes.kanagawaDragon.editorForeground,
-        const Color(0xFFC5C9C5),
-      );
+  group('MetroColorScheme registry', () {
+    test(
+      'contains all 7 pre-compiled inspired themes and finds them by name',
+      () {
+        expect(MetroColorScheme.all.length, 7);
+        expect(
+          MetroColorScheme.kanagawaDragon.name,
+          'Kanagawa Dragon Inspired',
+        );
+        expect(MetroColorScheme.kanagawaDragon.isDark, isTrue);
+        expect(
+          MetroColorScheme.kanagawaDragon.readerBackground,
+          const Color(0xFF181616),
+        );
+        expect(
+          MetroColorScheme.kanagawaDragon.readerForeground,
+          const Color(0xFFC5C9C5),
+        );
 
-      expect(BuiltinVsCodeThemes.flexokiDark.name, 'Flexoki');
-      expect(
-        BuiltinVsCodeThemes.flexokiDark.editorBackground,
-        const Color(0xFF100F0F),
-      );
-      expect(
-        BuiltinVsCodeThemes.flexokiLight.editorBackground,
-        const Color(0xFFFFFCF0),
-      );
+        expect(MetroColorScheme.flexokiDark.name, 'Flexoki Dark Inspired');
+        expect(
+          MetroColorScheme.flexokiDark.readerBackground,
+          const Color(0xFF100F0F),
+        );
+        expect(
+          MetroColorScheme.flexokiLight.readerBackground,
+          const Color(0xFFFFFCF0),
+        );
 
-      expect(BuiltinVsCodeThemes.tokenDark.name, 'Token Dark');
-      expect(
-        BuiltinVsCodeThemes.tokenDark.editorBackground,
-        const Color(0xFF262624),
-      );
+        expect(MetroColorScheme.tokenDark.name, 'Token Dark Inspired');
+        expect(
+          MetroColorScheme.tokenDark.readerBackground,
+          const Color(0xFF262624),
+        );
 
-      final found = BuiltinVsCodeThemes.findByName('Kanagawa Dragon');
-      expect(found, isNotNull);
-      expect(found?.name, 'Kanagawa Dragon');
-    });
+        // Finds by original or inspired name
+        final foundOriginal = MetroColorScheme.findByName('Kanagawa Dragon');
+        expect(foundOriginal, isNotNull);
+        expect(foundOriginal?.name, 'Kanagawa Dragon Inspired');
+
+        final foundInspired = MetroColorScheme.findByName(
+          'Kanagawa Dragon Inspired',
+        );
+        expect(foundInspired, isNotNull);
+        expect(foundInspired?.name, 'Kanagawa Dragon Inspired');
+
+        final foundFlexoki = MetroColorScheme.findByName('Flexoki Dark');
+        expect(foundFlexoki, isNotNull);
+        expect(foundFlexoki?.name, 'Flexoki Dark Inspired');
+      },
+    );
 
     test('VsCodeThemeColorX resolves standard UI colors accurately', () {
-      final theme = BuiltinVsCodeThemes.kanagawaDragon;
+      final theme = MetroColorScheme.kanagawaDragon.toVsCodeTheme();
       expect(theme.editorBackground, const Color(0xFF181616));
       expect(theme.editorForeground, const Color(0xFFC5C9C5));
       expect(theme.statusBarBackground, const Color(0xFF0D0C0C));
@@ -79,7 +96,8 @@ void main() {
     });
 
     test('all 7 built-in themes resolve workbench tokens without error', () {
-      for (final theme in BuiltinVsCodeThemes.all) {
+      for (final scheme in MetroColorScheme.all) {
+        final theme = scheme.toVsCodeTheme();
         expect(theme.readerBackground, isNotNull);
         expect(theme.readerForeground, isNotNull);
         expect(theme.topbarBackground, isNotNull);
@@ -95,6 +113,35 @@ void main() {
         expect(theme.listActiveSelectionBackground, isNotNull);
         expect(theme.scheme, isNotNull);
       }
+    });
+  });
+
+  group('MetroColorScheme', () {
+    test('converts to VsCodeTheme with accurate color mappings', () {
+      const metro = MetroColorScheme.kanagawaDragon;
+      final vsTheme = metro.toVsCodeTheme();
+
+      expect(vsTheme.name, 'Kanagawa Dragon Inspired');
+      expect(vsTheme.type, 'dark');
+      expect(vsTheme.editorBackground, const Color(0xFF181616));
+      expect(vsTheme.editorForeground, const Color(0xFFC5C9C5));
+      expect(vsTheme.buttonBackground, const Color(0xFF658594));
+      expect(vsTheme.buttonForeground, const Color(0xFF181616));
+      expect(vsTheme.error, const Color(0xFFE82424));
+    });
+
+    test('converts to Flutter ColorScheme accurately', () {
+      const darkMetro = MetroColorScheme.tokenDark;
+      final darkScheme = darkMetro.toColorScheme();
+      expect(darkScheme.brightness, Brightness.dark);
+      expect(darkScheme.primary, darkMetro.accent);
+      expect(darkScheme.surface, darkMetro.surface);
+
+      const lightMetro = MetroColorScheme.tokenLight;
+      final lightScheme = lightMetro.toColorScheme();
+      expect(lightScheme.brightness, Brightness.light);
+      expect(lightScheme.primary, lightMetro.accent);
+      expect(lightScheme.surface, lightMetro.surface);
     });
   });
 }

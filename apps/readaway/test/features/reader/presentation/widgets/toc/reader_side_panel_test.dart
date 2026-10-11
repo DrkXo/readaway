@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/result/result.dart';
+import 'package:readaway/src/core/theme/theme.dart';
+import 'package:readaway/src/core/widgets/core_widgets.dart';
 import 'package:readaway/src/features/annotations/domain/entity/document_notes.dart';
 import 'package:readaway/src/features/annotations/domain/entity/reader_note.dart';
 import 'package:readaway/src/features/annotations/presentation/bloc/annotations_bloc.dart';
@@ -92,6 +94,13 @@ void main() {
       BlocProvider<AnnotationsBloc>.value(
         value: bloc,
         child: MaterialApp(
+          theme: ThemeData(
+            extensions: [
+              VsCodeThemeExtension(
+                MetroColorScheme.kanagawaDragon.toVsCodeTheme(),
+              ),
+            ],
+          ),
           home: Scaffold(
             body: ReaderSidePanel(
               onJumpToChapter: (_) {},
@@ -109,9 +118,10 @@ void main() {
 
     await pumpPanel(tester, bloc);
 
-    expect(find.text('Contents'), findsOneWidget);
-    expect(find.text('Bookmarks'), findsOneWidget);
-    expect(find.text('Annotations'), findsOneWidget);
+    expect(find.byType(MetroPivot), findsOneWidget);
+    expect(find.text('contents'), findsWidgets);
+    expect(find.text('bookmarks'), findsOneWidget);
+    expect(find.text('annotations'), findsOneWidget);
     // The open tab's content, and only it.
     expect(find.text('Saved place'), findsOneWidget);
     expect(find.text('a passage'), findsNothing);
@@ -121,13 +131,13 @@ void main() {
     final bloc = await loadedBloc();
     await pumpPanel(tester, bloc);
 
-    await tester.tap(find.text('Annotations'));
+    await tester.tap(find.text('annotations'));
     await tester.pumpAndSettle();
 
     expect(find.text('a passage'), findsOneWidget);
     expect(find.text('Saved place'), findsNothing);
 
-    await tester.tap(find.text('Bookmarks'));
+    await tester.tap(find.text('bookmarks'));
     await tester.pumpAndSettle();
 
     expect(find.text('Saved place'), findsOneWidget);
@@ -141,6 +151,13 @@ void main() {
       BlocProvider<AnnotationsBloc>.value(
         value: bloc,
         child: MaterialApp(
+          theme: ThemeData(
+            extensions: [
+              VsCodeThemeExtension(
+                MetroColorScheme.kanagawaDragon.toVsCodeTheme(),
+              ),
+            ],
+          ),
           home: Scaffold(
             body: ReaderSidePanel(
               onJumpToChapter: (_) {},

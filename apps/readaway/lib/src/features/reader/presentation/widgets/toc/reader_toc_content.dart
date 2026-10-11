@@ -359,15 +359,15 @@ class _ReaderTocContentState extends State<ReaderTocContent> {
                         filled: true,
                         fillColor: appColors.inputBackground,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: appColors.inputBorder),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: appColors.inputBorder),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(
                             color: appColors.focusBorder,
                             width: 1.5,

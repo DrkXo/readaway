@@ -339,6 +339,7 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                                                 prefs: prefs,
                                                 onScrollBoundaryChanged:
                                                     onScrollBoundaryChanged,
+                                                onTapAction: handleTapAction,
                                               ),
                                             ),
                                           ),

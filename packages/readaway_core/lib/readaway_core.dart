@@ -59,7 +59,7 @@ export 'src/readers/single_html_document_reader.dart';
 // Theme
 export 'package:vscode_theme_parser/vscode_theme_parser.dart';
 
-export 'src/theme/builtin_vscode_themes.dart';
+export 'src/theme/metro_color_scheme.dart';
 export 'src/theme/vscode_theme_color.dart';
 
 // Transformers

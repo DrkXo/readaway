@@ -85,6 +85,7 @@ class MetroText extends StatelessWidget {
     this.text, {
     super.key,
     this.color,
+    this.fontSize,
     this.maxLines = 1,
     this.overflow = TextOverflow.ellipsis,
   }) : style = MetroTypography.pivotTitle,
@@ -95,6 +96,7 @@ class MetroText extends StatelessWidget {
     this.text, {
     super.key,
     this.color,
+    this.fontSize,
     this.isActive = true,
     this.maxLines = 1,
     this.overflow = TextOverflow.ellipsis,
@@ -105,6 +107,7 @@ class MetroText extends StatelessWidget {
     this.text, {
     super.key,
     this.color,
+    this.fontSize,
     this.maxLines = 2,
     this.overflow = TextOverflow.ellipsis,
   }) : style = MetroTypography.tileTitle,
@@ -115,6 +118,7 @@ class MetroText extends StatelessWidget {
     this.text, {
     super.key,
     this.color,
+    this.fontSize,
     this.maxLines = 1,
     this.overflow = TextOverflow.ellipsis,
   }) : style = MetroTypography.tileSubtitle,
@@ -125,6 +129,7 @@ class MetroText extends StatelessWidget {
     this.text, {
     super.key,
     this.color,
+    this.fontSize,
     this.maxLines = 1,
     this.overflow = TextOverflow.clip,
   }) : style = MetroTypography.tileNumber,
@@ -135,6 +140,7 @@ class MetroText extends StatelessWidget {
     this.text, {
     super.key,
     this.color,
+    this.fontSize,
     this.maxLines = 1,
     this.overflow = TextOverflow.ellipsis,
   }) : style = MetroTypography.tag,
@@ -145,6 +151,7 @@ class MetroText extends StatelessWidget {
     this.text, {
     super.key,
     this.color,
+    this.fontSize,
     this.maxLines = 1,
     this.overflow = TextOverflow.ellipsis,
   }) : style = MetroTypography.appBarLabel,
@@ -155,6 +162,7 @@ class MetroText extends StatelessWidget {
     this.text, {
     super.key,
     this.color,
+    this.fontSize,
     this.maxLines = 1,
     this.overflow = TextOverflow.ellipsis,
   }) : style = MetroTypography.bottomAction,
@@ -164,6 +172,7 @@ class MetroText extends StatelessWidget {
   final String text;
   final TextStyle style;
   final Color? color;
+  final double? fontSize;
   final bool isActive;
   final bool isUppercase;
   final int maxLines;
@@ -193,6 +202,7 @@ class MetroText extends StatelessWidget {
       overflow: overflow,
       style: resolvedStyle.copyWith(
         color: color ?? defaultColor,
+        fontSize: fontSize ?? resolvedStyle.fontSize,
       ),
     );
   }

@@ -2,9 +2,11 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/features/reader/domain/entity/reader_preferences.dart';
+import 'package:readaway/src/features/reader/domain/gestures/reader_gestures.dart';
 
 import '../../../bloc/reader_bloc.dart';
 import '../../../controllers/reader_viewport_controller.dart';
@@ -24,12 +26,16 @@ class PdfReaderView extends StatefulWidget {
     required this.prefs,
     required this.viewportController,
     this.onPageChangeRequested,
+    this.onTapAction,
+    this.tapZonePolicy,
   });
 
   final ReaderState state;
   final ReaderPreferences prefs;
   final ReaderViewportController viewportController;
   final ValueChanged<int>? onPageChangeRequested;
+  final ValueChanged<ReaderTapAction>? onTapAction;
+  final TapZonePolicy? tapZonePolicy;
 
   @override
   State<PdfReaderView> createState() => _PdfReaderViewState();
@@ -37,13 +43,23 @@ class PdfReaderView extends StatefulWidget {
 
 class _PdfReaderViewState extends State<PdfReaderView> {
   late final PdfViewerController _pdfController;
+  PdfTextSelection? _selection;
   bool _isSyncing = false;
 
   @override
   void initState() {
     super.initState();
     _pdfController = PdfViewerController();
+    _pdfController.addListener(_onPdfMatrixChanged);
     _attachControllerDelegates();
+  }
+
+  void _onPdfMatrixChanged() {
+    if (!_pdfController.isReady) return;
+    final zoom = _pdfController.currentZoom;
+    final baseZoom = _pdfController.alternativeFitScale ?? 1.0;
+    final isZoomed = (zoom - baseZoom).abs() > 0.05 && zoom > baseZoom;
+    widget.viewportController.setPageZoom(widget.state.currentPage, isZoomed);
   }
 
   @override
@@ -70,6 +86,13 @@ class _PdfReaderViewState extends State<PdfReaderView> {
   }
 
   void _attachControllerDelegates() {
+    widget.viewportController.clearSelectionDelegate = () {
+      final sel = _selection;
+      if (sel is PdfTextSelectionDelegate) {
+        sel.clearTextSelection();
+      }
+    };
+
     widget.viewportController.jumpToPageDelegate = (int targetIndex) {
       final pageNumber = targetIndex + 1;
       if (_pdfController.isReady &&
@@ -104,8 +127,10 @@ class _PdfReaderViewState extends State<PdfReaderView> {
 
   @override
   void dispose() {
+    _pdfController.removeListener(_onPdfMatrixChanged);
     widget.viewportController.jumpToPageDelegate = null;
     widget.viewportController.animateToPageDelegate = null;
+    widget.viewportController.clearSelectionDelegate = null;
     super.dispose();
   }
 
@@ -156,6 +181,54 @@ class _PdfReaderViewState extends State<PdfReaderView> {
               return controller.alternativeFitScale ?? fitZoom;
             },
           ),
+          textSelectionParams: PdfTextSelectionParams(
+            onTextSelectionChange: (selection) {
+              _selection = selection;
+              widget.viewportController.setSelectionActive(
+                selection.hasSelectedText,
+              );
+            },
+          ),
+          onGeneralTap: (tapContext, controller, details) {
+            if (!mounted) return false;
+            if (details.type != PdfViewerGeneralTapType.tap) {
+              return false;
+            }
+            if (widget.viewportController.hasActiveSelection ||
+                (_selection?.hasSelectedText ?? false)) {
+              widget.viewportController.clearSelection();
+              final sel = _selection;
+              if (sel is PdfTextSelectionDelegate) {
+                sel.clearTextSelection();
+              }
+              return true;
+            }
+            if (widget.viewportController.isPageZoomed) {
+              return false;
+            }
+            final box = tapContext.findRenderObject() as RenderBox?;
+            final globalPos = box != null && box.hasSize
+                ? box.localToGlobal(details.localPosition)
+                : details.localPosition;
+            if (widget.viewportController.handleAnnotationTap(globalPos)) {
+              return true;
+            }
+            final width = box?.hasSize == true
+                ? box!.size.width
+                : MediaQuery.sizeOf(context).width;
+            final policy =
+                widget.tapZonePolicy ??
+                (GetIt.I.isRegistered<TapZonePolicy>()
+                    ? GetIt.I<TapZonePolicy>()
+                    : const TapZonePolicy());
+            final action = policy.resolveTapAction(
+              details.localPosition.dx,
+              width,
+              isRtl: widget.prefs.isRtl,
+            );
+            widget.onTapAction?.call(action);
+            return true;
+          },
           layoutPages: isHorizontal
               ? (pages, params) {
                   final height = pages.fold<double>(

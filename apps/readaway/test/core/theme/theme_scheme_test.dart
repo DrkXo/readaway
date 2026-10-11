@@ -19,13 +19,35 @@ void main() {
       expect(ThemeSchemes.byId('token'), ThemeSchemes.token);
       expect(ThemeSchemes.byId('tokenInspired'), ThemeSchemes.token);
       expect(ThemeSchemes.byId('flexoki'), ThemeSchemes.flexoki);
+      expect(ThemeSchemes.byId('flexokiInspired'), ThemeSchemes.flexoki);
       expect(ThemeSchemes.byId('kanagawaDragon'), ThemeSchemes.kanagawaDragon);
+      expect(
+        ThemeSchemes.byId('kanagawaDragonInspired'),
+        ThemeSchemes.kanagawaDragon,
+      );
       expect(ThemeSchemes.byId('kanagawaWave'), ThemeSchemes.kanagawaWave);
+      expect(
+        ThemeSchemes.byId('kanagawaWaveInspired'),
+        ThemeSchemes.kanagawaWave,
+      );
+      expect(ThemeSchemes.byId('kanagawaLotus'), ThemeSchemes.kanagawaLotus);
+      expect(
+        ThemeSchemes.byId('kanagawaLotusInspired'),
+        ThemeSchemes.kanagawaLotus,
+      );
     });
 
     test('byId falls back to token for unknown ids', () {
       expect(ThemeSchemes.byId('unknown'), ThemeSchemes.token);
       expect(ThemeSchemes.byId(null), ThemeSchemes.token);
+    });
+
+    test('ThemeScheme exposes direct MetroColorScheme instances', () {
+      final scheme = ThemeSchemes.kanagawaDragon;
+      expect(scheme.metroDark.name, 'Kanagawa Dragon Inspired');
+      expect(scheme.metroLight.name, 'Kanagawa Lotus Inspired');
+      expect(scheme.dark.name, 'Kanagawa Dragon Inspired');
+      expect(scheme.light.name, 'Kanagawa Lotus Inspired');
     });
   });
 
@@ -70,14 +92,14 @@ void main() {
 
   group('ThemeData VS Code workbench integration', () {
     test('VsCodeThemeExtension can be retrieved from ThemeData', () {
-      final vsTheme = BuiltinVsCodeThemes.kanagawaDragon;
+      final vsTheme = MetroColorScheme.kanagawaDragon.toVsCodeTheme();
       final themeData = ThemeData(
         extensions: [VsCodeThemeExtension(vsTheme)],
       );
 
       final ext = themeData.extension<VsCodeThemeExtension>();
       expect(ext, isNotNull);
-      expect(ext?.theme.name, 'Kanagawa Dragon');
+      expect(ext?.theme.name, 'Kanagawa Dragon Inspired');
       expect(ext?.theme.editorBackground, const Color(0xFF181616));
     });
   });

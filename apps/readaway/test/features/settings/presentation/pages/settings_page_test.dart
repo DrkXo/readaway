@@ -44,7 +44,9 @@ void main() {
     return MaterialApp(
       theme: ThemeData(
         extensions: [
-          VsCodeThemeExtension(BuiltinVsCodeThemes.kanagawaDragon),
+          VsCodeThemeExtension(
+            MetroColorScheme.kanagawaDragon.toVsCodeTheme(),
+          ),
         ],
       ),
       home: MultiBlocProvider(

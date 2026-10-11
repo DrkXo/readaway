@@ -6,6 +6,10 @@ import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../annotations/domain/entity/reader_note.dart';
 import 'reader_side_panel.dart';
 
+/// Metro-styled reader navigation drawer for mobile and compact viewports.
+///
+/// Features edge-to-edge typography, crisp 0px border radius, flat surface
+/// contrast, and authentic Lumia [MetroPivot] panoramic navigation.
 class ReaderDrawer extends StatelessWidget {
   const ReaderDrawer({
     super.key,
@@ -23,7 +27,7 @@ class ReaderDrawer extends StatelessWidget {
     final appColors = context.appColors;
 
     return Drawer(
-      width: 336,
+      width: 340,
       backgroundColor: appColors.sidebarBackground,
       elevation: 0,
       shape: const RoundedRectangleBorder(
@@ -31,6 +35,7 @@ class ReaderDrawer extends StatelessWidget {
       ),
       child: DecoratedBox(
         decoration: BoxDecoration(
+          color: appColors.sidebarBackground,
           border: Border(
             right: BorderSide(
               color: appColors.sidebarBorder,
@@ -48,13 +53,45 @@ class ReaderDrawer extends StatelessWidget {
               Navigator.of(context).pop();
               onJumpToNote(note);
             },
-            headerAction: AppIconButton(
-              icon: LucideIcons.x,
-              tooltip: 'Close',
-              onPressed: () => Navigator.of(context).pop(),
-              size: AppIconButtonSize.small,
-            ),
+            headerAction: const MetroDrawerCloseButton(),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Minimalist Metro-styled close button for the reader drawer header.
+class MetroDrawerCloseButton extends StatelessWidget {
+  const MetroDrawerCloseButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final appColors = context.appColors;
+
+    return MetroPressable(
+      onTap: () => Navigator.of(context).pop(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.x,
+              size: 16,
+              color: appColors.readerForeground.withValues(alpha: 0.75),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'close',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: appColors.readerForeground.withValues(alpha: 0.75),
+              ),
+            ),
+          ],
         ),
       ),
     );

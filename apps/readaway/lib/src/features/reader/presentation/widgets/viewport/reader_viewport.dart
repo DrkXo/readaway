@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/core/widgets/core_widgets.dart';
 import 'package:readaway/src/features/reader/domain/entity/reader_preferences.dart';
+import 'package:readaway/src/features/reader/domain/gestures/reader_gestures.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
 import 'package:readaway_core/readaway_core.dart';
 
@@ -32,10 +33,12 @@ class ReaderViewport extends StatefulWidget {
     required this.viewportController,
     required this.prefs,
     this.onScrollBoundaryChanged,
+    this.onTapAction,
   });
 
   final ReaderViewportController viewportController;
   final ReaderPreferences prefs;
+  final ValueChanged<ReaderTapAction>? onTapAction;
 
   /// Notified when the current page's inner scroll view reaches or leaves a boundary.
   ///
@@ -396,6 +399,7 @@ class _ReaderViewportState extends State<ReaderViewport> {
                           idx,
                           isContinuous: isContinuous,
                         ),
+                        onTapAction: widget.onTapAction,
                       ),
                     ),
                   ],

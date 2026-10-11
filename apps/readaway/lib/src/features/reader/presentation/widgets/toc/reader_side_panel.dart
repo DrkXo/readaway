@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../annotations/domain/entity/reader_note.dart';
+import '../../../../annotations/presentation/bloc/annotations_bloc.dart';
 import '../../../../annotations/presentation/widgets/notes/reader_annotations_list.dart';
 import '../../../../annotations/presentation/widgets/notes/reader_bookmarks_list.dart';
 import 'reader_toc_content.dart';
@@ -21,10 +22,9 @@ enum ReaderSidePanelTab {
 
 /// The reader's side panel, holding contents, bookmarks and annotations.
 ///
-/// Owns the tab bar, so switching tabs never moves it, and so the close or pin
-/// action lives in one place rather than being repeated inside each tab. The
-/// contents tab is the existing [ReaderTocContent] with its own header row
-/// suppressed, because the tab bar is that header now.
+/// Designed with authentic Windows Phone / Lumia [MetroPivot] panoramic navigation,
+/// enabling continuous horizontal swipe gestures, parallax header glide, and
+/// live note/bookmark count badges.
 class ReaderSidePanel extends StatefulWidget {
   const ReaderSidePanel({
     super.key,
@@ -32,6 +32,7 @@ class ReaderSidePanel extends StatefulWidget {
     required this.onJumpToNote,
     this.headerAction,
     this.initialTab = ReaderSidePanelTab.contents,
+    this.title = 'contents',
   });
 
   /// Called with a chapter index when a contents entry is chosen.
@@ -49,141 +50,86 @@ class ReaderSidePanel extends StatefulWidget {
   /// worth remembering, not the last tab.
   final ReaderSidePanelTab initialTab;
 
+  /// The grand display title of the panorama (default 'contents').
+  final String title;
+
   @override
   State<ReaderSidePanel> createState() => _ReaderSidePanelState();
 }
 
 class _ReaderSidePanelState extends State<ReaderSidePanel> {
-  late ReaderSidePanelTab _active = widget.initialTab;
+  late final MetroPivotController _pivotController;
 
   @override
-  Widget build(BuildContext context) {
-    final appColors = context.appColors;
-
-    return Column(
-      children: [
-        _TabBar(
-          active: _active,
-          onChanged: (tab) => setState(() => _active = tab),
-          action: widget.headerAction,
-        ),
-        Divider(height: 1, thickness: 1, color: appColors.sidebarBorder),
-        Expanded(
-          child: switch (_active) {
-            ReaderSidePanelTab.contents => ReaderTocContent(
-              onJumpToPage: widget.onJumpToChapter,
-              showHeader: false,
-            ),
-            ReaderSidePanelTab.bookmarks => ReaderBookmarksList(
-              onJumpToNote: widget.onJumpToNote,
-            ),
-            ReaderSidePanelTab.annotations => ReaderAnnotationsList(
-              onJumpToNote: widget.onJumpToNote,
-            ),
-          },
-        ),
-      ],
+  void initState() {
+    super.initState();
+    _pivotController = MetroPivotController(
+      length: ReaderSidePanelTab.values.length,
+      initialIndex: widget.initialTab.index,
     );
   }
-}
-
-/// The panel's tab row.
-///
-/// Labels are sentence case at a small size rather than the uppercase, wide
-/// letter-spacing the section headers use: three words of that style need more
-/// width than a 300px panel has once the action button is accounted for.
-class _TabBar extends StatelessWidget {
-  const _TabBar({
-    required this.active,
-    required this.onChanged,
-    this.action,
-  });
-
-  final ReaderSidePanelTab active;
-  final ValueChanged<ReaderSidePanelTab> onChanged;
-  final Widget? action;
-
-  static const Map<ReaderSidePanelTab, String> _labels = {
-    ReaderSidePanelTab.contents: 'Contents',
-    ReaderSidePanelTab.bookmarks: 'Bookmarks',
-    ReaderSidePanelTab.annotations: 'Annotations',
-  };
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(12, 10, action == null ? 12 : 4, 0),
-      child: Row(
-        children: [
-          for (final tab in ReaderSidePanelTab.values)
-            Expanded(
-              child: _Tab(
-                label: _labels[tab]!,
-                selected: tab == active,
-                onTap: () => onChanged(tab),
-              ),
-            ),
-          ?action,
-        ],
-      ),
-    );
+  void didUpdateWidget(ReaderSidePanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTab != oldWidget.initialTab &&
+        _pivotController.index != widget.initialTab.index) {
+      _pivotController.animateTo(widget.initialTab.index);
+    }
   }
-}
 
-class _Tab extends StatelessWidget {
-  const _Tab({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+  @override
+  void dispose() {
+    _pivotController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final appColors = context.appColors;
-    final accent = Theme.of(context).colorScheme.primary;
+    AnnotationsState? annotationsState;
+    try {
+      annotationsState = context.watch<AnnotationsBloc>().state;
+    } catch (_) {
+      // AnnotationsBloc not available in isolated test harness
+    }
 
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        // The label alone does not reach a 44pt target, so the whole tab is
-        // given that height rather than only the text.
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 44),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AppText(
-                label,
-                variant: AppTextVariant.label,
-                fontSize: 12,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected
-                    ? accent
-                    : appColors.sidebarForeground.withValues(alpha: 0.75),
-              ),
-              const SizedBox(height: 6),
-              // Colour is not the only signal: the selected tab also carries a
-              // rule beneath it, so the state survives a monochrome theme.
-              AnimatedContainer(
-                duration: context.appMotion.fast,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: selected ? accent : Colors.transparent,
-                  borderRadius: BorderRadius.circular(1),
-                ),
-              ),
-            ],
+    final bookmarkCount = annotationsState?.bookmarks.length;
+    final annotationCount = annotationsState?.annotations.length;
+
+    return MetroPivot(
+      controller: _pivotController,
+      title: widget.title,
+      titleFontSize: 38,
+      tabFontSize: 22,
+      trailing: widget.headerAction,
+      headerPadding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      items: [
+        MetroPivotItem(
+          label: 'contents',
+          content: ReaderTocContent(
+            onJumpToPage: widget.onJumpToChapter,
+            showHeader: false,
           ),
         ),
-      ),
+        MetroPivotItem(
+          label: 'bookmarks',
+          count: bookmarkCount != null && bookmarkCount > 0
+              ? '$bookmarkCount'
+              : null,
+          content: ReaderBookmarksList(
+            onJumpToNote: widget.onJumpToNote,
+          ),
+        ),
+        MetroPivotItem(
+          label: 'annotations',
+          count: annotationCount != null && annotationCount > 0
+              ? '$annotationCount'
+              : null,
+          content: ReaderAnnotationsList(
+            onJumpToNote: widget.onJumpToNote,
+          ),
+        ),
+      ],
     );
   }
 }
