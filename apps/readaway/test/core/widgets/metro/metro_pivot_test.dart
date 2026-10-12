@@ -58,13 +58,13 @@ void main() {
     });
 
     testWidgets('switches pages when tab is tapped', (tester) async {
-      int? changedIndex;
+      final changedIndices = <int>[];
 
       await tester.pumpWidget(
         buildThemed(
           MetroPivot(
             title: 'Library',
-            onIndexChanged: (i) => changedIndex = i,
+            onIndexChanged: changedIndices.add,
             items: const [
               MetroPivotItem(
                 label: 'pane 1',
@@ -84,7 +84,7 @@ void main() {
       await tester.tap(find.text('pane 2'));
       await tester.pumpAndSettle();
 
-      expect(changedIndex, equals(1));
+      expect(changedIndices, equals([1]));
       expect(find.text('Content 2'), findsOneWidget);
     });
 
@@ -465,6 +465,48 @@ void main() {
         expect((nearEndReadingPos - finalReadingPos).abs(), lessThan(8.0));
       },
     );
+
+    testWidgets('incoming tab stays active until page animation settles', (
+      tester,
+    ) async {
+      final controller = MetroPivotController(length: 2, initialIndex: 0);
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        buildThemed(
+          MetroPivot(
+            title: 'Library',
+            controller: controller,
+            items: const [
+              MetroPivotItem(label: 'all books', content: Text('Page 0')),
+              MetroPivotItem(label: 'reading', content: Text('Page 1')),
+            ],
+          ),
+        ),
+      );
+
+      final readingFinder = find.text('reading');
+      final inactiveColor = tester
+          .element(readingFinder)
+          .appColors
+          .readerForeground
+          .withValues(alpha: 0.40);
+
+      controller.animateTo(
+        1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.linear,
+      );
+      await tester.pump(Duration.zero);
+      await tester.pump(const Duration(microseconds: 299980));
+
+      expect(controller.page, greaterThan(0.9999));
+      expect(controller.page, lessThan(1.0));
+      expect(
+        tester.widget<Text>(readingFinder).style?.color,
+        isNot(inactiveColor),
+      );
+    });
   });
 
   group('MetroPivotController unit tests', () {

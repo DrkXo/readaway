@@ -224,6 +224,7 @@ class _MetroPivotState extends State<MetroPivot> {
       widget.controller ?? _internalController!;
 
   late final PageController _pageController;
+  late int _lastReportedIndex;
 
   @override
   void initState() {
@@ -240,6 +241,7 @@ class _MetroPivotState extends State<MetroPivot> {
     }
 
     _pageController = PageController(initialPage: startIndex);
+    _lastReportedIndex = _effectiveController.index;
 
     _effectiveController.attachPageController(_pageController);
     _effectiveController.addListener(_handleControllerTick);
@@ -268,6 +270,7 @@ class _MetroPivotState extends State<MetroPivot> {
 
       _effectiveController.attachPageController(_pageController);
       _effectiveController.addListener(_handleControllerTick);
+      _lastReportedIndex = _effectiveController.index;
     }
 
     // Handle controlled index change from parent
@@ -305,8 +308,11 @@ class _MetroPivotState extends State<MetroPivot> {
 
   void _handleControllerTick() {
     if (!mounted) return;
-    setState(() {});
-    widget.onIndexChanged?.call(_effectiveController.index);
+    final index = _effectiveController.index;
+    if (_lastReportedIndex == index) return;
+
+    _lastReportedIndex = index;
+    widget.onIndexChanged?.call(index);
   }
 
   void _onTabTapped(int index) {
@@ -359,7 +365,6 @@ class _MetroPivotState extends State<MetroPivot> {
   Widget build(BuildContext context) {
     final appColors = context.appColors;
     final controller = _effectiveController;
-    final currentPage = controller.page;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,7 +389,14 @@ class _MetroPivotState extends State<MetroPivot> {
         ),
 
         // 2. Horizon-Bleeding Tab Bar with Continuous Metro Carousel Physics
-        _buildCarouselTabs(context, appColors, currentPage),
+        AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) => _buildCarouselTabs(
+            context,
+            appColors,
+            controller.page,
+          ),
+        ),
 
         const SizedBox(height: 12),
 
@@ -454,7 +466,7 @@ class _MetroPivotState extends State<MetroPivot> {
 
     final baseIndex = currentPage.floor().clamp(0, itemCount - 1);
     final fraction = (currentPage - baseIndex).clamp(0.0, 1.0);
-    final bool isAnimating = fraction > 0.0001 && fraction < 0.9999;
+    final bool isAnimating = fraction > 0.0;
 
     final flowChildren = <Widget>[
       for (int i = 0; i < itemCount; i++)
