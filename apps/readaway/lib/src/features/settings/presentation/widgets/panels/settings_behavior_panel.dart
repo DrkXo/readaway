@@ -50,20 +50,6 @@ class SettingsBehaviorPanel extends StatelessWidget {
       );
     }
 
-    void resetNavigation() {
-      final settings = bloc.state.appSettings;
-      bloc.add(
-        SettingsEvent.updateAppSettings(
-          settings.copyWith(
-            globalViewSettings: settings.globalViewSettings.copyWith(
-              volumeKeysToFlip: false,
-              pageTurnStyle: 'slide',
-            ),
-          ),
-        ),
-      );
-    }
-
     void resetKeepScreenOn() {
       final settings = bloc.state.appSettings;
       bloc.add(
@@ -112,15 +98,6 @@ class SettingsBehaviorPanel extends StatelessWidget {
           onReset: resetReaderCache,
           rows: const [
             _ReaderCacheSizeRow(),
-          ],
-        ),
-        const SizedBox(height: 24),
-        ScopedSettingsSection(
-          scopable: false,
-          title: 'Navigation',
-          onReset: resetNavigation,
-          rows: const [
-            _VolumeKeysToFlipRow(),
           ],
         ),
         const SizedBox(height: 24),
@@ -570,38 +547,6 @@ class _ShowStatusBarRow extends StatelessWidget {
             (p) => p.copyWith(showStatusBar: v),
             documentPath: path,
           ),
-        );
-      },
-    );
-  }
-}
-
-class _VolumeKeysToFlipRow extends StatelessWidget {
-  const _VolumeKeysToFlipRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.appSettings.globalViewSettings.volumeKeysToFlip !=
-          curr.appSettings.globalViewSettings.volumeKeysToFlip,
-      builder: (context, state) {
-        final enabled = state.appSettings.globalViewSettings.volumeKeysToFlip;
-        return SettingsSwitchRow(
-          label: 'Volume keys to flip pages',
-          value: enabled,
-          onChanged: (v) {
-            final settings = state.appSettings;
-            context.read<SettingsBloc>().add(
-              SettingsEvent.updateAppSettings(
-                settings.copyWith(
-                  globalViewSettings: settings.globalViewSettings.copyWith(
-                    volumeKeysToFlip: v,
-                  ),
-                ),
-              ),
-            );
-          },
         );
       },
     );

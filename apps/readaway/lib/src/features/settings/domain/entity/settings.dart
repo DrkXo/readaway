@@ -49,7 +49,6 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default('token') String selectedScheme,
     @Default('Madimi One') String uiFont,
     @Default(0.3) double highlightOpacity,
-    @Default(false) bool volumeKeysToFlip,
     @Default('slide') String pageTurnStyle,
     @Default(1.0) double ttsRate,
     @Default(1.0) double ttsPitch,
