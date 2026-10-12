@@ -3,25 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/result/result.dart';
 import 'package:readaway/src/features/library/domain/entity/reading_status.dart';
-import 'package:readaway/src/features/library/domain/entity/recent_document.dart';
 import 'package:readaway/src/features/library/presentation/bloc/library_bloc.dart';
 import 'package:readaway/src/features/settings/domain/entity/settings.dart';
 
-import '../../../../helpers/test_mocks.dart';
+import '../../../../helpers/test_helpers.dart';
 
 void main() {
   setUpAll(registerMockitoDummies);
   late MockLibraryRepository mockRepo;
   late MockSettingsService mockSettingsService;
 
-  final doc1 = RecentDocument(
+  final doc1 = fakeRecentDocument(
     path: '/path/1.epub',
     fileName: '1.epub',
     title: 'Book 1',
-    dateAdded: DateTime(2025),
-    lastOpened: DateTime(2025),
     fileSize: 100,
-    format: 'epub',
     coverPath: '/covers/1.png',
   );
 

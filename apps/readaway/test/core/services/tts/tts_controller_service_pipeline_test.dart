@@ -3,29 +3,16 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/services/audio/audio_player_service.dart';
-import 'package:readaway/src/core/services/settings_service.dart';
-import 'package:readaway/src/core/services/tts/cache/tts_chapter_cache_service.dart';
 import 'package:readaway/src/core/services/tts/controller/tts_controller_service.dart';
-import 'package:readaway/src/core/services/tts/tts_chunker_service.dart';
 import 'package:readaway/src/core/services/tts/tts_engine.dart';
-import 'package:readaway/src/core/services/tts/tts_models.dart';
 import 'package:readaway/src/features/settings/domain/entity/settings.dart';
 import 'package:readaway_core/readaway_core.dart';
 import 'package:rxdart/rxdart.dart';
 
-import 'tts_controller_service_pipeline_test.mocks.dart';
+import '../../../helpers/test_helpers.dart';
 
-@GenerateNiceMocks([
-  MockSpec<TtsEngineRegistry>(),
-  MockSpec<TtsEngine>(),
-  MockSpec<AudioPlayerService>(),
-  MockSpec<TtsChunkingService>(),
-  MockSpec<SettingsService>(),
-  MockSpec<TtsChapterCacheService>(),
-])
 void main() {
   late MockTtsEngineRegistry mockEngineRegistry;
   late MockTtsEngine mockEngine;
@@ -43,12 +30,7 @@ void main() {
   /// index off this to place a position on the page-wide axis.
   late StreamController<int?> playerIndex;
 
-  const sampleVoice = TtsVoiceOption(
-    id: 'vits-piper-en_US-amy-low',
-    label: 'Amy',
-    languageCode: 'en_US',
-    engine: TtsEngineKind.sherpaOnnx,
-  );
+  final sampleVoice = fakeTtsVoiceOption();
 
   final sampleChunks = [
     const TtsChunk(

@@ -1,22 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:readaway/src/core/services/path_service.dart';
-import 'package:readaway/src/core/services/tts/cache/tts_chapter_cache_service.dart';
-import 'package:readaway/src/features/library/data/datasources/file_picker_data_source.dart';
-import 'package:readaway/src/features/library/data/datasources/library_local_data_source.dart';
 import 'package:readaway/src/features/library/data/repositories/library_repository_impl.dart';
 import 'package:readaway/src/features/library/domain/entity/reading_status.dart';
 import 'package:readaway/src/features/library/domain/entity/recent_document.dart';
 
-import 'library_repository_impl_test.mocks.dart';
+import '../../../../helpers/test_helpers.dart';
 
-@GenerateNiceMocks([
-  MockSpec<LibraryLocalDataSource>(),
-  MockSpec<FilePickerDataSource>(),
-  MockSpec<AppPathService>(),
-  MockSpec<TtsChapterCacheService>(),
-])
 void main() {
   late MockLibraryLocalDataSource mockDataSource;
   late MockFilePickerDataSource mockPicker;
@@ -24,19 +13,12 @@ void main() {
   late MockTtsChapterCacheService mockTtsCacheService;
   late LibraryRepositoryImpl repository;
 
-  final testDoc = RecentDocument(
+  final testDoc = fakeReadingDocument(
     path: '/path/to/book.epub',
-    fileName: 'book.epub',
     title: 'Test Book',
-    dateAdded: DateTime(2025),
-    lastOpened: DateTime(2025),
-    fileSize: 1024,
-    format: 'epub',
-    pageCount: 100,
     lastReadPage: 45,
     lastReadChapter: 4,
     lastReadProgression: 0.5,
-    readingStatus: ReadingStatus.reading,
   );
 
   setUp(() {

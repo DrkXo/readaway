@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mockito/mockito.dart';
 import 'package:readaway/src/core/services/wakelock_service.dart';
-import 'package:readaway/src/features/annotations/domain/entity/reader_note.dart';
 import 'package:readaway/src/features/annotations/presentation/bloc/annotations_bloc.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_repository.dart';
 import 'package:readaway/src/features/reader/domain/repositories/reader_tts_repository.dart';
@@ -19,39 +18,7 @@ import 'package:readaway/src/features/settings/presentation/bloc/settings/settin
 import 'package:readaway_core/readaway_core.dart';
 import 'package:rxdart/rxdart.dart';
 
-import '../../../../helpers/test_mocks.dart';
-
-class _MockReaderBloc extends MockBloc<ReaderEvent, ReaderState>
-    implements ReaderBloc {
-  final List<ReaderEvent> addedEvents = [];
-
-  @override
-  void add(ReaderEvent event) {
-    addedEvents.add(event);
-    super.add(event);
-  }
-
-  @override
-  bool get isClosed => false;
-}
-
-class _MockReaderTtsBloc extends MockBloc<ReaderTtsEvent, ReaderTtsState>
-    implements ReaderTtsBloc {
-  @override
-  bool get isClosed => false;
-}
-
-class _MockSettingsBloc extends MockBloc<SettingsEvent, SettingsState>
-    implements SettingsBloc {
-  @override
-  bool get isClosed => false;
-}
-
-class _MockAnnotationsBloc extends MockBloc<AnnotationsEvent, AnnotationsState>
-    implements AnnotationsBloc {
-  @override
-  bool get isClosed => false;
-}
+import '../../../../helpers/test_helpers.dart';
 
 ChapterTextLayout _createLayout({
   required int startChar,
@@ -60,22 +27,18 @@ ChapterTextLayout _createLayout({
   required List<PageSlice> pages,
 }) {
   final length = endChar - startChar;
-  final text = 'A' * length;
-  return ChapterTextLayout(
+  return fakeChapterTextLayout(
     contentHeight: contentHeight,
     viewportHeight: 1000,
-    lineBounds: const [],
     spans: [
-      TextSpanBox(
+      fakeTextSpanBox(
         charStart: startChar,
         charEnd: endChar,
         rect: Rect.fromLTWH(0, 0, 400, contentHeight),
-        nodeTag: 'p',
-        type: 'text',
       ),
     ],
     pages: pages,
-    flowText: text,
+    flowText: 'A' * length,
     totalCharacterCount: length,
   );
 }
@@ -84,10 +47,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(registerMockitoDummies);
 
-  late _MockReaderBloc readerBloc;
-  late _MockReaderTtsBloc ttsBloc;
-  late _MockSettingsBloc settingsBloc;
-  late _MockAnnotationsBloc annotationsBloc;
+  late MockReaderBloc readerBloc;
+  late MockReaderTtsBloc ttsBloc;
+  late MockSettingsBloc settingsBloc;
+  late MockAnnotationsBloc annotationsBloc;
   late MockReaderRepository readerRepository;
   late MockReaderTtsRepository ttsRepository;
   late PaginationCoordinator coordinator;
@@ -96,10 +59,10 @@ void main() {
   setUp(() {
     GetIt.I.reset();
 
-    readerBloc = _MockReaderBloc();
-    ttsBloc = _MockReaderTtsBloc();
-    settingsBloc = _MockSettingsBloc();
-    annotationsBloc = _MockAnnotationsBloc();
+    readerBloc = MockReaderBloc();
+    ttsBloc = MockReaderTtsBloc(ttsRepository: MockReaderTtsRepository());
+    settingsBloc = MockSettingsBloc();
+    annotationsBloc = MockAnnotationsBloc();
     readerRepository = MockReaderRepository();
     ttsRepository = MockReaderTtsRepository();
     coordinator = PaginationCoordinator();
@@ -255,18 +218,12 @@ void main() {
 
       // Note at startChar 350 in chapter 1 (which falls on page 1 of chapter 1)
       // Global page = getGlobalPageForChapter(1) + 1 = 2 + 1 = 3.
-      final note = ReaderNote(
+      final note = fakeHighlight(
         id: 'n1',
-        type: ReaderNoteType.highlight,
-        anchor: const ReaderNoteAnchor(
-          kind: NoteAnchorKind.reflowable,
-          chapterIndex: 1,
-          startChar: 350,
-          endChar: 400,
-          text: 'target highlight',
-        ),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        chapterIndex: 1,
+        startChar: 350,
+        endChar: 400,
+        text: 'target highlight',
       );
 
       state.jumpToNote(note);
@@ -341,18 +298,12 @@ void main() {
 
       final dynamic state = tester.state(find.byType(ReaderPage));
 
-      final note = ReaderNote(
+      final note = fakeBookmark(
         id: 'n1',
-        type: ReaderNoteType.bookmark,
-        anchor: const ReaderNoteAnchor(
-          kind: NoteAnchorKind.reflowable,
-          chapterIndex: 1,
-          startChar: 600,
-          endChar: 600,
-          text: 'bookmark in ch1',
-        ),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        chapterIndex: 1,
+        startChar: 600,
+        endChar: 600,
+        text: 'bookmark in ch1',
       );
 
       final provisionalExpected = coordinator.getGlobalPageForChapter(1);
@@ -444,18 +395,12 @@ void main() {
       expect(state.viewportController.currentPage, equals(3));
 
       // Jump to note in chapter 2 in continuous mode
-      final note = ReaderNote(
+      final note = fakeHighlight(
         id: 'n2',
-        type: ReaderNoteType.highlight,
-        anchor: const ReaderNoteAnchor(
-          kind: NoteAnchorKind.reflowable,
-          chapterIndex: 2,
-          startChar: 100,
-          endChar: 200,
-          text: 'text in ch2',
-        ),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        chapterIndex: 2,
+        startChar: 100,
+        endChar: 200,
+        text: 'text in ch2',
       );
 
       state.jumpToNote(note);

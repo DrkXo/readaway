@@ -1,22 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path/path.dart' as p;
-import 'package:readaway/src/core/services/path_service.dart';
-import 'package:readaway/src/core/services/settings_service.dart';
 import 'package:readaway/src/core/services/tts/cache/tts_chapter_cache_service.dart';
-import 'package:readaway/src/core/services/tts/tts_models.dart';
 import 'package:readaway/src/features/settings/domain/entity/settings.dart';
 import 'package:readaway_core/readaway_core.dart';
 
-import 'tts_chapter_cache_service_test.mocks.dart';
+import '../../../helpers/test_helpers.dart';
 
-@GenerateNiceMocks([
-  MockSpec<AppPathService>(),
-  MockSpec<SettingsService>(),
-])
 void main() {
   late Directory tempDir;
   late Directory ttsCacheDir;
@@ -24,12 +16,7 @@ void main() {
   late MockSettingsService mockSettingsService;
   late TtsChapterCacheService cacheService;
 
-  const sampleVoice = TtsVoiceOption(
-    id: 'vits-piper-en_US-amy-low',
-    label: 'Amy',
-    languageCode: 'en_US',
-    engine: TtsEngineKind.sherpaOnnx,
-  );
+  final sampleVoice = fakeTtsVoiceOption();
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('tts_cache_test_');

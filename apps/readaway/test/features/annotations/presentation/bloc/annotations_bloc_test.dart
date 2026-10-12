@@ -8,7 +8,7 @@ import 'package:readaway/src/features/annotations/domain/entity/reader_note.dart
 import 'package:readaway/src/features/annotations/domain/entity/reader_notes_filter.dart';
 import 'package:readaway/src/features/annotations/presentation/bloc/annotations_bloc.dart';
 
-import '../../../../helpers/test_mocks.dart';
+import '../../../../helpers/test_helpers.dart';
 
 const _path = '/books/a.epub';
 
@@ -29,62 +29,32 @@ ReaderNote _highlight({
   String colorValue = 'amber',
   String note = '',
   DateTime? deletedAt,
-}) {
-  final at = DateTime(2026, 1, 1);
-  return ReaderNote(
-    id: id,
-    type: ReaderNoteType.highlight,
-    anchor: ReaderNoteAnchor(
-      chapterIndex: chapterIndex,
-      startChar: startChar,
-      endChar: endChar,
-      pageIndex: 3,
-      text: 'a passage',
-    ),
-    style: style,
-    colorValue: colorValue,
-    note: note,
-    createdAt: at,
-    updatedAt: at,
-    deletedAt: deletedAt,
-  );
-}
+}) => fakeHighlight(
+  id: id,
+  chapterIndex: chapterIndex,
+  startChar: startChar,
+  endChar: endChar,
+  pageIndex: 3,
+  text: 'a passage',
+  style: style,
+  colorValue: colorValue,
+  note: note,
+  deletedAt: deletedAt,
+);
 
-ReaderNote _bookmark({String id = 'b1', int pageIndex = 3}) {
-  final at = DateTime(2026, 1, 1);
-  return ReaderNote(
-    id: id,
-    type: ReaderNoteType.bookmark,
-    anchor: ReaderNoteAnchor(
-      kind: NoteAnchorKind.page,
-      chapterIndex: pageIndex,
-      pageIndex: pageIndex,
-      text: 'Page ${pageIndex + 1}',
-    ),
-    createdAt: at,
-    updatedAt: at,
-  );
-}
+ReaderNote _bookmark({String id = 'b1', int pageIndex = 3}) =>
+    fakeBookmark(id: id, pageIndex: pageIndex, chapterIndex: pageIndex);
 
-ReaderNote _textNote({String id = 'n1', String note = 'why it matters'}) {
-  final at = DateTime(2026, 1, 1);
-  return ReaderNote(
-    id: id,
-    type: ReaderNoteType.note,
-    anchor: _anchor,
-    note: note,
-    createdAt: at,
-    updatedAt: at,
-  );
-}
+ReaderNote _textNote({String id = 'n1', String note = 'why it matters'}) =>
+    fakeReaderNote(
+      id: id,
+      type: ReaderNoteType.note,
+      anchor: _anchor,
+      note: note,
+    );
 
 DocumentNotes _record(List<ReaderNote> notes, {String path = _path}) =>
-    DocumentNotes(
-      documentPath: path,
-      schemaVersion: kDocumentNotesSchemaVersion,
-      notes: notes,
-      updatedAt: DateTime(2026, 1, 1),
-    );
+    fakeDocumentNotes(documentPath: path, notes: notes);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
