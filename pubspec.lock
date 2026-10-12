@@ -977,8 +977,8 @@ packages:
     dependency: "direct overridden"
     description:
       path: "."
-      ref: "2ffb4b28529707bd2417e623c246ebf28f4a4586"
-      resolved-ref: "2ffb4b28529707bd2417e623c246ebf28f4a4586"
+      ref: f6f3e9dd444c1411b1992cd15a7993ab51d36393
+      resolved-ref: f6f3e9dd444c1411b1992cd15a7993ab51d36393
       url: "https://github.com/DrkXo/hyper_render.git"
     source: git
     version: "1.13.1"
@@ -986,8 +986,8 @@ packages:
     dependency: "direct overridden"
     description:
       path: "packages/hyper_render_core"
-      ref: "2ffb4b28529707bd2417e623c246ebf28f4a4586"
-      resolved-ref: "2ffb4b28529707bd2417e623c246ebf28f4a4586"
+      ref: f6f3e9dd444c1411b1992cd15a7993ab51d36393
+      resolved-ref: f6f3e9dd444c1411b1992cd15a7993ab51d36393
       url: "https://github.com/DrkXo/hyper_render.git"
     source: git
     version: "1.13.0"
@@ -995,8 +995,8 @@ packages:
     dependency: "direct overridden"
     description:
       path: "packages/hyper_render_devtools"
-      ref: "2ffb4b28529707bd2417e623c246ebf28f4a4586"
-      resolved-ref: "2ffb4b28529707bd2417e623c246ebf28f4a4586"
+      ref: f6f3e9dd444c1411b1992cd15a7993ab51d36393
+      resolved-ref: f6f3e9dd444c1411b1992cd15a7993ab51d36393
       url: "https://github.com/DrkXo/hyper_render.git"
     source: git
     version: "1.8.0"
