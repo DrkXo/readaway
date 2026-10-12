@@ -175,61 +175,66 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                             paragraphGapMs: gvs.ttsParagraphGap,
                             silenceScale: gvs.ttsSilenceScale,
                             onNarrationStyleChanged: (style) {
-                              final updated = settingsState.appSettings
-                                  .copyWith(
-                                    globalViewSettings: gvs.copyWith(
-                                      ttsNarrationStyle: style,
-                                    ),
-                                  );
                               context.read<SettingsBloc>().add(
-                                SettingsEvent.updateAppSettings(updated),
+                                SettingsEvent.updateAppSettings(
+                                  (s) => s.copyWith(
+                                    globalViewSettings: s.globalViewSettings
+                                        .copyWith(
+                                          ttsNarrationStyle: style,
+                                        ),
+                                  ),
+                                ),
                               );
                             },
                             onSentenceGapChanged: (gap) {
-                              final updated = settingsState.appSettings
-                                  .copyWith(
-                                    globalViewSettings: gvs.copyWith(
-                                      ttsSentenceGap: gap,
-                                    ),
-                                  );
                               context.read<SettingsBloc>().add(
-                                SettingsEvent.updateAppSettings(updated),
+                                SettingsEvent.updateAppSettings(
+                                  (s) => s.copyWith(
+                                    globalViewSettings: s.globalViewSettings
+                                        .copyWith(
+                                          ttsSentenceGap: gap,
+                                        ),
+                                  ),
+                                ),
                               );
                             },
                             onParagraphGapChanged: (gap) {
-                              final updated = settingsState.appSettings
-                                  .copyWith(
-                                    globalViewSettings: gvs.copyWith(
-                                      ttsParagraphGap: gap,
-                                    ),
-                                  );
                               context.read<SettingsBloc>().add(
-                                SettingsEvent.updateAppSettings(updated),
+                                SettingsEvent.updateAppSettings(
+                                  (s) => s.copyWith(
+                                    globalViewSettings: s.globalViewSettings
+                                        .copyWith(
+                                          ttsParagraphGap: gap,
+                                        ),
+                                  ),
+                                ),
                               );
                             },
                             onSilenceScaleChanged: (scale) {
-                              final updated = settingsState.appSettings
-                                  .copyWith(
-                                    globalViewSettings: gvs.copyWith(
-                                      ttsSilenceScale: scale,
-                                    ),
-                                  );
                               context.read<SettingsBloc>().add(
-                                SettingsEvent.updateAppSettings(updated),
+                                SettingsEvent.updateAppSettings(
+                                  (s) => s.copyWith(
+                                    globalViewSettings: s.globalViewSettings
+                                        .copyWith(
+                                          ttsSilenceScale: scale,
+                                        ),
+                                  ),
+                                ),
                               );
                             },
                             onReset: () {
-                              final updated = settingsState.appSettings
-                                  .copyWith(
-                                    globalViewSettings: gvs.copyWith(
-                                      ttsNarrationStyle: 'balanced',
-                                      ttsSentenceGap: 500,
-                                      ttsParagraphGap: 1000,
-                                      ttsSilenceScale: 0.2,
-                                    ),
-                                  );
                               context.read<SettingsBloc>().add(
-                                SettingsEvent.updateAppSettings(updated),
+                                SettingsEvent.updateAppSettings(
+                                  (s) => s.copyWith(
+                                    globalViewSettings: s.globalViewSettings
+                                        .copyWith(
+                                          ttsNarrationStyle: 'balanced',
+                                          ttsSentenceGap: 500,
+                                          ttsParagraphGap: 1000,
+                                          ttsSilenceScale: 0.2,
+                                        ),
+                                  ),
+                                ),
                               );
                             },
                             onClose: () {

@@ -87,10 +87,11 @@ enum ReaderPageSpread {
 
 /// Whether a [ReaderPageTransition] is available for a given scroll direction.
 extension ReaderPageTransitionSupport on ReaderPageTransition {
-  /// The page-flip curl effect is inherently horizontal.
-  bool isSupportedFor(ReaderScrollDirection direction) {
-    return true;
-  }
+  /// The cover ("page flip") effect is a book-page metaphor that only makes
+  /// sense when paging horizontally; everything else works either way.
+  bool isSupportedFor(ReaderScrollDirection direction) =>
+      this != ReaderPageTransition.cover ||
+      direction == ReaderScrollDirection.horizontal;
 }
 
 @freezed
@@ -110,7 +111,6 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     @Default('') String userStylesheet,
     @Default(false) bool overrideFont,
     @Default(true) bool overrideLayout,
-    @Default(false) bool overrideColor,
     @Default(18.0) double fontSize,
     @Default(0.0) double minimumFontSize,
     @Default(1.5) double lineHeight,
@@ -140,7 +140,6 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     ReaderPageTransition nonReflowablePageTransition,
     @Default(0.0) double brightnessOverlay,
     @Default(0.0) double contrastOverlay,
-    @Default(true) bool showStatusBar,
     @Default(true) bool showHeader,
     @Default(ReaderHeaderAlignment.left)
     @JsonKey(unknownEnumValue: ReaderHeaderAlignment.left)

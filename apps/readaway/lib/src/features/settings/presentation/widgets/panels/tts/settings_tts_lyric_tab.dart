@@ -17,16 +17,16 @@ class SettingsTtsLyricTab extends StatelessWidget {
   /// they share one entity on the settings side.
   static void _writeLyricStyle(
     BuildContext context,
-    SettingsState state,
     TtsLyricStyle style,
   ) {
-    final updated = state.appSettings.copyWith(
-      globalViewSettings: state.appSettings.globalViewSettings.copyWith(
-        ttsLyricStyle: style,
-      ),
-    );
     context.read<SettingsBloc>().add(
-      SettingsEvent.updateAppSettings(updated),
+      SettingsEvent.updateAppSettings(
+        (s) => s.copyWith(
+          globalViewSettings: s.globalViewSettings.copyWith(
+            ttsLyricStyle: style,
+          ),
+        ),
+      ),
     );
   }
 
@@ -44,11 +44,7 @@ class SettingsTtsLyricTab extends StatelessWidget {
             ScopedSettingsSection(
               scopable: false,
               title: 'Lyric view',
-              onReset: () => _writeLyricStyle(
-                context,
-                state,
-                const TtsLyricStyle(),
-              ),
+              onReset: () => _writeLyricStyle(context, const TtsLyricStyle()),
               rows: [
                 _LyricAlignRow<LyricLineAlign>(
                   label: 'Line text alignment',
@@ -81,7 +77,6 @@ class SettingsTtsLyricTab extends StatelessWidget {
                   ],
                   onChanged: (v) => _writeLyricStyle(
                     context,
-                    state,
                     lyricStyle.copyWith(lineAlign: v),
                   ),
                 ),
@@ -110,7 +105,6 @@ class SettingsTtsLyricTab extends StatelessWidget {
                   ],
                   onChanged: (v) => _writeLyricStyle(
                     context,
-                    state,
                     lyricStyle.copyWith(contentAlign: v),
                   ),
                 ),
@@ -140,7 +134,6 @@ class SettingsTtsLyricTab extends StatelessWidget {
                   ],
                   onChanged: (v) => _writeLyricStyle(
                     context,
-                    state,
                     lyricStyle.copyWith(selectionAnchorAlign: v),
                   ),
                 ),
@@ -169,7 +162,6 @@ class SettingsTtsLyricTab extends StatelessWidget {
                   ],
                   onChanged: (v) => _writeLyricStyle(
                     context,
-                    state,
                     lyricStyle.copyWith(activeAnchorAlign: v),
                   ),
                 ),

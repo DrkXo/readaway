@@ -13,10 +13,13 @@ abstract class SettingsEvent with _$SettingsEvent {
   ) = _SetDocumentReaderPref;
   const factory SettingsEvent.clearDocumentPrefs(String path) =
       _ClearDocumentPrefs;
-  const factory SettingsEvent.resetAllReaderPrefs() = _ResetAllReaderPrefs;
-  const factory SettingsEvent.importReaderPrefs(
-    Map<String, ReaderPreferences> all,
-  ) = _ImportReaderPrefs;
-  const factory SettingsEvent.updateAppSettings(Settings settings) =
-      _UpdateAppSettings;
+  const factory SettingsEvent.updateAppSettings(
+    Settings Function(Settings) update,
+  ) = _UpdateAppSettings;
+
+  // Internal stream event — mirrors the live settings store into state so
+  // settings written by other owners (library, TTS controller) are reflected
+  // and never clobbered by a stale snapshot on the next save.
+  const factory SettingsEvent.appSettingsUpdated(Settings settings) =
+      _AppSettingsUpdated;
 }

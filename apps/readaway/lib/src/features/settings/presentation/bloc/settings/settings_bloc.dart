@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -22,6 +24,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final ReaderPreferencesRepository preferencesRepository;
   final SettingsRepository settingsRepository;
   final Map<String, int> _documentLoadVersions = {};
+  StreamSubscription<Settings>? _settingsSub;
 
   SettingsBloc({
     required this.preferencesRepository,
@@ -48,11 +51,33 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       _onClearDocumentPrefs,
       transformer: sequential(),
     );
-    on<_ResetAllReaderPrefs>(_onResetAllReaderPrefs, transformer: droppable());
-    on<_ImportReaderPrefs>(_onImportReaderPrefs, transformer: droppable());
     on<_UpdateAppSettings>(_onUpdateAppSettings, transformer: sequential());
+    on<_AppSettingsUpdated>(_onAppSettingsUpdated);
+
+    // Mirror the store so settings written by other owners (library, TTS
+    // controller) are reflected and never clobbered by a stale snapshot on the
+    // next save.
+    _settingsSub = settingsRepository.watchSettings().listen((settings) {
+      if (!isClosed && settings != state.appSettings) {
+        add(SettingsEvent.appSettingsUpdated(settings));
+      }
+    });
 
     add(const SettingsEvent.loadPrefs());
+  }
+
+  void _onAppSettingsUpdated(
+    _AppSettingsUpdated event,
+    Emitter<SettingsState> emit,
+  ) {
+    if (event.settings == state.appSettings) return;
+    emit(state.copyWith(appSettings: event.settings));
+  }
+
+  @override
+  Future<void> close() {
+    _settingsSub?.cancel();
+    return super.close();
   }
 
   void _onSetGlobalReaderPref(
@@ -72,31 +97,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         _log.d('Global reader prefs updated');
       },
     );
-  }
-
-  void _onResetAllReaderPrefs(
-    _ResetAllReaderPrefs event,
-    Emitter<SettingsState> emit,
-  ) async {
-    final prefsResult = await preferencesRepository.resetAllPreferences();
-    if (prefsResult.isFailure) {
-      _log.e('Failed to reset reader prefs: ${prefsResult.failureOrNull}');
-      emit(state.copyWith(failure: prefsResult.failureOrNull));
-      return;
-    }
-    final settingsResult = await settingsRepository.resetSettings();
-    if (settingsResult.isFailure) {
-      _log.e('Failed to reset app settings: ${settingsResult.failureOrNull}');
-      emit(state.copyWith(failure: settingsResult.failureOrNull));
-      return;
-    }
-    emit(
-      const SettingsState(
-        globalReaderPrefs: ReaderPreferences(),
-        appSettings: Settings(),
-      ),
-    );
-    _log.d('All reader prefs reset');
   }
 
   void _onLoadDocumentPrefs(
@@ -197,36 +197,25 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     );
   }
 
-  void _onImportReaderPrefs(
-    _ImportReaderPrefs event,
-    Emitter<SettingsState> emit,
-  ) async {
-    final global = event.all['global'] ?? const ReaderPreferences();
-    final result = await preferencesRepository.importGlobalPreferences(global);
-    result.fold(
-      (failure) {
-        _log.e('Failed to import prefs: $failure');
-        emit(state.copyWith(failure: failure));
-      },
-      (_) {
-        emit(state.copyWith(globalReaderPrefs: global, failure: null));
-        _log.d('Reader prefs imported');
-      },
-    );
-  }
-
   void _onUpdateAppSettings(
     _UpdateAppSettings event,
     Emitter<SettingsState> emit,
   ) async {
-    final result = await settingsRepository.saveSettings(event.settings);
+    // Rebase on the live store so concurrent writes by other owners (library
+    // sort/view, TTS controller rate/pitch/sleep) compose with rather than get
+    // clobbered by this update.
+    final base =
+        (await settingsRepository.getSettings()).dataOrNull ??
+        state.appSettings;
+    final next = event.update(base);
+    final result = await settingsRepository.saveSettings(next);
     result.fold(
       (failure) {
         _log.e('Failed to update app settings: $failure');
         emit(state.copyWith(failure: failure));
       },
       (_) {
-        emit(state.copyWith(appSettings: event.settings, failure: null));
+        emit(state.copyWith(appSettings: next, failure: null));
         _log.d('App settings updated');
       },
     );

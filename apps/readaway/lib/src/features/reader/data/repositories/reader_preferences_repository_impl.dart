@@ -142,33 +142,4 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
       ),
     );
   }
-
-  @override
-  Future<Result<void>> resetAllPreferences() {
-    return guard(
-      () async {
-        _fingerprintCache.clear();
-        await _storage.readerBox.clear();
-      },
-      onError: (error, stack) => StorageResetFailure(
-        'Failed to reset reader preferences: $error',
-        cause: error,
-        stackTrace: stack,
-      ),
-    );
-  }
-
-  @override
-  Future<Result<void>> importGlobalPreferences(ReaderPreferences prefs) {
-    return guard(
-      () async {
-        await _storage.readerBox.put(_globalKey, prefs);
-      },
-      onError: (error, stack) => StorageWriteFailure(
-        _globalKey,
-        cause: error,
-        stackTrace: stack,
-      ),
-    );
-  }
 }

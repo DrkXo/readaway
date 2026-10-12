@@ -91,11 +91,10 @@ class _SchemePickerCardState extends State<SchemePickerCard> {
   }
 
   void _selectScheme(BuildContext context, String schemeId) {
-    final settings = context.read<SettingsBloc>().state.appSettings;
     context.read<SettingsBloc>().add(
       SettingsEvent.updateAppSettings(
-        settings.copyWith(
-          globalViewSettings: settings.globalViewSettings.copyWith(
+        (s) => s.copyWith(
+          globalViewSettings: s.globalViewSettings.copyWith(
             selectedScheme: schemeId,
           ),
         ),

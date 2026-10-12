@@ -19,11 +19,10 @@ class SettingsAppearancePanel extends StatelessWidget {
     final bloc = context.read<SettingsBloc>();
 
     void resetTheme() {
-      final settings = bloc.state.appSettings;
       bloc.add(
         SettingsEvent.updateAppSettings(
-          settings.copyWith(
-            globalViewSettings: settings.globalViewSettings.copyWith(
+          (s) => s.copyWith(
+            globalViewSettings: s.globalViewSettings.copyWith(
               theme: 'system',
               selectedScheme: 'token',
               uiFont: 'Madimi One',
@@ -44,16 +43,6 @@ class SettingsAppearancePanel extends StatelessWidget {
     }
 
     void resetReading() {
-      final settings = bloc.state.appSettings;
-      bloc.add(
-        SettingsEvent.updateAppSettings(
-          settings.copyWith(
-            globalViewSettings: settings.globalViewSettings.copyWith(
-              highlightOpacity: 0.3,
-            ),
-          ),
-        ),
-      );
       bloc.updateReaderPrefs(
         (p) => p.copyWith(selectionAnchorStyle: ReaderAnchorStyle.modernPin),
         documentPath: path,
@@ -87,7 +76,6 @@ class SettingsAppearancePanel extends StatelessWidget {
           title: 'Reading',
           onReset: resetReading,
           rows: const [
-            _HighlightOpacityRow(),
             _SelectionAnchorStyleRow(),
           ],
         ),
@@ -137,11 +125,10 @@ class _ThemeModeCard extends StatelessWidget {
               ),
             ],
             onChanged: (selected) {
-              final settings = state.appSettings;
               context.read<SettingsBloc>().add(
                 SettingsEvent.updateAppSettings(
-                  settings.copyWith(
-                    globalViewSettings: settings.globalViewSettings.copyWith(
+                  (s) => s.copyWith(
+                    globalViewSettings: s.globalViewSettings.copyWith(
                       theme: selected.name,
                     ),
                   ),
@@ -182,11 +169,10 @@ class _UiFontRow extends StatelessWidget {
           value: current,
           entries: _builtin,
           onChanged: (uiFont) {
-            final settings = state.appSettings;
             context.read<SettingsBloc>().add(
               SettingsEvent.updateAppSettings(
-                settings.copyWith(
-                  globalViewSettings: settings.globalViewSettings.copyWith(
+                (s) => s.copyWith(
+                  globalViewSettings: s.globalViewSettings.copyWith(
                     uiFont: uiFont,
                   ),
                 ),
@@ -249,42 +235,6 @@ class _ContrastOverlayRow extends StatelessWidget {
             (p) => p.copyWith(contrastOverlay: v),
             documentPath: path,
           ),
-        );
-      },
-    );
-  }
-}
-
-class _HighlightOpacityRow extends StatelessWidget {
-  const _HighlightOpacityRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.appSettings.globalViewSettings.highlightOpacity !=
-          curr.appSettings.globalViewSettings.highlightOpacity,
-      builder: (context, state) {
-        final opacity = state.appSettings.globalViewSettings.highlightOpacity;
-        return SettingsSliderRow(
-          label: 'Highlight opacity',
-          value: opacity,
-          min: 0.1,
-          max: 1.0,
-          divisions: 9,
-          format: (v) => '${(v * 100).round()}%',
-          onChanged: (v) {
-            final settings = state.appSettings;
-            context.read<SettingsBloc>().add(
-              SettingsEvent.updateAppSettings(
-                settings.copyWith(
-                  globalViewSettings: settings.globalViewSettings.copyWith(
-                    highlightOpacity: v,
-                  ),
-                ),
-              ),
-            );
-          },
         );
       },
     );

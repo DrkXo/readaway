@@ -21,10 +21,4 @@ abstract interface class ReaderPreferencesRepository {
   /// Removes document-specific reading preferences so the document falls back
   /// to the global preferences.
   Future<Result<void>> clearDocumentPreferences(String path);
-
-  /// Resets all reading preferences in storage.
-  Future<Result<void>> resetAllPreferences();
-
-  /// Imports and overrides global reading preferences.
-  Future<Result<void>> importGlobalPreferences(ReaderPreferences prefs);
 }

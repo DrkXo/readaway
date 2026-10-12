@@ -41,19 +41,6 @@ class _MemoryReaderPreferencesRepository
     documents.remove(path);
     return const Success(null);
   }
-
-  @override
-  Future<Result<void>> resetAllPreferences() async {
-    global = const ReaderPreferences();
-    documents.clear();
-    return const Success(null);
-  }
-
-  @override
-  Future<Result<void>> importGlobalPreferences(ReaderPreferences prefs) async {
-    global = prefs;
-    return const Success(null);
-  }
 }
 
 class _MemorySettingsRepository implements SettingsRepository {

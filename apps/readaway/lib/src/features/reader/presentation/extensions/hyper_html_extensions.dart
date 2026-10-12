@@ -49,10 +49,7 @@ extension UDTNodeExtensions on UDTNode {
     }
 
     // 2. Color styling
-    if (prefs.overrideColor) {
-      node.style.color = textColor;
-      node.style.markExplicitlySet('color');
-    } else if (!node.style.isExplicitlySet('color')) {
+    if (!node.style.isExplicitlySet('color')) {
       node.style.color = textColor;
     }
 

@@ -35,11 +35,10 @@ class SettingsBehaviorPanel extends StatelessWidget {
     }
 
     void resetReaderCache() {
-      final settings = bloc.state.appSettings;
       bloc.add(
         SettingsEvent.updateAppSettings(
-          settings.copyWith(
-            globalViewSettings: settings.globalViewSettings.copyWith(
+          (s) => s.copyWith(
+            globalViewSettings: s.globalViewSettings.copyWith(
               readerCacheSizeMb: kDefaultReaderCacheSizeMb,
             ),
           ),
@@ -51,18 +50,10 @@ class SettingsBehaviorPanel extends StatelessWidget {
     }
 
     void resetKeepScreenOn() {
-      final settings = bloc.state.appSettings;
       bloc.add(
         SettingsEvent.updateAppSettings(
-          settings.copyWith(screenWakeLock: false),
+          (s) => s.copyWith(screenWakeLock: false),
         ),
-      );
-    }
-
-    void resetStatusBar() {
-      bloc.updateReaderPrefs(
-        (p) => p.copyWith(showStatusBar: true),
-        documentPath: path,
       );
     }
 
@@ -107,14 +98,6 @@ class SettingsBehaviorPanel extends StatelessWidget {
           onReset: resetKeepScreenOn,
           rows: const [
             _KeepScreenOnRow(),
-          ],
-        ),
-        const SizedBox(height: 24),
-        ScopedSettingsSection(
-          title: 'Status bar',
-          onReset: resetStatusBar,
-          rows: const [
-            _ShowStatusBarRow(),
           ],
         ),
       ],
@@ -484,11 +467,12 @@ class _ReaderCacheSizeRow extends StatelessWidget {
           // Not a per-document pref: this is the process-wide budget, so it
           // lives in globalViewSettings rather than readerPrefs.
           onChanged: (mb) {
-            final settings = state.appSettings;
             context.read<SettingsBloc>().add(
               SettingsEvent.updateAppSettings(
-                settings.copyWith(
-                  globalViewSettings: gvs.copyWith(readerCacheSizeMb: mb),
+                (s) => s.copyWith(
+                  globalViewSettings: s.globalViewSettings.copyWith(
+                    readerCacheSizeMb: mb,
+                  ),
                 ),
               ),
             );
@@ -515,38 +499,12 @@ class _KeepScreenOnRow extends StatelessWidget {
           description: 'Prevent the screen from sleeping while reading',
           value: enabled,
           onChanged: (v) {
-            final settings = state.appSettings;
             context.read<SettingsBloc>().add(
               SettingsEvent.updateAppSettings(
-                settings.copyWith(screenWakeLock: v),
+                (s) => s.copyWith(screenWakeLock: v),
               ),
             );
           },
-        );
-      },
-    );
-  }
-}
-
-class _ShowStatusBarRow extends StatelessWidget {
-  const _ShowStatusBarRow();
-
-  @override
-  Widget build(BuildContext context) {
-    final path = context.readerPrefsDocumentPath();
-    return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) =>
-          prev.effectiveReaderPrefs(path) != curr.effectiveReaderPrefs(path),
-      builder: (context, state) {
-        final prefs = state.effectiveReaderPrefs(path);
-        return SettingsSwitchRow(
-          label: 'Show status bar',
-          description: 'Progress indicator at the top of the reader',
-          value: prefs.showStatusBar,
-          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            (p) => p.copyWith(showStatusBar: v),
-            documentPath: path,
-          ),
         );
       },
     );

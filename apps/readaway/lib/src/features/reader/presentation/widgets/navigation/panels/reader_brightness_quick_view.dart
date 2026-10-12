@@ -29,14 +29,12 @@ class ReaderBrightnessQuickView extends StatelessWidget {
 
   void _updateTheme(
     BuildContext context,
-    SettingsState settingsState,
     String theme,
   ) {
-    final settings = settingsState.appSettings;
     context.read<SettingsBloc>().add(
       SettingsEvent.updateAppSettings(
-        settings.copyWith(
-          globalViewSettings: settings.globalViewSettings.copyWith(
+        (s) => s.copyWith(
+          globalViewSettings: s.globalViewSettings.copyWith(
             theme: theme,
           ),
         ),
@@ -169,7 +167,7 @@ class ReaderBrightnessQuickView extends StatelessWidget {
                     },
                   },
                   onSelectionChanged: (selected) {
-                    _updateTheme(context, settingsState, selected.first);
+                    _updateTheme(context, selected.first);
                   },
                 ),
               ),

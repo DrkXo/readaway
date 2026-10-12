@@ -47,7 +47,6 @@ void main() {
         paragraphMargin: 1.0,
         textAlign: ReaderTextAlign.justify,
         overrideLayout: true,
-        overrideColor: true,
       );
 
       final css = resolver.buildCustomCss(

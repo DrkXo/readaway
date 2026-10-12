@@ -33,12 +33,9 @@ class SettingsCustomFontsPage extends StatelessWidget {
 
     try {
       final font = await fontService.addFont(path);
-      final settings = settingsBloc.state.appSettings;
       settingsBloc.add(
         SettingsEvent.updateAppSettings(
-          settings.copyWith(
-            customFonts: [...settings.customFonts, font],
-          ),
+          (s) => s.copyWith(customFonts: [...s.customFonts, font]),
         ),
       );
     } catch (e) {
@@ -56,13 +53,10 @@ class SettingsCustomFontsPage extends StatelessWidget {
     final settingsBloc = context.read<SettingsBloc>();
 
     await fontService.removeFont(font);
-    final settings = settingsBloc.state.appSettings;
     settingsBloc.add(
       SettingsEvent.updateAppSettings(
-        settings.copyWith(
-          customFonts: settings.customFonts
-              .where((f) => f.id != font.id)
-              .toList(),
+        (s) => s.copyWith(
+          customFonts: s.customFonts.where((f) => f.id != font.id).toList(),
         ),
       ),
     );

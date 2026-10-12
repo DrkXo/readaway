@@ -16,12 +16,13 @@ class SettingsTtsHighlightTab extends StatelessWidget {
 
   static void _updateSettings(
     BuildContext context,
-    SettingsState state,
     GlobalViewSettings Function(GlobalViewSettings) updater,
   ) {
-    final gvs = updater(state.appSettings.globalViewSettings);
-    final updated = state.appSettings.copyWith(globalViewSettings: gvs);
-    context.read<SettingsBloc>().add(SettingsEvent.updateAppSettings(updated));
+    context.read<SettingsBloc>().add(
+      SettingsEvent.updateAppSettings(
+        (s) => s.copyWith(globalViewSettings: updater(s.globalViewSettings)),
+      ),
+    );
   }
 
   @override
@@ -46,7 +47,6 @@ class SettingsTtsHighlightTab extends StatelessWidget {
               title: 'Highlight Style',
               onReset: () => _updateSettings(
                 context,
-                state,
                 (s) => s.copyWith(
                   ttsHighlightStyle: 'highlight',
                   ttsHighlightColor: 'primary',
@@ -92,7 +92,6 @@ class SettingsTtsHighlightTab extends StatelessWidget {
                       if (s.isEmpty) return;
                       _updateSettings(
                         context,
-                        state,
                         (curr) => curr.copyWith(ttsHighlightStyle: s.first),
                       );
                     },
@@ -113,7 +112,6 @@ class SettingsTtsHighlightTab extends StatelessWidget {
                     selectedValue: gvs.ttsHighlightColor,
                     onSelected: (value) => _updateSettings(
                       context,
-                      state,
                       (curr) => curr.copyWith(ttsHighlightColor: value),
                     ),
                   ),
@@ -135,7 +133,6 @@ class SettingsTtsHighlightTab extends StatelessWidget {
                   value: gvs.ttsHighlightWordFocus,
                   onChanged: (v) => _updateSettings(
                     context,
-                    state,
                     (curr) => curr.copyWith(ttsHighlightWordFocus: v),
                   ),
                 ),
@@ -157,7 +154,6 @@ class SettingsTtsHighlightTab extends StatelessWidget {
                   format: (v) => '${(v * 100).round()}%',
                   onChanged: (v) => _updateSettings(
                     context,
-                    state,
                     (curr) => curr.copyWith(
                       ttsHighlightSentenceOpacity: (v * 100).round() / 100.0,
                     ),
@@ -173,7 +169,6 @@ class SettingsTtsHighlightTab extends StatelessWidget {
                   format: (v) => '${(v * 100).round()}%',
                   onChanged: (v) => _updateSettings(
                     context,
-                    state,
                     (curr) => curr.copyWith(
                       ttsHighlightWordOpacity: (v * 100).round() / 100.0,
                     ),

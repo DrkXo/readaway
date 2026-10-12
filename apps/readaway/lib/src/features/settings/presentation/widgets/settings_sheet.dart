@@ -4,55 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
 
-/// Chrome for the settings bottom sheet.
-///
-/// The sheet is a single modal managed as a GoRouter [ShellRoute]. Everything
-/// inside it — the tabbed settings page and any sub-page (voice library,
-/// custom fonts) — is rendered via the shell's nested [Navigator] passed in
-/// as [child].
-class SettingsSheet extends StatelessWidget {
-  const SettingsSheet({super.key, required this.child});
-
-  /// The ShellRoute's nested navigator.
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.92),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Flexible(child: child),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Header row for a page inside the [SettingsSheet]:
+/// Header row for a page inside the settings sheet:
 /// Features authentic Windows Phone / Lumia two-line horizon typography:
 /// uppercase category tag (e.g. `SETTINGS`), grand light lower-case title (`34pt`, `w300`),
 /// and sleek touch-reactive leading/trailing actions with zero dividing lines.

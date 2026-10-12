@@ -35,7 +35,9 @@ class SettingsLayoutHeaderFooterSection extends StatelessWidget {
       rows: const [
         _ShowHeaderRow(),
         _HeaderAlignmentRow(),
+        _HeaderFontSizeRow(),
         _ShowFooterRow(),
+        _FooterFontSizeRow(),
         _ProgressStyleRow(),
         _RemainingPagesRow(),
         _CurrentTimeRow(),
@@ -139,6 +141,36 @@ class _HeaderAlignmentRow extends StatelessWidget {
   }
 }
 
+class _HeaderFontSizeRow extends StatelessWidget {
+  const _HeaderFontSizeRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path).headerFontSize !=
+          curr.effectiveReaderPrefs(path).headerFontSize,
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        return SettingsSliderRow(
+          label: 'Header text size',
+          value: prefs.headerFontSize,
+          min: 8,
+          max: 16,
+          divisions: 8,
+          enabled: prefs.showHeader,
+          format: (v) => '${v.round()} pt',
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(headerFontSize: v),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _ShowFooterRow extends StatelessWidget {
   const _ShowFooterRow();
 
@@ -156,6 +188,36 @@ class _ShowFooterRow extends StatelessWidget {
           value: enabled,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(showFooter: v),
+            documentPath: path,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FooterFontSizeRow extends StatelessWidget {
+  const _FooterFontSizeRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final path = context.readerPrefsDocumentPath();
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (prev, curr) =>
+          prev.effectiveReaderPrefs(path).footerFontSize !=
+          curr.effectiveReaderPrefs(path).footerFontSize,
+      builder: (context, state) {
+        final prefs = state.effectiveReaderPrefs(path);
+        return SettingsSliderRow(
+          label: 'Footer text size',
+          value: prefs.footerFontSize,
+          min: 8,
+          max: 16,
+          divisions: 8,
+          enabled: prefs.showFooter,
+          format: (v) => '${v.round()} pt',
+          onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
+            (p) => p.copyWith(footerFontSize: v),
             documentPath: path,
           ),
         );

@@ -18,7 +18,6 @@ class _MemoryReaderPreferencesRepository
   final List<Completer<Result<ReaderPreferences?>>> documentReads = [];
   int _nextDocumentRead = 0;
   Result<void> saveResult = const Success(null);
-  Result<void> resetResult = const Success(null);
 
   @override
   Future<Result<ReaderPreferences>> getGlobalPreferences() async =>
@@ -51,21 +50,6 @@ class _MemoryReaderPreferencesRepository
   Future<Result<void>> clearDocumentPreferences(String path) async {
     if (saveResult.isSuccess) documents.remove(path);
     return saveResult;
-  }
-
-  @override
-  Future<Result<void>> resetAllPreferences() async {
-    if (resetResult.isSuccess) {
-      global = const ReaderPreferences();
-      documents.clear();
-    }
-    return resetResult;
-  }
-
-  @override
-  Future<Result<void>> importGlobalPreferences(ReaderPreferences prefs) async {
-    global = prefs;
-    return const Success(null);
   }
 }
 
@@ -324,22 +308,13 @@ void main() {
 
   group('application settings', () {
     blocTest<SettingsBloc, SettingsState>(
-      'persists updates and resets reader and application settings',
-      build: () {
-        preferences.global = const ReaderPreferences(fontSize: 22);
-        preferences.documents['book-a'] = const ReaderPreferences(fontSize: 30);
-        return buildBloc();
-      },
-      act: (bloc) async {
-        bloc.add(
-          const SettingsEvent.updateAppSettings(Settings(screenWakeLock: true)),
-        );
-        await Future<void>.delayed(Duration.zero);
-        bloc.add(const SettingsEvent.loadDocumentPrefs('book-a'));
-        await Future<void>.delayed(Duration.zero);
-        bloc.add(const SettingsEvent.resetAllReaderPrefs());
-      },
-      wait: const Duration(milliseconds: 50),
+      'persists a mutation-based update',
+      build: () => buildBloc(),
+      act: (bloc) => bloc.add(
+        SettingsEvent.updateAppSettings(
+          (s) => s.copyWith(screenWakeLock: true),
+        ),
+      ),
       skip: 1,
       expect: () => [
         isA<SettingsState>().having(
@@ -347,32 +322,40 @@ void main() {
           'wake lock',
           true,
         ),
-        isA<SettingsState>().having(
-          (state) => state.documentReaderPrefs.containsKey('book-a'),
-          'loaded book override',
-          true,
+      ],
+      verify: (_) => expect(settings.current.screenWakeLock, true),
+    );
+
+    blocTest<SettingsBloc, SettingsState>(
+      'rebases on the live store so external writes are not clobbered',
+      build: () {
+        // Simulate a write by another owner (library sort) that this bloc has
+        // not seen yet: the mutation must apply on top of the live value.
+        settings.current = const Settings(librarySortBy: 'title');
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        SettingsEvent.updateAppSettings(
+          (s) => s.copyWith(screenWakeLock: true),
         ),
+      ),
+      skip: 1,
+      expect: () => [
         isA<SettingsState>()
             .having(
-              (state) => state.appSettings,
-              'default app settings',
-              const Settings(),
+              (state) => state.appSettings.screenWakeLock,
+              'wake lock',
+              true,
             )
             .having(
-              (state) => state.globalReaderPrefs,
-              'default reader preferences',
-              const ReaderPreferences(),
-            )
-            .having(
-              (state) => state.documentReaderPrefs,
-              'cleared book settings',
-              isEmpty,
+              (state) => state.appSettings.librarySortBy,
+              'library sort preserved',
+              'title',
             ),
       ],
       verify: (_) {
-        expect(settings.current, const Settings());
-        expect(preferences.global, const ReaderPreferences());
-        expect(preferences.documents, isEmpty);
+        expect(settings.current.screenWakeLock, true);
+        expect(settings.current.librarySortBy, 'title');
       },
     );
 
@@ -383,7 +366,9 @@ void main() {
         return buildBloc();
       },
       act: (bloc) => bloc.add(
-        const SettingsEvent.updateAppSettings(Settings(screenWakeLock: true)),
+        SettingsEvent.updateAppSettings(
+          (s) => s.copyWith(screenWakeLock: true),
+        ),
       ),
       skip: 1,
       expect: () => [

@@ -106,15 +106,6 @@ class ReaderStyleResolver {
       }
     ''');
 
-    if (prefs.overrideColor) {
-      buffer.writeln('''
-        p, div, li, span, blockquote, dd, dt, h1, h2, h3, h4, h5, h6 {
-          color: $textHex !important;
-          background-color: transparent !important;
-        }
-      ''');
-    }
-
     // 5. Footnotes & Annotations (Ruby)
     buffer.writeln('''
       aside, .epubtype-footnote, .footnote {

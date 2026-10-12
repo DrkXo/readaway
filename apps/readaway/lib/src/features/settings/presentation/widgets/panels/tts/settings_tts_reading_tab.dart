@@ -43,13 +43,14 @@ class SettingsTtsReadingTab extends StatelessWidget {
                     ),
                   ],
                   onChanged: (style) {
-                    final updated = state.appSettings.copyWith(
-                      globalViewSettings: gvs.copyWith(
-                        ttsNarrationStyle: style,
-                      ),
-                    );
                     context.read<SettingsBloc>().add(
-                      SettingsEvent.updateAppSettings(updated),
+                      SettingsEvent.updateAppSettings(
+                        (s) => s.copyWith(
+                          globalViewSettings: s.globalViewSettings.copyWith(
+                            ttsNarrationStyle: style,
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -61,13 +62,14 @@ class SettingsTtsReadingTab extends StatelessWidget {
                   divisions: 20,
                   format: (v) => '${v.round()} ms',
                   onChanged: (val) {
-                    final updated = state.appSettings.copyWith(
-                      globalViewSettings: gvs.copyWith(
-                        ttsSentenceGap: val.round(),
-                      ),
-                    );
                     context.read<SettingsBloc>().add(
-                      SettingsEvent.updateAppSettings(updated),
+                      SettingsEvent.updateAppSettings(
+                        (s) => s.copyWith(
+                          globalViewSettings: s.globalViewSettings.copyWith(
+                            ttsSentenceGap: val.round(),
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -79,13 +81,14 @@ class SettingsTtsReadingTab extends StatelessWidget {
                   divisions: 23,
                   format: (v) => '${v.round()} ms',
                   onChanged: (val) {
-                    final updated = state.appSettings.copyWith(
-                      globalViewSettings: gvs.copyWith(
-                        ttsParagraphGap: val.round(),
-                      ),
-                    );
                     context.read<SettingsBloc>().add(
-                      SettingsEvent.updateAppSettings(updated),
+                      SettingsEvent.updateAppSettings(
+                        (s) => s.copyWith(
+                          globalViewSettings: s.globalViewSettings.copyWith(
+                            ttsParagraphGap: val.round(),
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -97,13 +100,14 @@ class SettingsTtsReadingTab extends StatelessWidget {
                   divisions: 10,
                   format: (v) => '${(v * 100).round()}%',
                   onChanged: (val) {
-                    final updated = state.appSettings.copyWith(
-                      globalViewSettings: gvs.copyWith(
-                        ttsSilenceScale: (val * 100).round() / 100.0,
-                      ),
-                    );
                     context.read<SettingsBloc>().add(
-                      SettingsEvent.updateAppSettings(updated),
+                      SettingsEvent.updateAppSettings(
+                        (s) => s.copyWith(
+                          globalViewSettings: s.globalViewSettings.copyWith(
+                            ttsSilenceScale: (val * 100).round() / 100.0,
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),

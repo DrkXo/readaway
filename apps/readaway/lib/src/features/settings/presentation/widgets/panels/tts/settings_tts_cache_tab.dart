@@ -254,13 +254,14 @@ class _SettingsTtsCacheTabState extends State<SettingsTtsCacheTab> {
                         SettingsSelectEntry(value: 0, label: 'Unlimited'),
                       ],
                       onChanged: (limit) {
-                        final updated = settingsState.appSettings.copyWith(
-                          globalViewSettings: gvs.copyWith(
-                            ttsMaxCacheSizeMb: limit,
-                          ),
-                        );
                         context.read<SettingsBloc>().add(
-                          SettingsEvent.updateAppSettings(updated),
+                          SettingsEvent.updateAppSettings(
+                            (s) => s.copyWith(
+                              globalViewSettings: s.globalViewSettings.copyWith(
+                                ttsMaxCacheSizeMb: limit,
+                              ),
+                            ),
+                          ),
                         );
                         if (limit > 0) {
                           GetIt.I
@@ -272,21 +273,6 @@ class _SettingsTtsCacheTabState extends State<SettingsTtsCacheTab> {
                             ),
                           );
                         }
-                      },
-                    ),
-                    SettingsSwitchRow(
-                      label: 'Pre-cache next chapter',
-                      description: 'Synthesize upcoming chapter in the background for continuous playback',
-                      value: gvs.ttsPrecacheNextChapter,
-                      onChanged: (val) {
-                        final updated = settingsState.appSettings.copyWith(
-                          globalViewSettings: gvs.copyWith(
-                            ttsPrecacheNextChapter: val,
-                          ),
-                        );
-                        context.read<SettingsBloc>().add(
-                          SettingsEvent.updateAppSettings(updated),
-                        );
                       },
                     ),
                   ],

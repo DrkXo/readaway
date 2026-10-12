@@ -14,9 +14,6 @@ String settingsToJson(Settings data) => json.encode(data.toJson());
 @freezed
 abstract class Settings with _$Settings {
   const factory Settings({
-    @Default(1) int schemaVersion,
-    @Default(1) int version,
-    @Default(1) int migrationVersion,
     @Default(false) bool screenWakeLock,
     @Default([]) List<CustomFont> customFonts,
     @Default(GlobalViewSettings()) GlobalViewSettings globalViewSettings,
@@ -48,8 +45,6 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default('system') String theme,
     @Default('token') String selectedScheme,
     @Default('Madimi One') String uiFont,
-    @Default(0.3) double highlightOpacity,
-    @Default('slide') String pageTurnStyle,
     @Default(1.0) double ttsRate,
     @Default(1.0) double ttsPitch,
     String? ttsVoice,
@@ -64,7 +59,6 @@ abstract class GlobalViewSettings with _$GlobalViewSettings {
     @Default(-1) int ttsSleepTimerMinutes,
     @Default(8) int readerCacheSizeMb,
     @Default(500) int ttsMaxCacheSizeMb,
-    @Default(true) bool ttsPrecacheNextChapter,
     @Default(TtsLyricStyle()) TtsLyricStyle ttsLyricStyle,
     @Default('highlight') String ttsHighlightStyle,
     @Default('primary') String ttsHighlightColor,

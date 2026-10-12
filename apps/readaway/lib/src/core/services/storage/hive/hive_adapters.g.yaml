@@ -83,8 +83,6 @@ types:
         index: 8
       overrideLayout:
         index: 9
-      overrideColor:
-        index: 10
       fontSize:
         index: 11
       minimumFontSize:
@@ -119,8 +117,6 @@ types:
         index: 27
       contrastOverlay:
         index: 28
-      showStatusBar:
-        index: 31
       showHeader:
         index: 32
       headerFontSize:
@@ -159,12 +155,6 @@ types:
     typeId: 4
     nextIndex: 62
     fields:
-      schemaVersion:
-        index: 0
-      version:
-        index: 1
-      migrationVersion:
-        index: 2
       screenWakeLock:
         index: 13
       customFonts:
@@ -197,10 +187,6 @@ types:
         index: 31
       selectedScheme:
         index: 32
-      highlightOpacity:
-        index: 36
-      pageTurnStyle:
-        index: 71
       ttsRate:
         index: 80
       ttsSentenceGap:
@@ -227,8 +213,6 @@ types:
         index: 115
       ttsMaxCacheSizeMb:
         index: 117
-      ttsPrecacheNextChapter:
-        index: 118
       ttsLyricStyle:
         index: 119
       readerCacheSizeMb:
