@@ -111,7 +111,7 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     @Default(false) bool overrideFont,
     @Default(true) bool overrideLayout,
     @Default(false) bool overrideColor,
-    @Default(16.0) double fontSize,
+    @Default(18.0) double fontSize,
     @Default(0.0) double minimumFontSize,
     @Default(1.5) double lineHeight,
     @Default(0.0) double letterSpacing,

@@ -26,7 +26,7 @@ class SettingsFontPanel extends StatelessWidget {
           onReset: () => context.read<SettingsBloc>().updateReaderPrefs(
             (p) => p.copyWith(
               fontFamily: null,
-              fontSize: 16.0,
+              fontSize: 18.0,
               minimumFontSize: 0.0,
             ),
             documentPath: path,

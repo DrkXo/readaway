@@ -172,7 +172,7 @@ void main() {
           isNotNull,
         ),
       ],
-      verify: (_) => expect(bloc.state.globalReaderPrefs.fontSize, 16),
+      verify: (_) => expect(bloc.state.globalReaderPrefs.fontSize, 18),
     );
   });
 
