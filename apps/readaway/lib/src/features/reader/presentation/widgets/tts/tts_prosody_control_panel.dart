@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/core_widgets.dart';
+
 /// An interactive controller for TTS prosody and timing:
 /// 1. Narration style presets (Audiobook, Balanced, Expressive).
 /// 2. Sentence pause slider & steppers (0–1000 ms).
@@ -42,17 +45,18 @@ class TtsProsodyControlPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        color: appColors.panelBackground,
+        borderRadius: BorderRadius.zero,
         border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.4),
+          color: appColors.panelBorder,
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -65,53 +69,64 @@ class TtsProsodyControlPanel extends StatelessWidget {
               Icon(
                 LucideIcons.slidersHorizontal,
                 size: 16,
-                color: scheme.primary,
+                color: appColors.buttonBackground,
               ),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  'Prosody & Timing',
+                  'prosody & timing',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
+                    color: appColors.topbarForeground,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const Spacer(),
               if (!_isDefault) ...[
-                IconButton(
-                  tooltip: 'Reset to defaults',
-                  visualDensity: VisualDensity.compact,
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size(44, 44),
-                    padding: const EdgeInsets.all(8),
-                  ),
-                  onPressed: onReset,
-                  icon: Text(
-                    'Reset',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.primary,
-                      fontWeight: FontWeight.w600,
+                MetroPressable(
+                  onTap: onReset,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: appColors.panelBorder,
+                        width: 1.0,
+                      ),
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    child: Text(
+                      'reset',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: appColors.buttonBackground,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ],
               if (onClose != null) ...[
                 const SizedBox(width: 4),
-                IconButton(
-                  tooltip: 'Close prosody settings',
-                  visualDensity: VisualDensity.compact,
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size(44, 44),
-                    padding: const EdgeInsets.all(8),
-                  ),
-                  onPressed: onClose,
-                  icon: Icon(
-                    LucideIcons.x,
-                    size: 18,
-                    color: scheme.onSurfaceVariant,
+                Tooltip(
+                  message: 'Close prosody settings',
+                  child: Semantics(
+                    label: 'Close prosody settings',
+                    button: true,
+                    child: MetroPressable(
+                      onTap: onClose,
+                      child: Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Icon(
+                          LucideIcons.x,
+                          size: 18,
+                          color: appColors.topbarForeground,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -124,25 +139,25 @@ class TtsProsodyControlPanel extends StatelessWidget {
           Row(
             children: [
               _buildStyleChip(
-                scheme: scheme,
-                label: 'Audiobook',
-                description: 'Calm & steady',
+                context: context,
+                label: 'audiobook',
+                description: 'calm & steady',
                 value: 'audiobook',
                 isSelected: narrationStyle == 'audiobook',
               ),
               const SizedBox(width: 6),
               _buildStyleChip(
-                scheme: scheme,
-                label: 'Balanced',
-                description: 'Standard',
+                context: context,
+                label: 'balanced',
+                description: 'standard',
                 value: 'balanced',
                 isSelected: narrationStyle == 'balanced',
               ),
               const SizedBox(width: 6),
               _buildStyleChip(
-                scheme: scheme,
-                label: 'Expressive',
-                description: 'Dynamic',
+                context: context,
+                label: 'expressive',
+                description: 'dynamic',
                 value: 'expressive',
                 isSelected: narrationStyle == 'expressive',
               ),
@@ -154,7 +169,7 @@ class TtsProsodyControlPanel extends StatelessWidget {
           // 3. Sentence Pause Row
           _buildSliderRow(
             context: context,
-            label: 'Sentence pause',
+            label: 'sentence pause',
             displayValue: '$sentenceGapMs ms',
             value: sentenceGapMs.toDouble().clamp(0, 1000),
             min: 0,
@@ -172,7 +187,7 @@ class TtsProsodyControlPanel extends StatelessWidget {
           // 4. Paragraph Pause Row
           _buildSliderRow(
             context: context,
-            label: 'Paragraph pause',
+            label: 'paragraph pause',
             displayValue: '$paragraphGapMs ms',
             value: paragraphGapMs.toDouble().clamp(200, 2500),
             min: 200,
@@ -190,7 +205,7 @@ class TtsProsodyControlPanel extends StatelessWidget {
           // 5. Internal Silence Scale Row
           _buildSilenceSlider(
             context: context,
-            label: 'Silence scale',
+            label: 'silence scale',
             displayValue: '${(silenceScale * 100).round()}%',
             value: silenceScale.clamp(0.0, 1.0),
             onChanged: onSilenceScaleChanged,
@@ -201,52 +216,62 @@ class TtsProsodyControlPanel extends StatelessWidget {
   }
 
   Widget _buildStyleChip({
-    required ColorScheme scheme,
+    required BuildContext context,
     required String label,
     required String description,
     required String value,
     required bool isSelected,
   }) {
+    final appColors = context.appColors;
+
     return Expanded(
-      child: InkWell(
-        onTap: () => onNarrationStyleChanged(value),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? scheme.primary
-                : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected
-                  ? scheme.primary
-                  : scheme.outlineVariant.withValues(alpha: 0.35),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? scheme.onPrimary : scheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 1),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 9,
+      child: Tooltip(
+        message: '$label: $description',
+        child: Semantics(
+          label: '$label: $description',
+          button: true,
+          child: MetroPressable(
+            onTap: () => onNarrationStyleChanged(value),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? appColors.buttonBackground
+                    : appColors.panelBackground,
+                borderRadius: BorderRadius.zero,
+                border: Border.all(
                   color: isSelected
-                      ? scheme.onPrimary.withValues(alpha: 0.8)
-                      : scheme.onSurfaceVariant,
+                      ? appColors.buttonBackground
+                      : appColors.panelBorder,
+                  width: 1,
                 ),
               ),
-            ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected
+                          ? appColors.buttonForeground
+                          : appColors.topbarForeground,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: isSelected
+                          ? appColors.buttonForeground.withValues(alpha: 0.8)
+                          : appColors.topbarForeground.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -264,8 +289,8 @@ class TtsProsodyControlPanel extends StatelessWidget {
     required ValueChanged<double> onChanged,
     required ValueChanged<int> onStep,
   }) {
+    final appColors = context.appColors;
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -277,7 +302,7 @@ class TtsProsodyControlPanel extends StatelessWidget {
             Text(
               label,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
+                color: appColors.topbarForeground.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -285,39 +310,55 @@ class TtsProsodyControlPanel extends StatelessWidget {
               displayValue,
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: scheme.primary,
+                color: appColors.buttonBackground,
               ),
             ),
           ],
         ),
         Row(
           children: [
-            IconButton(
-              icon: const Icon(LucideIcons.minus, size: 14),
-              tooltip: 'Decrease ($step ms)',
-              style: IconButton.styleFrom(
-                backgroundColor: scheme.surfaceContainerHighest.withValues(
-                  alpha: 0.5,
+            Tooltip(
+              message: 'Decrease ($step ms)',
+              child: Semantics(
+                label: 'Decrease ($step ms)',
+                button: true,
+                child: MetroPressable(
+                  onTap: value > min ? () => onStep(-step) : null,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: appColors.panelBorder,
+                        width: 1.0,
+                      ),
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    child: Center(
+                      child: Icon(
+                        LucideIcons.minus,
+                        size: 14,
+                        color: value > min
+                            ? appColors.topbarForeground
+                            : appColors.topbarForeground.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  ),
                 ),
-                foregroundColor: scheme.onSurface,
-                padding: const EdgeInsets.all(6),
-                minimumSize: const Size(32, 32),
               ),
-              onPressed: value > min ? () => onStep(-step) : null,
             ),
             Expanded(
               child: SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   trackHeight: 3,
-                  thumbShape: const RoundSliderThumbShape(
-                    enabledThumbRadius: 6,
+                  thumbShape: const MetroSliderThumbShape(
+                    thumbRadius: 6,
                   ),
-                  overlayShape: const RoundSliderOverlayShape(
-                    overlayRadius: 14,
-                  ),
-                  activeTrackColor: scheme.primary,
-                  inactiveTrackColor: scheme.surfaceContainerHighest,
-                  thumbColor: scheme.primary,
+                  trackShape: const RectangularSliderTrackShape(),
+                  overlayShape: SliderComponentShape.noOverlay,
+                  activeTrackColor: appColors.buttonBackground,
+                  inactiveTrackColor: appColors.panelBorder,
+                  thumbColor: appColors.buttonBackground,
                 ),
                 child: Slider(
                   value: value,
@@ -331,18 +372,35 @@ class TtsProsodyControlPanel extends StatelessWidget {
                 ),
               ),
             ),
-            IconButton(
-              icon: const Icon(LucideIcons.plus, size: 14),
-              tooltip: 'Increase ($step ms)',
-              style: IconButton.styleFrom(
-                backgroundColor: scheme.surfaceContainerHighest.withValues(
-                  alpha: 0.5,
+            Tooltip(
+              message: 'Increase ($step ms)',
+              child: Semantics(
+                label: 'Increase ($step ms)',
+                button: true,
+                child: MetroPressable(
+                  onTap: value < max ? () => onStep(step) : null,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: appColors.panelBorder,
+                        width: 1.0,
+                      ),
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    child: Center(
+                      child: Icon(
+                        LucideIcons.plus,
+                        size: 14,
+                        color: value < max
+                            ? appColors.topbarForeground
+                            : appColors.topbarForeground.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  ),
                 ),
-                foregroundColor: scheme.onSurface,
-                padding: const EdgeInsets.all(6),
-                minimumSize: const Size(32, 32),
               ),
-              onPressed: value < max ? () => onStep(step) : null,
             ),
           ],
         ),
@@ -357,8 +415,8 @@ class TtsProsodyControlPanel extends StatelessWidget {
     required double value,
     required ValueChanged<double> onChanged,
   }) {
+    final appColors = context.appColors;
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -370,7 +428,7 @@ class TtsProsodyControlPanel extends StatelessWidget {
             Text(
               label,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
+                color: appColors.topbarForeground.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -378,7 +436,7 @@ class TtsProsodyControlPanel extends StatelessWidget {
               displayValue,
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: scheme.primary,
+                color: appColors.buttonBackground,
               ),
             ),
           ],
@@ -386,15 +444,14 @@ class TtsProsodyControlPanel extends StatelessWidget {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             trackHeight: 3,
-            thumbShape: const RoundSliderThumbShape(
-              enabledThumbRadius: 6,
+            thumbShape: const MetroSliderThumbShape(
+              thumbRadius: 6,
             ),
-            overlayShape: const RoundSliderOverlayShape(
-              overlayRadius: 14,
-            ),
-            activeTrackColor: scheme.primary,
-            inactiveTrackColor: scheme.surfaceContainerHighest,
-            thumbColor: scheme.primary,
+            trackShape: const RectangularSliderTrackShape(),
+            overlayShape: SliderComponentShape.noOverlay,
+            activeTrackColor: appColors.buttonBackground,
+            inactiveTrackColor: appColors.panelBorder,
+            thumbColor: appColors.buttonBackground,
           ),
           child: Slider(
             value: value,

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/reader_bloc.dart';
 import '../../bloc/tts/reader_tts_bloc.dart';
 
@@ -75,8 +77,8 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final isActive = widget.initialSelection != null;
     final sliderValue = _minutes.toDouble().clamp(
       kSleepTimerMinMinutes.toDouble(),
@@ -87,10 +89,11 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        color: appColors.panelBackground,
+        borderRadius: BorderRadius.zero,
         border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.4),
+          color: appColors.panelBorder,
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -103,15 +106,15 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
               Icon(
                 isActive ? LucideIcons.moonStar : LucideIcons.moon,
                 size: 16,
-                color: scheme.primary,
+                color: appColors.buttonBackground,
               ),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  'Sleep Timer',
+                  'sleep timer',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
+                    color: appColors.topbarForeground,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -125,12 +128,12 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
                   if (remaining == null) return const SizedBox.shrink();
                   return Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                      horizontal: 8,
+                      vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: scheme.primaryContainer.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(8),
+                      color: appColors.buttonBackground,
+                      borderRadius: BorderRadius.zero,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -138,15 +141,15 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
                         Icon(
                           LucideIcons.timer,
                           size: 12,
-                          color: scheme.primary,
+                          color: appColors.buttonForeground,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Stops in ${formatSleepDuration(remaining)}',
+                          'stops in ${formatSleepDuration(remaining)}',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: scheme.primary,
+                            color: appColors.buttonForeground,
                           ),
                         ),
                       ],
@@ -156,39 +159,47 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
               ),
               if (isActive) ...[
                 const SizedBox(width: 6),
-                IconButton(
-                  tooltip: 'Turn off timer',
-                  visualDensity: VisualDensity.compact,
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size(40, 40),
-                    padding: const EdgeInsets.all(6),
-                  ),
-                  onPressed: () {
-                    context.read<ReaderTtsBloc>().add(
-                      const ReaderTtsEvent.setSleepTimer(Duration.zero),
-                    );
-                  },
-                  icon: Icon(
-                    LucideIcons.power,
-                    size: 16,
-                    color: scheme.error,
+                Tooltip(
+                  message: 'Turn off timer',
+                  child: Semantics(
+                    label: 'Turn off timer',
+                    button: true,
+                    child: MetroPressable(
+                      onTap: () {
+                        context.read<ReaderTtsBloc>().add(
+                          const ReaderTtsEvent.setSleepTimer(Duration.zero),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Icon(
+                          LucideIcons.power,
+                          size: 16,
+                          color: appColors.buttonBackground,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
               if (widget.onClose != null) ...[
-                const SizedBox(width: 2),
-                IconButton(
-                  tooltip: 'Close sleep timer',
-                  visualDensity: VisualDensity.compact,
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size(40, 40),
-                    padding: const EdgeInsets.all(6),
-                  ),
-                  onPressed: widget.onClose,
-                  icon: Icon(
-                    LucideIcons.x,
-                    size: 18,
-                    color: scheme.onSurfaceVariant,
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: 'Close sleep timer',
+                  child: Semantics(
+                    label: 'Close sleep timer',
+                    button: true,
+                    child: MetroPressable(
+                      onTap: widget.onClose,
+                      child: Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Icon(
+                          LucideIcons.x,
+                          size: 18,
+                          color: appColors.topbarForeground,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -207,47 +218,49 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
                     final isSelected = isActive && _minutes == presetMin;
 
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: InkWell(
-                        onTap: () => _arm(presetMin),
-                        borderRadius: BorderRadius.circular(14),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          constraints: const BoxConstraints(
-                            minHeight: 36,
-                            minWidth: 54,
-                          ),
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? scheme.primary
-                                : scheme.surfaceContainerHighest.withValues(
-                                    alpha: 0.5,
-                                  ),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: isSelected
-                                  ? scheme.primary
-                                  : scheme.outlineVariant.withValues(
-                                      alpha: 0.3,
-                                    ),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            '$presetMin min',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.w500,
-                              color: isSelected
-                                  ? scheme.onPrimary
-                                  : scheme.onSurfaceVariant,
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Tooltip(
+                        message: 'Set sleep timer to $presetMin minutes',
+                        child: Semantics(
+                          label: 'Set sleep timer to $presetMin minutes',
+                          button: true,
+                          child: MetroPressable(
+                            onTap: () => _arm(presetMin),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              constraints: const BoxConstraints(
+                                minHeight: 34,
+                                minWidth: 54,
+                              ),
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? appColors.buttonBackground
+                                    : appColors.panelBackground,
+                                borderRadius: BorderRadius.zero,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? appColors.buttonBackground
+                                      : appColors.panelBorder,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                '$presetMin min',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? appColors.buttonForeground
+                                      : appColors.topbarForeground,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -266,15 +279,15 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
               Icon(
                 LucideIcons.timer,
                 size: 15,
-                color: scheme.onSurfaceVariant,
+                color: appColors.topbarForeground.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 6),
               Text(
-                'Custom: ${formatSleepDuration(Duration(minutes: _minutes))}',
+                'custom: ${formatSleepDuration(Duration(minutes: _minutes))}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: scheme.onSurface,
+                  color: appColors.topbarForeground,
                 ),
               ),
               const Spacer(),
@@ -282,7 +295,7 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
                 formatSleepDuration(Duration(minutes: kSleepTimerMaxMinutes)),
                 style: TextStyle(
                   fontSize: 11,
-                  color: scheme.onSurfaceVariant,
+                  color: appColors.topbarForeground.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -290,12 +303,20 @@ class _TtsSleepTimerControlState extends State<TtsSleepTimerControl> {
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
-              activeTrackColor: scheme.primary,
-              inactiveTrackColor: scheme.surfaceContainerHighest,
-              thumbColor: scheme.primary,
-              valueIndicatorColor: scheme.primary,
+              thumbShape: const MetroSliderThumbShape(
+                thumbRadius: 7,
+              ),
+              trackShape: const RectangularSliderTrackShape(),
+              overlayShape: SliderComponentShape.noOverlay,
+              activeTrackColor: appColors.buttonBackground,
+              inactiveTrackColor: appColors.panelBorder,
+              thumbColor: appColors.buttonBackground,
+              valueIndicatorColor: appColors.buttonBackground,
+              valueIndicatorTextStyle: TextStyle(
+                color: appColors.buttonForeground,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             child: Slider(
               value: sliderValue,

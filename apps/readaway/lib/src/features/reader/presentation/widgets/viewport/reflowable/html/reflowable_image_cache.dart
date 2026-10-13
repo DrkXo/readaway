@@ -86,7 +86,7 @@ class ReflowableImageCache {
   ///
   /// Data URIs are decoded inline; other sources go through [load].
   ///
-  /// ponytail: decoded frames are owned by this cache and never disposed on
+  /// decoded frames are owned by this cache and never disposed on
   /// eviction (a RawImage may still be painting them). Add ref-counted
   /// disposal if the 12-frame cap proves too tight on image-heavy books.
   Future<ui.Image?> decode(

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/core_widgets.dart';
+
 /// An interactive, accessible playback speed controller with:
 /// 1. Precision slider (0.5× – 2.5×) with 0.05× step divisions.
 /// 2. Minus & plus fine-tuning steppers for effortless single-handed micro-adjustments.
@@ -44,18 +47,19 @@ class TtsSpeedControlPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final isDefaultRate = (rate - 1.0).abs() < 0.01;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        color: appColors.panelBackground,
+        borderRadius: BorderRadius.zero,
         border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.4),
+          color: appColors.panelBorder,
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -68,15 +72,15 @@ class TtsSpeedControlPanel extends StatelessWidget {
               Icon(
                 LucideIcons.gauge,
                 size: 16,
-                color: scheme.primary,
+                color: appColors.buttonBackground,
               ),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  'Playback Speed',
+                  'playback speed',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
+                    color: appColors.topbarForeground,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -85,80 +89,110 @@ class TtsSpeedControlPanel extends StatelessWidget {
               // Current Speed Tag
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 8,
+                  vertical: 3,
                 ),
                 decoration: BoxDecoration(
-                  color: scheme.primaryContainer.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(8),
+                  color: appColors.buttonBackground,
+                  borderRadius: BorderRadius.zero,
                 ),
                 child: Text(
                   formatRate(rate),
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: scheme.primary,
+                    color: appColors.buttonForeground,
                   ),
                 ),
               ),
               if (!isDefaultRate) ...[
                 const SizedBox(width: 8),
-                IconButton(
-                  tooltip: 'Reset to 1.0×',
-                  visualDensity: VisualDensity.compact,
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size(44, 44),
-                    padding: const EdgeInsets.all(8),
-                  ),
-                  onPressed: () => onRateChanged(1.0),
-                  icon: Text(
-                    'Reset',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.primary,
-                      fontWeight: FontWeight.w600,
+                MetroPressable(
+                  onTap: () => onRateChanged(1.0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: appColors.panelBorder,
+                        width: 1.0,
+                      ),
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    child: Text(
+                      'reset',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: appColors.buttonBackground,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ],
               if (onClose != null) ...[
-                const SizedBox(width: 4),
-                IconButton(
-                  tooltip: 'Close speed settings',
-                  visualDensity: VisualDensity.compact,
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size(44, 44),
-                    padding: const EdgeInsets.all(8),
-                  ),
-                  onPressed: onClose,
-                  icon: Icon(
-                    LucideIcons.x,
-                    size: 18,
-                    color: scheme.onSurfaceVariant,
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: 'Close speed settings',
+                  child: Semantics(
+                    label: 'Close speed settings',
+                    button: true,
+                    child: MetroPressable(
+                      onTap: onClose,
+                      child: Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Icon(
+                          LucideIcons.x,
+                          size: 18,
+                          color: appColors.topbarForeground,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
             ],
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
           // 2. Stepper & Slider Row
           Row(
             children: [
-              // Decrease Stepper Button (>=44pt touch target)
-              IconButton(
-                icon: const Icon(LucideIcons.minus, size: 18),
-                tooltip: 'Decrease speed (-0.05×)',
-                style: IconButton.styleFrom(
-                  backgroundColor: scheme.surfaceContainerHighest.withValues(
-                    alpha: 0.5,
+              // Decrease Stepper Button
+              Tooltip(
+                message: 'Decrease speed (-0.05×)',
+                child: Semantics(
+                  label: 'Decrease speed (-0.05×)',
+                  button: true,
+                  child: MetroPressable(
+                    onTap: rate > minRate ? () => _stepRate(-step) : null,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: appColors.panelBorder,
+                          width: 1.0,
+                        ),
+                        borderRadius: BorderRadius.zero,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          LucideIcons.minus,
+                          size: 18,
+                          color: rate > minRate
+                              ? appColors.topbarForeground
+                              : appColors.topbarForeground.withValues(
+                                  alpha: 0.3,
+                                ),
+                        ),
+                      ),
+                    ),
                   ),
-                  foregroundColor: scheme.onSurface,
-                  padding: const EdgeInsets.all(10),
-                  minimumSize: const Size(44, 44),
                 ),
-                onPressed: rate > minRate ? () => _stepRate(-step) : null,
               ),
 
               // Continuous Slider with 0.05 step divisions
@@ -166,18 +200,17 @@ class TtsSpeedControlPanel extends StatelessWidget {
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 4,
-                    thumbShape: const RoundSliderThumbShape(
-                      enabledThumbRadius: 8,
+                    thumbShape: const MetroSliderThumbShape(
+                      thumbRadius: 7,
                     ),
-                    overlayShape: const RoundSliderOverlayShape(
-                      overlayRadius: 18,
-                    ),
-                    activeTrackColor: scheme.primary,
-                    inactiveTrackColor: scheme.surfaceContainerHighest,
-                    thumbColor: scheme.primary,
-                    valueIndicatorColor: scheme.primary,
+                    trackShape: const RectangularSliderTrackShape(),
+                    overlayShape: SliderComponentShape.noOverlay,
+                    activeTrackColor: appColors.buttonBackground,
+                    inactiveTrackColor: appColors.panelBorder,
+                    thumbColor: appColors.buttonBackground,
+                    valueIndicatorColor: appColors.buttonBackground,
                     valueIndicatorTextStyle: TextStyle(
-                      color: scheme.onPrimary,
+                      color: appColors.buttonForeground,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -198,26 +231,45 @@ class TtsSpeedControlPanel extends StatelessWidget {
                 ),
               ),
 
-              // Increase Stepper Button (>=44pt touch target)
-              IconButton(
-                icon: const Icon(LucideIcons.plus, size: 18),
-                tooltip: 'Increase speed (+0.05×)',
-                style: IconButton.styleFrom(
-                  backgroundColor: scheme.surfaceContainerHighest.withValues(
-                    alpha: 0.5,
+              // Increase Stepper Button
+              Tooltip(
+                message: 'Increase speed (+0.05×)',
+                child: Semantics(
+                  label: 'Increase speed (+0.05×)',
+                  button: true,
+                  child: MetroPressable(
+                    onTap: rate < maxRate ? () => _stepRate(step) : null,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: appColors.panelBorder,
+                          width: 1.0,
+                        ),
+                        borderRadius: BorderRadius.zero,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          LucideIcons.plus,
+                          size: 18,
+                          color: rate < maxRate
+                              ? appColors.topbarForeground
+                              : appColors.topbarForeground.withValues(
+                                  alpha: 0.3,
+                                ),
+                        ),
+                      ),
+                    ),
                   ),
-                  foregroundColor: scheme.onSurface,
-                  padding: const EdgeInsets.all(10),
-                  minimumSize: const Size(44, 44),
                 ),
-                onPressed: rate < maxRate ? () => _stepRate(step) : null,
               ),
             ],
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
-          // 3. One-Tap Preset Chips Row with comfortable touch targets
+          // 3. One-Tap Preset Chips Row
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -227,46 +279,48 @@ class TtsSpeedControlPanel extends StatelessWidget {
                     final isSelected = (rate - preset).abs() < 0.02;
 
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: InkWell(
-                        onTap: () => onRateChanged(preset),
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          constraints: const BoxConstraints(
-                            minHeight: 38,
-                            minWidth: 44,
-                          ),
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? scheme.primary
-                                : scheme.surfaceContainerHighest.withValues(
-                                    alpha: 0.5,
-                                  ),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: isSelected
-                                  ? scheme.primary
-                                  : scheme.outlineVariant.withValues(
-                                      alpha: 0.3,
-                                    ),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            formatRate(preset),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.w500,
-                              color: isSelected
-                                  ? scheme.onPrimary
-                                  : scheme.onSurfaceVariant,
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Tooltip(
+                        message: 'Set speed to ${formatRate(preset)}',
+                        child: Semantics(
+                          label: 'Set speed to ${formatRate(preset)}',
+                          button: true,
+                          child: MetroPressable(
+                            onTap: () => onRateChanged(preset),
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                minHeight: 34,
+                                minWidth: 44,
+                              ),
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? appColors.buttonBackground
+                                    : appColors.panelBackground,
+                                borderRadius: BorderRadius.zero,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? appColors.buttonBackground
+                                      : appColors.panelBorder,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                formatRate(preset),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? appColors.buttonForeground
+                                      : appColors.topbarForeground,
+                                ),
+                              ),
                             ),
                           ),
                         ),

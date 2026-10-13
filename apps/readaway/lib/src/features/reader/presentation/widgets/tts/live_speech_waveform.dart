@@ -14,7 +14,7 @@ class LiveSpeechWaveform extends StatefulWidget {
     this.height = 20,
     this.width = 24,
     this.spacing = 2.0,
-    this.barRadius = 2.0,
+    this.barRadius = 0.0,
     super.key,
   });
 
@@ -124,7 +124,9 @@ class _LiveSpeechWaveformState extends State<LiveSpeechWaveform>
                   height: barHeight,
                   decoration: BoxDecoration(
                     color: themeColor,
-                    borderRadius: BorderRadius.circular(widget.barRadius),
+                    borderRadius: widget.barRadius > 0
+                        ? BorderRadius.circular(widget.barRadius)
+                        : BorderRadius.zero,
                   ),
                 );
               }),

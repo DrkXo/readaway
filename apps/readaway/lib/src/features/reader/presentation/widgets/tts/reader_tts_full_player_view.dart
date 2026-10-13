@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:readaway_core/readaway_core.dart' show OutlineItem;
 
+import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../bloc/reader_bloc.dart';
@@ -65,6 +66,7 @@ class _ReaderTtsFullPlayerViewState extends State<ReaderTtsFullPlayerView> {
   @override
   Widget build(BuildContext context) {
     final tts = context.read<ReaderTtsBloc>().ttsRepository;
+    final appColors = context.appColors;
     final scheme = Theme.of(context).colorScheme;
 
     return SafeArea(
@@ -81,11 +83,11 @@ class _ReaderTtsFullPlayerViewState extends State<ReaderTtsFullPlayerView> {
                 const SizedBox(height: 10),
                 Center(
                   child: Container(
-                    width: 32,
-                    height: 4,
+                    width: 36,
+                    height: 3,
                     decoration: BoxDecoration(
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
+                      color: appColors.panelBorder,
+                      borderRadius: BorderRadius.zero,
                     ),
                   ),
                 ),
@@ -96,11 +98,23 @@ class _ReaderTtsFullPlayerViewState extends State<ReaderTtsFullPlayerView> {
                   ),
                   child: Row(
                     children: [
-                      AppIconButton(
-                        icon: LucideIcons.chevronDown,
-                        tooltip: 'Minimize',
-                        onPressed: widget.onClose,
-                        size: AppIconButtonSize.medium,
+                      Tooltip(
+                        message: 'Minimize',
+                        child: Semantics(
+                          label: 'Minimize',
+                          button: true,
+                          child: MetroPressable(
+                            onTap: widget.onClose,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Icon(
+                                LucideIcons.chevronDown,
+                                size: 20,
+                                color: appColors.topbarForeground,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                       Expanded(
                         child: BlocBuilder<ReaderBloc, ReaderState>(
@@ -132,10 +146,10 @@ class _ReaderTtsFullPlayerViewState extends State<ReaderTtsFullPlayerView> {
                                   effectivePage,
                                 );
                                 final pageLabel = ttsPage != null
-                                    ? 'Page ${ttsPage + 1} of ${readerState.pageCount}'
+                                    ? 'page ${ttsPage + 1} of ${readerState.pageCount}'
                                     : (readerState.pageCount > 0
                                           ? '${readerState.pageCount} pages'
-                                          : 'Sentences');
+                                          : 'sentences');
 
                                 return Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -169,7 +183,7 @@ class _ReaderTtsFullPlayerViewState extends State<ReaderTtsFullPlayerView> {
                                           ),
                                           if (canJump) ...[
                                             const SizedBox(width: 8),
-                                            InkWell(
+                                            MetroPressable(
                                               onTap: () {
                                                 final chapter =
                                                     ttsState.ttsCurrentPage;
@@ -186,14 +200,21 @@ class _ReaderTtsFullPlayerViewState extends State<ReaderTtsFullPlayerView> {
                                                   );
                                                 }
                                               },
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: Padding(
+                                              child: Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                      horizontal: 4,
-                                                      vertical: 1,
+                                                      horizontal: 6,
+                                                      vertical: 2,
                                                     ),
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(
+                                                    color: appColors
+                                                        .buttonBackground,
+                                                    width: 1.0,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.zero,
+                                                ),
                                                 child: Row(
                                                   mainAxisSize:
                                                       MainAxisSize.min,
@@ -201,17 +222,18 @@ class _ReaderTtsFullPlayerViewState extends State<ReaderTtsFullPlayerView> {
                                                     Icon(
                                                       LucideIcons.arrowRight,
                                                       size: 11,
-                                                      color: scheme.primary,
+                                                      color: appColors
+                                                          .buttonBackground,
                                                     ),
                                                     const SizedBox(width: 3),
                                                     Text(
-                                                      'Jump to page',
+                                                      'jump to page',
                                                       style: Theme.of(context)
                                                           .textTheme
                                                           .labelSmall
                                                           ?.copyWith(
-                                                            color:
-                                                                scheme.primary,
+                                                            color: appColors
+                                                                .buttonBackground,
                                                             fontWeight:
                                                                 FontWeight.w600,
                                                             fontSize: 11,
@@ -248,7 +270,7 @@ class _ReaderTtsFullPlayerViewState extends State<ReaderTtsFullPlayerView> {
                                       ],
                                       if (canJump) ...[
                                         const SizedBox(height: 2),
-                                        InkWell(
+                                        MetroPressable(
                                           onTap: () {
                                             final chapter =
                                                 ttsState.ttsCurrentPage;
@@ -265,32 +287,40 @@ class _ReaderTtsFullPlayerViewState extends State<ReaderTtsFullPlayerView> {
                                               );
                                             }
                                           },
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          child: Padding(
+                                          child: Container(
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
+                                              horizontal: 6,
                                               vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color:
+                                                    appColors.buttonBackground,
+                                                width: 1.0,
+                                              ),
+                                              borderRadius: BorderRadius.zero,
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Icon(
                                                   LucideIcons.arrowRight,
-                                                  size: 12,
-                                                  color: scheme.primary,
+                                                  size: 11,
+                                                  color: appColors
+                                                      .buttonBackground,
                                                 ),
-                                                const SizedBox(width: 4),
+                                                const SizedBox(width: 3),
                                                 Text(
-                                                  'Jump to this page',
+                                                  'jump to this page',
                                                   style: Theme.of(context)
                                                       .textTheme
                                                       .labelSmall
                                                       ?.copyWith(
-                                                        color: scheme.primary,
+                                                        color: appColors
+                                                            .buttonBackground,
                                                         fontWeight:
                                                             FontWeight.w600,
+                                                        fontSize: 11,
                                                       ),
                                                 ),
                                               ],
@@ -309,29 +339,55 @@ class _ReaderTtsFullPlayerViewState extends State<ReaderTtsFullPlayerView> {
                       // Sits with the view it changes rather than in the
                       // control shelf below, which is entirely about the voice
                       // and the playback position.
-                      AppIconButton(
-                        icon: _singleLine
-                            ? LucideIcons.list
-                            : LucideIcons.alignCenterVertical,
-                        tooltip: _singleLine
+                      Tooltip(
+                        message: _singleLine
                             ? 'Show the whole page'
                             : 'Show only the current sentence',
-                        onPressed: () =>
-                            setState(() => _singleLine = !_singleLine),
-                        size: AppIconButtonSize.medium,
+                        child: Semantics(
+                          label: _singleLine
+                              ? 'Show the whole page'
+                              : 'Show only the current sentence',
+                          button: true,
+                          child: MetroPressable(
+                            onTap: () =>
+                                setState(() => _singleLine = !_singleLine),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Icon(
+                                _singleLine
+                                    ? LucideIcons.list
+                                    : LucideIcons.alignCenterVertical,
+                                size: 20,
+                                color: appColors.topbarForeground,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                      AppIconButton(
-                        icon: LucideIcons.x,
-                        tooltip: 'Close Player',
-                        onPressed: widget.onClosePlayer,
-                        size: AppIconButtonSize.medium,
+                      Tooltip(
+                        message: 'Close Player',
+                        child: Semantics(
+                          label: 'Close Player',
+                          button: true,
+                          child: MetroPressable(
+                            onTap: widget.onClosePlayer,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Icon(
+                                LucideIcons.x,
+                                size: 20,
+                                color: appColors.topbarForeground,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Divider(
+                Container(
                   height: 1,
-                  color: scheme.outlineVariant.withValues(alpha: 0.5),
+                  color: appColors.panelBorder,
                 ),
               ],
             ),

@@ -4,6 +4,7 @@ export 'metro_page_transition.dart';
 export 'metro_pivot.dart';
 export 'metro_pivot_control.dart';
 export 'metro_pressable.dart';
+export 'metro_slider_thumb_shape.dart';
 export 'metro_switch.dart';
 export 'metro_tile.dart';
 export 'metro_turnstile.dart';

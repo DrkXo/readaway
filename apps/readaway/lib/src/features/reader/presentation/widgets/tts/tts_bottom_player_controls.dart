@@ -79,7 +79,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
       child: Container(
         decoration: BoxDecoration(
           color: appColors.sheetBackground,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.zero,
           border: Border(
             top: BorderSide(
               color: appColors.borderSubtle,
@@ -474,14 +474,13 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                                 height: 54,
                                 decoration: BoxDecoration(
                                   color: scheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: BorderRadius.zero,
                                   border: Border.all(
                                     color: appColors.borderSubtle,
                                     width: 0.5,
                                   ),
                                 ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
+                                child: ClipRect(
                                   child: Image.file(
                                     coverFile,
                                     width: 42,
@@ -512,7 +511,7 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                                       color: scheme.surface.withValues(
                                         alpha: 0.9,
                                       ),
-                                      borderRadius: BorderRadius.circular(4),
+                                      borderRadius: BorderRadius.zero,
                                       border: Border.all(
                                         color: scheme.outlineVariant.withValues(
                                           alpha: 0.4,
@@ -536,10 +535,12 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: scheme.primaryContainer.withValues(
-                              alpha: 0.6,
+                            color: scheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(
+                              color: appColors.borderSubtle,
+                              width: 0.5,
                             ),
-                            shape: BoxShape.circle,
                           ),
                           child: Center(
                             child: LiveSpeechWaveform(
@@ -600,12 +601,16 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                     ),
                     decoration: BoxDecoration(
                       color: scheme.errorContainer.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.zero,
+                      border: Border.all(
+                        color: scheme.error.withValues(alpha: 0.5),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          LucideIcons.circleAlert,
+                          LucideIcons.triangleAlert,
                           size: 16,
                           color: scheme.error,
                         ),
@@ -666,68 +671,129 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     // Stop Session Button
-                    AppIconButton(
-                      icon: LucideIcons.square,
-                      tooltip: 'Stop reading',
-                      onPressed: () => tts.stop(),
-                      size: AppIconButtonSize.medium,
+                    Tooltip(
+                      message: 'Stop reading',
+                      child: Semantics(
+                        label: 'Stop reading',
+                        button: true,
+                        child: MetroPressable(
+                          onTap: () => tts.stop(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Icon(
+                              LucideIcons.square,
+                              size: 20,
+                              color: appColors.topbarForeground,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
 
                     // Skip Previous Sentence
-                    AppIconButton(
-                      icon: LucideIcons.skipBack,
-                      tooltip: 'Previous sentence',
-                      onPressed: () => tts.skipToPreviousSentence(),
-                      size: AppIconButtonSize.large,
+                    Tooltip(
+                      message: 'Previous sentence',
+                      child: Semantics(
+                        label: 'Previous sentence',
+                        button: true,
+                        child: MetroPressable(
+                          onTap: () => tts.skipToPreviousSentence(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Icon(
+                              LucideIcons.skipBack,
+                              size: 22,
+                              color: appColors.topbarForeground,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
 
-                    // Hero Play / Pause Button
-                    IconButton.filled(
-                      iconSize: 30,
-                      style: IconButton.styleFrom(
-                        padding: const EdgeInsets.all(14),
-                        backgroundColor: scheme.primary,
-                        foregroundColor: scheme.onPrimary,
-                        elevation: 1,
-                      ),
-                      icon: isLoading
-                          ? SpinKitPulsingGrid(
-                              color: scheme.onPrimary,
-                              size: 24,
-                            )
-                          : Icon(
-                              isPlaying ? LucideIcons.pause : LucideIcons.play,
-                            ),
-                      tooltip: isLoading
+                    // Hero Play / Pause Button (Flat Rectangular Tile)
+                    Tooltip(
+                      message: isLoading
                           ? 'Loading speech…'
                           : isPlaying
                           ? 'Pause'
                           : 'Play',
-                      onPressed: isLoading
-                          ? null
-                          : () {
-                              if (isPlaying) {
-                                tts.pause();
-                              } else {
-                                tts.resume();
-                              }
-                            },
+                      child: Semantics(
+                        label: isPlaying ? 'Pause' : 'Play',
+                        button: true,
+                        child: MetroPressable(
+                          onTap: isLoading
+                              ? null
+                              : () {
+                                  if (isPlaying) {
+                                    tts.pause();
+                                  } else {
+                                    tts.resume();
+                                  }
+                                },
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: appColors.buttonBackground,
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            child: Center(
+                              child: isLoading
+                                  ? SpinKitPulsingGrid(
+                                      color: appColors.buttonForeground,
+                                      size: 24,
+                                    )
+                                  : Icon(
+                                      isPlaying
+                                          ? LucideIcons.pause
+                                          : LucideIcons.play,
+                                      color: appColors.buttonForeground,
+                                      size: 24,
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
 
                     // Skip Next Sentence
-                    AppIconButton(
-                      icon: LucideIcons.skipForward,
-                      tooltip: 'Next sentence',
-                      onPressed: () => tts.skipToNextSentence(),
-                      size: AppIconButtonSize.large,
+                    Tooltip(
+                      message: 'Next sentence',
+                      child: Semantics(
+                        label: 'Next sentence',
+                        button: true,
+                        child: MetroPressable(
+                          onTap: () => tts.skipToNextSentence(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Icon(
+                              LucideIcons.skipForward,
+                              size: 22,
+                              color: appColors.topbarForeground,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
 
                     // Replay Current Sentence Button
-                    AppIconButton(
-                      icon: LucideIcons.rotateCcw,
-                      tooltip: 'Replay sentence',
-                      onPressed: () => tts.seek(Duration.zero),
-                      size: AppIconButtonSize.medium,
+                    Tooltip(
+                      message: 'Replay sentence',
+                      child: Semantics(
+                        label: 'Replay sentence',
+                        button: true,
+                        child: MetroPressable(
+                          onTap: () => tts.seek(Duration.zero),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Icon(
+                              LucideIcons.rotateCcw,
+                              size: 20,
+                              color: appColors.topbarForeground,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 );
@@ -748,14 +814,16 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
     required VoidCallback onTap,
     VoidCallback? onLongPress,
   }) {
+    final appColors = context.appColors;
+
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+      child: Semantics(
+        label: tooltip,
+        button: true,
+        child: MetroPressable(
           onTap: onTap,
           onLongPress: onLongPress,
-          borderRadius: BorderRadius.circular(12),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(
@@ -765,13 +833,13 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
             constraints: const BoxConstraints(minHeight: 36),
             decoration: BoxDecoration(
               color: isActive
-                  ? scheme.primary
-                  : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
+                  ? appColors.buttonBackground
+                  : appColors.panelBackground,
+              borderRadius: BorderRadius.zero,
               border: Border.all(
                 color: isActive
-                    ? scheme.primary
-                    : scheme.outlineVariant.withValues(alpha: 0.35),
+                    ? appColors.buttonBackground
+                    : appColors.panelBorder,
                 width: 1,
               ),
             ),
@@ -781,17 +849,21 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                 Icon(
                   icon,
                   size: 13,
-                  color: isActive ? scheme.onPrimary : scheme.primary,
+                  color: isActive
+                      ? appColors.buttonForeground
+                      : appColors.topbarForeground,
                 ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
-                    label,
+                    label.toLowerCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: isActive ? scheme.onPrimary : scheme.onSurface,
+                      color: isActive
+                          ? appColors.buttonForeground
+                          : appColors.topbarForeground,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -802,8 +874,8 @@ class _TtsBottomPlayerControlsState extends State<TtsBottomPlayerControls> {
                   isActive ? LucideIcons.chevronDown : LucideIcons.chevronUp,
                   size: 11,
                   color: isActive
-                      ? scheme.onPrimary.withValues(alpha: 0.8)
-                      : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      ? appColors.buttonForeground.withValues(alpha: 0.8)
+                      : appColors.topbarForeground.withValues(alpha: 0.7),
                 ),
               ],
             ),

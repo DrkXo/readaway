@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/metro/metro.dart';
 import '../../bloc/reader_bloc.dart';
 import '../../bloc/tts/reader_tts_bloc.dart';
 
@@ -72,7 +74,7 @@ class _ReaderBackToTtsPillState extends State<ReaderBackToTtsPill>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final appColors = context.appColors;
 
     final ttsState = context.watch<ReaderTtsBloc>().state;
     final readerState = context.watch<ReaderBloc>().state;
@@ -106,69 +108,63 @@ class _ReaderBackToTtsPillState extends State<ReaderBackToTtsPill>
             position: _slideAnimation,
             child: FadeTransition(
               opacity: _fadeAnimation,
-              child: Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(24),
-                elevation: 4,
-                shadowColor: Colors.black.withValues(alpha: 0.25),
-                child: InkWell(
-                  onTap: visible
-                      ? () {
-                          final chapter = ttsState.ttsCurrentPage;
-                          if (chapter != null) {
-                            context.read<ReaderBloc>().add(
-                              ReaderEvent.jumpToChapter(
-                                chapterIndex: chapter,
-                                virtualPage: ttsState.ttsTargetVirtualPage,
-                              ),
-                            );
-                            context.read<ReaderTtsBloc>().add(
-                              const ReaderTtsEvent.clearFollowTarget(),
-                            );
-                          }
+              child: MetroPressable(
+                onTap: visible
+                    ? () {
+                        final chapter = ttsState.ttsCurrentPage;
+                        if (chapter != null) {
+                          context.read<ReaderBloc>().add(
+                            ReaderEvent.jumpToChapter(
+                              chapterIndex: chapter,
+                              virtualPage: ttsState.ttsTargetVirtualPage,
+                            ),
+                          );
+                          context.read<ReaderTtsBloc>().add(
+                            const ReaderTtsEvent.clearFollowTarget(),
+                          );
                         }
-                      : null,
-                  borderRadius: BorderRadius.circular(24),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 9,
+                      }
+                    : null,
+
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: appColors.panelBackground,
+                    borderRadius: BorderRadius.zero,
+                    border: Border.all(
+                      color: appColors.buttonBackground.withValues(alpha: 0.6),
+                      width: 1.0,
                     ),
-                    decoration: BoxDecoration(
-                      color: scheme.surfaceContainerHighest.withValues(
-                        alpha: 0.94,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.audioLines,
+                        size: 14,
+                        color: appColors.buttonBackground,
                       ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: scheme.primary.withValues(alpha: 0.35),
-                        width: 1,
+                      const SizedBox(width: 8),
+                      Text(
+                        'listen • page $pageLabel',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: appColors.readerForeground,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          LucideIcons.audioLines,
-                          size: 15,
-                          color: scheme.primary,
+                      const SizedBox(width: 6),
+                      Icon(
+                        LucideIcons.arrowUpRight,
+                        size: 13,
+                        color: appColors.readerForeground.withValues(
+                          alpha: 0.6,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Back to Audio (Page $pageLabel)',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: scheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          LucideIcons.arrowUpRight,
-                          size: 14,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),

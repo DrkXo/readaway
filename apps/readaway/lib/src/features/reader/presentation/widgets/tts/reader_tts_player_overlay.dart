@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:motor/motor.dart';
 
+import '../../../../../core/theme/theme.dart';
 import '../../bloc/tts/reader_tts_bloc.dart';
 import '../navigation/reader_bottom_bar.dart';
 import 'reader_tts_full_player_view.dart';
@@ -310,8 +311,7 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
             final top = lerpDouble(collapsedTop, 0, t)!;
             final bottom = lerpDouble(collapsedBottom, 0, t)!;
             final horizontalMargin = lerpDouble(_miniMargin, 0, t)!;
-            final radius = lerpDouble(20, 0, t)!;
-            final elevation = lerpDouble(6, 0, t)!;
+            final appColors = context.appColors;
 
             final miniOpacity = (1 - t / _fadeOutEnd).clamp(0.0, 1.0);
             final fullOpacity = ((t - _fadeInStart) / (1 - _fadeInStart)).clamp(
@@ -331,11 +331,15 @@ class _ReaderTtsExpandableSheetState extends State<_ReaderTtsExpandableSheet>
                     child: Opacity(
                       opacity: presenceOpacity,
                       child: Material(
-                        elevation: elevation,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(radius),
+                        elevation: 0,
+                        color: appColors.panelBackground,
+                        shape: RoundedRectangleBorder(
+                          side: BorderSide(
+                            color: appColors.panelBorder,
+                            width: 1.0,
+                          ),
+                          borderRadius: BorderRadius.zero,
+                        ),
                         clipBehavior: Clip.antiAlias,
                         child: Stack(
                           fit: StackFit.expand,

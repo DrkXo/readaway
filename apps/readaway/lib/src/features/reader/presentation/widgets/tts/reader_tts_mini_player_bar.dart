@@ -26,6 +26,7 @@ class ReaderTtsMiniPlayerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
     final tts = context.read<ReaderTtsBloc>().ttsRepository;
 
     return Padding(
@@ -43,11 +44,23 @@ class ReaderTtsMiniPlayerBar extends StatelessWidget {
             const SizedBox(width: 8),
             _MiniPlayerPlayButton(tts: tts),
             const SizedBox(width: 8),
-            AppIconButton(
-              icon: LucideIcons.x,
-              tooltip: 'Close Player',
-              onPressed: onClosePlayer,
-              size: AppIconButtonSize.medium,
+            Tooltip(
+              message: 'Close Player',
+              child: Semantics(
+                label: 'Close Player',
+                button: true,
+                child: MetroPressable(
+                  onTap: onClosePlayer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Icon(
+                      LucideIcons.x,
+                      size: 18,
+                      color: appColors.topbarForeground.withValues(alpha: 0.75),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -83,10 +96,13 @@ class _MiniPlayerCover extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: scheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(5),
+                  borderRadius: BorderRadius.zero,
+                  border: Border.all(
+                    color: appColors.panelBorder,
+                    width: 0.5,
+                  ),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(5),
+                child: ClipRect(
                   child: Image.file(
                     coverFile,
                     width: 36,
@@ -120,7 +136,7 @@ class _MiniPlayerCover extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: scheme.surface.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.zero,
                       border: Border.all(
                         color: scheme.outlineVariant.withValues(alpha: 0.4),
                         width: 0.5,
@@ -143,8 +159,12 @@ class _MiniPlayerCover extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: scheme.primaryContainer.withValues(alpha: 0.5),
-            shape: BoxShape.circle,
+            color: scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.zero,
+            border: Border.all(
+              color: appColors.panelBorder,
+              width: 0.5,
+            ),
           ),
           child: Center(
             child: LiveSpeechWaveform(
@@ -195,10 +215,10 @@ class _MiniPlayerText extends StatelessWidget {
                       : Theme.of(
                           context,
                         ).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.zero,
                 ),
                 child: Text(
-                  'P.${ttsPage + 1}',
+                  'p. ${ttsPage + 1}',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: isOtherPage
@@ -273,6 +293,8 @@ class _MiniPlayerPlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
+
     return StreamBuilder<TtsPlaybackEvent>(
       stream: tts.playbackState,
       builder: (context, snapshot) {
@@ -282,28 +304,40 @@ class _MiniPlayerPlayButton extends StatelessWidget {
 
         if (isLoading) {
           return SizedBox(
-            width: 40,
-            height: 40,
+            width: 38,
+            height: 38,
             child: Center(
               child: SpinKitPulsingGrid(
-                color: Theme.of(context).colorScheme.primary,
+                color: appColors.buttonBackground,
                 size: 20,
               ),
             ),
           );
         }
 
-        return AppIconButton(
-          icon: isPlaying ? LucideIcons.pause : LucideIcons.play,
-          tooltip: isPlaying ? 'Pause' : 'Play',
-          onPressed: () {
+        return MetroPressable(
+          onTap: () {
             if (isPlaying) {
               tts.pause();
             } else {
               tts.resume();
             }
           },
-          size: AppIconButtonSize.medium,
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: appColors.buttonBackground,
+              borderRadius: BorderRadius.zero,
+            ),
+            child: Center(
+              child: Icon(
+                isPlaying ? LucideIcons.pause : LucideIcons.play,
+                color: appColors.buttonForeground,
+                size: 20,
+              ),
+            ),
+          ),
         );
       },
     );

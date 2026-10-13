@@ -14,7 +14,7 @@ class WaveformScrubber extends StatefulWidget {
     this.onSeek,
     this.height = 44,
     this.barSpacing = 2.5,
-    this.barRadius = 2.0,
+    this.barRadius = 0.0,
     this.playedColor,
     this.unplayedColor,
     this.handleColor,
@@ -261,18 +261,22 @@ class _WaveformPainter extends CustomPainter {
       final isPlayed = (x + barWidth / 2) <= playheadX;
       final paint = isPlayed ? playedPaint : unplayedPaint;
 
-      final rrect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, top, barWidth, barHeight),
-        Radius.circular(barRadius),
-      );
-      canvas.drawRRect(rrect, paint);
+      final barRect = Rect.fromLTWH(x, top, barWidth, barHeight);
+      if (barRadius > 0) {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(barRect, Radius.circular(barRadius)),
+          paint,
+        );
+      } else {
+        canvas.drawRect(barRect, paint);
+      }
     }
 
     // Draw playhead scrubber indicator line
     final playheadPaint = Paint()
       ..color = handleColor
       ..strokeWidth = isDragging ? 2.5 : 1.5
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.butt;
 
     canvas.drawLine(
       Offset(playheadX, 2),
@@ -280,18 +284,23 @@ class _WaveformPainter extends CustomPainter {
       playheadPaint,
     );
 
-    // Draw scrubber thumb pip when dragging or hovered
+    // Draw flat rectangular scrubber thumb pip when dragging or hovered
     if (isDragging) {
       final pipPaint = Paint()
         ..color = handleColor
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(Offset(playheadX, centerY), 6.0, pipPaint);
+      final pipRect = Rect.fromCenter(
+        center: Offset(playheadX, centerY),
+        width: 8.0,
+        height: 14.0,
+      );
+      canvas.drawRect(pipRect, pipPaint);
 
       final pipBorder = Paint()
         ..color = surfaceColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
-      canvas.drawCircle(Offset(playheadX, centerY), 6.0, pipBorder);
+      canvas.drawRect(pipRect, pipBorder);
     }
   }
 

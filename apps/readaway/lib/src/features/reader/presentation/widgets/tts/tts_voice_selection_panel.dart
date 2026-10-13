@@ -4,6 +4,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../../core/routes/routes.dart';
 import '../../../../../core/services/tts/tts_models.dart';
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../../router/router.dart';
 
 /// An interactive, high-performance, accessible voice selection panel for the Full TTS Player.
@@ -140,8 +142,8 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final showSearchAndFilters = widget.availableVoices.length > 4;
     final languages = _availableLanguages;
     final filtered = _filteredVoices;
@@ -150,10 +152,11 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        color: appColors.panelBackground,
+        borderRadius: BorderRadius.zero,
         border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.4),
+          color: appColors.panelBorder,
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -166,83 +169,105 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
               Icon(
                 LucideIcons.mic,
                 size: 16,
-                color: scheme.primary,
+                color: appColors.buttonBackground,
               ),
               const SizedBox(width: 8),
               Text(
-                'Voice',
+                'voice',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: scheme.onSurface,
+                  color: appColors.topbarForeground,
                 ),
               ),
               const SizedBox(width: 8),
               // Voice count pill
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
+                  horizontal: 6,
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(10),
+                  color: appColors.panelBorder.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.zero,
+                  border: Border.all(
+                    color: appColors.panelBorder,
+                    width: 0.5,
+                  ),
                 ),
                 child: Text(
                   _searchQuery.isNotEmpty || _selectedLanguageFilter != null
                       ? '${filtered.length}/${widget.availableVoices.length}'
                       : '${widget.availableVoices.length}',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
+                    color: appColors.topbarForeground.withValues(alpha: 0.8),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               const Spacer(),
               // Manage / Download more in settings button
-              IconButton(
-                tooltip: 'Manage voices in Settings',
-                visualDensity: VisualDensity.compact,
-                style: IconButton.styleFrom(
-                  minimumSize: const Size(44, 44),
-                  padding: const EdgeInsets.all(8),
-                ),
-                onPressed: () {
-                  appRouter.push('${appRoutes.settings.path}?tab=tts');
-                },
-                icon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      LucideIcons.settings,
-                      size: 14,
-                      color: scheme.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Settings',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: scheme.primary,
-                        fontWeight: FontWeight.w600,
+              Tooltip(
+                message: 'Manage voices in Settings',
+                child: Semantics(
+                  label: 'Manage voices in Settings',
+                  button: true,
+                  child: MetroPressable(
+                    onTap: () {
+                      appRouter.push('${appRoutes.settings.path}?tab=tts');
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: appColors.panelBorder,
+                          width: 1.0,
+                        ),
+                        borderRadius: BorderRadius.zero,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.settings,
+                            size: 13,
+                            color: appColors.buttonBackground,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'settings',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: appColors.buttonBackground,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
               if (widget.onClose != null) ...[
-                const SizedBox(width: 2),
-                IconButton(
-                  tooltip: 'Close voice settings',
-                  visualDensity: VisualDensity.compact,
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size(44, 44),
-                    padding: const EdgeInsets.all(8),
-                  ),
-                  onPressed: widget.onClose,
-                  icon: Icon(
-                    LucideIcons.x,
-                    size: 18,
-                    color: scheme.onSurfaceVariant,
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: 'Close voice settings',
+                  child: Semantics(
+                    label: 'Close voice settings',
+                    button: true,
+                    child: MetroPressable(
+                      onTap: widget.onClose,
+                      child: Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Icon(
+                          LucideIcons.x,
+                          size: 18,
+                          color: appColors.topbarForeground,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -258,17 +283,20 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
               child: TextField(
                 controller: _searchController,
                 textAlignVertical: TextAlignVertical.center,
-                style: const TextStyle(fontSize: 13),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: appColors.topbarForeground,
+                ),
                 decoration: InputDecoration(
-                  hintText: 'Search voices or languages…',
+                  hintText: 'search voices or languages…',
                   hintStyle: TextStyle(
                     fontSize: 12,
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    color: appColors.topbarForeground.withValues(alpha: 0.5),
                   ),
                   prefixIcon: Icon(
                     LucideIcons.search,
                     size: 15,
-                    color: scheme.onSurfaceVariant,
+                    color: appColors.topbarForeground.withValues(alpha: 0.6),
                   ),
                   prefixIconConstraints: const BoxConstraints(minWidth: 32),
                   suffixIcon: _searchQuery.isNotEmpty
@@ -282,20 +310,27 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                   suffixIconConstraints: const BoxConstraints(minWidth: 28),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                   filled: true,
-                  fillColor: scheme.surfaceContainerHighest.withValues(
-                    alpha: 0.5,
-                  ),
+                  fillColor: appColors.panelBackground,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(
+                      color: appColors.panelBorder,
+                      width: 1.0,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(
+                      color: appColors.panelBorder,
+                      width: 1.0,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: scheme.primary, width: 1.2),
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(
+                      color: appColors.buttonBackground,
+                      width: 1.2,
+                    ),
                   ),
                 ),
               ),
@@ -310,19 +345,19 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                 child: Row(
                   children: [
                     _buildLangChip(
+                      context: context,
                       label: 'All',
                       isSelected: _selectedLanguageFilter == null,
                       onTap: () =>
                           setState(() => _selectedLanguageFilter = null),
-                      scheme: scheme,
                     ),
                     for (final lang in languages)
                       _buildLangChip(
+                        context: context,
                         label: lang,
                         isSelected: _selectedLanguageFilter == lang,
                         onTap: () =>
                             setState(() => _selectedLanguageFilter = lang),
-                        scheme: scheme,
                       ),
                   ],
                 ),
@@ -334,48 +369,58 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
 
           // 3. Voice Options List or Empty State
           if (widget.availableVoices.isEmpty)
-            _buildEmptyState(context, scheme)
+            _buildEmptyState(context)
           else if (filtered.isEmpty)
-            _buildNoSearchResults(context, scheme)
+            _buildNoSearchResults(context)
           else
-            _buildVoiceList(context, scheme, filtered),
+            _buildVoiceList(context, filtered),
         ],
       ),
     );
   }
 
   Widget _buildLangChip({
+    required BuildContext context,
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
-    required ColorScheme scheme,
   }) {
+    final appColors = context.appColors;
+
     return Padding(
       padding: const EdgeInsets.only(right: 6),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? scheme.primary
-                : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected
-                  ? scheme.primary
-                  : scheme.outlineVariant.withValues(alpha: 0.3),
-              width: 1,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
+      child: Tooltip(
+        message: 'Filter by $label',
+        child: Semantics(
+          label: 'Filter by $label',
+          button: true,
+          child: MetroPressable(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? appColors.buttonBackground
+                    : appColors.panelBackground,
+                borderRadius: BorderRadius.zero,
+                border: Border.all(
+                  color: isSelected
+                      ? appColors.buttonBackground
+                      : appColors.panelBorder,
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                label.toLowerCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected
+                      ? appColors.buttonForeground
+                      : appColors.topbarForeground,
+                ),
+              ),
             ),
           ),
         ),
@@ -383,7 +428,9 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
     );
   }
 
-  Widget _buildNoSearchResults(BuildContext context, ColorScheme scheme) {
+  Widget _buildNoSearchResults(BuildContext context) {
+    final appColors = context.appColors;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       child: Column(
@@ -392,23 +439,23 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
           Icon(
             LucideIcons.searchX,
             size: 24,
-            color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+            color: appColors.topbarForeground.withValues(alpha: 0.6),
           ),
           const SizedBox(height: 6),
           Text(
-            'No matching voices found',
+            'no matching voices found',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: scheme.onSurface,
+              color: appColors.topbarForeground,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Try adjusting your search terms or language filter.',
+            'try adjusting your search terms or language filter.',
             style: TextStyle(
               fontSize: 11,
-              color: scheme.onSurfaceVariant,
+              color: appColors.topbarForeground.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 8),
@@ -419,14 +466,19 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                 _selectedLanguageFilter = null;
               });
             },
-            child: const Text('Reset filters'),
+            child: Text(
+              'reset filters',
+              style: TextStyle(color: appColors.buttonBackground),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, ColorScheme scheme) {
+  Widget _buildEmptyState(BuildContext context) {
+    final appColors = context.appColors;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       child: Column(
@@ -435,38 +487,55 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
           Icon(
             LucideIcons.audioLines,
             size: 28,
-            color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+            color: appColors.topbarForeground.withValues(alpha: 0.6),
           ),
           const SizedBox(height: 8),
           Text(
-            'No offline voices installed',
+            'no offline voices installed',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: scheme.onSurface,
+              color: appColors.topbarForeground,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Download offline neural voices to use TTS reading.',
+            'download offline neural voices to use tts reading.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
-              color: scheme.onSurfaceVariant,
+              color: appColors.topbarForeground.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 10),
-          FilledButton.tonalIcon(
-            onPressed: () {
+          MetroPressable(
+            onTap: () {
               appRouter.push('${appRoutes.settings.path}?tab=tts');
             },
-            icon: const Icon(LucideIcons.download, size: 15),
-            label: const Text('Download Voices'),
-            style: FilledButton.styleFrom(
-              visualDensity: VisualDensity.compact,
-              textStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: appColors.buttonBackground,
+                borderRadius: BorderRadius.zero,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    LucideIcons.download,
+                    size: 15,
+                    color: appColors.buttonForeground,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'download voices',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: appColors.buttonForeground,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -477,9 +546,10 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
 
   Widget _buildVoiceList(
     BuildContext context,
-    ColorScheme scheme,
     List<TtsVoiceOption> voices,
   ) {
+    final appColors = context.appColors;
+
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 210),
       child: Scrollbar(
@@ -498,12 +568,11 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                 (widget.currentVoice != null &&
                     voice.matchesKey(widget.currentVoice!.storageKey));
 
-            return InkWell(
+            return MetroPressable(
               onTap: () {
                 HapticFeedback.selectionClick();
                 widget.onVoiceSelected(voice);
               },
-              borderRadius: BorderRadius.circular(12),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 constraints: const BoxConstraints(minHeight: 46),
@@ -513,24 +582,24 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? scheme.primaryContainer.withValues(alpha: 0.35)
-                      : scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(12),
+                      ? appColors.buttonBackground.withValues(alpha: 0.15)
+                      : appColors.panelBackground,
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(
                     color: isSelected
-                        ? scheme.primary
-                        : scheme.outlineVariant.withValues(alpha: 0.35),
+                        ? appColors.buttonBackground
+                        : appColors.panelBorder,
                     width: isSelected ? 1.5 : 1.0,
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      isSelected ? LucideIcons.circleCheck : LucideIcons.circle,
+                      isSelected ? LucideIcons.squareCheck : LucideIcons.square,
                       size: 18,
                       color: isSelected
-                          ? scheme.primary
-                          : scheme.outlineVariant,
+                          ? appColors.buttonBackground
+                          : appColors.panelBorder,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -548,8 +617,8 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                                   ? FontWeight.bold
                                   : FontWeight.w500,
                               color: isSelected
-                                  ? scheme.primary
-                                  : scheme.onSurface,
+                                  ? appColors.buttonBackground
+                                  : appColors.topbarForeground,
                             ),
                           ),
                           if (voice.languageCode != null) ...[
@@ -562,31 +631,33 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                                     vertical: 1,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: scheme.surfaceContainerLow,
-                                    borderRadius: BorderRadius.circular(4),
+                                    color: appColors.panelBorder.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                    borderRadius: BorderRadius.zero,
                                     border: Border.all(
-                                      color: scheme.outlineVariant.withValues(
-                                        alpha: 0.3,
-                                      ),
+                                      color: appColors.panelBorder,
                                       width: 0.5,
                                     ),
                                   ),
                                   child: Text(
-                                    voice.languageCode!.toUpperCase(),
+                                    voice.languageCode!.toLowerCase(),
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
-                                      color: scheme.onSurfaceVariant,
+                                      color: appColors.topbarForeground
+                                          .withValues(alpha: 0.8),
                                     ),
                                   ),
                                 ),
                                 if (voice.sherpaSpeakerId != null) ...[
                                   const SizedBox(width: 6),
                                   Text(
-                                    'Speaker ${voice.sherpaSpeakerId}',
+                                    'speaker ${voice.sherpaSpeakerId}',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: scheme.onSurfaceVariant,
+                                      color: appColors.topbarForeground
+                                          .withValues(alpha: 0.6),
                                     ),
                                   ),
                                 ],
@@ -603,15 +674,15 @@ class _TtsVoiceSelectionPanelState extends State<TtsVoiceSelectionPanel> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: scheme.primary,
-                          borderRadius: BorderRadius.circular(8),
+                          color: appColors.buttonBackground,
+                          borderRadius: BorderRadius.zero,
                         ),
                         child: Text(
-                          'Active',
+                          'active',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: scheme.onPrimary,
+                            color: appColors.buttonForeground,
                           ),
                         ),
                       ),
