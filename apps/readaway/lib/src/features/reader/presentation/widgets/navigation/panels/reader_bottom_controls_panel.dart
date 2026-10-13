@@ -25,7 +25,7 @@ class ReaderBottomControlsPanel extends StatelessWidget {
     this.backgroundColor,
     this.decoration,
     this.borderRadius,
-    this.showHandle = true,
+    this.showHandle = false,
   });
 
   final ValueNotifier<ReaderBottomPanel?> panelNotifier;
@@ -81,12 +81,20 @@ class ReaderBottomControlsPanel extends StatelessWidget {
             decoration ??
             BoxDecoration(
               color: panelBgColor,
-              borderRadius:
-                  borderRadius ??
-                  const BorderRadius.vertical(top: Radius.circular(20)),
-              border: Border.all(
-                color: appColors.borderSubtle,
-                width: 1,
+              borderRadius: borderRadius ?? BorderRadius.zero,
+              border: Border(
+                top: BorderSide(
+                  color: appColors.borderSubtle,
+                  width: 1,
+                ),
+                left: BorderSide(
+                  color: appColors.borderSubtle,
+                  width: 1,
+                ),
+                right: BorderSide(
+                  color: appColors.borderSubtle,
+                  width: 1,
+                ),
               ),
             ),
         clipBehavior: Clip.antiAlias,
@@ -98,10 +106,10 @@ class ReaderBottomControlsPanel extends StatelessWidget {
                 child: Container(
                   margin: const EdgeInsets.only(top: 8, bottom: 2),
                   width: 36,
-                  height: 4,
+                  height: 3,
                   decoration: BoxDecoration(
                     color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.zero,
                   ),
                 ),
               ),

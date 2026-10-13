@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../../../core/theme/theme.dart';
 import '../../../../../../core/widgets/core_widgets.dart';
 import '../../../bloc/reader_bloc.dart';
 
-/// Page navigation panel with scrubber slider, prev/next buttons, and quick jump controls.
+/// Page navigation panel with scrubber slider, prev/next steppers, and flat jump controls.
 class ReaderPageNavigationQuickView extends StatelessWidget {
   const ReaderPageNavigationQuickView({
     super.key,
@@ -22,8 +23,7 @@ class ReaderPageNavigationQuickView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final appColors = context.appColors;
 
     return BlocBuilder<ReaderBloc, ReaderState>(
       buildWhen: (prev, curr) =>
@@ -54,40 +54,63 @@ class ReaderPageNavigationQuickView extends StatelessWidget {
                   Icon(
                     LucideIcons.slidersHorizontal,
                     size: 16,
-                    color: scheme.primary,
+                    color: appColors.buttonBackground,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Page Navigation',
-                    style: theme.textTheme.labelMedium?.copyWith(
+                    'page navigation',
+                    style: TextStyle(
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: scheme.onSurface,
+                      color: appColors.readerForeground,
+                      letterSpacing: -0.2,
                     ),
                   ),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
-                      vertical: 2,
+                      vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: scheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
+                      color: appColors.editorWidgetBackground,
+                      borderRadius: BorderRadius.zero,
+                      border: Border.all(
+                        color: appColors.borderSubtle,
+                        width: 1.0,
+                      ),
                     ),
                     child: Text(
                       '${currentPage + 1} / $pageCount  ($percent%)',
-                      style: theme.textTheme.labelSmall?.copyWith(
+                      style: TextStyle(
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: scheme.onSurfaceVariant,
+                        color: appColors.readerForeground.withValues(
+                          alpha: 0.8,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  AppIconButton(
-                    icon: LucideIcons.x,
-                    tooltip: 'Close panel',
-                    size: AppIconButtonSize.small,
-                    onPressed: onClose,
+                  const SizedBox(width: 6),
+                  Tooltip(
+                    message: 'Close panel',
+                    child: Semantics(
+                      label: 'Close panel',
+                      button: true,
+                      child: MetroPressable(
+                        onTap: onClose,
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Icon(
+                            LucideIcons.x,
+                            size: 16,
+                            color: appColors.readerForeground.withValues(
+                              alpha: 0.75,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -96,11 +119,28 @@ class ReaderPageNavigationQuickView extends StatelessWidget {
               // Slider row: Prev + Slider + Next
               Row(
                 children: [
-                  AppIconButton(
-                    icon: LucideIcons.chevronLeft,
-                    tooltip: 'Previous page',
-                    size: AppIconButtonSize.small,
-                    onPressed: currentPage > 0 ? onPreviousPage : null,
+                  Tooltip(
+                    message: 'Previous page',
+                    child: Semantics(
+                      label: 'Previous page',
+                      button: true,
+                      child: MetroPressable(
+                        enabled: currentPage > 0,
+                        onTap: currentPage > 0 ? onPreviousPage : null,
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Icon(
+                            LucideIcons.chevronLeft,
+                            size: 18,
+                            color: currentPage > 0
+                                ? appColors.readerForeground
+                                : appColors.readerForeground.withValues(
+                                    alpha: 0.35,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   Expanded(
                     child: AppSlider(
@@ -111,11 +151,28 @@ class ReaderPageNavigationQuickView extends StatelessWidget {
                       onChanged: (v) => onSeekToPage(v.round()),
                     ),
                   ),
-                  AppIconButton(
-                    icon: LucideIcons.chevronRight,
-                    tooltip: 'Next page',
-                    size: AppIconButtonSize.small,
-                    onPressed: currentPage < pageCount - 1 ? onNextPage : null,
+                  Tooltip(
+                    message: 'Next page',
+                    child: Semantics(
+                      label: 'Next page',
+                      button: true,
+                      child: MetroPressable(
+                        enabled: currentPage < pageCount - 1,
+                        onTap: currentPage < pageCount - 1 ? onNextPage : null,
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Icon(
+                            LucideIcons.chevronRight,
+                            size: 18,
+                            color: currentPage < pageCount - 1
+                                ? appColors.readerForeground
+                                : appColors.readerForeground.withValues(
+                                    alpha: 0.35,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -124,25 +181,81 @@ class ReaderPageNavigationQuickView extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                  MetroPressable(
+                    enabled: currentPage > 0,
+                    onTap: currentPage > 0 ? () => onSeekToPage(0) : null,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.chevronsLeft,
+                            size: 14,
+                            color: currentPage > 0
+                                ? appColors.readerForeground
+                                : appColors.readerForeground.withValues(
+                                    alpha: 0.35,
+                                  ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'start',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: currentPage > 0
+                                  ? appColors.readerForeground
+                                  : appColors.readerForeground.withValues(
+                                      alpha: 0.35,
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    icon: const Icon(LucideIcons.chevronsLeft, size: 14),
-                    label: const Text('Start'),
-                    onPressed: currentPage > 0 ? () => onSeekToPage(0) : null,
                   ),
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                    icon: const Icon(LucideIcons.chevronsRight, size: 14),
-                    label: const Text('End'),
-                    onPressed: currentPage < pageCount - 1
+                  MetroPressable(
+                    enabled: currentPage < pageCount - 1,
+                    onTap: currentPage < pageCount - 1
                         ? () => onSeekToPage(pageCount - 1)
                         : null,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'end',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: currentPage < pageCount - 1
+                                  ? appColors.readerForeground
+                                  : appColors.readerForeground.withValues(
+                                      alpha: 0.35,
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            LucideIcons.chevronsRight,
+                            size: 14,
+                            color: currentPage < pageCount - 1
+                                ? appColors.readerForeground
+                                : appColors.readerForeground.withValues(
+                                    alpha: 0.35,
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),

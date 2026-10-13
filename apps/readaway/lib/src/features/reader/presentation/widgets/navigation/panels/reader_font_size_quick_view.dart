@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../../../core/theme/theme.dart';
 import '../../../../../../core/widgets/core_widgets.dart';
 import '../../../../../settings/presentation/bloc/settings/settings_bloc.dart';
 import '../../../../../settings/presentation/widgets/settings_bloc_x.dart';
 
-/// Font size quick view with steppers, slider, and preset scale chips.
+/// Font size quick view with steppers, slider, and flat Metro preset scale tiles.
 class ReaderFontSizeQuickView extends StatelessWidget {
   const ReaderFontSizeQuickView({
     super.key,
@@ -30,8 +31,7 @@ class ReaderFontSizeQuickView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final appColors = context.appColors;
 
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (prev, curr) {
@@ -58,44 +58,75 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                   Icon(
                     LucideIcons.type,
                     size: 16,
-                    color: scheme.primary,
+                    color: appColors.buttonBackground,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Font Size',
-                    style: theme.textTheme.labelMedium?.copyWith(
+                    'font size',
+                    style: TextStyle(
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: scheme.onSurface,
+                      color: appColors.readerForeground,
+                      letterSpacing: -0.2,
                     ),
                   ),
                   const Spacer(),
                   if ((fontSize - defaultFontSize).abs() > 0.5)
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                      onPressed: enabled
+                    MetroPressable(
+                      enabled: enabled,
+                      onTap: enabled
                           ? () => _updateFontSize(
                               context,
                               defaultFontSize,
                             )
                           : null,
-                      child: const Text('Reset'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Text(
+                          'reset',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: enabled
+                                ? appColors.buttonBackground
+                                : appColors.readerForeground.withValues(
+                                    alpha: 0.38,
+                                  ),
+                          ),
+                        ),
+                      ),
                     ),
                   Text(
                     '${fontSize.round()} px',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
+                    style: TextStyle(
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
+                      color: appColors.readerForeground.withValues(alpha: 0.7),
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  AppIconButton(
-                    icon: LucideIcons.x,
-                    tooltip: 'Close panel',
-                    size: AppIconButtonSize.small,
-                    onPressed: onClose,
+                  const SizedBox(width: 6),
+                  Tooltip(
+                    message: 'Close panel',
+                    child: Semantics(
+                      label: 'Close panel',
+                      button: true,
+                      child: MetroPressable(
+                        onTap: onClose,
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Icon(
+                            LucideIcons.x,
+                            size: 16,
+                            color: appColors.readerForeground.withValues(
+                              alpha: 0.75,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -104,16 +135,33 @@ class ReaderFontSizeQuickView extends StatelessWidget {
               // Stepper & Slider row: [ - ] ===Slider=== [ + ]
               Row(
                 children: [
-                  AppIconButton(
-                    icon: LucideIcons.minus,
-                    tooltip: 'Decrease font size',
-                    size: AppIconButtonSize.small,
-                    onPressed: enabled && fontSize > 10
-                        ? () => _updateFontSize(
-                            context,
-                            fontSize - 1,
-                          )
-                        : null,
+                  Tooltip(
+                    message: 'Decrease font size',
+                    child: Semantics(
+                      label: 'Decrease font size',
+                      button: true,
+                      child: MetroPressable(
+                        enabled: enabled && fontSize > 10,
+                        onTap: enabled && fontSize > 10
+                            ? () => _updateFontSize(
+                                context,
+                                fontSize - 1,
+                              )
+                            : null,
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Icon(
+                            LucideIcons.minus,
+                            size: 16,
+                            color: (enabled && fontSize > 10)
+                                ? appColors.readerForeground
+                                : appColors.readerForeground.withValues(
+                                    alpha: 0.35,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   Expanded(
                     child: AppSlider(
@@ -129,36 +177,88 @@ class ReaderFontSizeQuickView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  AppIconButton(
-                    icon: LucideIcons.plus,
-                    tooltip: 'Increase font size',
-                    size: AppIconButtonSize.small,
-                    onPressed: enabled && fontSize < 32
-                        ? () => _updateFontSize(
-                            context,
-                            fontSize + 1,
-                          )
-                        : null,
+                  Tooltip(
+                    message: 'Increase font size',
+                    child: Semantics(
+                      label: 'Increase font size',
+                      button: true,
+                      child: MetroPressable(
+                        enabled: enabled && fontSize < 32,
+                        onTap: enabled && fontSize < 32
+                            ? () => _updateFontSize(
+                                context,
+                                fontSize + 1,
+                              )
+                            : null,
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Icon(
+                            LucideIcons.plus,
+                            size: 16,
+                            color: (enabled && fontSize < 32)
+                                ? appColors.readerForeground
+                                : appColors.readerForeground.withValues(
+                                    alpha: 0.35,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
-              // Preset Size Chips
-              Wrap(
-                spacing: 8,
+              // Flat Metro Preset Size Tiles
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [14.0, 16.0, 18.0, 20.0, 24.0].map((size) {
                   final isSelected = (fontSize - size).abs() < 0.5;
-                  return ChoiceChip(
-                    label: Text('${size.round()} px'),
-                    selected: isSelected,
-                    visualDensity: VisualDensity.compact,
-                    onSelected: enabled
-                        ? (_) => _updateFontSize(
-                            context,
-                            size,
-                          )
-                        : null,
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                      child: MetroPressable(
+                        enabled: enabled,
+                        onTap: enabled
+                            ? () => _updateFontSize(
+                                context,
+                                size,
+                              )
+                            : null,
+                        child: Container(
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? appColors.buttonBackground
+                                : appColors.editorWidgetBackground,
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(
+                              color: isSelected
+                                  ? appColors.buttonBackground
+                                  : appColors.borderSubtle,
+                              width: 1.0,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${size.round()} px',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: isSelected
+                                  ? appColors.buttonForeground
+                                  : (enabled
+                                        ? appColors.readerForeground
+                                        : appColors.readerForeground.withValues(
+                                            alpha: 0.38,
+                                          )),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   );
                 }).toList(),
               ),

@@ -6,6 +6,7 @@ import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../core/services/toast/toast_service.dart';
 import '../../../../core/services/toast/toast_types.dart';
+import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/core_widgets.dart';
 import '../../domain/services/annotation_anchor_resolver.dart';
 import '../bloc/annotations_bloc.dart';
@@ -58,24 +59,40 @@ class ReaderBookmarkButton extends StatelessWidget {
       (annotations) => annotations.state.hasBookmarkAt(anchor),
     );
 
-    return AppIconButton(
-      icon: LucideIcons.bookmark,
-      tooltip: bookmarked ? 'Remove bookmark' : 'Bookmark this page',
-      semanticLabel: bookmarked ? 'Remove bookmark' : 'Bookmark this page',
-      size: size,
-      selected: bookmarked,
-      onPressed: () {
-        // Toggling is its own inverse, so undo is the same event.
-        bloc.add(AnnotationsEvent.toggleBookmark(anchor: anchor));
-        context.showToast(
-          message: bookmarked ? 'Bookmark removed' : 'Bookmarked',
-          action: ToastAction(
-            label: 'Undo',
-            onPressed: () =>
-                bloc.add(AnnotationsEvent.toggleBookmark(anchor: anchor)),
+    final appColors = context.appColors;
+    final iconColor = bookmarked
+        ? appColors.buttonBackground
+        : appColors.topbarForeground.withValues(alpha: 0.75);
+
+    return Tooltip(
+      message: bookmarked ? 'Remove bookmark' : 'Bookmark this page',
+      child: Semantics(
+        label: bookmarked ? 'Remove bookmark' : 'Bookmark this page',
+        button: true,
+        selected: bookmarked,
+        child: MetroPressable(
+          onTap: () {
+            // Toggling is its own inverse, so undo is the same event.
+            bloc.add(AnnotationsEvent.toggleBookmark(anchor: anchor));
+            context.showToast(
+              message: bookmarked ? 'Bookmark removed' : 'Bookmarked',
+              action: ToastAction(
+                label: 'Undo',
+                onPressed: () =>
+                    bloc.add(AnnotationsEvent.toggleBookmark(anchor: anchor)),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+            child: Icon(
+              bookmarked ? LucideIcons.bookmarkCheck : LucideIcons.bookmark,
+              size: 18,
+              color: iconColor,
+            ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

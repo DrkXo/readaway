@@ -34,6 +34,14 @@ class MockReaderTtsBloc extends MockBloc<ReaderTtsEvent, ReaderTtsState>
   }) : ttsRepository = ttsRepository ?? MockReaderTtsRepository(),
        readerRepository = readerRepository ?? MockReaderRepository();
 
+  final List<ReaderTtsEvent> addedEvents = [];
+
+  @override
+  void add(ReaderTtsEvent event) {
+    addedEvents.add(event);
+    super.add(event);
+  }
+
   @override
   final ReaderTtsRepository ttsRepository;
 

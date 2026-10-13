@@ -13,12 +13,15 @@ export 'panels/panels.dart';
 export 'reader_bottom_bar_mixin.dart';
 export 'reader_bottom_panel.dart';
 
-/// Fixed-height reader navigation bar with 5 primary action controls:
-/// - Outline / Table of Contents
-/// - Display Brightness & Theme Mode
-/// - Page Navigation Scrubber
-/// - Font Resizing & Scale Chips
-/// - TTS (Text-to-Speech)
+/// Fixed-height reader navigation bar with 5 primary Metro action controls:
+/// - Outline / Table of Contents ('contents')
+/// - Display Brightness & Theme Mode ('theme')
+/// - Page Navigation Scrubber ('pages')
+/// - Font Resizing & Scale Chips ('font', reflowable only)
+/// - TTS (Text-to-Speech) ('listen', reflowable only)
+///
+/// Designed with flat non-circular Lumia Metro aesthetics, 3D perspective touch
+/// tilt via [MetroPressable], and active theme accent indicators.
 ///
 /// Contextual quick panels extend upward from the bar in a docked overlay,
 /// avoiding Scaffold layout shifts and preventing document re-layouts.
@@ -54,7 +57,7 @@ class ReaderBottomBar extends StatefulWidget {
   final double panelMaxWidth;
 
   /// Optional background color for the reader bottom bar.
-  /// Defaults to [ColorScheme.surface] with alpha 0.95.
+  /// Defaults to theme bottombar background.
   final Color? backgroundColor;
 
   /// Optional background color for the appearing contextual controls panel.
@@ -66,7 +69,7 @@ class ReaderBottomBar extends StatefulWidget {
   final bool showTopBorder;
 
   /// Fixed height of the navigation bar.
-  static const double height = 56;
+  static const double height = 58;
 
   @override
   State<ReaderBottomBar> createState() => _ReaderBottomBarState();
@@ -108,44 +111,43 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // 1. Outline (Chapters / TOC)
-                  AppIconButton(
+                  _MetroReaderBarAction(
                     icon: LucideIcons.panelLeft,
+                    label: 'contents',
                     tooltip: 'Outline',
-                    size: AppIconButtonSize.medium,
                     semanticLabel: 'Open chapter outline',
-                    onPressed: handleOutlineTap,
+                    onTap: handleOutlineTap,
                   ),
 
                   // 2. Brightness & Theme
-                  AppIconButton(
+                  _MetroReaderBarAction(
                     icon: LucideIcons.sunMedium,
+                    label: 'theme',
                     tooltip: 'Brightness & Theme',
-                    size: AppIconButtonSize.medium,
-                    selected: activePanel == ReaderBottomPanel.brightness,
+                    isActive: activePanel == ReaderBottomPanel.brightness,
                     semanticLabel: 'Display brightness and theme adjustment',
-                    onPressed: () => togglePanel(ReaderBottomPanel.brightness),
+                    onTap: () => togglePanel(ReaderBottomPanel.brightness),
                   ),
 
                   // 3. Page Navigation
-                  AppIconButton(
+                  _MetroReaderBarAction(
                     icon: LucideIcons.slidersHorizontal,
+                    label: 'pages',
                     tooltip: 'Page navigation',
-                    size: AppIconButtonSize.medium,
-                    selected: activePanel == ReaderBottomPanel.pageNavigation,
+                    isActive: activePanel == ReaderBottomPanel.pageNavigation,
                     semanticLabel: 'Page scrubber and jump controls',
-                    onPressed: () =>
-                        togglePanel(ReaderBottomPanel.pageNavigation),
+                    onTap: () => togglePanel(ReaderBottomPanel.pageNavigation),
                   ),
 
                   // 4. Font Resizing (Reflowable only)
                   if (readerState.isReflowable)
-                    AppIconButton(
+                    _MetroReaderBarAction(
                       icon: LucideIcons.type,
+                      label: 'font',
                       tooltip: 'Font size',
-                      size: AppIconButtonSize.medium,
-                      selected: activePanel == ReaderBottomPanel.fontSize,
+                      isActive: activePanel == ReaderBottomPanel.fontSize,
                       semanticLabel: 'Font size adjustment',
-                      onPressed: () => togglePanel(ReaderBottomPanel.fontSize),
+                      onTap: () => togglePanel(ReaderBottomPanel.fontSize),
                     ),
 
                   // 5. TTS (Text to Speech) (Reflowable only)
@@ -153,15 +155,15 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
                     BlocSelector<ReaderTtsBloc, ReaderTtsState, bool>(
                       selector: (ttsState) => ttsState.ttsActive,
                       builder: (context, ttsActive) {
-                        return AppIconButton(
+                        return _MetroReaderBarAction(
                           icon: LucideIcons.audioLines,
+                          label: 'listen',
                           tooltip: ttsActive
                               ? 'Close TTS player'
                               : 'Listen (TTS player)',
-                          size: AppIconButtonSize.medium,
-                          selected: ttsActive,
+                          isActive: ttsActive,
                           semanticLabel: 'Text to speech player toggle',
-                          onPressed: () => handleTtsTap(readerState),
+                          onTap: () => handleTtsTap(readerState),
                         );
                       },
                     ),
@@ -172,5 +174,90 @@ class _ReaderBottomBarState extends State<ReaderBottomBar>
         );
       },
     );
+  }
+}
+
+/// A flat non-circular action button adhering strictly to Metro UI guidelines.
+///
+/// Features:
+/// - 3D perspective touch feedback powered by [MetroPressable].
+/// - High-contrast lowercase typography label below the vector icon.
+/// - Vibrant accent color transition and 2px flat underline indicator when active.
+/// - Zero circular borders, zero rounded corners.
+class _MetroReaderBarAction extends StatelessWidget {
+  const _MetroReaderBarAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isActive = false,
+    this.tooltip,
+    this.semanticLabel,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isActive;
+  final String? tooltip;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final appColors = context.appColors;
+    final activeColor = appColors.buttonBackground;
+    final inactiveColor = appColors.bottombarForeground.withValues(alpha: 0.7);
+    final effectiveColor = isActive ? activeColor : inactiveColor;
+
+    Widget content = MetroPressable(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: effectiveColor,
+            ),
+            const SizedBox(height: 3),
+            MetroText.appBarLabel(
+              label.toLowerCase(),
+              color: effectiveColor,
+            ),
+            const SizedBox(height: 3),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
+              height: 2,
+              width: isActive ? 18 : 0,
+              decoration: BoxDecoration(
+                color: activeColor,
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (tooltip != null) {
+      content = Tooltip(
+        message: tooltip!,
+        child: content,
+      );
+    }
+
+    if (semanticLabel != null) {
+      content = Semantics(
+        label: semanticLabel,
+        button: true,
+        selected: isActive,
+        child: content,
+      );
+    }
+
+    return content;
   }
 }
