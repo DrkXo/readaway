@@ -10,7 +10,6 @@ import 'package:readaway/src/core/services/file_open_service.dart';
 import 'package:readaway/src/core/services/notification_service.dart';
 import 'package:readaway/src/core/services/path_service.dart';
 import 'package:readaway/src/core/services/settings_service.dart';
-import 'package:readaway/src/core/services/storage/hive/app_storage_service.dart';
 import 'package:readaway/src/core/services/tts/cache/tts_chapter_cache_service.dart';
 import 'package:readaway/src/core/services/tts/catalog/tts_catalog_service.dart';
 import 'package:readaway/src/core/services/tts/importer/custom_tts_model_importer_service.dart';
@@ -39,7 +38,6 @@ import 'package:readaway_core/readaway_core.dart';
   MockSpec<WindowService>(),
   MockSpec<NotificationService>(),
   MockSpec<FileOpenService>(),
-  MockSpec<AppStorageService>(),
   MockSpec<SettingsService>(),
   MockSpec<WakelockService>(),
   MockSpec<AudioPlayerService>(),

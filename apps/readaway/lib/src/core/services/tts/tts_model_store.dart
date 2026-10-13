@@ -3,79 +3,97 @@ import 'dart:async';
 
 import 'package:injectable/injectable.dart';
 
-import '../storage/hive/app_storage_service.dart';
+import '../storage/drift/daos/tts_dao.dart';
 import 'tts_models.dart';
 
-/// Persistence and single source of truth for the TTS model catalog, sha256 checksums,
-/// and installed/downloaded models index, backed by Hive.
+/// Persistence and single source of truth for the TTS model catalog, sha256
+/// checksums, and installed/downloaded models index, backed by the drift
+/// database.
+///
+/// The public surface stays synchronous: caches are hydrated by [init] (DI
+/// awaits it) and kept in sync from the database `watch()` streams, so reads
+/// never block and callers that used the old synchronous Hive reads keep
+/// working unchanged.
 @lazySingleton
 class TtsModelStore {
-  TtsModelStore({required AppStorageService storage}) : _storage = storage {
+  TtsModelStore(this._dao) {
     _initStreams();
   }
 
-  final AppStorageService _storage;
+  final TtsDao _dao;
 
-  static const String _catalogKey = 'tts_model_catalog';
-  static const String _catalogTimestampKey = 'tts_model_catalog_ts';
-  static const String _checksumsKey = 'tts_model_checksums';
-  static const String _installedKey = 'tts_installed_models';
+  List<SherpaTtsModelInfo> _catalog = const [];
+  int? _catalogTimestamp;
+  Map<String, String> _checksums = const {};
+  Map<String, SherpaTtsModelInfo> _installed = const {};
+  final List<StreamSubscription<dynamic>> _subscriptions = [];
 
   final _installedModelsController =
       StreamController<List<SherpaTtsModelInfo>>.broadcast();
   final _catalogController =
       StreamController<List<SherpaTtsModelInfo>>.broadcast();
 
-  void _initStreams() {
-    _storage.ttsBox.watch(key: _installedKey).listen((_) {
-      final installed = loadInstalledModelsList();
-      if (!_installedModelsController.isClosed) {
-        _installedModelsController.add(installed);
-      }
-    });
+  /// Loads the persisted state into the in-memory caches.
+  ///
+  /// Resolved before the store is handed out through DI; call it explicitly
+  /// when constructing the store directly in tests.
+  @PostConstruct(preResolve: true)
+  Future<void> init() async {
+    final results = await Future.wait<Object?>([
+      _dao.loadCatalog(),
+      _dao.catalogTimestamp(),
+      _dao.loadChecksums(),
+      _dao.loadInstalledModels(),
+    ]);
+    _catalog = results[0] as List<SherpaTtsModelInfo>;
+    _catalogTimestamp = results[1] as int?;
+    _checksums = results[2] as Map<String, String>;
+    _installed = results[3] as Map<String, SherpaTtsModelInfo>;
+  }
 
-    _storage.ttsBox.watch(key: _catalogKey).listen((_) {
-      if (!_catalogController.isClosed) {
-        _catalogController.add(loadCatalog());
-      }
-    });
+  void _initStreams() {
+    _subscriptions.add(
+      _dao.watchInstalledModels().listen((installed) {
+        _installed = {for (final model in installed) model.id: model};
+        if (!_installedModelsController.isClosed) {
+          _installedModelsController.add(installed);
+        }
+      }),
+    );
+
+    _subscriptions.add(
+      _dao.watchCatalog().listen((catalog) {
+        _catalog = catalog;
+        if (!_catalogController.isClosed) {
+          _catalogController.add(catalog);
+        }
+      }),
+    );
   }
 
   // --- Catalog ---
 
   /// The persisted catalog, or empty list when none is stored.
-  List<SherpaTtsModelInfo> loadCatalog() {
-    final raw = _storage.ttsBox.get(_catalogKey);
-    if (raw is List) {
-      return raw.whereType<SherpaTtsModelInfo>().toList();
-    }
-    return const [];
-  }
+  List<SherpaTtsModelInfo> loadCatalog() => _catalog;
 
   /// Timestamp when catalog was last synced.
-  int? get catalogTimestamp =>
-      _storage.ttsBox.get(_catalogTimestampKey) as int?;
+  int? get catalogTimestamp => _catalogTimestamp;
 
   /// Finds a model in installed models first, then the catalog by [id].
   SherpaTtsModelInfo? byId(String id) {
-    final installed = loadInstalledModels();
-    if (installed.containsKey(id)) {
-      return installed[id];
-    }
-    final catalog = loadCatalog();
-    for (final m in catalog) {
-      if (m.id == id) return m;
+    final installed = _installed[id];
+    if (installed != null) return installed;
+    for (final model in _catalog) {
+      if (model.id == id) return model;
     }
     return null;
   }
 
   /// Saves catalog models and notifies all listeners.
   Future<void> saveCatalog(List<SherpaTtsModelInfo> models) async {
-    await _storage.ttsBox.put(_catalogKey, models);
-    await _storage.ttsBox.put(
-      _catalogTimestampKey,
-      DateTime.now().millisecondsSinceEpoch,
-    );
+    await _dao.saveCatalog(models);
+    _catalog = List.unmodifiable(models);
+    _catalogTimestamp = DateTime.now().millisecondsSinceEpoch;
     if (!_catalogController.isClosed) {
       _catalogController.add(models);
     }
@@ -89,61 +107,42 @@ class TtsModelStore {
 
   // --- Checksums ---
 
-  Map<String, String> loadChecksums() {
-    final raw = _storage.ttsBox.get(_checksumsKey);
-    if (raw is Map) {
-      return raw.cast<String, String>();
-    }
-    return const {};
-  }
+  Map<String, String> loadChecksums() => _checksums;
 
   Future<void> saveChecksums(Map<String, String> checksums) async {
-    await _storage.ttsBox.put(_checksumsKey, checksums);
+    await _dao.saveChecksums(checksums);
+    _checksums = Map.unmodifiable(checksums);
   }
 
   /// sha256 of a release asset by file name, or null when unknown.
-  String? checksumFor(String fileName) => loadChecksums()[fileName];
+  String? checksumFor(String fileName) => _checksums[fileName];
 
   // --- Installed / Downloaded Models ---
 
-  Map<String, SherpaTtsModelInfo> loadInstalledModels() {
-    final raw = _storage.ttsBox.get(_installedKey);
-    if (raw is Map) {
-      final result = <String, SherpaTtsModelInfo>{};
-      for (final entry in raw.entries) {
-        if (entry.key is String && entry.value is SherpaTtsModelInfo) {
-          result[entry.key as String] = entry.value as SherpaTtsModelInfo;
-        }
-      }
-      return result;
-    }
-    return const {};
-  }
+  Map<String, SherpaTtsModelInfo> loadInstalledModels() => _installed;
 
   List<SherpaTtsModelInfo> loadInstalledModelsList() =>
-      loadInstalledModels().values.toList();
+      _installed.values.toList();
 
-  Set<String> loadDownloadedIds() => loadInstalledModels().keys.toSet();
+  Set<String> loadDownloadedIds() => _installed.keys.toSet();
 
   Future<void> saveInstalledModel(SherpaTtsModelInfo model) async {
-    final installed = Map<String, SherpaTtsModelInfo>.from(
-      loadInstalledModels(),
-    );
-    installed[model.id] = model;
-    await _storage.ttsBox.put(_installedKey, installed);
+    await _dao.saveInstalledModel(model);
+    final updated = Map<String, SherpaTtsModelInfo>.from(_installed)
+      ..[model.id] = model;
+    _installed = updated;
     if (!_installedModelsController.isClosed) {
-      _installedModelsController.add(installed.values.toList());
+      _installedModelsController.add(updated.values.toList());
     }
   }
 
   Future<void> removeInstalledModel(String modelId) async {
-    final installed = Map<String, SherpaTtsModelInfo>.from(
-      loadInstalledModels(),
-    );
-    installed.remove(modelId);
-    await _storage.ttsBox.put(_installedKey, installed);
+    await _dao.removeInstalledModel(modelId);
+    final updated = Map<String, SherpaTtsModelInfo>.from(_installed)
+      ..remove(modelId);
+    _installed = updated;
     if (!_installedModelsController.isClosed) {
-      _installedModelsController.add(installed.values.toList());
+      _installedModelsController.add(updated.values.toList());
     }
   }
 
@@ -168,6 +167,9 @@ class TtsModelStore {
 
   @disposeMethod
   void dispose() {
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
     _installedModelsController.close();
     _catalogController.close();
   }

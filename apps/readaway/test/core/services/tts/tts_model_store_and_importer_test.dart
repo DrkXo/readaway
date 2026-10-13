@@ -1,13 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive_ce/hive.dart';
 import 'package:readaway/src/core/services/path_service.dart';
-import 'package:readaway/src/core/services/storage/hive/app_storage_service.dart';
+import 'package:readaway/src/core/services/storage/drift/app_database.dart';
+import 'package:readaway/src/core/services/storage/drift/daos/tts_dao.dart';
 import 'package:readaway/src/core/services/tts/extractor/tts_archive_extractor.dart';
 import 'package:readaway/src/core/services/tts/importer/custom_tts_model_importer_service.dart';
 import 'package:readaway/src/core/services/tts/tts_model_store.dart';
 import 'package:readaway/src/core/services/tts/tts_models.dart';
+
+import '../../../helpers/test_helpers.dart';
 
 class FakeAppPathService extends Fake implements AppPathService {
   FakeAppPathService(this.baseDir);
@@ -24,30 +26,6 @@ class FakeAppPathService extends Fake implements AppPathService {
     }
     return dir;
   }
-}
-
-class FakeAppStorageService extends Fake implements AppStorageService {
-  final Map<dynamic, dynamic> _memoryBox = {};
-
-  @override
-  Box<dynamic> get ttsBox => _FakeBox(_memoryBox);
-}
-
-class _FakeBox extends Fake implements Box<dynamic> {
-  _FakeBox(this._data);
-  final Map<dynamic, dynamic> _data;
-
-  @override
-  dynamic get(dynamic key, {dynamic defaultValue}) =>
-      _data[key] ?? defaultValue;
-
-  @override
-  Future<void> put(dynamic key, dynamic value) async {
-    _data[key] = value;
-  }
-
-  @override
-  Stream<BoxEvent> watch({dynamic key}) => const Stream.empty();
 }
 
 void main() {
@@ -120,12 +98,18 @@ void main() {
   });
 
   group('TtsModelStore with Installed Model Metadata', () {
-    late FakeAppStorageService fakeStorage;
+    late AppDatabase db;
     late TtsModelStore store;
 
-    setUp(() {
-      fakeStorage = FakeAppStorageService();
-      store = TtsModelStore(storage: fakeStorage);
+    setUp(() async {
+      db = openTestDatabase();
+      store = TtsModelStore(TtsDao(db));
+      await store.init();
+    });
+
+    tearDown(() {
+      store.dispose();
+      db.close();
     });
 
     test('saves and loads full installed model info', () async {
@@ -164,13 +148,15 @@ void main() {
 
   group('CustomTtsModelImporterService Directory Inspection', () {
     late Directory tempDir;
+    late AppDatabase db;
     late TtsModelStore store;
     late CustomTtsModelImporterService importer;
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('custom_tts_test_');
-      final fakeStorage = FakeAppStorageService();
-      store = TtsModelStore(storage: fakeStorage);
+      db = openTestDatabase();
+      store = TtsModelStore(TtsDao(db));
+      await store.init();
       final fakePath = FakeAppPathService(tempDir);
 
       importer = CustomTtsModelImporterService(
@@ -181,6 +167,8 @@ void main() {
     });
 
     tearDown(() async {
+      store.dispose();
+      db.close();
       if (await tempDir.exists()) {
         await tempDir.delete(recursive: true);
       }

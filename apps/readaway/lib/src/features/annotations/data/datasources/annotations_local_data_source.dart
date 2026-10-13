@@ -1,35 +1,29 @@
-import 'package:hive_ce/hive.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../core/services/storage/hive/app_storage_service.dart';
+import '../../../../core/services/storage/drift/daos/annotations_dao.dart';
 import '../../domain/entity/document_notes.dart';
 
-/// Reads and writes [DocumentNotes] records in the annotations box.
+/// Reads and writes [DocumentNotes] records through [AnnotationsDao].
 ///
-/// One record per document path: a document's notes are loaded with a single
-/// lookup and written back with a single `put`, so a change can never leave a
-/// document half-updated.
-///
-/// [read] and [readAll] are synchronous because Hive reads are synchronous;
-/// wrapping them in a `Future` would only hide that.
+/// [read] and [readAll] are asynchronous because the database is; callers that
+/// used the old synchronous Hive reads already await them.
 @lazySingleton
 class AnnotationsLocalDataSource {
-  final AppStorageService _storage;
+  final AnnotationsDao _notes;
 
-  AnnotationsLocalDataSource(this._storage);
-
-  Box<DocumentNotes> get _box => _storage.annotationsBox;
+  AnnotationsLocalDataSource(this._notes);
 
   /// The stored notes for [documentPath], or null when it has none.
-  DocumentNotes? read(String documentPath) => _box.get(documentPath);
+  Future<DocumentNotes?> read(String documentPath) =>
+      _notes.readForDocument(documentPath);
 
   /// Every stored record.
-  List<DocumentNotes> readAll() => _box.values.toList(growable: false);
+  Future<List<DocumentNotes>> readAll() => _notes.readAll();
 
   /// Inserts or replaces the record for its document.
-  Future<void> write(DocumentNotes document) =>
-      _box.put(document.documentPath, document);
+  Future<void> write(DocumentNotes document) => _notes.write(document);
 
   /// Removes the record for [documentPath]. A no-op when absent.
-  Future<void> remove(String documentPath) => _box.delete(documentPath);
+  Future<void> remove(String documentPath) =>
+      _notes.removeForDocument(documentPath);
 }

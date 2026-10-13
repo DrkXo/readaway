@@ -1,45 +1,38 @@
 import 'package:injectable/injectable.dart';
 
-import '../../../../core/services/storage/hive/app_storage_service.dart';
+import '../../../../core/services/storage/drift/daos/documents_dao.dart';
+import '../../../../core/services/storage/drift/daos/reader_preferences_dao.dart';
 import '../../domain/entity/recent_document.dart';
 
 @lazySingleton
 class LibraryLocalDataSource {
-  final AppStorageService _storage;
+  final DocumentsDao _documents;
+  final ReaderPreferencesDao _readerPreferences;
 
-  LibraryLocalDataSource(this._storage);
+  LibraryLocalDataSource(this._documents, this._readerPreferences);
 
-  Future<List<RecentDocument>> getRecentDocuments() async {
-    final docs = _storage.libraryBox.values.toList();
-    docs.sort((a, b) => b.lastOpened.compareTo(a.lastOpened));
-    return docs;
-  }
+  Future<List<RecentDocument>> getRecentDocuments() =>
+      _documents.getRecentDocuments();
 
-  Stream<List<RecentDocument>> watchRecentDocuments() async* {
-    yield await getRecentDocuments();
-    yield* _storage.libraryBox.watch().asyncMap((_) => getRecentDocuments());
-  }
+  Stream<List<RecentDocument>> watchRecentDocuments() =>
+      _documents.watchRecentDocuments();
 
-  Future<void> saveRecentDocument(RecentDocument document) async {
-    await _storage.libraryBox.put(document.path, document);
-  }
+  Future<void> saveRecentDocument(RecentDocument document) =>
+      _documents.upsertDocument(document);
 
-  Future<void> saveAllDocuments(List<RecentDocument> documents) async {
-    await _storage.libraryBox.putAll({
-      for (final doc in documents) doc.path: doc,
-    });
-  }
+  Future<void> saveAllDocuments(List<RecentDocument> documents) =>
+      _documents.upsertDocuments(documents);
 
   Future<void> removeRecentDocument(String path) async {
-    await _storage.libraryBox.delete(path);
+    await _documents.removeDocument(path);
     // Legacy path-keyed reader preferences are removed with the document.
     // Content-keyed preferences are intentionally retained so settings follow
     // an identical re-import of the same bytes.
-    await _storage.readerBox.delete('reader_doc_$path');
+    await _readerPreferences.deletePathKeyed(path);
   }
 
   Future<void> removeMultipleDocuments(List<String> paths) async {
-    await _storage.libraryBox.deleteAll(paths);
-    await _storage.readerBox.deleteAll(paths.map((p) => 'reader_doc_$p'));
+    await _documents.removeDocuments(paths);
+    await _readerPreferences.deletePathKeyedMany(paths);
   }
 }

@@ -1,16 +1,12 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:readaway/src/core/services/storage/hive/app_storage_service.dart';
-import 'package:readaway/src/core/services/storage/hive/hive_boxes.dart';
-import 'package:readaway/src/core/services/storage/hive/hive_config_service.dart';
+import 'package:readaway/src/core/services/storage/drift/app_database.dart';
+import 'package:readaway/src/core/services/storage/drift/daos/annotations_dao.dart';
 import 'package:readaway/src/features/annotations/data/datasources/annotations_local_data_source.dart';
 import 'package:readaway/src/features/annotations/data/repositories/annotations_repository_impl.dart';
 import 'package:readaway/src/features/annotations/domain/entity/document_notes.dart';
 import 'package:readaway/src/features/annotations/domain/entity/reader_note.dart';
 
-import '../../../../helpers/test_mocks.dart';
+import '../../../../helpers/test_helpers.dart';
 
 /// A minimal highlight anchored to characters 10..20 of chapter 3.
 ReaderNote _highlight({
@@ -66,38 +62,17 @@ DocumentNotes _record(List<ReaderNote> notes) => DocumentNotes(
 );
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(registerMockitoDummies);
-
-  late Directory tempDir;
-  late AppStorageService storageService;
+  late AppDatabase db;
   late AnnotationsRepositoryImpl repository;
 
-  setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('annotations_test_');
-    final pathService = MockAppPathService();
-    when(pathService.getHiveDirectory()).thenAnswer((_) async => tempDir);
-
-    final hiveBoxes = HiveBoxes();
-    storageService = AppStorageService(
-      config: HiveConfigService(pathService, hiveBoxes),
-      boxes: hiveBoxes,
-    );
-    await storageService.init();
-
+  setUp(() {
+    db = openTestDatabase();
     repository = AnnotationsRepositoryImpl(
-      AnnotationsLocalDataSource(storageService),
+      AnnotationsLocalDataSource(AnnotationsDao(db)),
     );
   });
 
-  tearDown(() async {
-    try {
-      await storageService.dispose();
-    } catch (_) {}
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
-  });
+  tearDown(() => db.close());
 
   group('getForDocument', () {
     test('returns an empty record for a document with no notes', () async {
@@ -112,7 +87,7 @@ void main() {
   });
 
   group('save', () {
-    test('round-trips every field through Hive', () async {
+    test('round-trips every field through the database', () async {
       final saved = await repository.save(_record([_highlight()]));
       expect(saved.isSuccess, isTrue);
 

@@ -5,23 +5,19 @@ import 'package:injectable/injectable.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
-import '../../../../core/services/storage/hive/app_storage_service.dart';
+import '../../../../core/services/storage/drift/daos/reader_preferences_dao.dart';
 import '../../domain/entity/reader_preferences.dart';
 import '../../domain/repositories/reader_preferences_repository.dart';
 
 @LazySingleton(as: ReaderPreferencesRepository)
 class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
-  final AppStorageService _storage;
+  final ReaderPreferencesDao _prefs;
 
   static const String _globalKey = 'reader_global';
 
-  /// Legacy per-book key kept for records saved before content-based identity.
+  /// Legacy per-book identity: the path itself, used only when the file cannot
+  /// be hashed (also kept as the error-label convention of this repository).
   static String _legacyDocKey(String path) => 'reader_doc_$path';
-
-  /// Content-based per-book key so settings follow an unchanged book across
-  /// moves and renames. Identical copies intentionally share the same key.
-  static String _contentDocKey(String fingerprint) =>
-      'reader_doc_sha256_$fingerprint';
 
   /// Cached SHA-256 digests keyed by path, invalidated when the file's size or
   /// modification time changes. Avoids re-hashing a whole book on every
@@ -29,7 +25,7 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   final Map<String, ({int size, DateTime modified, String fingerprint})>
   _fingerprintCache = {};
 
-  ReaderPreferencesRepositoryImpl(this._storage);
+  ReaderPreferencesRepositoryImpl(this._prefs);
 
   Future<String?> _contentFingerprint(String path) async {
     final file = File(path);
@@ -50,18 +46,15 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
     return fingerprint;
   }
 
-  Future<String> _docKey(String path) async {
-    final fingerprint = await _contentFingerprint(path);
-    return fingerprint == null
-        ? _legacyDocKey(path)
-        : _contentDocKey(fingerprint);
-  }
-
   @override
   Future<Result<ReaderPreferences>> getGlobalPreferences() {
     return guard(
       () async =>
-          _storage.readerBox.get(_globalKey) ?? const ReaderPreferences(),
+          await _prefs.get(
+            scope: ReaderPreferencesDao.globalScope,
+            ownerKey: ReaderPreferencesDao.globalOwnerKey,
+          ) ??
+          const ReaderPreferences(),
       onError: (error, stack) => StorageReadFailure(
         _globalKey,
         cause: error,
@@ -74,7 +67,12 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   Future<Result<void>> saveGlobalPreferences(ReaderPreferences prefs) {
     return guard(
       () async {
-        await _storage.readerBox.put(_globalKey, prefs);
+        await _prefs.put(
+          scope: ReaderPreferencesDao.globalScope,
+          ownerKind: 'global',
+          ownerKey: ReaderPreferencesDao.globalOwnerKey,
+          prefs: prefs,
+        );
       },
       onError: (error, stack) => StorageWriteFailure(
         _globalKey,
@@ -88,19 +86,33 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   Future<Result<ReaderPreferences?>> getDocumentPreferences(String path) async {
     return guard(
       () async {
-        final legacyKey = _legacyDocKey(path);
         final fingerprint = await _contentFingerprint(path);
         if (fingerprint == null) {
-          return _storage.readerBox.get(legacyKey);
+          return _prefs.get(
+            scope: ReaderPreferencesDao.readerScope,
+            ownerKey: path,
+          );
         }
-        final contentKey = _contentDocKey(fingerprint);
-        final current = _storage.readerBox.get(contentKey);
+        final current = await _prefs.get(
+          scope: ReaderPreferencesDao.readerScope,
+          ownerKey: fingerprint,
+        );
         if (current != null) return current;
 
         // Migrate legacy path-keyed preferences only when the source file is
         // available and its content provides a confident identity.
-        final legacy = _storage.readerBox.get(legacyKey);
-        if (legacy != null) await _storage.readerBox.put(contentKey, legacy);
+        final legacy = await _prefs.get(
+          scope: ReaderPreferencesDao.readerScope,
+          ownerKey: path,
+        );
+        if (legacy != null) {
+          await _prefs.put(
+            scope: ReaderPreferencesDao.readerScope,
+            ownerKind: 'content',
+            ownerKey: fingerprint,
+            prefs: legacy,
+          );
+        }
         return legacy;
       },
       onError: (error, stack) => StorageReadFailure(
@@ -118,7 +130,22 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   ) async {
     return guard(
       () async {
-        await _storage.readerBox.put(await _docKey(path), prefs);
+        final fingerprint = await _contentFingerprint(path);
+        if (fingerprint == null) {
+          await _prefs.put(
+            scope: ReaderPreferencesDao.readerScope,
+            ownerKind: 'path',
+            ownerKey: path,
+            prefs: prefs,
+          );
+        } else {
+          await _prefs.put(
+            scope: ReaderPreferencesDao.readerScope,
+            ownerKind: 'content',
+            ownerKey: fingerprint,
+            prefs: prefs,
+          );
+        }
       },
       onError: (error, stack) => StorageWriteFailure(
         _legacyDocKey(path),
@@ -132,8 +159,17 @@ class ReaderPreferencesRepositoryImpl implements ReaderPreferencesRepository {
   Future<Result<void>> clearDocumentPreferences(String path) async {
     return guard(
       () async {
-        await _storage.readerBox.delete(await _docKey(path));
-        await _storage.readerBox.delete(_legacyDocKey(path));
+        final fingerprint = await _contentFingerprint(path);
+        if (fingerprint != null) {
+          await _prefs.remove(
+            scope: ReaderPreferencesDao.readerScope,
+            ownerKey: fingerprint,
+          );
+        }
+        await _prefs.remove(
+          scope: ReaderPreferencesDao.readerScope,
+          ownerKey: path,
+        );
       },
       onError: (error, stack) => StorageWriteFailure(
         _legacyDocKey(path),

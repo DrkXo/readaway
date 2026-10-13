@@ -5,7 +5,7 @@ import 'package:injectable/injectable.dart';
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../features/settings/domain/entity/settings.dart';
-import 'storage/hive/app_storage_service.dart';
+import 'storage/drift/daos/settings_dao.dart';
 
 SettingsService get settingsService => GetIt.I.get<SettingsService>();
 
@@ -13,10 +13,9 @@ SettingsService get settingsService => GetIt.I.get<SettingsService>();
 class SettingsService {
   final _log = AppLogger.instance.scope('SettingsService');
 
-  static const String _key = 'app_settings';
   static const Duration _flushDelay = Duration(milliseconds: 500);
 
-  final AppStorageService _storage;
+  final SettingsDao _dao;
 
   Settings _settings = const Settings();
   Timer? _flushTimer;
@@ -25,11 +24,11 @@ class SettingsService {
   Settings get settings => _settings;
   Stream<Settings> get changes => _changesController.stream;
 
-  SettingsService({required this._storage});
+  SettingsService(this._dao);
 
   @PostConstruct(preResolve: true)
   Future<void> init() async {
-    final stored = _storage.settingsBox.get(_key);
+    final stored = await _dao.get();
 
     if (stored == null) {
       _log.d('No stored settings found, creating defaults');
@@ -46,7 +45,7 @@ class SettingsService {
     _flushTimer = null;
     _settings = settings;
     try {
-      await _storage.settingsBox.put(_key, settings);
+      await _dao.put(settings);
       _changesController.add(settings);
     } catch (e, st) {
       _log.e('Failed to persist settings', error: e, stackTrace: st);

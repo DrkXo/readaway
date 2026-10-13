@@ -4,16 +4,18 @@ import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive_ce/hive.dart';
 import 'package:path/path.dart' as p;
 import 'package:readaway/src/core/services/background_downloader_service.dart';
 import 'package:readaway/src/core/services/path_service.dart';
-import 'package:readaway/src/core/services/storage/hive/app_storage_service.dart';
+import 'package:readaway/src/core/services/storage/drift/app_database.dart';
+import 'package:readaway/src/core/services/storage/drift/daos/tts_dao.dart';
 import 'package:readaway/src/core/services/tts/extractor/tts_archive_extractor.dart';
 import 'package:readaway/src/core/services/tts/sherpa/tts_download_manager.dart';
 import 'package:readaway/src/core/services/tts/tts_download_task.dart';
 import 'package:readaway/src/core/services/tts/tts_model_store.dart';
 import 'package:readaway/src/core/services/tts/tts_models.dart';
+
+import '../../../../helpers/test_helpers.dart';
 
 class FakeAppPathService extends Fake implements AppPathService {
   FakeAppPathService(this.baseDir);
@@ -30,30 +32,6 @@ class FakeAppPathService extends Fake implements AppPathService {
     }
     return dir;
   }
-}
-
-class FakeAppStorageService extends Fake implements AppStorageService {
-  final Map<dynamic, dynamic> _memoryBox = {};
-
-  @override
-  Box<dynamic> get ttsBox => _FakeBox(_memoryBox);
-}
-
-class _FakeBox extends Fake implements Box<dynamic> {
-  _FakeBox(this._data);
-  final Map<dynamic, dynamic> _data;
-
-  @override
-  dynamic get(dynamic key, {dynamic defaultValue}) =>
-      _data[key] ?? defaultValue;
-
-  @override
-  Future<void> put(dynamic key, dynamic value) async {
-    _data[key] = value;
-  }
-
-  @override
-  Stream<BoxEvent> watch({dynamic key}) => const Stream.empty();
 }
 
 /// Controllable stand-in for [BackGroundDownloaderService]. `download()`
@@ -268,7 +246,7 @@ void main() {
   group('TtsDownloadManager', () {
     late Directory tempDir;
     late FakeAppPathService fakePath;
-    late FakeAppStorageService fakeStorage;
+    late AppDatabase db;
     late TtsModelStore store;
     late FakeDownloaderService fakeDownloader;
     late FakeExtractor extractor;
@@ -277,8 +255,9 @@ void main() {
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('tts_download_test_');
       fakePath = FakeAppPathService(tempDir);
-      fakeStorage = FakeAppStorageService();
-      store = TtsModelStore(storage: fakeStorage);
+      db = openTestDatabase();
+      store = TtsModelStore(TtsDao(db));
+      await store.init();
       await store.saveCatalog([vitsModel, matchaModel]);
       fakeDownloader = FakeDownloaderService();
       extractor = FakeExtractor();
@@ -295,6 +274,8 @@ void main() {
 
     tearDown(() async {
       manager.dispose();
+      store.dispose();
+      db.close();
       if (await tempDir.exists()) {
         await tempDir.delete(recursive: true);
       }

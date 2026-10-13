@@ -17,7 +17,7 @@ class AnnotationsRepositoryImpl implements AnnotationsRepository {
   @override
   Future<Result<DocumentNotes>> getForDocument(String documentPath) {
     return guard(
-      () async => _local.read(documentPath) ?? _blankFor(documentPath),
+      () async => await _local.read(documentPath) ?? _blankFor(documentPath),
       onError: (error, stack) => StorageReadFailure(
         _keyFor(documentPath),
         cause: error,
