@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -51,6 +52,7 @@ class MetroLiveFlipTileState extends State<MetroLiveFlipTile>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
+  Timer? _flipTimer;
   bool _isFront = true;
 
   /// Whether the tile currently shows the front face.
@@ -75,11 +77,22 @@ class MetroLiveFlipTileState extends State<MetroLiveFlipTile>
   }
 
   void _startPeriodicFlip() {
-    Future<void>.delayed(widget.flipInterval!, () {
-      if (!mounted) return;
-      flip();
+    _flipTimer?.cancel();
+    final interval = widget.flipInterval;
+    if (!widget.autoFlip || interval == null) return;
+    _flipTimer = Timer.periodic(interval, (_) => flip());
+  }
+
+  @override
+  void didUpdateWidget(covariant MetroLiveFlipTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.flipDuration != widget.flipDuration) {
+      _controller.duration = widget.flipDuration;
+    }
+    if (oldWidget.autoFlip != widget.autoFlip ||
+        oldWidget.flipInterval != widget.flipInterval) {
       _startPeriodicFlip();
-    });
+    }
   }
 
   /// Flip the live tile to its opposite face.
@@ -105,6 +118,7 @@ class MetroLiveFlipTileState extends State<MetroLiveFlipTile>
 
   @override
   void dispose() {
+    _flipTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

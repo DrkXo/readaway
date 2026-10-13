@@ -148,22 +148,17 @@ class _LibraryViewState extends State<_LibraryView> {
         builder: (context, state) {
           final bloc = context.read<LibraryBloc>();
           final allDocuments = state.filteredDocuments;
-
-          final readingDocuments = allDocuments
-              .where(
-                (d) =>
-                    d.readingStatus == ReadingStatus.reading ||
-                    (d.progressPercent > 0 && !d.isFinished),
-              )
-              .toList();
-
-          final favoriteDocuments = allDocuments
-              .where((d) => d.isFavorite)
-              .toList();
-
-          final finishedDocuments = allDocuments
-              .where((d) => d.isFinished)
-              .toList();
+          final readingDocuments = <RecentDocument>[];
+          final favoriteDocuments = <RecentDocument>[];
+          final finishedDocuments = <RecentDocument>[];
+          for (final document in allDocuments) {
+            if (document.readingStatus == ReadingStatus.reading ||
+                (document.progressPercent > 0 && !document.isFinished)) {
+              readingDocuments.add(document);
+            }
+            if (document.isFavorite) favoriteDocuments.add(document);
+            if (document.isFinished) finishedDocuments.add(document);
+          }
 
           return Scaffold(
             backgroundColor: appColors.readerBackground,
@@ -270,6 +265,7 @@ class _LibraryViewState extends State<_LibraryView> {
                         : MetroPivot(
                             controller: _pivotController,
                             title: 'library',
+                            keepPagesAlive: false,
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [

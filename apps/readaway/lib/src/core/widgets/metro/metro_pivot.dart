@@ -27,6 +27,7 @@ class MetroPivotController extends ChangeNotifier {
   bool _isDisposed = false;
 
   bool _indexIsChanging = false;
+  int _animationGeneration = 0;
 
   /// True while an animated programmatic transition (e.g. [animateTo]) is in progress.
   bool get indexIsChanging => _indexIsChanging;
@@ -79,6 +80,7 @@ class MetroPivotController extends ChangeNotifier {
     if (targetIndex == _index) return;
 
     final effectiveCurve = curve ?? Curves.easeOutCubic;
+    final animationGeneration = ++_animationGeneration;
 
     _previousIndex = _index;
     _index = targetIndex;
@@ -97,7 +99,7 @@ class MetroPivotController extends ChangeNotifier {
             curve: effectiveCurve,
           )
           .then((_) {
-            if (!_isDisposed) {
+            if (!_isDisposed && animationGeneration == _animationGeneration) {
               _indexIsChanging = false;
               _page = _index.toDouble();
               notifyListeners();
@@ -116,6 +118,7 @@ class MetroPivotController extends ChangeNotifier {
     assert(targetIndex >= 0 && targetIndex < length);
     if (targetIndex == _index) return;
 
+    _animationGeneration++;
     _previousIndex = _index;
     _index = targetIndex;
     _page = targetIndex.toDouble();
@@ -176,6 +179,7 @@ class MetroPivot extends StatefulWidget {
     this.currentIndex,
     this.initialIndex = 0,
     this.onIndexChanged,
+    this.keepPagesAlive = true,
     this.trailing,
     this.titleFontSize,
     this.tabFontSize,
@@ -207,6 +211,12 @@ class MetroPivot extends StatefulWidget {
 
   /// Callback invoked when the active pane changes.
   final ValueChanged<int>? onIndexChanged;
+
+  /// Whether each visited page preserves its widget state while off-screen.
+  ///
+  /// Defaults to `true` for backwards compatibility. Set to `false` for
+  /// content-heavy pivots where retaining every page is unnecessary.
+  final bool keepPagesAlive;
 
   /// Optional trailing widget in the top title row (e.g. search or settings).
   final Widget? trailing;
@@ -422,6 +432,7 @@ class _MetroPivotState extends State<MetroPivot> {
               },
               itemBuilder: (context, index) {
                 return _KeepAlivePage(
+                  keepAlive: widget.keepPagesAlive,
                   child: Listener(
                     behavior: HitTestBehavior.opaque,
                     onPointerSignal: _handlePointerSignal,
@@ -753,9 +764,10 @@ class _MetroPivotFlowDelegate extends FlowDelegate {
 
 /// Keeps pivot page contents alive in GPU memory to eliminate re-layout and image loading jank.
 class _KeepAlivePage extends StatefulWidget {
-  const _KeepAlivePage({required this.child});
+  const _KeepAlivePage({required this.child, required this.keepAlive});
 
   final Widget child;
+  final bool keepAlive;
 
   @override
   State<_KeepAlivePage> createState() => _KeepAlivePageState();
@@ -764,7 +776,7 @@ class _KeepAlivePage extends StatefulWidget {
 class _KeepAlivePageState extends State<_KeepAlivePage>
     with AutomaticKeepAliveClientMixin {
   @override
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive => widget.keepAlive;
 
   @override
   Widget build(BuildContext context) {

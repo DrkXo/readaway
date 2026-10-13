@@ -363,6 +363,59 @@ void main() {
       expect(find.text('Page 2'), findsOneWidget);
     });
 
+    testWidgets('latest animateTo owns completion state', (tester) async {
+      final controller = MetroPivotController(length: 3, initialIndex: 0);
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        buildThemed(
+          MetroPivot(
+            title: 'Library',
+            controller: controller,
+            items: const [
+              MetroPivotItem(label: 'tab 0', content: Text('Page 0')),
+              MetroPivotItem(label: 'tab 1', content: Text('Page 1')),
+              MetroPivotItem(label: 'tab 2', content: Text('Page 2')),
+            ],
+          ),
+        ),
+      );
+
+      controller.animateTo(1, duration: const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 50));
+      controller.animateTo(2, duration: const Duration(milliseconds: 300));
+
+      expect(controller.indexIsChanging, isTrue);
+      await tester.pumpAndSettle();
+
+      expect(controller.index, 2);
+      expect(controller.page, 2.0);
+      expect(controller.indexIsChanging, isFalse);
+      expect(find.text('Page 2'), findsOneWidget);
+    });
+
+    testWidgets('can opt out of keeping off-screen pages alive', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildThemed(
+          const MetroPivot(
+            title: 'Library',
+            keepPagesAlive: false,
+            items: [
+              MetroPivotItem(label: 'tab 0', content: Text('Page 0')),
+              MetroPivotItem(label: 'tab 1', content: Text('Page 1')),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Page 0'), findsOneWidget);
+      await tester.drag(find.text('Page 0'), const Offset(-400, 0));
+      await tester.pumpAndSettle();
+      expect(find.text('Page 1'), findsOneWidget);
+    });
+
     testWidgets(
       'selected item moves to leading position and pushes previous items to end of carousel',
       (tester) async {

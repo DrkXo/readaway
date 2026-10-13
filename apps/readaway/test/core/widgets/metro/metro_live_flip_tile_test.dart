@@ -113,5 +113,38 @@ void main() {
       // With disableAnimations, flipping happens immediately without animation curves
       expect(find.text('Instant Back'), findsOneWidget);
     });
+
+    testWidgets('updates periodic flipping when its configuration changes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildThemed(
+          const MetroLiveFlipTile(
+            front: Text('Dynamic Front'),
+            back: Text('Dynamic Back'),
+            autoFlip: false,
+            flipInterval: Duration(milliseconds: 100),
+          ),
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.text('Dynamic Front'), findsOneWidget);
+
+      await tester.pumpWidget(
+        buildThemed(
+          const MetroLiveFlipTile(
+            front: Text('Dynamic Front'),
+            back: Text('Dynamic Back'),
+            autoFlip: true,
+            flipInterval: Duration(milliseconds: 100),
+          ),
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 110));
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(find.text('Dynamic Back'), findsOneWidget);
+    });
   });
 }
