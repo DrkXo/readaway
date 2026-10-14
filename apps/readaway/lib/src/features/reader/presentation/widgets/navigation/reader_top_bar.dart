@@ -15,6 +15,7 @@ import '../../../../../router/router.dart';
 import '../../../../annotations/presentation/widgets/reader_bookmark_button.dart';
 import '../../bloc/reader_bloc.dart';
 import '../overlay/reader_share_sheet.dart';
+import 'reader_search_dialog.dart';
 
 /// Top bar displayed when a reader document is open.
 ///
@@ -180,6 +181,30 @@ class ReaderTopBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
 
                   // Actions: Bookmark, Share, Settings
+                  Tooltip(
+                    message: 'Find in document',
+                    child: Semantics(
+                      label: 'Find in document',
+                      button: true,
+                      child: MetroPressable(
+                        onTap: () => ReaderSearchDialog.show(context),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8.0,
+                            vertical: 6.0,
+                          ),
+                          child: Icon(
+                            LucideIcons.search,
+                            size: 18,
+                            color: appColors.topbarForeground.withValues(
+                              alpha: 0.75,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
                   ReaderBookmarkButton(
                     isReflowable: state.isReflowable,
                     currentPage: state.currentPage,

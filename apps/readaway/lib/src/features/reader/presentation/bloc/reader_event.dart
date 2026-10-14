@@ -24,4 +24,8 @@ abstract class ReaderEvent with _$ReaderEvent {
     required int chapterIndex,
   }) = _VirtualPageChanged;
   const factory ReaderEvent.clearPendingRestore() = _ClearPendingRestore;
+  const factory ReaderEvent.searchHighlight({
+    required int? chapterIndex,
+    required List<Rect> rects,
+  }) = _SearchHighlight;
 }

@@ -39,6 +39,9 @@ export 'src/pagination/page_slicer.dart';
 export 'src/pagination/pagination_coordinator.dart';
 export 'src/pagination/speech_char_map.dart';
 
+// Search
+export 'src/search/reader_search.dart';
+
 // Readers & Factory
 export 'src/readers/builtin_handlers.dart';
 export 'src/readers/cbz_document_reader.dart';

@@ -12,12 +12,13 @@ import '../../../../../../core/theme/theme.dart';
 import '../../../../../../core/theme/tts_highlight_palette.dart';
 import '../../../../../annotations/presentation/widgets/painting/reader_annotation_layer.dart';
 import '../../../../../annotations/presentation/widgets/selection/annotation_selection_menu.dart';
-import '../../../../domain/entity/reader_preferences.dart';
 import '../../../../../settings/domain/entity/settings.dart';
 import '../../../../../settings/presentation/bloc/settings/settings_bloc.dart';
+import '../../../../domain/entity/reader_preferences.dart';
 import '../../../../domain/repositories/reader_tts_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../../bloc/tts/reader_tts_bloc.dart';
+import '../../../controllers/reader_search_highlight_controller.dart';
 import '../../../controllers/reader_viewport_controller.dart';
 import '../../chrome/reader_running_footer.dart';
 import '../../chrome/reader_running_header.dart';
@@ -26,6 +27,7 @@ import '../../toc/reader_toc_content.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
 import 'chapter_layout_measurement.dart';
 import 'html/hyper_page_content.dart';
+import 'reader_search_highlight.dart';
 import 'tts_speech_highlight.dart';
 
 /// Renders a single discrete virtual screen page of a reflowable chapter.
@@ -254,6 +256,20 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
     );
   }
 
+  CustomPainter? _buildSearchHighlight(double sliceTop) {
+    final holder = GetIt.I<ReaderSearchHighlightController>().current.value;
+    if (holder == null || holder.chapterIndex != widget.chapterIndex) {
+      return null;
+    }
+    final rects = holder.rects;
+    if (rects.isEmpty) return null;
+    return ReaderSearchHighlightPainter(
+      rects: rects,
+      sliceTop: sliceTop,
+      color: Colors.amber.withValues(alpha: 0.32),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     GlobalViewSettings? gvs;
@@ -395,39 +411,43 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
             child: SizedBox(
               width: availableWidth,
               height: sliceHeight,
-              child: ClipRect(
-                child: BlocBuilder<ReaderTtsBloc, ReaderTtsState>(
-                  buildWhen: (prev, curr) =>
-                      prev.ttsActive != curr.ttsActive ||
-                      prev.ttsSpeechRange != curr.ttsSpeechRange ||
-                      prev.ttsCurrentPage != curr.ttsCurrentPage,
-                  builder: (context, ttsState) {
-                    return ListenableBuilder(
-                      listenable: _activeWordNotifier,
-                      builder: (context, child) {
-                        final highlight = _buildSpeechHighlight(
-                          sliceTop,
-                          gvs,
-                          ttsState,
-                        );
-                        return CustomPaint(
-                          // Behind the text, so a highlighted passage reads as marked
-                          // rather than tinted.
-                          painter: highlight,
-                          child: child,
-                        );
-                      },
-                      // Reader highlights paint beneath the spoken-text highlight,
-                      // so following along with TTS still reads correctly.
-                      child: ReaderAnnotationLayer(
-                        chapterIndex: widget.chapterIndex,
-                        coordinator: widget.coordinator,
-                        controller: widget.controller,
-                        sliceTop: sliceTop,
-                        child: pageContent,
-                      ),
-                    );
-                  },
+              child: ListenableBuilder(
+                listenable: GetIt.I<ReaderSearchHighlightController>().current,
+                builder: (context, _) => ClipRect(
+                  child: BlocBuilder<ReaderTtsBloc, ReaderTtsState>(
+                    buildWhen: (prev, curr) =>
+                        prev.ttsActive != curr.ttsActive ||
+                        prev.ttsSpeechRange != curr.ttsSpeechRange ||
+                        prev.ttsCurrentPage != curr.ttsCurrentPage,
+                    builder: (context, ttsState) {
+                      return ListenableBuilder(
+                        listenable: _activeWordNotifier,
+                        builder: (context, child) {
+                          final highlight = _buildSpeechHighlight(
+                            sliceTop,
+                            gvs,
+                            ttsState,
+                          );
+                          return CustomPaint(
+                            painter: _buildSearchHighlight(sliceTop),
+                            child: CustomPaint(
+                              // Behind the text, so a highlighted passage reads as marked
+                              // rather than tinted.
+                              painter: highlight,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: ReaderAnnotationLayer(
+                          chapterIndex: widget.chapterIndex,
+                          coordinator: widget.coordinator,
+                          controller: widget.controller,
+                          sliceTop: sliceTop,
+                          child: pageContent,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),

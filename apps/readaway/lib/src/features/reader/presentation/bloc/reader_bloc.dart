@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Rect;
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,6 +39,7 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     on<_ConsumeFeedback>(_onConsumeFeedback);
     on<_VirtualPageChanged>(_onVirtualPageChanged);
     on<_ClearPendingRestore>(_onClearPendingRestore);
+    on<_SearchHighlight>(_onSearchHighlight);
   }
 
   Timer? _progressDebounceTimer;
@@ -78,6 +80,18 @@ class ReaderBloc extends Bloc<ReaderEvent, ReaderState> {
     Emitter<ReaderState> emit,
   ) {
     emit(state.copyWith(pendingRestoreAnchor: null));
+  }
+
+  void _onSearchHighlight(
+    _SearchHighlight event,
+    Emitter<ReaderState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        searchHighlightChapter: event.chapterIndex,
+        searchHighlightRects: event.rects,
+      ),
+    );
   }
 
   @override

@@ -18,10 +18,12 @@ import '../../../../../annotations/presentation/widgets/selection/annotation_sel
 import '../../../../domain/repositories/reader_repository.dart';
 import '../../../bloc/reader_bloc.dart';
 import '../../../bloc/tts/reader_tts_bloc.dart';
+import '../../../controllers/reader_search_highlight_controller.dart';
 import '../../../controllers/reader_viewport_controller.dart';
 import '../../selection/reader_selection_context_menu.dart';
 import '../../tts/reader_tts_mini_player_bar.dart';
 import 'chapter_layout_measurement.dart';
+import 'reader_search_highlight.dart';
 import 'html/hyper_page_content.dart';
 import 'reflowable_scroll_coordinator.dart';
 
@@ -233,51 +235,73 @@ class _ReflowableReaderPageState extends State<ReflowableReaderPage> {
                   // Continuous reading never slices a chapter, so the content is
                   // not translated and no slice offset applies: chapter
                   // coordinates are already this widget's coordinates.
-                  ReaderAnnotationLayer(
-                    chapterIndex: widget.index,
-                    coordinator: widget.coordinator,
-                    controller: widget.controller,
-                    sliceTop: 0,
-                    child: KeyedSubtree(
-                      key: _contentKey,
-                      child: HyperPageContent(
-                        html: html,
-                        prefs: widget.prefs,
-                        chapterIndex: widget.index,
-                        cacheNamespace:
-                            widget.state.documentPath ??
-                            widget.state.fileName ??
-                            '',
-                        availableWidth: constraints.maxWidth,
-                        availableHeight: constraints.maxHeight.isFinite
-                            ? constraints.maxHeight
-                            : null,
-                        onImageDecoded: _scheduleMeasurement,
-                        onResolveAssetBytes: _resolveAssetBytes,
-                        onLinkTap: (url) => _onTapUrl(context, url),
-                        overlayKey: _overlayKey,
-                        onSelectionChanged: (selection) {
-                          widget.controller.setSelectionActive(
-                            selection != null && !selection.isCollapsed,
-                          );
-                        },
-                        contextMenuBuilder: (overlayContext, overlayState) {
-                          return ReaderSelectionContextMenu(
-                            chapterIndex: widget.index,
-                            coordinator: widget.coordinator,
-                            overlayState: overlayState,
-                            controller: widget.controller,
-                          );
-                        },
-                        menuActionsBuilder: (overlayState) {
-                          return AnnotationSelectionMenu.actions(
-                            context,
-                            chapterIndex: widget.index,
-                            coordinator: widget.coordinator,
-                            state: overlayState,
-                            controller: widget.controller,
-                          );
-                        },
+                  ListenableBuilder(
+                    listenable:
+                        GetIt.I<ReaderSearchHighlightController>().current,
+                    builder: (context, child) {
+                      final holder = GetIt.I<ReaderSearchHighlightController>()
+                          .current
+                          .value;
+                      if (holder == null ||
+                          holder.chapterIndex != widget.index ||
+                          holder.rects.isEmpty) {
+                        return child!;
+                      }
+                      return CustomPaint(
+                        painter: ReaderSearchHighlightPainter(
+                          rects: holder.rects,
+                          sliceTop: 0,
+                          color: Colors.amber.withValues(alpha: 0.32),
+                        ),
+                        child: child!,
+                      );
+                    },
+                    child: ReaderAnnotationLayer(
+                      chapterIndex: widget.index,
+                      coordinator: widget.coordinator,
+                      controller: widget.controller,
+                      sliceTop: 0,
+                      child: KeyedSubtree(
+                        key: _contentKey,
+                        child: HyperPageContent(
+                          html: html,
+                          prefs: widget.prefs,
+                          chapterIndex: widget.index,
+                          cacheNamespace:
+                              widget.state.documentPath ??
+                              widget.state.fileName ??
+                              '',
+                          availableWidth: constraints.maxWidth,
+                          availableHeight: constraints.maxHeight.isFinite
+                              ? constraints.maxHeight
+                              : null,
+                          onImageDecoded: _scheduleMeasurement,
+                          onResolveAssetBytes: _resolveAssetBytes,
+                          onLinkTap: (url) => _onTapUrl(context, url),
+                          overlayKey: _overlayKey,
+                          onSelectionChanged: (selection) {
+                            widget.controller.setSelectionActive(
+                              selection != null && !selection.isCollapsed,
+                            );
+                          },
+                          contextMenuBuilder: (overlayContext, overlayState) {
+                            return ReaderSelectionContextMenu(
+                              chapterIndex: widget.index,
+                              coordinator: widget.coordinator,
+                              overlayState: overlayState,
+                              controller: widget.controller,
+                            );
+                          },
+                          menuActionsBuilder: (overlayState) {
+                            return AnnotationSelectionMenu.actions(
+                              context,
+                              chapterIndex: widget.index,
+                              coordinator: widget.coordinator,
+                              state: overlayState,
+                              controller: widget.controller,
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),

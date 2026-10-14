@@ -24,6 +24,8 @@ abstract class ReaderState with _$ReaderState {
     @Default('epub') String format,
     @Default(false) bool requiresPassword,
     @Default(false) bool isInvalidPassword,
+    @Default(null) int? searchHighlightChapter,
+    @Default(<Rect>[]) List<Rect> searchHighlightRects,
   }) = _ReaderState;
 
   const ReaderState._();
