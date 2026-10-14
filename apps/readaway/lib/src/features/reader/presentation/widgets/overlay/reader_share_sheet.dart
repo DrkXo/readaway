@@ -8,8 +8,8 @@ import 'package:readaway/src/core/services/services.dart';
 import 'package:readaway/src/core/theme/theme.dart';
 import 'package:readaway/src/core/widgets/core_widgets.dart';
 
-import '../../bloc/reader_bloc.dart';
 import '../../../domain/repositories/reader_repository.dart';
+import '../../bloc/reader_bloc.dart';
 import '../viewport/fixed_layout/fixed_layout_image_cache.dart';
 
 /// Modal bottom sheet / popover for sharing entire documents or individual rasterized pages.
@@ -35,7 +35,7 @@ class ReaderShareSheet extends StatefulWidget {
     return showAppSheet<void>(
       context: context,
       title: 'Share',
-      maxWidth: 480,
+
       builder: (ctx) => ReaderShareSheet(
         state: state,
         shareService: shareService,

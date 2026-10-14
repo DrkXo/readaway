@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:readaway_core/readaway_core.dart';
 
+import '../../../../../core/widgets/core_widgets.dart';
 import '../../bloc/reader_bloc.dart';
 import '../../controllers/reader_search_highlight_controller.dart';
 import '../../../domain/repositories/reader_repository.dart';
@@ -19,9 +20,17 @@ class ReaderSearchDialog extends StatefulWidget {
   const ReaderSearchDialog({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showDialog<void>(
+    // The sheet is pushed on the root navigator, so the sheet's build context
+    // no longer sits under the reader route's BlocProviders. Capture the bloc
+    // from the caller's context and re-provide it inside the sheet subtree.
+    final readerBloc = context.read<ReaderBloc>();
+    return showAppSheet<void>(
       context: context,
-      builder: (_) => const ReaderSearchDialog(),
+      title: 'Find in document',
+      builder: (_) => BlocProvider<ReaderBloc>.value(
+        value: readerBloc,
+        child: const ReaderSearchDialog(),
+      ),
     );
   }
 
@@ -142,106 +151,111 @@ class _ReaderSearchDialogState extends State<ReaderSearchDialog> {
     final state = _state(context);
     final hasResults = _results.isNotEmpty;
 
-    return AlertDialog(
-      title: const Text('Find in document'),
-      content: SizedBox(
-        width: 420,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _controller,
-              autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Search text',
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _runSearch(context),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Search text',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 12),
-            if (_running)
-              const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(),
-              )
-            else if (hasResults)
-              Column(
-                children: [
-                  Text(
-                    '${_currentIndex + 1} of ${_results.length} matches',
-                    style: Theme.of(context).textTheme.bodySmall,
+            onSubmitted: (_) => _runSearch(context),
+          ),
+          const SizedBox(height: 12),
+          if (_running)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (hasResults)
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '${_currentIndex + 1} of ${_results.length} matches',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 160,
+                  child: ListView.builder(
+                    itemCount: _results.length,
+                    itemBuilder: (_, i) {
+                      final m = _results[i];
+                      final isActive = i == _currentIndex;
+                      return ListTile(
+                        dense: true,
+                        selected: isActive,
+                        title: Text(
+                          'Chapter ${m.sectionIndex + 1}',
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
+                        subtitle: Text(
+                          m.snippet,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => _navigateTo(context, i),
+                      );
+                    },
                   ),
-                  SizedBox(
-                    height: 160,
-                    child: ListView.builder(
-                      itemCount: _results.length,
-                      itemBuilder: (_, i) {
-                        final m = _results[i];
-                        final isActive = i == _currentIndex;
-                        return ListTile(
-                          dense: true,
-                          selected: isActive,
-                          title: Text(
-                            'Chapter ${m.sectionIndex + 1}',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          subtitle: Text(
-                            m.snippet,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onTap: () => _navigateTo(context, i),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              )
-            else
-              Text(
-                state.pageHtmls == null
-                    ? 'Document still loading.'
-                    : 'No matches yet.',
-                style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            )
+          else
+            Text(
+              state.pageHtmls == null
+                  ? 'Document still loading.'
+                  : 'No matches yet.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: hasResults
+                    ? () => _navigateTo(context, _currentIndex - 1)
+                    : null,
+                child: const Text('Previous'),
               ),
-          ],
-        ),
+              TextButton(
+                onPressed: hasResults
+                    ? () => _navigateTo(context, _currentIndex + 1)
+                    : null,
+                child: const Text('Next'),
+              ),
+              TextButton(
+                onPressed: () => _runSearch(context),
+                child: const Text('Search'),
+              ),
+              TextButton(
+                onPressed: () {
+                  GetIt.I<ReaderSearchHighlightController>().clear();
+                  setState(() {
+                    _results = const [];
+                    _currentIndex = 0;
+                  });
+                },
+                child: const Text('Clear'),
+              ),
+              TextButton(
+                onPressed: () {
+                  GetIt.I<ReaderSearchHighlightController>().clear();
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: hasResults
-              ? () => _navigateTo(context, _currentIndex - 1)
-              : null,
-          child: const Text('Previous'),
-        ),
-        TextButton(
-          onPressed: hasResults
-              ? () => _navigateTo(context, _currentIndex + 1)
-              : null,
-          child: const Text('Next'),
-        ),
-        TextButton(
-          onPressed: () => _runSearch(context),
-          child: const Text('Search'),
-        ),
-        TextButton(
-          onPressed: () {
-            GetIt.I<ReaderSearchHighlightController>().clear();
-            setState(() {
-              _results = const [];
-              _currentIndex = 0;
-            });
-          },
-          child: const Text('Clear'),
-        ),
-        TextButton(
-          onPressed: () {
-            GetIt.I<ReaderSearchHighlightController>().clear();
-            Navigator.of(context).pop();
-          },
-          child: const Text('Close'),
-        ),
-      ],
     );
   }
 }

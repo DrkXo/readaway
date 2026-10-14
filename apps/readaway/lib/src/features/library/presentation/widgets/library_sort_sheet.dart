@@ -27,7 +27,7 @@ class LibrarySortSheet extends StatefulWidget {
   }) {
     return showAppSheet<void>(
       context: context,
-      maxWidth: 440,
+
       builder: (_) => LibrarySortSheet(
         currentSortBy: currentSortBy,
         sortAscending: sortAscending,

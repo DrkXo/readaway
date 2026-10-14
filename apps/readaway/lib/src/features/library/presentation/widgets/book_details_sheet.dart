@@ -43,7 +43,7 @@ class BookDetailsSheet extends StatelessWidget {
   }) {
     return showAppSheet<void>(
       context: context,
-      maxWidth: 520,
+
       builder: (_) => BookDetailsSheet(
         document: document,
         bloc: bloc,

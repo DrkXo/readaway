@@ -232,7 +232,7 @@ void main() {
               onPressed: () {
                 showAppSheet<void>(
                   context: context,
-                  maxWidth: 320,
+
                   title: 'Custom Width',
                   builder: (ctx) => const Text('Custom Width Content'),
                 );

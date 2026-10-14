@@ -24,7 +24,7 @@ class ReaderFootnoteSheet extends StatelessWidget {
     return showAppSheet<void>(
       context: context,
       title: footnote.type == 'endnote' ? 'Endnote' : 'Footnote',
-      maxWidth: 480,
+
       builder: (ctx) => ReaderFootnoteSheet(
         footnote: footnote,
         onJumpToNote: onJumpToNote,
