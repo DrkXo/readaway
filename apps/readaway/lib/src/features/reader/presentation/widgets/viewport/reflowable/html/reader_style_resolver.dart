@@ -29,6 +29,7 @@ class ReaderStyleResolver {
             ? prefs.serifFont
             : prefs.sansSerifFont);
     final fontOverride = prefs.overrideFont ? ' !important' : '';
+    final weightOverride = prefs.overrideFontWeight ? ' !important' : '';
     final layoutOverride = prefs.overrideLayout ? ' !important' : '';
 
     final buffer = StringBuffer();
@@ -36,20 +37,25 @@ class ReaderStyleResolver {
     // 1. Typography & Font styles
     buffer.writeln('''
       html, body {
-        font-family: "$resolvedFont", serif$fontOverride;
+        ${prefs.overrideFont ? 'font-family: "$resolvedFont", serif$fontOverride;' : ''}
         font-size: ${prefs.fontSize}px$fontOverride;
-        font-weight: ${prefs.fontWeight}$fontOverride;
+        ${prefs.overrideFontWeight ? 'font-weight: ${prefs.fontWeight}$weightOverride;' : ''}
         color: $textHex;
         background-color: transparent;
       }
     ''');
 
-    if (prefs.overrideFont) {
+    if (prefs.overrideFont || prefs.overrideFontWeight) {
       buffer.writeln('''
         p, div, li, span, blockquote, dd, dt, h1, h2, h3, h4, h5, h6 {
-          font-family: "$resolvedFont", serif !important;
-          font-weight: ${prefs.fontWeight} !important;
+          ${prefs.overrideFont ? 'font-family: "$resolvedFont", serif !important;' : ''}
+          ${prefs.overrideFontWeight ? 'font-weight: ${prefs.fontWeight} !important;' : ''}
         }
+      ''');
+    }
+
+    if (prefs.overrideFont) {
+      buffer.writeln('''
         pre, code, kbd, samp {
           font-family: "${prefs.monospaceFont}", monospace !important;
         }
@@ -148,20 +154,23 @@ class ReaderStyleResolver {
     required ReaderPreferences prefs,
     required Color textColor,
   }) {
-    FontWeight weight = FontWeight.normal;
-    if (prefs.fontWeight == 'bold') {
+    FontWeight? weight;
+    if (prefs.overrideFontWeight && prefs.fontWeight == 'bold') {
       weight = FontWeight.bold;
-    } else if (prefs.fontWeight == '300') {
+    } else if (prefs.overrideFontWeight && prefs.fontWeight == '300') {
       weight = FontWeight.w300;
-    } else if (prefs.fontWeight == '500') {
+    } else if (prefs.overrideFontWeight && prefs.fontWeight == '500') {
       weight = FontWeight.w500;
-    } else if (prefs.fontWeight == '600') {
+    } else if (prefs.overrideFontWeight && prefs.fontWeight == '600') {
       weight = FontWeight.w600;
     }
 
     return TextStyle(
       fontFamily: prefs.overrideFont
-          ? (prefs.fontFamily ?? prefs.serifFont)
+          ? (prefs.fontFamily ??
+                (prefs.defaultFont == ReaderDefaultFont.serif
+                    ? prefs.serifFont
+                    : prefs.sansSerifFont))
           : null,
       fontSize: prefs.fontSize,
       height: prefs.lineHeight,

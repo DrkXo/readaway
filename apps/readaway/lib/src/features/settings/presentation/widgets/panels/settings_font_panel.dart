@@ -48,6 +48,7 @@ class SettingsFontPanel extends StatelessWidget {
               monospaceFont: 'Fira Code',
               fontWeight: 'normal',
               overrideFont: false,
+              overrideFontWeight: false,
             ),
             documentPath: path,
           ),
@@ -492,7 +493,7 @@ class _FontWeightRow extends StatelessWidget {
           value: weight,
           entries: _entries,
           onChanged: (v) => context.read<SettingsBloc>().updateReaderPrefs(
-            (p) => p.copyWith(fontWeight: v),
+            (p) => p.copyWith(fontWeight: v, overrideFontWeight: true),
             documentPath: path,
           ),
         );

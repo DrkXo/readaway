@@ -143,6 +143,69 @@ void main() {
   );
 
   test(
+    'font-family override does not force the reader font weight',
+    () {
+      const html = '<p><strong>Bold text</strong> and <em>italic text</em></p>';
+      const prefs = ReaderPreferences(
+        fontFamily: 'Noto Sans',
+        overrideFont: true,
+        fontWeight: 'bold',
+      );
+
+      final adapter = HtmlAdapter();
+      final document = adapter.parse(html);
+      final resolver = StyleResolver()
+        ..parseCss(
+          const ReaderStyleResolver().buildCustomCss(
+            prefs: prefs,
+            textColor: Colors.black,
+            backgroundColor: Colors.white,
+            linkColor: Colors.blue,
+          ),
+        );
+      resolver.resolveStyles(document);
+      document.applyReaderPreferences(
+        prefs: prefs,
+        textColor: Colors.black,
+        linkColor: Colors.blue,
+      );
+
+      final paragraph = document.children.firstWhere(
+        (node) => node.tagName == 'p',
+      );
+      final strong = paragraph.children.firstWhere(
+        (node) => node.tagName == 'strong',
+      );
+      final em = paragraph.children.firstWhere((node) => node.tagName == 'em');
+
+      expect(paragraph.style.fontFamily, equals('Noto Sans'));
+      expect(paragraph.style.isExplicitlySet('font-weight'), isFalse);
+      // Authored emphasis remains explicit; the family override does not
+      // replace it with the reader's weight or style.
+      expect(strong.style.isExplicitlySet('font-weight'), isTrue);
+      expect(em.style.isExplicitlySet('font-style'), isTrue);
+    },
+  );
+
+  test('font weight is forced only when its override is enabled', () {
+    const prefs = ReaderPreferences(
+      fontFamily: 'Noto Sans',
+      fontWeight: 'bold',
+      overrideFont: true,
+      overrideFontWeight: true,
+    );
+
+    final css = const ReaderStyleResolver().buildCustomCss(
+      prefs: prefs,
+      textColor: Colors.black,
+      backgroundColor: Colors.white,
+      linkColor: Colors.blue,
+    );
+
+    expect(css, contains('font-weight: bold !important;'));
+  });
+
+  test(
     'applyReaderPreferences honors textAlign: left',
     () {
       const html = '<p>Normal text paragraph.</p>';

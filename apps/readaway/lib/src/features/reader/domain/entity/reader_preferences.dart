@@ -110,6 +110,7 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     @Default('normal') String fontWeight,
     @Default('') String userStylesheet,
     @Default(false) bool overrideFont,
+    @Default(false) bool overrideFontWeight,
     @Default(true) bool overrideLayout,
     @Default(18.0) double fontSize,
     @Default(0.0) double minimumFontSize,

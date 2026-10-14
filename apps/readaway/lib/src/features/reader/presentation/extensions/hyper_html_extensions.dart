@@ -94,7 +94,7 @@ extension UDTNodeExtensions on UDTNode {
         node.style.fontSize = effectiveFontSize;
         node.style.markExplicitlySet('font-size');
 
-        if (prefs.overrideFont) {
+        if (prefs.overrideFontWeight) {
           node.style.fontFamily = prefs.resolvedFont;
           node.style.markExplicitlySet('font-family');
           node.style.fontWeight = _fontWeightFromString(prefs.fontWeight);
