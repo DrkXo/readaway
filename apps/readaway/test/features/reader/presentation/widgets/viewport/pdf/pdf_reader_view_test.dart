@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -15,6 +16,35 @@ import 'package:readaway/src/features/reader/presentation/widgets/viewport/pdf/p
 class MockReaderBloc extends MockBloc<ReaderEvent, ReaderState>
     implements ReaderBloc {}
 
+File? _resolveSamplePdf() {
+  Directory dir = Directory.current;
+  for (int i = 0; i < 5; i++) {
+    final configFile = File('${dir.path}/.dart_tool/package_config.json');
+    if (configFile.existsSync()) {
+      try {
+        final json =
+            jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
+        final packages = json['packages'] as List<dynamic>?;
+        final pdfrxPkg = packages?.firstWhere(
+          (p) => p['name'] == 'pdfrx',
+          orElse: () => null,
+        );
+        if (pdfrxPkg != null) {
+          final rootUriStr = pdfrxPkg['rootUri'] as String;
+          final rootUri = configFile.parent.uri.resolve(rootUriStr);
+          final asset = File(
+            '${rootUri.toFilePath()}/test/assets/multipage40.pdf',
+          );
+          if (asset.existsSync()) return asset;
+        }
+      } catch (_) {}
+    }
+    if (dir.parent.path == dir.path) break;
+    dir = dir.parent;
+  }
+  return null;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -30,10 +60,8 @@ void main() {
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('pdf_reader_test_');
     testPdfFile = File('${tempDir.path}/test.pdf');
-    final samplePdf = File(
-      '/home/drkxo/.pub-cache/hosted/pub.dev/pdfrx-2.6.5/test/assets/multipage40.pdf',
-    );
-    if (samplePdf.existsSync()) {
+    final samplePdf = _resolveSamplePdf();
+    if (samplePdf != null && samplePdf.existsSync()) {
       await samplePdf.copy(testPdfFile.path);
     }
     viewportController = ReaderViewportController(initialPage: 0, pageCount: 1);

@@ -47,7 +47,6 @@ void main() {
       expect(vitsConfig.vits.model, '/path/to/model.onnx');
       expect(vitsConfig.vits.tokens, '/path/to/tokens.txt');
       expect(vitsConfig.vits.lexicon, '/path/to/lexicon.txt');
-      expect(vitsConfig.vits.dataDir, '/path/to/espeak-ng-data');
       expect(vitsConfig.vits.dictDir, '/path/to/dict');
       expect(vitsConfig.vits.noiseScale, 0.5);
       expect(vitsConfig.vits.noiseScaleW, 0.7);

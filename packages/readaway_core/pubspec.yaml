@@ -28,7 +28,7 @@ dependencies:
   diacritic: ^0.1.6
   jsonc: ^0.0.3
   vscode_theme_parser: ^1.1.0-dev.0
-  pdfrx: ^2.6.0
+  pdfrx: ^3.0.0
   image: ^4.10.1
 
 dev_dependencies:

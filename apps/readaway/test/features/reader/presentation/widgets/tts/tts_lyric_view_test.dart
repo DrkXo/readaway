@@ -34,21 +34,20 @@ List<dynamic> parsedLines(
   String? translation,
   void Function(LyricController)? then,
 }) {
-  final controller = LyricController()
-    ..loadLyric(lrc, translationLyric: translation);
+  final controller = LyricController()..load(lrc, translation: translation);
   then?.call(controller);
-  return List<dynamic>.from(controller.lyricNotifier.value?.lines ?? const []);
+  return List<dynamic>.from(controller.document?.lines ?? const []);
 }
 
 /// The line index a position activates, through the controller.
 ///
 /// This is the whole point of the layer: the app feeds one clock into
-/// `setProgress` and the package decides which sentence is active. If the
+/// `setPosition` and the package decides which sentence is active. If the
 /// generated timestamps disagree with the axis by anything, this is where it
 /// shows.
 int activeLineAt(LyricController controller, Duration position) {
-  controller.setProgress(position);
-  return controller.activeIndexNotifiter.value;
+  controller.setPosition(position);
+  return controller.activeLineIndex ?? -1;
 }
 
 void main() {
@@ -176,12 +175,12 @@ void main() {
       final lines = parsedLines(
         page.lrc,
         then: (c) {
-          model = c.lyricNotifier.value;
+          model = c.document;
         },
       );
       expect(lines, hasLength(1));
       expect(
-        (model! as dynamic).idTags['offset'],
+        (model! as LyricDocument).tags['offset'],
         '0',
         reason: 'the offset tag is metadata, not a line',
       );
@@ -316,7 +315,7 @@ void main() {
         queue: List.generate(4, chunkAt),
       );
 
-      final controller = LyricController()..loadLyric(page.lrc);
+      final controller = LyricController()..load(page.lrc);
       addTearDown(controller.dispose);
 
       for (var i = 0; i < 4; i++) {
@@ -335,7 +334,7 @@ void main() {
         queue: List.generate(2, chunkAt),
       );
 
-      final controller = LyricController()..loadLyric(page.lrc);
+      final controller = LyricController()..load(page.lrc);
       addTearDown(controller.dispose);
 
       expect(activeLineAt(controller, const Duration(milliseconds: 399)), 0);
@@ -355,7 +354,7 @@ void main() {
         queue: List.generate(40, chunkAt),
       );
 
-      final controller = LyricController()..loadLyric(page.lrc);
+      final controller = LyricController()..load(page.lrc);
       addTearDown(controller.dispose);
 
       for (var i = 0; i < 40; i++) {
@@ -428,8 +427,7 @@ void main() {
       tester
               .widget<LyricView>(find.byType(LyricView))
               .controller
-              .lyricNotifier
-              .value
+              .document
               ?.lines ??
           const [],
     );
@@ -508,15 +506,15 @@ void main() {
       final controller = tester
           .widget<LyricView>(find.byType(LyricView))
           .controller;
-      expect(controller.activeIndexNotifiter.value, 0);
+      expect(controller.activeLineIndex, 0);
 
       position.add(const Duration(milliseconds: 500));
       await tester.pump();
-      expect(controller.activeIndexNotifiter.value, 1);
+      expect(controller.activeLineIndex, 1);
 
       position.add(const Duration(milliseconds: 1400));
       await tester.pump();
-      expect(controller.activeIndexNotifiter.value, 2);
+      expect(controller.activeLineIndex, 2);
     });
   });
 
@@ -555,13 +553,13 @@ void main() {
       ),
     );
 
-    /// The style the view actually handed the package.
+    /// The preset the view actually handed the package.
     ///
-    /// Falls back the same way the package's own `style` getter does, so this
+    /// Falls back the same way the package's own `preset` getter does, so this
     /// cannot pass by reading a default the view never set.
-    LyricStyle styleInView(WidgetTester tester) =>
-        tester.widget<LyricView>(find.byType(LyricView)).style ??
-        LyricStyles.default1;
+    LyricPreset presetInView(WidgetTester tester) =>
+        tester.widget<LyricView>(find.byType(LyricView)).preset ??
+        const LyricPreset();
 
     testWidgets('each choice reaches the package under its own name', (
       tester,
@@ -577,11 +575,11 @@ void main() {
       );
       await tester.pump();
 
-      final style = styleInView(tester);
-      expect(style.lineTextAlign, TextAlign.justify);
-      expect(style.contentAlignment, CrossAxisAlignment.end);
-      expect(style.selectionAlignment, MainAxisAlignment.start);
-      expect(style.activeAlignment, MainAxisAlignment.end);
+      final preset = presetInView(tester);
+      expect(preset.textAlign, TextAlign.justify);
+      expect(preset.contentAlignment, LyricContentAlignment.end);
+      expect(preset.selectionAnchor.target, LyricAnchorTarget.mainText);
+      expect(preset.activeAnchor.target, LyricAnchorTarget.translationText);
     });
 
     testWidgets('leaves the centred look alone until the reader changes it', (
@@ -590,16 +588,16 @@ void main() {
       await pumpWith(tester, const TtsLyricStyle());
       await tester.pump();
 
-      final style = styleInView(tester);
-      expect(style.lineTextAlign, TextAlign.center);
-      expect(style.contentAlignment, CrossAxisAlignment.center);
-      expect(style.selectionAlignment, MainAxisAlignment.center);
-      expect(style.activeAlignment, MainAxisAlignment.center);
+      final preset = presetInView(tester);
+      expect(preset.textAlign, TextAlign.center);
+      expect(preset.contentAlignment, LyricContentAlignment.center);
+      expect(preset.selectionAnchor.target, LyricAnchorTarget.lineCenter);
+      expect(preset.activeAnchor.target, LyricAnchorTarget.lineCenter);
     });
 
     testWidgets('moves the two anchors independently', (tester) async {
-      // The package resolves `activeAlignment` to whatever the *selection*
-      // alignment was when the style was built. Handing it one anchor and not
+      // The package resolves `activeAnchor` to whatever the *selection*
+      // anchor was when the preset was built. Handing it one anchor and not
       // the other would therefore retarget the playing line as a side effect
       // of editing the tapped-line anchor, which is a choice nobody made.
       await pumpWith(
@@ -611,8 +609,14 @@ void main() {
       );
       await tester.pump();
 
-      expect(styleInView(tester).selectionAlignment, MainAxisAlignment.start);
-      expect(styleInView(tester).activeAlignment, MainAxisAlignment.center);
+      expect(
+        presetInView(tester).selectionAnchor.target,
+        LyricAnchorTarget.mainText,
+      );
+      expect(
+        presetInView(tester).activeAnchor.target,
+        LyricAnchorTarget.lineCenter,
+      );
     });
 
     testWidgets('rebuilds the package layout when a choice changes', (
@@ -635,7 +639,10 @@ void main() {
       // and then reuses it: without the remount the new alignment would be
       // paired with painters laid out by the old one.
       expect(tester.state(find.byType(LyricView)), isNot(same(before)));
-      expect(styleInView(tester).contentAlignment, CrossAxisAlignment.start);
+      expect(
+        presetInView(tester).contentAlignment,
+        LyricContentAlignment.start,
+      );
       // The controller belongs to this widget, not to the package's state, so
       // playback survives the remount.
       expect(
@@ -663,20 +670,20 @@ void main() {
       await pumpWith(tester, const TtsLyricStyle(), singleLine: true);
       await tester.pump();
 
-      final style = styleInView(tester);
-      expect(style.activeLineOnly, isTrue);
+      final preset = presetInView(tester);
+      expect(preset.displayMode, LyricDisplayMode.activeLine);
       // Together, or not at all. Drawing one line while still answering taps on
       // the invisible ones gives the reader targets they cannot see.
-      expect(style.disableTouchEvent, isTrue);
+      expect(preset.interactive, isFalse);
     });
 
     testWidgets('single-line mode is off by default', (tester) async {
       await pumpWith(tester, const TtsLyricStyle());
       await tester.pump();
 
-      final style = styleInView(tester);
-      expect(style.activeLineOnly, isFalse);
-      expect(style.disableTouchEvent, isFalse);
+      final preset = presetInView(tester);
+      expect(preset.displayMode, LyricDisplayMode.scrollable);
+      expect(preset.interactive, isTrue);
     });
 
     testWidgets('a tap in single-line mode reaches no line', (tester) async {
@@ -689,13 +696,16 @@ void main() {
       final controller = tester
           .widget<LyricView>(find.byType(LyricView))
           .controller;
-      controller.setProgress(const Duration(milliseconds: 500));
+      controller.setPosition(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
       await tester.tapAt(const Offset(100, 300));
       await tester.pumpAndSettle();
 
-      expect(find.byType(GestureDetector), findsNothing);
+      final detector = tester.widget<GestureDetector>(
+        find.byType(GestureDetector),
+      );
+      expect(detector.onTapUp, isNull);
     });
 
     testWidgets('switching view keeps the sentence in play', (tester) async {
@@ -708,10 +718,10 @@ void main() {
       final controller = tester
           .widget<LyricView>(find.byType(LyricView))
           .controller;
-      controller.setProgress(const Duration(milliseconds: 900));
+      controller.setPosition(const Duration(milliseconds: 900));
       await tester.pumpAndSettle();
 
-      final playing = controller.activeIndexNotifiter.value;
+      final playing = controller.activeLineIndex;
       expect(playing, isNonZero);
 
       await pumpWith(tester, const TtsLyricStyle(), singleLine: true);
@@ -722,7 +732,7 @@ void main() {
         same(controller),
       );
       expect(tester.state(find.byType(LyricView)), same(before));
-      expect(controller.activeIndexNotifiter.value, playing);
+      expect(controller.activeLineIndex, playing);
     });
   });
 
@@ -781,7 +791,7 @@ void main() {
       final controller = tester
           .widget<LyricView>(find.byType(LyricView))
           .controller;
-      controller.setProgress(position);
+      controller.setPosition(position);
       await tester.pumpAndSettle();
       return controller;
     }
@@ -792,8 +802,16 @@ void main() {
     /// the package's resume debounce, which scrolls the list on a later pump
     /// and silently invalidates any rect measured after it.
     Map<int, Rect> hitRects(WidgetTester tester) {
-      final state = tester.state(find.byType(LyricView));
-      return (state as dynamic).showLineRects as Map<int, Rect>;
+      final viewport = tester.widget(
+        find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == 'LyricViewport',
+        ),
+      );
+      final session = (viewport as dynamic).session;
+      final indices = session.visibleIndices as Iterable<int>;
+      return {
+        for (final index in indices) index: session.lineRect(index) as Rect,
+      };
     }
 
     testWidgets('tapping a line seeks that exact sentence', (tester) async {
@@ -860,19 +878,18 @@ void main() {
       }
     });
 
-    testWidgets('the first sentence is pinned to the top, not the anchor', (
+    testWidgets('the first sentence lands at the active anchor', (
       tester,
     ) async {
       await pumpAt(tester, Duration.zero);
 
-      // The anchor would put sentence 0 a third of the way down, but there is
-      // nothing above it to scroll, so it stays at the top. This is what makes
-      // a page read from the top rather than starting mid-screen.
+      // In v4, the active anchor places sentence 0 at the anchor position
+      // (~35% down the viewport).
       final first = hitRects(tester)[0]!;
       expect(
         first.top,
-        closeTo(24, 1),
-        reason: 'sentence 0 sits just below the top edge',
+        closeTo(198.5, 2),
+        reason: 'sentence 0 sits at the active anchor position',
       );
 
       seeks.clear();

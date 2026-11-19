@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
@@ -170,11 +169,16 @@ class _PdfReaderViewState extends State<PdfReaderView> {
         initialPageNumber: widget.state.currentPage + 1,
         params: PdfViewerParams(
           backgroundColor: appColors.readerBackground,
-          margin: 0.0,
           boundaryMargin: EdgeInsets.zero,
           pageDropShadow: null,
           pageAnchor: PdfPageAnchor.center,
           underflowAnchor: PdfPageAnchor.center,
+          layoutStrategy: SequentialPagesLayout(
+            scrollDirection: isHorizontal ? Axis.horizontal : Axis.vertical,
+            margin: 0.0,
+            spacing: 0.0,
+            crossAxisAlignment: PdfCrossAxisAlignment.center,
+          ),
           sizeDelegateProvider: PdfViewerSizeDelegateProviderLegacy(
             useAlternativeFitScaleAsMinScale: true,
             calculateInitialZoom: (document, controller, fitZoom, coverZoom) {
@@ -229,34 +233,6 @@ class _PdfReaderViewState extends State<PdfReaderView> {
             widget.onTapAction?.call(action);
             return true;
           },
-          layoutPages: isHorizontal
-              ? (pages, params) {
-                  final height = pages.fold<double>(
-                    0.0,
-                    (prev, page) => math.max(prev, page.height),
-                  );
-                  final pageLayouts = <Rect>[];
-                  double x = 0.0;
-                  for (final page in pages) {
-                    pageLayouts.add(
-                      Rect.fromLTWH(
-                        x,
-                        (height - page.height) / 2,
-                        page.width,
-                        page.height,
-                      ),
-                    );
-                    x += page.width + params.margin;
-                  }
-                  return PdfPageLayout(
-                    pageLayouts: pageLayouts,
-                    documentSize: Size(
-                      x > 0 ? (params.margin > 0 ? x - params.margin : x) : 0,
-                      height,
-                    ),
-                  );
-                }
-              : null,
           onPageChanged: _onPdfPageChanged,
           onViewerReady: (document, controller) {
             widget.viewportController.updatePageCount(document.pages.length);

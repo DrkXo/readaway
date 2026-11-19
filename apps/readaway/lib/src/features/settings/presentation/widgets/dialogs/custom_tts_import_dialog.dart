@@ -60,8 +60,11 @@ class _CustomTtsImportDialogState extends State<CustomTtsImportDialog> {
 
   Future<void> _pickFolder() async {
     try {
-      final dirPath = await FilePicker.getDirectoryPath();
-      if (dirPath == null) return;
+      final dirUri = await FilePicker.pickDirectory();
+      if (dirUri == null) return;
+      final dirPath = dirUri.isScheme('file')
+          ? dirUri.toFilePath()
+          : dirUri.path;
       await _inspect(dirPath);
     } catch (e) {
       setState(() => _errorMessage = 'Failed to select folder: $e');

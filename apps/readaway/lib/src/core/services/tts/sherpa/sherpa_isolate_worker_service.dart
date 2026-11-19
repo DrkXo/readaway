@@ -272,7 +272,7 @@ sherpa.OfflineTts buildOfflineTtsFromMessage(Map message) {
     ruleFsts: ruleFsts,
     ruleFars: ruleFars,
     silenceScale: silenceScale,
-    maxNumSenetences: 1,
+    maxNumSentences: 1,
   );
   return sherpa.OfflineTts(config);
 }

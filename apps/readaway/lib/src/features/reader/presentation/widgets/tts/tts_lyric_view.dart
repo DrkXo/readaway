@@ -79,7 +79,6 @@ class _TtsLyricViewState extends State<TtsLyricView> {
   void initState() {
     super.initState();
     _subscribe();
-    _lyric.setOnTapLineCallback(_onLineTapped);
   }
 
   void _subscribe() {
@@ -89,7 +88,7 @@ class _TtsLyricViewState extends State<TtsLyricView> {
     // another's timings.
     _queueSub = widget.tts.queueVersion.listen((_) => _reloadLyrics());
     _positionSub = widget.tts.globalPositionStream.listen(
-      _lyric.setProgress,
+      _lyric.setPosition,
     );
   }
 
@@ -105,14 +104,14 @@ class _TtsLyricViewState extends State<TtsLyricView> {
     final timeline = widget.tts.timeline;
     if (timeline == null || timeline.isEmpty) {
       _loadedTimeline = null;
-      _lyric.loadLyric('');
+      _lyric.load('');
       setState(() {});
       return;
     }
 
     final page = buildPageLyric(timeline: timeline, queue: widget.tts.queue);
     _loadedTimeline = timeline;
-    _lyric.loadLyric(page.lrc, translationLyric: page.translationLrc);
+    _lyric.load(page.lrc, translation: page.translationLrc);
     setState(() {});
   }
 
@@ -152,24 +151,15 @@ class _TtsLyricViewState extends State<TtsLyricView> {
     return LyricView(
       // Keyed on the preferences so a change to them rebuilds this package's
       // internal layout instead of only repainting it.
-      //
-      // The package decides how much work a new style needs by comparing only
-      // the fields that change a line's size — gap, padding, the three text
-      // styles — and treats everything else as safe to reuse. Alignments are
-      // not in that set, so a new `lineTextAlign` would be handed to the
-      // painter while the `TextPainter`s it must apply to were still the old
-      // ones, and the reader would see nothing change. Remounting is heavier
-      // than it sounds but happens only on a deliberate settings change: the
-      // controller outlives the state, so the active sentence survives and the
-      // fresh layout re-parks it against the new anchor.
       key: ValueKey(widget.style),
       controller: _lyric,
-      style: buildTtsLyricStyle(
+      preset: buildTtsLyricPreset(
         context,
         scheme,
         widget.style,
         singleLine: widget.singleLine,
       ),
+      onLineTap: (details) => _onLineTapped(details.line.start),
     );
   }
 }
@@ -227,128 +217,98 @@ class _TtsLyricViewState extends State<TtsLyricView> {
 ///
 /// Taken from the package presets rather than written from scratch: the
 /// defaults encode real behaviour — the anchor position, the fade distances,
-/// the resume-after-selection timings — that is easy to lose when a style is
-/// assembled field by field, and only the appearance needs to differ.
+/// Assembles the lyric preset for the view.
 ///
-/// Public so a test can read the anchor the view actually uses. Tapping a line
+/// Public so a test can read the preset the view actually uses. Tapping a line
 /// and following the highlight are two independent index paths, and the only
 /// way to hold them against each other is to know where the highlight is
-/// parked — which is a style decision, not a constant.
-LyricStyle buildTtsLyricStyle(
+/// parked — which is a preset decision, not a constant.
+LyricPreset buildTtsLyricPreset(
   BuildContext context,
   ColorScheme scheme,
   TtsLyricStyle prefs, {
   bool singleLine = false,
 }) {
-  // Swapping the preset rather than overriding a field is what makes
-  // single-line mode work. `copyWith` cannot null a `fadeRange`, so the fade
-  // that softens the top and bottom of a scrolling list would stay on and dim
-  // the one line there is; the preset also drops the gap between lines, tightens
-  // the gap to a translation, and cuts between sentences instead of sliding,
-  // which is what a page showing one sentence at a time should do. Everything
-  // that matters below is then applied on top of either preset alike.
-  final base = singleLine ? LyricStyles.single : LyricStyles.default1;
   final textTheme = Theme.of(context).textTheme;
 
-  return base.copyWith(
+  return LyricPreset(
+    displayMode: singleLine
+        ? LyricDisplayMode.activeLine
+        : LyricDisplayMode.scrollable,
+    interactive: !singleLine,
     textStyle: (textTheme.bodyMedium ?? const TextStyle()).copyWith(
       color: scheme.onSurface.withValues(alpha: 0.55),
       fontSize: 15,
       height: 1.35,
     ),
-    activeStyle: (textTheme.titleMedium ?? const TextStyle()).copyWith(
+    activeTextStyle: (textTheme.titleMedium ?? const TextStyle()).copyWith(
       color: scheme.onSurface,
       fontSize: 18,
       fontWeight: FontWeight.w600,
       height: 1.3,
     ),
-    translationStyle: (textTheme.bodySmall ?? const TextStyle()).copyWith(
+    translationTextStyle: (textTheme.bodySmall ?? const TextStyle()).copyWith(
       color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
       fontSize: 13,
       height: 1.3,
     ),
-    translationActiveColor: scheme.onSurfaceVariant,
-    // Where the previous sentence list parked the active row, so the swap does
-    // not move the reader's eye.
-    //
-    // Both anchors, not one. `anchorPosition` sets the *selection* anchor; the
-    // active line is positioned by `activeAnchorPosition`, which the stock
-    // style leaves at whatever `selectionAnchorPosition` held when it was
-    // constructed. Setting only the first moves where a tapped line lands and
-    // leaves the highlight where it always was.
-    anchorPosition: 0.35,
-    activeAnchorPosition: 0.35,
-    // `contentPadding.top` is scroll runway, not inset: the package clamps the
-    // first line so it cannot scroll further up than this, and the stock value
-    // of 500 exists so a song's opening line can reach mid-screen. A page is
-    // read from the top, so the runway only needs to keep the first sentence
-    // off the edge.
-    contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-    lineGap: 18,
-    translationLineGap: 6,
-    selectedColor: scheme.onSurface,
-    selectedTranslationColor: scheme.onSurfaceVariant,
-    // The sweep along the active line is the package's own karaoke effect. It
-    // is per-tick repaint work, and at line granularity there is nothing to
-    // sweep, so it stays off.
-    activeHighlightColor: null,
+    activeTranslationTextStyle: (textTheme.bodySmall ?? const TextStyle())
+        .copyWith(
+          color: scheme.onSurfaceVariant,
+          fontSize: 13,
+          height: 1.3,
+        ),
+    selectedTextColor: scheme.onSurface,
+    selectedTranslationTextColor: scheme.onSurfaceVariant,
+    padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+    lineSpacing: 18,
+    translationSpacing: 6,
+    activeAnchor: LyricAnchor.fraction(
+      0.35,
+      target: prefs.activeAnchorAlign.toAnchorTarget(),
+    ),
+    selectionAnchor: LyricAnchor.fraction(
+      0.35,
+      target: prefs.selectionAnchorAlign.toAnchorTarget(),
+    ),
+    highlight: const LyricHighlight.none(),
     textAlign: prefs.lineAlign.toTextAlign(),
-    contentAlignment: prefs.contentAlign.toCrossAxisAlignment(),
-    // Both anchor alignments, for the same reason as both anchor positions
-    // above: `activeAlignment` falls back to whatever the *selection* alignment
-    // was when the style was constructed, so passing one and not the other
-    // would silently retarget the active line too.
-    highlightAlign: prefs.selectionAnchorAlign.toMainAxisAlignment(),
-    activeAlignment: prefs.activeAnchorAlign.toMainAxisAlignment(),
-    // Stated rather than left to whichever preset was picked above: this pair
-    // is the whole of single-line mode, and a style that draws one line while
-    // still accepting taps and drags on the invisible ones is a mode nobody
-    // asked for.
-    activeLineOnly: singleLine,
-    disableTouchEvent: singleLine,
-    // Smooth line-switch animation in the full view. The single preset already
-    // sets enableSwitchAnimation: false (instant cut on sentence change, which
-    // is right when there is only one visible line). For the full scrolling
-    // view a short fade-in keeps the eye on the new active line without
-    // appearing to jump — still fast enough not to lag behind speech.
-    enableSwitchAnimation: !singleLine,
-    switchEnterDuration: singleLine
+    contentAlignment: prefs.contentAlign.toLyricContentAlignment(),
+    edgeFade: singleLine
+        ? const LyricEdgeFade.none()
+        : const LyricEdgeFade.pixels(top: 48, bottom: 64),
+    scrollAnimation: singleLine
+        ? const LyricScrollAnimation.none()
+        : LyricScrollAnimation.byDistance(
+            durations: {
+              400.0: const Duration(milliseconds: 320),
+              800.0: const Duration(milliseconds: 480),
+            },
+            duration: const Duration(milliseconds: 240),
+          ),
+    lineTransition: singleLine
+        ? LyricLineTransitions.cinematic
+        : const LyricLineTransition(
+            enterDuration: Duration(milliseconds: 160),
+            exitDuration: Duration(milliseconds: 120),
+          ),
+    selectionSnapMode: singleLine
+        ? LyricSelectionSnapMode.none
+        : LyricSelectionSnapMode.afterScroll,
+    selectionSnapDelay: singleLine
         ? Duration.zero
-        : const Duration(milliseconds: 160),
-    switchExitDuration: singleLine
-        ? Duration.zero
-        : const Duration(milliseconds: 120),
-    // Distance-aware scroll durations: short lines close to the anchor
-    // travel fast (240 ms), but a skip to a distant sentence uses a longer
-    // ease so it does not feel like a teleport. The map keys are pixel
-    // distances and are matched by `>=`, so only two tiers are needed.
-    scrollDurationMap: singleLine
-        ? const {}
-        : {
-            400.0: const Duration(milliseconds: 320),
-            800.0: const Duration(milliseconds: 480),
-          },
-    // Soft fade at top and bottom of the full list, sized for the typical
-    // phone portrait height. Expressed in absolute pixels so it does not
-    // depend on the container height (a relative fade that trims 20 % of a
-    // tall screen clips far too much of the context). Single-line mode has
-    // no list to fade, so the preset's zero-fade is kept as-is.
-    fadeRange: singleLine ? null : FadeRange(top: 48, bottom: 64),
-    // How long after the user stops scrolling before the view snaps back to
-    // the active sentence. 3 s is enough to read the line the user browsed to;
-    // shorter feels like it snatches focus back. The selection resume fires
-    // sooner (1.5 s) to handle accidental drags gracefully.
-    selectLineResumeDuration: singleLine
-        ? null
         : const Duration(milliseconds: 1500),
-    activeLineResumeDuration: singleLine
-        ? null
-        : const Duration(milliseconds: 3000),
-    selectLineResumeMode: singleLine
-        ? null
-        : SelectionAutoResumeMode.afterSelecting,
+    resumeDelay: singleLine ? null : const Duration(milliseconds: 3000),
   );
 }
+
+@Deprecated('Use buildTtsLyricPreset instead')
+LyricPreset buildTtsLyricStyle(
+  BuildContext context,
+  ColorScheme scheme,
+  TtsLyricStyle prefs, {
+  bool singleLine = false,
+}) => buildTtsLyricPreset(context, scheme, prefs, singleLine: singleLine);
 
 extension on LyricLineAlign {
   TextAlign toTextAlign() => switch (this) {
@@ -360,17 +320,17 @@ extension on LyricLineAlign {
 }
 
 extension on LyricContentAlign {
-  CrossAxisAlignment toCrossAxisAlignment() => switch (this) {
-    LyricContentAlign.start => CrossAxisAlignment.start,
-    LyricContentAlign.center => CrossAxisAlignment.center,
-    LyricContentAlign.end => CrossAxisAlignment.end,
+  LyricContentAlignment toLyricContentAlignment() => switch (this) {
+    LyricContentAlign.start => LyricContentAlignment.start,
+    LyricContentAlign.center => LyricContentAlignment.center,
+    LyricContentAlign.end => LyricContentAlignment.end,
   };
 }
 
 extension on LyricAnchorAlign {
-  MainAxisAlignment toMainAxisAlignment() => switch (this) {
-    LyricAnchorAlign.start => MainAxisAlignment.start,
-    LyricAnchorAlign.center => MainAxisAlignment.center,
-    LyricAnchorAlign.end => MainAxisAlignment.end,
+  LyricAnchorTarget toAnchorTarget() => switch (this) {
+    LyricAnchorAlign.start => LyricAnchorTarget.mainText,
+    LyricAnchorAlign.center => LyricAnchorTarget.lineCenter,
+    LyricAnchorAlign.end => LyricAnchorTarget.translationText,
   };
 }
