@@ -18,6 +18,7 @@ import '../../../annotations/domain/entity/reader_note.dart';
 import '../../../annotations/presentation/bloc/annotations_bloc.dart';
 import '../../domain/entity/reader_preferences.dart';
 import '../../../settings/presentation/bloc/settings/settings_bloc.dart';
+import '../../../translation/presentation/widgets/immersive/reader_immersive_translation_bar.dart';
 import '../../domain/gestures/reader_gestures.dart';
 import '../bloc/reader_bloc.dart';
 import '../bloc/tts/reader_tts_bloc.dart';
@@ -383,6 +384,12 @@ class _ReaderPageState extends State<ReaderPage> with ReaderControllerMixin {
                               // 3b. Floating Back-to-TTS Jump Pill
                               ReaderBackToTtsPill(
                                 topOffset: isChromeVisible ? 76.0 : 24.0,
+                              ),
+
+                              // 3c. Floating Immersive Translation HUD Bar
+                              ReaderImmersiveTranslationBar(
+                                documentPath: readerState.documentPath,
+                                bottomOffset: isChromeVisible ? 84.0 : 28.0,
                               ),
 
                               // 4. Floating Top Bar (Animated Slide + Fade)

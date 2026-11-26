@@ -10,7 +10,7 @@ import '../widgets/reader_prefs_scope.dart';
 import '../widgets/settings_bloc_x.dart';
 import '../widgets/widgets.dart';
 
-enum SettingsTab { font, layout, behavior, appearance, tts }
+enum SettingsTab { font, layout, behavior, appearance, tts, translation }
 
 class SettingsPage extends StatefulWidget {
   final SettingsTab initialTab;
@@ -39,7 +39,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     _pivotController = MetroPivotController(
-      length: 5,
+      length: 6,
       initialIndex: widget.initialTab.index,
     );
     final path = widget.documentPath;
@@ -146,6 +146,10 @@ class _SettingsPageState extends State<SettingsPage> {
                         MetroPivotItem(
                           label: 'tts',
                           content: SettingsTtsPanel(),
+                        ),
+                        MetroPivotItem(
+                          label: 'translation',
+                          content: SettingsTranslationPanel(),
                         ),
                       ],
                     ),

@@ -60,7 +60,7 @@ void main() {
   }
 
   group('SettingsPage with MetroPivot', () {
-    testWidgets('renders MetroPivot with settings title and 5 category tabs', (
+    testWidgets('renders MetroPivot with settings title and 6 category tabs', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -77,6 +77,7 @@ void main() {
       expect(find.text('behavior'), findsOneWidget);
       expect(find.text('appearance'), findsOneWidget);
       expect(find.text('tts'), findsOneWidget);
+      expect(find.text('translation'), findsOneWidget);
       expect(find.text('close'), findsOneWidget);
     });
 

@@ -8,6 +8,7 @@ import 'package:readaway/src/features/reader/presentation/extensions/hyper_html_
 import 'package:readaway_core/readaway_core.dart';
 
 import '../../../../../../../core/theme/theme.dart';
+import '../../../../../../translation/domain/services/bilingual_html_transformer.dart';
 import '../../../../../domain/entity/reader_preferences.dart';
 import '../../../selection/reader_selection_anchor.dart';
 import 'reader_style_resolver.dart';
@@ -32,10 +33,12 @@ class HyperPageContent extends StatefulWidget {
     this.availableWidth,
     this.availableHeight,
     this.onImageDecoded,
+    this.chapterTranslations,
   });
 
   final String html;
   final ReaderPreferences prefs;
+  final Map<String, String>? chapterTranslations;
 
   /// Chapter index this content belongs to. Part of the shared image-cache key.
   final int chapterIndex;
@@ -176,7 +179,8 @@ class _HyperPageContentState extends State<HyperPageContent> {
     final hSig = widget.availableHeight?.round();
     return '${widget.html.length}:${widget.html.hashCode}:$prefsSig:'
         '${_textColor.toARGB32()}:${_linkColor.toARGB32()}:$wSig:$hSig:'
-        '${Theme.of(context).brightness == Brightness.dark}';
+        '${Theme.of(context).brightness == Brightness.dark}:'
+        '${widget.prefs.translationMode}:${widget.chapterTranslations?.hashCode}';
   }
 
   late DocumentNode _document;
@@ -233,7 +237,8 @@ class _HyperPageContentState extends State<HyperPageContent> {
     if (oldWidget.html != widget.html ||
         oldWidget.prefs != widget.prefs ||
         oldWidget.availableWidth != widget.availableWidth ||
-        oldWidget.availableHeight != widget.availableHeight) {
+        oldWidget.availableHeight != widget.availableHeight ||
+        oldWidget.chapterTranslations != widget.chapterTranslations) {
       setState(() => _document = _parseDocument());
     }
   }
@@ -259,7 +264,8 @@ class _HyperPageContentState extends State<HyperPageContent> {
     );
 
     final cachedKey =
-        '${widget.html.length}:${widget.html.hashCode}_${widget.prefs.overrideLayout}';
+        '${widget.html.length}:${widget.html.hashCode}_${widget.prefs.overrideLayout}_'
+        '${widget.prefs.translationMode}_${widget.chapterTranslations?.hashCode}';
     var processedHtml = _transformedHtmlCache.get(cachedKey);
     if (processedHtml == null) {
       // Pre-process HTML to convert SVG image wrappers (commonly used for EPUB covers) into <img> tags
@@ -270,9 +276,30 @@ class _HyperPageContentState extends State<HyperPageContent> {
         content: preprocessedHtml,
         overrideLayout: widget.prefs.overrideLayout,
       );
-      processedHtml = TextTransformPipeline.defaultPipeline.transform(
+      var textTransformed = TextTransformPipeline.defaultPipeline.transform(
         transformCtx,
       );
+
+      final trans = widget.chapterTranslations;
+      if (trans != null && trans.isNotEmpty) {
+        if (widget.prefs.translationMode ==
+            ReaderTranslationMode.bilingualInterlinear) {
+          textTransformed = const BilingualHtmlTransformer().injectBilingual(
+            rawHtml: textTransformed,
+            translations: trans,
+            fontScale: widget.prefs.translationFontScale,
+          );
+        } else if (widget.prefs.translationMode ==
+            ReaderTranslationMode.translatedOnly) {
+          textTransformed = const BilingualHtmlTransformer()
+              .injectTranslatedOnly(
+                rawHtml: textTransformed,
+                translations: trans,
+              );
+        }
+      }
+
+      processedHtml = textTransformed;
       _transformedHtmlCache.set(cachedKey, processedHtml);
     }
 

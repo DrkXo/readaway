@@ -13,6 +13,9 @@ import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/core_widgets.dart';
 import '../../../../../router/router.dart';
 import '../../../../annotations/presentation/widgets/reader_bookmark_button.dart';
+import '../../../../settings/presentation/bloc/settings/settings_bloc.dart';
+import '../../../../settings/presentation/widgets/settings_bloc_x.dart';
+import '../../../domain/entity/reader_preferences.dart';
 import '../../bloc/reader_bloc.dart';
 import '../overlay/reader_share_sheet.dart';
 import 'reader_search_dialog.dart';
@@ -209,6 +212,62 @@ class ReaderTopBar extends StatelessWidget implements PreferredSizeWidget {
                     isReflowable: state.isReflowable,
                     currentPage: state.currentPage,
                     currentVirtualPage: state.currentVirtualPage,
+                  ),
+
+                  // Translation Toggle Button
+                  BlocBuilder<SettingsBloc, SettingsState>(
+                    buildWhen: (p, c) =>
+                        p
+                            .effectiveReaderPrefs(state.documentPath)
+                            .translationMode !=
+                        c
+                            .effectiveReaderPrefs(state.documentPath)
+                            .translationMode,
+                    builder: (context, settingsState) {
+                      final prefs = settingsState.effectiveReaderPrefs(
+                        state.documentPath,
+                      );
+                      final isActive =
+                          prefs.translationMode !=
+                          ReaderTranslationMode.disabled;
+
+                      return Tooltip(
+                        message: isActive
+                            ? 'Translation active (tap to toggle)'
+                            : 'Enable translation',
+                        child: Semantics(
+                          label: 'Toggle translation',
+                          button: true,
+                          child: MetroPressable(
+                            onTap: () {
+                              final newMode = isActive
+                                  ? ReaderTranslationMode.disabled
+                                  : ReaderTranslationMode.bilingualInterlinear;
+                              context.read<SettingsBloc>().updateReaderPrefs(
+                                (p) => p.copyWith(translationMode: newMode),
+                                documentPath: state.documentPath,
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0,
+                                vertical: 6.0,
+                              ),
+                              child: Icon(
+                                LucideIcons.languages,
+                                size: 18,
+                                color: isActive
+                                    ? (appColors.badgeBackground ??
+                                          appColors.scheme.primary)
+                                    : appColors.topbarForeground.withValues(
+                                        alpha: 0.75,
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
 
                   Tooltip(

@@ -14,6 +14,8 @@ import '../../../../../annotations/presentation/widgets/painting/reader_annotati
 import '../../../../../annotations/presentation/widgets/selection/annotation_selection_menu.dart';
 import '../../../../../settings/domain/entity/settings.dart';
 import '../../../../../settings/presentation/bloc/settings/settings_bloc.dart';
+import '../../../../../translation/domain/services/bilingual_html_transformer.dart';
+import '../../../../../translation/presentation/bloc/translation_bloc.dart';
 import '../../../../domain/entity/reader_preferences.dart';
 import '../../../../domain/repositories/reader_tts_repository.dart';
 import '../../../bloc/reader_bloc.dart';
@@ -357,6 +359,35 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
               ? (ReaderTtsMiniPlayerBar.height + 16.0)
               : 0.0;
 
+          final transBloc = context.watch<TranslationBloc>();
+          final chapterTranslations = transBloc.state.chapterTranslations;
+
+          if (widget.prefs.translationMode != ReaderTranslationMode.disabled &&
+              html.isNotEmpty &&
+              !transBloc.state.isTranslatingChapter &&
+              chapterTranslations.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              final paragraphs = const BilingualHtmlTransformer()
+                  .extractParagraphs(html);
+              if (paragraphs.isNotEmpty) {
+                context.read<TranslationBloc>().add(
+                  TranslationEvent.translateChapter(
+                    bookHash:
+                        widget.state.documentPath ??
+                        widget.state.fileName ??
+                        'doc',
+                    chapterIndex: widget.chapterIndex,
+                    paragraphs: paragraphs,
+                    sourceLang: widget.prefs.translateSourceLang,
+                    targetLang: widget.prefs.translateTargetLang,
+                    engineId: widget.prefs.translationEngineId,
+                  ),
+                );
+              }
+            });
+          }
+
           final pageContent = OverflowBox(
             alignment: Alignment.topCenter,
             minWidth: availableWidth,
@@ -371,6 +402,7 @@ class _ReflowableVirtualPageState extends State<ReflowableVirtualPage> {
                   html: html,
                   prefs: widget.prefs,
                   chapterIndex: widget.chapterIndex,
+                  chapterTranslations: chapterTranslations,
                   cacheNamespace:
                       widget.state.documentPath ?? widget.state.fileName ?? '',
                   availableWidth: availableWidth,

@@ -18,6 +18,7 @@ import '../features/library/presentation/pages/library_page.dart';
 import '../features/reader/presentation/bloc/reader_bloc.dart';
 import '../features/reader/presentation/bloc/tts/reader_tts_bloc.dart';
 import '../features/reader/presentation/pages/reader_page.dart';
+import '../features/translation/presentation/bloc/translation_bloc.dart';
 import '../features/settings/presentation/pages/settings_custom_fonts_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
 import '../features/settings/presentation/pages/voice_library_page.dart';
@@ -150,6 +151,9 @@ class AppRouter {
               BlocProvider<ReaderTtsBloc>(
                 create: (_) => GetIt.I.get<ReaderTtsBloc>(),
               ),
+              BlocProvider<TranslationBloc>(
+                create: (_) => GetIt.I.get<TranslationBloc>(),
+              ),
             ],
             child: ReaderPage.fromRoute(state),
           ),
@@ -167,6 +171,7 @@ class AppRouter {
             'behavior' => SettingsTab.behavior,
             'appearance' => SettingsTab.appearance,
             'tts' => SettingsTab.tts,
+            'translation' => SettingsTab.translation,
             _ => SettingsTab.font,
           };
           final documentPath = state.uri.queryParameters['documentPath'];

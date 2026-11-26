@@ -85,6 +85,14 @@ enum ReaderPageSpread {
   dual,
 }
 
+/// Translation presentation mode in the reader viewport.
+enum ReaderTranslationMode {
+  disabled,
+  bilingualInterlinear,
+  translatedOnly,
+  sideBySideSpread,
+}
+
 /// Whether a [ReaderPageTransition] is available for a given scroll direction.
 extension ReaderPageTransitionSupport on ReaderPageTransition {
   /// The cover ("page flip") effect is a book-page metaphor that only makes
@@ -167,6 +175,14 @@ abstract class ReaderPreferences with _$ReaderPreferences {
     @Default(ReaderPageSpread.auto)
     @JsonKey(unknownEnumValue: ReaderPageSpread.auto)
     ReaderPageSpread pageSpread,
+    @Default(ReaderTranslationMode.disabled)
+    @JsonKey(unknownEnumValue: ReaderTranslationMode.disabled)
+    ReaderTranslationMode translationMode,
+    @Default('en') String translateTargetLang,
+    @Default('auto') String translateSourceLang,
+    @Default('google') String translationEngineId,
+    @Default(0.85) double translationFontScale,
+    @Default(true) bool translationShowOriginalOnTap,
   }) = _ReaderPreferences;
 
   factory ReaderPreferences.fromJson(Map<String, dynamic> json) =>

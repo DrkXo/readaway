@@ -16,6 +16,7 @@ import '../../../../annotations/domain/services/reader_note_operations.dart';
 import '../../../../annotations/presentation/bloc/annotations_bloc.dart';
 import '../../../../annotations/presentation/widgets/notes/reader_note_defaults.dart';
 import '../../../../annotations/presentation/widgets/notes/reader_note_editor_sheet.dart';
+import '../../../../translation/presentation/widgets/selective/reader_selective_translation_sheet.dart';
 import '../../bloc/reader_bloc.dart';
 import '../../bloc/tts/reader_tts_bloc.dart';
 import '../../controllers/reader_viewport_controller.dart';
@@ -178,10 +179,9 @@ class ReaderSelectionActionRegistry {
           if (handler != null) {
             handler(c);
           } else {
-            ReaderLookupSheet.show(
+            ReaderSelectiveTranslationSheet.show(
               context: c.context,
               selectedText: c.selectedText,
-              initialMode: ReaderLookupMode.translation,
             );
           }
         },
